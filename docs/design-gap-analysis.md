@@ -166,7 +166,7 @@ This resolves the current repo inconsistency: the solution definition should not
 | # | Task | Status | Owner | Notes |
 |---|---|---|---|---|
 | G3-1 | Map notebook-generated entities to Azure SQL target tables | 🟡 In Progress | Sean | Mapping note added in `docs/sub2-sql-source-mapping.md`; first cut is the seven source tables read by `nb_02_pbi_star_schema.py` |
-| G3-2 | Build load/export notebook or script from Fabric outputs to Azure SQL | 🟢 Done | Sean | Initial publish workflow is maintained in `pbi/nb_05a_publish_synthetic_data_to_sql.Notebook/` |
+| G3-2 | Build load/export notebook or script from Fabric outputs to Azure SQL | 🟢 Done | Sean | Initial publish workflow is maintained in `fabric/nb_05a_publish_synthetic_data_to_sql.Notebook/` |
 | G3-3 | Seed sub2 SQL with current synthetic dataset | 🟢 Done | Sean | Current mirrored source slice is populated in `sqldemo` |
 | G3-4 | Reconcile row counts and keys between notebook outputs and SQL source | 🟢 Done | Sean | Semantic model validation after refresh returned the expected mirrored-build counts |
 | G3-5 | Document rerun behavior for regenerating and republishing synthetic data | 🔴 Not Started | Sean | Needed for demo repeatability |
@@ -334,15 +334,15 @@ For the current Enercare architecture, the Purview networking model should use *
 
 The following maintained assets remain valid and should stay in the repo:
 
-- `pbi/nb_01_setup_demo_environment.Notebook/`
-- `pbi/nb_02_metadata_pipeline_demo.Notebook/`
-- `pbi/nb_03_pbi_star_schema.Notebook/`
-- `pbi/nb_04a_extend_metadata_schema.Notebook/`
-- `pbi/nb_04_generate_tmdl.Notebook/`
-- `pbi/nb_05a_publish_synthetic_data_to_sql.Notebook/`
-- `pbi/nb_05b_test_sql_connectivity.Notebook/`
-- `pbi/nb_05_push_qa_verified_answers.Notebook/`
-- `pbi/BrookfieldEnercare.SemanticModel/definition/`
+- `fabric/nb_01_setup_demo_environment.Notebook/`
+- `fabric/nb_02_metadata_pipeline_demo.Notebook/`
+- `fabric/nb_03_pbi_star_schema.Notebook/`
+- `fabric/nb_04a_extend_metadata_schema.Notebook/`
+- `fabric/nb_04_generate_tmdl.Notebook/`
+- `fabric/nb_05a_publish_synthetic_data_to_sql.Notebook/`
+- `fabric/nb_05b_test_sql_connectivity.Notebook/`
+- `fabric/nb_05_push_qa_verified_answers.Notebook/`
+- `fabric/BrookfieldEnercare.SemanticModel/definition/`
 - The `lh_metadata` lakehouse and its working metadata tables
 - The Fabric managed private endpoint from the Enercare workspace to `sqlserver-sk2`
 

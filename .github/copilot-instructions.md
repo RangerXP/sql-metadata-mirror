@@ -8,7 +8,7 @@ Maintained git source for the current Enercare deployment pattern:
 - `sub2`: Azure SQL authoritative source and Fabric mirroring input
 - `sub3`: Purview governance plane
 
-Primary repo surface is `pbi/`. Do not recreate duplicate notebook mirrors elsewhere.
+Primary repo surface is `fabric/`. Do not recreate duplicate notebook mirrors elsewhere.
 
 ## Repo Structure
 
@@ -20,7 +20,7 @@ Primary repo surface is `pbi/`. Do not recreate duplicate notebook mirrors elsew
 |- docs/
 |  |- design-gap-analysis.md
 |  \- sub2-sql-source-mapping.md
-|- pbi/
+|- fabric/
 |  |- BrookfieldEnercare.Report/
 |  |- BrookfieldEnercare.SemanticModel/
 |  |- Enercare Data Agent.DataAgent/
@@ -43,9 +43,9 @@ Primary repo surface is `pbi/`. Do not recreate duplicate notebook mirrors elsew
 
 ## Maintained Deployment Rules
 
-1. Treat `pbi/` as the single git source-of-truth for Fabric items.
+1. Treat `fabric/` as the single git source-of-truth for Fabric items.
 2. Keep only the current deployment assets in this repo.
-3. Do not add duplicate notebook source mirrors outside `pbi/`.
+3. Do not add duplicate notebook source mirrors outside `fabric/`.
 4. Do not add presentation exports, zip exports, walkthrough notebooks, or legacy setup packages.
 5. No secrets in repo. Load credentials from environment variables or Key Vault-backed runtime configuration.
 
@@ -60,7 +60,7 @@ Primary repo surface is `pbi/`. Do not recreate duplicate notebook mirrors elsew
 
 ## Notebook Conventions
 
-- Fabric notebooks live only as `pbi/nb_0N_name.Notebook/` folders with `.platform` and `notebook-content.py`.
+- Fabric notebooks live only as `fabric/nb_0N_name.Notebook/` folders with `.platform` and `notebook-content.py`.
 - Preserve existing Fabric metadata headers when editing notebook content.
 - Use `DEMO_MODE = True` for dry-run support where the notebook already follows that pattern.
 - Match existing column naming such as `IsDraft`, `IsCertified`, `DefinitionHash`, `AssetName`, and `ColumnName`.

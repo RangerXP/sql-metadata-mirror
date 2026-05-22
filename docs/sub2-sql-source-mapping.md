@@ -75,4 +75,4 @@ These can be added to a later SQL-source expansion once the core seven-table pat
 ## Repo artifacts for this step
 
 - SQL DDL: `sql/02_sub2_sql_source_schema.sql`
-- Fabric Git sync notebook: `pbi/nb_05a_publish_synthetic_data_to_sql.Notebook/`
+- Fabric Git sync notebook: `fabric/nb_05a_publish_synthetic_data_to_sql.Notebook/`

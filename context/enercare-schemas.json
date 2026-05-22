@@ -3,7 +3,7 @@
   "note": "Reflects actual repo state. Section A = tables already built in lh_enercare_demo + TMDL. Section B = call center extension to add.",
 
   "section_a_existing": {
-    "description": "Tables already built by nb_01 + nb_03. TMDL already committed in pbi/BrookfieldEnercare.SemanticModel/definition/tables/. DO NOT regenerate — extend or reference only.",
+    "description": "Tables already built by nb_01 + nb_03. TMDL already committed in fabric/BrookfieldEnercare.SemanticModel/definition/tables/. DO NOT regenerate — extend or reference only.",
 
     "lh_enercare_demo": {
       "products": {

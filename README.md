@@ -29,7 +29,7 @@ nb_01_setup_demo_environment
 |- .github/                     Copilot instructions for the maintained repo shape
 |- context/                     Supporting JSON context used by notebooks and guidance
 |- docs/                        Current architecture and build-status documents
-|- pbi/                         Fabric Git sync source of truth
+|- fabric/                      Fabric Git sync source of truth
 |- sql/                         Azure SQL source DDL used by the mirrored deployment
 |- sql-private-dns-vnet-link.bicep
 |- sql-private-dns-vnet-link.json
@@ -38,12 +38,12 @@ nb_01_setup_demo_environment
 ## Fabric Git Sync
 
 - GitHub repo: `RangerXP/sql-metadata-mirror`
-- Branch: `enercare`
-- Fabric should sync from git into the workspace from the `pbi/` surface in this repo
+- Branch: `main`
+- Fabric should sync from git into the workspace from the `fabric/` surface in this repo
 
 ## Maintained Fabric Assets
 
-The `pbi/` folder is the only maintained Fabric content surface in git.
+The `fabric/` folder is the only maintained Fabric content surface in git.
 
 - `nb_01_setup_demo_environment.Notebook/`
 - `nb_02_metadata_pipeline_demo.Notebook/`
@@ -81,8 +81,8 @@ The `pbi/` folder is the only maintained Fabric content surface in git.
 ## Maintenance Rules
 
 - Keep only the current deployment assets in git.
-- Treat `pbi/` as the Fabric source-of-truth surface.
-- Do not reintroduce duplicate notebook mirrors outside `pbi/`.
+- Treat `fabric/` as the Fabric source-of-truth surface.
+- Do not reintroduce duplicate notebook mirrors outside `fabric/`.
 - Do not add presentation decks, exports, or generated zip files to the maintained repo.
 | TMDL description injection | Live — nb_04 pushes table/column descriptions via Fabric REST API |
 | Copilot AI grounding | Live — PBI_AI_Instructions annotation set with instructions + verified Q&A |
@@ -102,7 +102,7 @@ The `pbi/` folder is the only maintained Fabric content surface in git.
 │   │   └── 01_demo_seed_data.sql              Seed data INSERT statements
 │   └── README.md                     Demo-specific run instructions
 │
-├── pbi/                               Fabric workspace sync (branch: enercare, folder: /pbi)
+├── fabric/                            Fabric workspace sync (branch: enercare, folder: /fabric)
 │   ├── nb_01_setup_demo_environment.Notebook/   Source table loader
 │   ├── nb_02_metadata_pipeline_demo.Notebook/   Governance metadata extractor
 │   ├── nb_03_pbi_star_schema.Notebook/          Star schema builder
@@ -120,7 +120,7 @@ The `pbi/` folder is the only maintained Fabric content surface in git.
     └── 02_extract_from_modules.sql    T-SQL metadata extractor (SQL Server path)
 ```
 
-> **Git integration:** The Fabric workspace syncs to the `enercare` branch.
+> **Git integration:** The Fabric workspace syncs to the `main` branch.
 > Push changes here → sync in Fabric via **Source control → Update all**.
 > Commit workspace changes back via **Source control → Commit**.
 
@@ -203,8 +203,8 @@ Change `DEMO_MODE = True` to `DEMO_MODE = False` and re-run when ready to apply.
 
 ### Prerequisites
 - Access to the Fabric workspace `Enercare` (workspace ID: `795ce5db-7ea0-4a7c-ba64-e27c9fb568f4`)
-- Git access to this repository (branch: `enercare`)
-- Power BI Desktop (July 2023+) to view the semantic model locally via `pbi/BrookfieldEnercare.pbip`
+- Git access to this repository (branch: `main`)
+- Power BI Desktop (July 2023+) to view the semantic model locally via `fabric/BrookfieldEnercare.pbip`
 
 ### Sync workspace from git
 In the Fabric workspace: **Source control → Update all**
