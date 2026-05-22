@@ -1,0 +1,87 @@
+table dim_product
+	lineageTag: 7d193b8b-a965-4345-b382-b037ad6cea6b
+	sourceLineageTag: [dbo].[dim_product]
+
+	column ProductKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 86cadba4-638a-4a9b-aab0-5a089f797006
+		sourceLineageTag: ProductKey
+		summarizeBy: count
+		sourceColumn: ProductKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductCode
+		dataType: string
+		lineageTag: 2aac83fe-4417-4963-9b4d-962caf9b8ee7
+		sourceLineageTag: ProductCode
+		summarizeBy: none
+		sourceColumn: ProductCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductName
+		dataType: string
+		lineageTag: 18eac4f9-9612-4a44-bcd6-37f65e62619c
+		sourceLineageTag: ProductName
+		summarizeBy: none
+		sourceColumn: ProductName
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductCategory
+		dataType: string
+		lineageTag: 63766221-60bc-4200-96ef-1b669f0c4767
+		sourceLineageTag: ProductCategory
+		summarizeBy: none
+		sourceColumn: ProductCategory
+
+		annotation SummarizationSetBy = Automatic
+
+	column BillingFrequency
+		dataType: string
+		lineageTag: 074da48b-5dc5-4c3a-a663-dc344a2762a4
+		sourceLineageTag: BillingFrequency
+		summarizeBy: none
+		sourceColumn: BillingFrequency
+
+		annotation SummarizationSetBy = Automatic
+
+	column BasePrice
+		dataType: double
+		lineageTag: b2440bcf-3a7c-4fd6-b5a2-431b0c73c355
+		sourceLineageTag: BasePrice
+		summarizeBy: sum
+		sourceColumn: BasePrice
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column IsActive
+		dataType: int64
+		formatString: 0
+		lineageTag: cb616f26-9722-44b2-bef0-52489e3cfc9f
+		sourceLineageTag: IsActive
+		summarizeBy: sum
+		sourceColumn: IsActive
+
+		annotation SummarizationSetBy = Automatic
+
+	column EffectiveDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: d58876ed-2e37-4a0a-a42e-f3a45920a8f2
+		sourceLineageTag: EffectiveDate
+		summarizeBy: none
+		sourceColumn: EffectiveDate
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_product = entity
+		mode: directLake
+		source
+			entityName: dim_product
+			expressionSource: 'DirectLake - lh_enercare_demo'
+

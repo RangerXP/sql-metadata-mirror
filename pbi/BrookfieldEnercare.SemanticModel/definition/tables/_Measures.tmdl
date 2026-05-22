@@ -1,0 +1,81 @@
+table _Measures
+	isHidden
+	lineageTag: 2f851d4d-2ff5-4c8d-aea1-d924793cfffa
+
+	measure 'Total MRR' = CALCULATE(SUM(fct_billing[Amount]), fct_billing[TransactionType] = "MonthlyCharge", fct_billing[Status] = "Posted")
+		formatString: \$#,0.00
+		lineageTag: 6984860b-d085-47ca-8662-dba8e75102ca
+
+	measure 'New MRR' = SUMX(FILTER(fct_contract_month, fct_contract_month[IsNew] = 1), fct_contract_month[MonthlyAmount])
+		formatString: \$#,0.00
+		lineageTag: 4dcc107e-b2bb-4bce-8cac-89e16fbc1bdf
+
+	measure 'Churned MRR' = SUMX(FILTER(fct_contract_month, fct_contract_month[IsChurn] = 1), fct_contract_month[MonthlyAmount])
+		formatString: \$#,0.00
+		lineageTag: a2d284d5-7326-438c-8ccb-f1728edab201
+
+	measure 'Net MRR Change' = [New MRR] - [Churned MRR]
+		formatString: \$#,0.00
+		lineageTag: 22c8b068-2477-4732-bb36-55c6fefde720
+
+	measure 'Active Customer Count' = CALCULATE(COUNTROWS(dim_customer), dim_customer[Status] = "Active")
+		formatString: #,0
+		lineageTag: fa857cfb-0473-4bee-8685-4d7f18ad6d3d
+
+	measure 'Active Contract Count' = CALCULATE(COUNTROWS(fct_contract_month), fct_contract_month[ContractStatus] = "Active")
+		formatString: #,0
+		lineageTag: 67d10be5-56d1-4a9f-88d6-af282c3926b2
+
+	measure 'Avg Lifetime Value' = AVERAGEX(dim_customer, CALCULATE(SUMX(FILTER(fct_billing, fct_billing[Status] = "Posted"), fct_billing[Amount])))
+		formatString: \$#,0.00
+		lineageTag: 7ea012c0-fa98-4944-8e49-579ea4b25cb0
+
+	measure 'Avg Tenure Months' = AVERAGEX(dim_customer, DATEDIFF(dim_customer[CreatedDate], TODAY(), MONTH))
+		formatString: #,0
+		lineageTag: 39fe6c97-94a0-4fda-9608-9fc03ba025fd
+
+	measure 'SLA Breach Count' = SUMX(fct_service_request, fct_service_request[IsSlaBreachFlag])
+		formatString: #,0
+		lineageTag: 201b4368-2ce7-4dce-966b-63b3df08c9b1
+
+	measure 'SLA Compliance Rate' = DIVIDE(COUNTROWS(fct_service_request) - [SLA Breach Count], COUNTROWS(fct_service_request))
+		formatString: 0.0%
+		lineageTag: 487de699-0427-4396-aea0-9592c7a2a85c
+
+	measure 'Warranty Coverage Rate' = DIVIDE(SUMX(dim_equipment, dim_equipment[IsUnderWarranty]), COUNTROWS(dim_equipment))
+		formatString: 0.0%
+		lineageTag: e95914d2-d684-4414-a1e5-6a71d812eacb
+
+	measure 'Avg Equipment Age Years' = AVERAGEX(dim_equipment, dim_equipment[AgeYears])
+		formatString: #,0.0
+		lineageTag: 42f61711-cbe4-4ae0-9ff5-32e1facddbbf
+
+	measure 'FCR Rate' = DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[fcr_flag] = 1), COUNTROWS(fct_cc_interactions))
+		formatString: 0.0%
+		lineageTag: d68117ad-989c-40ab-a919-aa8725273862
+
+	measure 'Avg CSAT' = AVERAGEX(FILTER(fct_cc_interactions, NOT ISBLANK(fct_cc_interactions[csat_score])), fct_cc_interactions[csat_score])
+		formatString: #,0.0
+		lineageTag: 0cec6c7b-58c1-400f-b4c6-993cff355807
+
+	measure 'PP Renewal Rate' = DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[pp_renewal_outcome] = "accepted"), CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[queue_type] = "pp_renewal"))
+		formatString: 0.0%
+		lineageTag: b0478899-e200-4b7a-b011-429566f09b29
+
+	measure 'Avg Handle Time (sec)' = AVERAGEX(fct_cc_interactions, fct_cc_interactions[handle_time_sec] + fct_cc_interactions[hold_time_sec])
+		formatString: #,0
+		lineageTag: 40485d8a-3df4-467d-a04b-409d2d37083f
+
+	measure 'Escalation Rate' = DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[escalated_flag] = 1), COUNTROWS(fct_cc_interactions))
+		formatString: 0.0%
+		lineageTag: 0de9cdd3-9eb1-440d-85b6-f99ff400bf19
+
+	column Value
+		lineageTag: dbf943f6-f02d-4604-ab7f-418daf143bf1
+		isNameInferred
+		sourceColumn: [Value]
+
+	partition _Measures = calculated
+		mode: import
+		source = {("")}
+

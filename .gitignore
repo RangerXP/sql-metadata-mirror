@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+.venv/
+venv/
+
+# Secrets / credentials — NEVER commit
+*.secret
+*.key
+*.pem
+*.pfx
+connection_strings.txt
+credentials.json
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/mcp.json
+.vscode/settings.json
+
+# Fabric / notebook outputs
+.ipynb_checkpoints/
+*.ipynb
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+
+# Azure deployment artifacts (auto-generated)
+.azure/

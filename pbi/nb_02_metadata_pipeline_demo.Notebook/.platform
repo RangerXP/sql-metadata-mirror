@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_02_metadata_pipeline_demo",
+    "description": "Full 5-phase metadata governance pipeline: extract SQL module headers, write meta.* Delta tables to lh_metadata, apply Delta column comments, preview Purview Atlas push. DEMO_MODE=True for dry-run; flip to False with SQL Server JDBC creds for production."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "8bfb8b15-7313-9de6-4175-8f056e6e4b9e"
+  }
+}

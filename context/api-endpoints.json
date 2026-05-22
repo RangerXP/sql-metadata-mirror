@@ -1,0 +1,118 @@
+{
+  "version": "1.0",
+  "description": "API endpoint patterns for the Enercare Fabric + Purview demo. All use managed identity / DefaultAzureCredential — no stored secrets.",
+  "authentication": {
+    "pattern": "DefaultAzureCredential() from azure-identity",
+    "fabric_scope": "https://api.fabric.microsoft.com/.default",
+    "purview_scope": "https://purview.azure.net/.default",
+    "in_notebook": "mssparkutils.credentials.getToken('https://analysis.windows.net/powerbi/api')",
+    "note": "Never hardcode client_secret. In GitHub Actions use OIDC + azure/login@v1 with client-id var (not secret)."
+  },
+  "fabric": {
+    "base_url": "https://api.fabric.microsoft.com/v1",
+    "endpoints": {
+      "list_workspaces": {
+        "method": "GET",
+        "path": "/workspaces",
+        "description": "List all workspaces the caller has access to"
+      },
+      "upload_table_parquet": {
+        "method": "POST",
+        "path": "/workspaces/{workspaceId}/lakehouses/{lakehouseId}/tables/{tableName}/loadTable",
+        "body": { "relativePath": "Files/data/raw/{tableName}.parquet", "pathType": "File", "mode": "Overwrite", "formatOptions": { "format": "Parquet" } },
+        "description": "Load a Parquet file from Lakehouse Files into a Lakehouse Delta table"
+      },
+      "get_semantic_model_definition": {
+        "method": "GET",
+        "path": "/workspaces/{workspaceId}/semanticModels/{modelId}/definition",
+        "description": "Fetch full TMDL of semantic model — use to read before write-back"
+      },
+      "update_semantic_model_definition": {
+        "method": "POST",
+        "path": "/workspaces/{workspaceId}/semanticModels/{modelId}/definition",
+        "description": "Write updated TMDL back to semantic model — this is the no-VM alternative to TOM/XMLA",
+        "note": "Requires updateMetadata=true query param. Payload is full TMDL parts array."
+      },
+      "run_notebook": {
+        "method": "POST",
+        "path": "/workspaces/{workspaceId}/notebooks/{notebookId}/run",
+        "description": "Trigger a Fabric notebook run via API"
+      },
+      "execute_dax_query": {
+        "method": "POST",
+        "path": "/workspaces/{workspaceId}/semanticModels/{modelId}/executeQueries",
+        "body": { "queries": [{ "query": "EVALUATE SUMMARIZE(...)" }] },
+        "description": "Execute a DAX query against a semantic model — used by close_loop.py to verify KPI values"
+      }
+    }
+  },
+  "purview": {
+    "base_url": "https://{purviewAccountName}.purview.azure.com",
+    "endpoints": {
+      "register_type_defs": {
+        "method": "POST",
+        "path": "/catalog/api/atlas/v2/types/typedefs",
+        "description": "Register custom entity types, enum defs, business metadata defs from purview-type-defs.json",
+        "run_once": true
+      },
+      "bulk_upsert_entities": {
+        "method": "POST",
+        "path": "/catalog/api/atlas/v2/entity/bulk",
+        "description": "Register or update multiple data assets (tables, columns) in one call. Max 100 entities per batch.",
+        "pyapacheatlas_method": "client.upload_entities(batch)"
+      },
+      "partial_update_entity": {
+        "method": "PUT",
+        "path": "/catalog/api/atlas/v2/entity/uniqueAttribute/type/{typeName}",
+        "query_params": { "attr:qualifiedName": "{qualified_name}" },
+        "description": "Update a single attribute on an existing entity without replacing the whole entity",
+        "pyapacheatlas_method": "client.partial_update_entity(typeName=..., qualifiedName=..., attributes={...})"
+      },
+      "create_relationship": {
+        "method": "POST",
+        "path": "/catalog/api/atlas/v2/relationship",
+        "description": "Create a lineage relationship between two entities (e.g., process → input/output tables)",
+        "pyapacheatlas_method": "client.upload_relationship(relationship)"
+      },
+      "write_back_insight": {
+        "method": "PUT",
+        "path": "/catalog/api/atlas/v2/entity/guid/{guid}/businessmetadata/{bmName}",
+        "description": "Write an AI-generated insight annotation as business metadata on an existing asset — this closes the loop",
+        "body_example": { "AIInstruction": "41% of PP non-renewals in Q1 followed a billing queue call. Linked to invoice_date ambiguity across ZUORA/NS/CLARIFY." }
+      },
+      "create_glossary_term": {
+        "method": "POST",
+        "path": "/catalog/api/atlas/v2/glossary/term",
+        "description": "Create a new business glossary term from a KPI definition"
+      },
+      "link_term_to_entity": {
+        "method": "POST",
+        "path": "/catalog/api/atlas/v2/glossary/terms/{termGuid}/assignedEntities",
+        "description": "Associate a glossary term with a data asset (table or column)"
+      },
+      "trigger_scan": {
+        "method": "POST",
+        "path": "/scan/datasources/{dataSourceName}/scans/{scanName}/run",
+        "query_params": { "api-version": "2023-09-01" },
+        "description": "Trigger a Purview scan on the registered Fabric data source"
+      }
+    },
+    "qualified_name_patterns": {
+      "fabric_lakehouse_table": "fabric://{workspaceId}/{lakehouseId}/tables/{schemaName}/{tableName}",
+      "fabric_semantic_model": "fabric://{workspaceId}/semanticModels/{modelId}",
+      "fabric_semantic_model_measure": "fabric://{workspaceId}/semanticModels/{modelId}/measures/{measureName}",
+      "note": "Use these patterns consistently so lineage edges connect correctly"
+    }
+  },
+  "sempy_labs": {
+    "description": "semantic-link-labs TOM write-back — the no-VM alternative Christopher asked about. Enable XMLA endpoint on Fabric capacity first.",
+    "install": "pip install semantic-link-labs",
+    "key_functions": {
+      "list_semantic_models": "labs.list_semantic_models(workspace=workspace_id)",
+      "update_column_description": "labs.update_descriptions(dataset=model_name, workspace=workspace_id, column_descriptions={'TableName/ColumnName': 'description'})",
+      "update_measure_description": "labs.update_descriptions(dataset=model_name, workspace=workspace_id, measure_descriptions={'TableName/MeasureName': 'description'})",
+      "add_ai_instructions": "labs.set_semantic_model_storage_format(dataset=...) — then patch TMDL via Items API for AI instructions",
+      "note": "For AI instructions and verified answers, use the Fabric Items REST API TMDL approach — sempy_labs handles column/measure descriptions; Items API handles the full AI configuration."
+    }
+  }
+}

@@ -1,0 +1,155 @@
+table fct_service_request
+	lineageTag: 82a63417-6d59-4b67-81fc-0dcc3763236a
+	sourceLineageTag: [dbo].[fct_service_request]
+
+	column RequestKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 9cf25cc1-5747-4745-a168-7eb601e1b163
+		sourceLineageTag: RequestKey
+		summarizeBy: count
+		sourceColumn: RequestKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServiceAccountKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 35d43064-02af-4342-9172-fd47735270b1
+		sourceLineageTag: ServiceAccountKey
+		summarizeBy: count
+		sourceColumn: ServiceAccountKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerKey
+		dataType: int64
+		formatString: 0
+		lineageTag: d4f03d99-d10e-47d3-91c5-e50ac7092ffb
+		sourceLineageTag: CustomerKey
+		summarizeBy: count
+		sourceColumn: CustomerKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column EquipmentKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 5a9408d1-88a8-4efc-915f-508c87929114
+		sourceLineageTag: EquipmentKey
+		summarizeBy: count
+		sourceColumn: EquipmentKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreatedDateKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 28885c91-e4fb-4170-9b59-329e0ee3be18
+		sourceLineageTag: CreatedDateKey
+		summarizeBy: count
+		sourceColumn: CreatedDateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column ScheduledDateKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 601973ab-2293-4d57-9628-6b64d8a2e85c
+		sourceLineageTag: ScheduledDateKey
+		summarizeBy: count
+		sourceColumn: ScheduledDateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column CompletedDateKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 429aac35-dff0-4a3e-8bf2-e2aea2d770a1
+		sourceLineageTag: CompletedDateKey
+		summarizeBy: count
+		sourceColumn: CompletedDateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column RequestType
+		dataType: string
+		lineageTag: 15f6e877-65ba-4b72-914f-f39d47b6aac5
+		sourceLineageTag: RequestType
+		summarizeBy: none
+		sourceColumn: RequestType
+
+		annotation SummarizationSetBy = Automatic
+
+	column Priority
+		dataType: string
+		lineageTag: 9d6b105b-8ce2-4346-840e-7f66b575bdc9
+		sourceLineageTag: Priority
+		summarizeBy: none
+		sourceColumn: Priority
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		lineageTag: 678ba601-e19b-41a6-b591-e1b6b1a72abb
+		sourceLineageTag: Status
+		summarizeBy: none
+		sourceColumn: Status
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		lineageTag: 9092b70d-8801-4f31-bbeb-eb44f906015d
+		sourceLineageTag: Description
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	column TechnicianId
+		dataType: int64
+		formatString: 0
+		lineageTag: 22904e29-2741-492a-a4c5-745ce6ab0472
+		sourceLineageTag: TechnicianId
+		summarizeBy: count
+		sourceColumn: TechnicianId
+
+		annotation SummarizationSetBy = Automatic
+
+	column ResolutionNotes
+		dataType: string
+		lineageTag: 404d0fdc-82d2-4d0c-97dc-976f1cb30931
+		sourceLineageTag: ResolutionNotes
+		summarizeBy: none
+		sourceColumn: ResolutionNotes
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsSlaBreachFlag
+		dataType: int64
+		formatString: 0
+		lineageTag: 8136adbf-388d-4dc3-bbcf-61c04ed7ede4
+		sourceLineageTag: IsSlaBreachFlag
+		summarizeBy: sum
+		sourceColumn: IsSlaBreachFlag
+
+		annotation SummarizationSetBy = Automatic
+
+	column DaysToComplete
+		dataType: int64
+		formatString: 0
+		lineageTag: cd56d4a4-69aa-44e3-8f9e-c9be55b2c35a
+		sourceLineageTag: DaysToComplete
+		summarizeBy: sum
+		sourceColumn: DaysToComplete
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fct_service_request = entity
+		mode: directLake
+		source
+			entityName: fct_service_request
+			expressionSource: 'DirectLake - lh_enercare_demo'
+

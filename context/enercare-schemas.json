@@ -1,0 +1,198 @@
+{
+  "version": "2.0",
+  "note": "Reflects actual repo state. Section A = tables already built in lh_enercare_demo + TMDL. Section B = call center extension to add.",
+
+  "section_a_existing": {
+    "description": "Tables already built by nb_01 + nb_03. TMDL already committed in pbi/BrookfieldEnercare.SemanticModel/definition/tables/. DO NOT regenerate — extend or reference only.",
+
+    "lh_enercare_demo": {
+      "products": {
+        "built": true,
+        "tmdl_file": "dim_product.tmdl",
+        "row_count": 10,
+        "columns": ["product_id","product_code","product_name","product_category","billing_frequency","base_price","is_active","effective_date"],
+        "notes": "Enercare-exact naming: WH-GAS-STD, WH-GAS-PREM, WH-ELEC-STD, PP-HEAT, PP-COOL, PP-PLUMB, PP-ELEC-HM, SH-BASIC, SH-PREM, ECOBEE-INST"
+      },
+      "customers": {
+        "built": true,
+        "tmdl_file": "dim_customer.tmdl",
+        "row_count": 50,
+        "columns": ["customer_id","account_number","first_name","last_name","email","phone","customer_type","status","city","province","postal_code","created_date"],
+        "notes": "Ontario FSA postal codes, real city names. Residential (40), Commercial (5), MUR (5)"
+      },
+      "service_accounts": {
+        "built": true,
+        "tmdl_file": "dim_service_account.tmdl",
+        "row_count": 56,
+        "columns": ["service_account_id","account_number","customer_id","service_type","address","city","province","postal_code","status","created_date"]
+      },
+      "equipment_registry": {
+        "built": true,
+        "tmdl_file": "dim_equipment.tmdl",
+        "row_count": 38,
+        "columns": ["equipment_id","service_account_id","equipment_type","make","model","serial_number","install_date","is_under_warranty","age_years"]
+      },
+      "contracts": {
+        "built": true,
+        "notes": "Used in fct_contract_month star schema"
+      },
+      "service_requests": {
+        "built": true,
+        "tmdl_file": "fct_service_request.tmdl",
+        "row_count": 31,
+        "columns": ["service_request_id","service_account_id","equipment_id","request_type","status","priority","created_date","scheduled_date","completed_date","technician_id","resolution_code","is_sla_breach_flag","sla_target_hours"]
+      },
+      "billing_transactions": {
+        "built": true,
+        "tmdl_file": "fct_billing.tmdl",
+        "row_count": 300,
+        "columns": ["transaction_id","contract_id","service_account_id","customer_id","product_id","transaction_date","due_date","transaction_type","amount","tax_amount","total_amount","payment_method","status","invoice_number"]
+      },
+      "fct_contract_month": {
+        "built": true,
+        "tmdl_file": "fct_contract_month.tmdl",
+        "columns": ["contract_month_id","contract_id","service_account_id","product_id","billing_month_date","monthly_amount","contract_status","is_new","is_churn"]
+      },
+      "dim_date": {
+        "built": true,
+        "tmdl_file": "dim_date.tmdl"
+      }
+    },
+
+    "lh_metadata_existing_tables": {
+      "description": "Tables already in lh_metadata. EXTEND these — do not drop/recreate.",
+      "asset_metadata": {
+        "existing_columns": ["AssetName","AssetType","SchemaName","Description","Owner","Steward","Domain","Sensitivity","IsDraft","DefinitionHash","ExtractedDate"],
+        "needs": "No new columns required for G1 base"
+      },
+      "column_metadata": {
+        "existing_columns": ["AssetName","ColumnName","DataType","Description","IsDraft","ExtractedDate"],
+        "needs": "No new columns required for G1 base"
+      },
+      "kpi_metadata": {
+        "existing_columns": ["KPIName","Formula","Description","Domain","Owner","IsDraft"],
+        "needs_added": ["IsCertified INT DEFAULT 0","Version INT DEFAULT 1","PreviousFormula NVARCHAR(MAX)","CertifiedBy NVARCHAR(100)","CertifiedDate DATE","KPICode VARCHAR(30)","TargetValue DECIMAL(10,4)","WarningThreshold DECIMAL(10,4)","UnitType VARCHAR(20)"],
+        "gap": "G1-3, G2"
+      },
+      "vw_business_metadata_current": {
+        "type": "view",
+        "description": "Existing view joining all metadata tables. Downstream consumers (nb_04, nb_05) read from this. Extend it after adding new tables."
+      }
+    },
+
+    "star_schema_measures": {
+      "description": "12 existing DAX measures in _Measures.tmdl. Seed these into kpi_metadata as part of G2.",
+      "measures": [
+        {"name": "Total MRR",          "formula": "CALCULATE(SUM(fct_billing[Amount]), fct_billing[TransactionType] = \"MonthlyCharge\", fct_billing[Status] = \"Posted\")", "domain": "Revenue"},
+        {"name": "New MRR",             "formula": "SUMX(FILTER(fct_contract_month, fct_contract_month[IsNew] = 1), fct_contract_month[MonthlyAmount])", "domain": "Revenue"},
+        {"name": "Churned MRR",         "formula": "SUMX(FILTER(fct_contract_month, fct_contract_month[IsChurn] = 1), fct_contract_month[MonthlyAmount])", "domain": "Revenue"},
+        {"name": "Net MRR Change",      "formula": "[New MRR] - [Churned MRR]", "domain": "Revenue"},
+        {"name": "Active Customer Count","formula": "CALCULATE(COUNTROWS(dim_customer), dim_customer[Status] = \"Active\")", "domain": "Customer"},
+        {"name": "Active Contract Count","formula": "CALCULATE(COUNTROWS(fct_contract_month), fct_contract_month[ContractStatus] = \"Active\")", "domain": "Customer"},
+        {"name": "Avg Lifetime Value",  "formula": "AVERAGEX(dim_customer, CALCULATE(SUMX(FILTER(fct_billing, fct_billing[Status] = \"Posted\"), fct_billing[Amount])))", "domain": "Customer"},
+        {"name": "Avg Tenure Months",   "formula": "AVERAGEX(dim_customer, DATEDIFF(dim_customer[CreatedDate], TODAY(), MONTH))", "domain": "Customer"},
+        {"name": "SLA Breach Count",    "formula": "SUMX(fct_service_request, fct_service_request[IsSlaBreachFlag])", "domain": "Operations"},
+        {"name": "SLA Compliance Rate", "formula": "DIVIDE(COUNTROWS(fct_service_request) - [SLA Breach Count], COUNTROWS(fct_service_request))", "domain": "Operations", "format": "0.0%"},
+        {"name": "Warranty Coverage Rate","formula": "DIVIDE(SUMX(dim_equipment, dim_equipment[IsUnderWarranty]), COUNTROWS(dim_equipment))", "domain": "Operations", "format": "0.0%"},
+        {"name": "Avg Equipment Age Years","formula": "AVERAGEX(dim_equipment, dim_equipment[AgeYears])", "domain": "Operations"}
+      ]
+    }
+  },
+
+  "section_b_call_center_extension": {
+    "description": "Tables to ADD via nb_01 extension + nb_03 star schema extension. These are new — generate DDL and data.",
+    "target_lakehouse": "lh_enercare_demo",
+    "new_tmdl_files_needed": ["fct_cc_interactions.tmdl","fct_cc_transcript_turns.tmdl","dim_cc_agent.tmdl"],
+
+    "tables": {
+      "fct_cc_interactions": {
+        "description": "Call center interaction fact — extends existing fct_service_request pattern with call-specific fields",
+        "row_count_target": 300,
+        "columns": {
+          "interaction_id":           {"type": "INT",          "pk": true},
+          "customer_id":              {"type": "INT",          "fk": "customers.customer_id"},
+          "agent_id":                 {"type": "INT",          "fk": "cc_agents.agent_id"},
+          "service_account_id":       {"type": "INT",          "fk": "service_accounts.service_account_id", "nullable": true},
+          "queue_type":               {"type": "STRING",       "values": ["billing","pp_renewal","hvac_service","emergency","new_pp_sales","ecobee_support","general"]},
+          "channel":                  {"type": "STRING",       "values": ["inbound_voice","callback","chat"]},
+          "interaction_date":         {"type": "DATE"},
+          "handle_time_sec":          {"type": "INT"},
+          "hold_time_sec":            {"type": "INT"},
+          "csat_score":               {"type": "DOUBLE",       "nullable": true, "note": "1.0-5.0; NULL = no survey response (~78% NULL)"},
+          "fcr_flag":                 {"type": "INT",          "values": [0, 1], "note": "1 = resolved, no callback within 5 business days"},
+          "escalated_flag":           {"type": "INT",          "values": [0, 1]},
+          "pp_renewal_outcome":       {"type": "STRING",       "nullable": true, "values": ["accepted","declined","callback","not_applicable"]},
+          "billing_adj_category":     {"type": "STRING",       "nullable": true, "fk": "ref_cc_billing_adj_category.category_code"},
+          "disposition_code":         {"type": "STRING"}
+        }
+      },
+      "fct_cc_transcript_turns": {
+        "description": "Call transcript turns — the AI Search corpus for Data Agent scenario",
+        "row_count_target": 3600,
+        "columns": {
+          "turn_id":          {"type": "INT",    "pk": true},
+          "interaction_id":   {"type": "INT",    "fk": "fct_cc_interactions.interaction_id"},
+          "turn_seq":         {"type": "INT"},
+          "speaker":          {"type": "STRING", "values": ["agent","customer"]},
+          "utterance_text":   {"type": "STRING"},
+          "sentiment_score":  {"type": "DOUBLE", "note": "-1.0 to 1.0"},
+          "intent_label":     {"type": "STRING", "nullable": true}
+        }
+      },
+      "cc_agents": {
+        "description": "Call center agent dimension",
+        "row_count_target": 15,
+        "columns": {
+          "agent_id":         {"type": "INT",    "pk": true},
+          "agent_name":       {"type": "STRING"},
+          "team":             {"type": "STRING", "values": ["billing","retentions","hvac_coord","new_sales","emergency"]},
+          "hire_date":        {"type": "DATE"}
+        }
+      },
+      "ref_cc_billing_adj_category": {
+        "description": "Billing adjustment reference — mirrors real orphaned table dbo.ref_cc_billing_adjustment_category_new in Enercare prod estate. Mark as ORPHANED in Purview for demo.",
+        "row_count_target": 12,
+        "columns": {
+          "category_code":    {"type": "STRING", "pk": true},
+          "category_desc":    {"type": "STRING"},
+          "adj_type":         {"type": "STRING", "values": ["credit","charge","waiver"]}
+        }
+      },
+      "lh_metadata_new_tables": {
+        "ai_metadata": {
+          "description": "Stores verified answers, AI instructions, and Copilot term mappings per semantic model. New table — G1-4.",
+          "columns": {
+            "RecordID":       {"type": "INT",           "pk": true},
+            "ModelName":      {"type": "STRING"},
+            "RecordType":     {"type": "STRING",        "values": ["verified_answer","ai_instruction","term_mapping"]},
+            "TriggerText":    {"type": "STRING",        "note": "Question or term that triggers this record"},
+            "ResponseText":   {"type": "STRING",        "note": "Verified answer text or instruction content"},
+            "LinkedKPICode":  {"type": "STRING",        "nullable": true},
+            "IsDraft":        {"type": "INT",           "default": 1},
+            "CreatedDate":    {"type": "DATE"}
+          }
+        },
+        "data_owners": {
+          "description": "Owner and steward registry per domain. G1-5.",
+          "columns": {
+            "Domain":         {"type": "STRING"},
+            "OwnerName":      {"type": "STRING"},
+            "OwnerEmail":     {"type": "STRING"},
+            "StewardName":    {"type": "STRING"},
+            "StewardEmail":   {"type": "STRING"}
+          }
+        },
+        "lineage_edges": {
+          "description": "Source-to-target transformation graph for Purview lineage registration. G1-7.",
+          "columns": {
+            "EdgeID":         {"type": "INT",    "pk": true},
+            "SourceQName":    {"type": "STRING", "note": "Purview qualified name of upstream asset"},
+            "TargetQName":    {"type": "STRING", "note": "Purview qualified name of downstream asset"},
+            "ProcessName":    {"type": "STRING", "note": "Notebook or pipeline that performs the transform"},
+            "TransformType":  {"type": "STRING", "values": ["mirror","notebook","dataflow","direct_lake"]}
+          }
+        }
+      }
+    }
+  }
+}

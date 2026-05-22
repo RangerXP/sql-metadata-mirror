@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_04a_extend_metadata_schema",
+    "description": "G1+G2: Extends lh_metadata schema (ALTER TABLE kpi_metadata + 3 new tables) and seeds 17 KPIs + Copilot verified answers. Run after nb_02."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "016ca70e-cdaa-4f31-9ec5-bce93ed29b5c"
+  }
+}

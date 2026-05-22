@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.43.8.12551",
+      "templateHash": "13900336724927793976"
+    }
+  },
+  "parameters": {
+    "dnsZoneName": {
+      "type": "string",
+      "metadata": {
+        "description": "Deploy this at the resource-group scope of the existing Private DNS zone."
+      }
+    },
+    "targetVnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource ID of the existing virtual network that should resolve Azure SQL private endpoint names."
+      }
+    },
+    "linkName": {
+      "type": "string",
+      "defaultValue": "link-fabric-vnet",
+      "metadata": {
+        "description": "Name of the virtual network link resource that will be created in the Private DNS zone."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2018-09-01",
+      "name": "[format('{0}/{1}', parameters('dnsZoneName'), parameters('linkName'))]",
+      "location": "global",
+      "properties": {
+        "virtualNetwork": {
+          "id": "[parameters('targetVnetId')]"
+        },
+        "registrationEnabled": false
+      }
+    }
+  ],
+  "outputs": {
+    "linkId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/privateDnsZones/virtualNetworkLinks', parameters('dnsZoneName'), parameters('linkName'))]"
+    }
+  }
+}

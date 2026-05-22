@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_04_generate_tmdl",
+    "description": "G3: Reads descriptions from lh_metadata, fetches live TMDL via Fabric REST API, injects descriptions/KPI defs/AI instructions, pushes back to semantic model. DEMO_MODE=True for dry-run."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "df966105-c8fc-440d-992d-f5b88415a0a4"
+  }
+}

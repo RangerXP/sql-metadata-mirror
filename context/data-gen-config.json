@@ -1,0 +1,258 @@
+{
+  "version": "1.0",
+  "description": "Synthetic data generation parameters for Enercare call center demo. All data is synthetic — no real customer PII.",
+  "date_range": {
+    "start": "2025-10-01",
+    "end": "2026-03-31",
+    "description": "6-month window covering Q4 2025 and Q1 2026 — the period the demo questions reference"
+  },
+  "customers": {
+    "count": 5000,
+    "account_type_distribution": {
+      "PP_HVAC":   0.38,
+      "PP_WH":     0.29,
+      "RENTAL":    0.21,
+      "ONE_TIME":  0.12
+    },
+    "region_distribution": {
+      "ON": 0.72,
+      "QC": 0.12,
+      "AB": 0.09,
+      "BC": 0.07
+    },
+    "property_type_distribution": {
+      "SFH":        0.61,
+      "CONDO":      0.27,
+      "MULTI_UNIT": 0.12
+    },
+    "churn_risk_score": {
+      "distribution": "beta",
+      "alpha": 2,
+      "beta": 5,
+      "description": "Right-skewed — most customers have low churn risk; 15% at high risk"
+    }
+  },
+  "agents": {
+    "count": 45,
+    "team_distribution": {
+      "billing":      12,
+      "pp_retentions": 8,
+      "hvac_coord":   10,
+      "new_sales":     9,
+      "emergency":     6
+    },
+    "performance_distribution": {
+      "description": "Realistic bell curve with deliberate outliers for demo purposes",
+      "high_performers": 3,
+      "average_performers": 38,
+      "low_performers": 4
+    }
+  },
+  "interactions": {
+    "count": 15000,
+    "queue_type_distribution": {
+      "billing":       0.31,
+      "pp_renewal":    0.24,
+      "hvac_service":  0.18,
+      "emergency":     0.09,
+      "new_pp_sales":  0.11,
+      "ecobee_support":0.04,
+      "general":       0.03
+    },
+    "channel_distribution": {
+      "inbound_voice": 0.78,
+      "callback":      0.14,
+      "chat":          0.08
+    },
+    "temporal_patterns": {
+      "day_of_week_multiplier": {
+        "Monday":    1.28,
+        "Tuesday":   1.05,
+        "Wednesday": 1.00,
+        "Thursday":  0.98,
+        "Friday":    0.89,
+        "Saturday":  0.61,
+        "Sunday":    0.19
+      },
+      "month_end_billing_spike": {
+        "days_before_month_end": 3,
+        "multiplier": 1.45,
+        "applies_to_queues": ["billing", "pp_renewal"]
+      }
+    },
+    "handle_time_sec": {
+      "billing":       { "mean": 440, "std": 95 },
+      "pp_renewal":    { "mean": 510, "std": 120 },
+      "hvac_service":  { "mean": 380, "std": 80 },
+      "emergency":     { "mean": 295, "std": 65 },
+      "new_pp_sales":  { "mean": 550, "std": 130 },
+      "ecobee_support":{ "mean": 360, "std": 70 },
+      "general":       { "mean": 280, "std": 60 }
+    },
+    "csat_score": {
+      "description": "22% survey response rate; scores by outcome type",
+      "survey_response_rate": 0.22,
+      "by_outcome": {
+        "fcr_resolved":    { "mean": 4.2, "std": 0.6 },
+        "escalated":       { "mean": 2.1, "std": 0.7 },
+        "pp_renewed":      { "mean": 4.0, "std": 0.5 },
+        "pp_declined":     { "mean": 2.4, "std": 0.8 },
+        "sla_breached":    { "mean": 2.0, "std": 0.9 },
+        "general_resolved":{ "mean": 3.8, "std": 0.7 }
+      }
+    },
+    "fcr_rate_by_queue": {
+      "billing":       0.61,
+      "pp_renewal":    0.74,
+      "hvac_service":  0.70,
+      "emergency":     0.81,
+      "new_pp_sales":  0.88,
+      "ecobee_support":0.79,
+      "general":       0.83
+    },
+    "escalation_rate_by_queue": {
+      "billing":       0.14,
+      "pp_renewal":    0.08,
+      "hvac_service":  0.11,
+      "emergency":     0.19,
+      "new_pp_sales":  0.04,
+      "ecobee_support":0.06,
+      "general":       0.05
+    }
+  },
+  "transcripts": {
+    "avg_turns_per_interaction": 14,
+    "min_turns": 4,
+    "max_turns": 38,
+    "phrases_by_queue": {
+      "billing": {
+        "customer_complaint_phrases": [
+          "I don't understand why my bill went up this month",
+          "I'm seeing two charges and I only have one plan",
+          "My protection plan price changed and nobody told me",
+          "Can you credit my account for the service that wasn't completed",
+          "I want to dispute this charge on my invoice",
+          "The invoice date doesn't match when I signed up",
+          "I've been overcharged for three months in a row",
+          "Why did Zuora send me two invoices?",
+          "I thought I was on the monthly plan but this looks annual"
+        ],
+        "agent_resolution_phrases": [
+          "I can see your account has a billing cycle change from last month",
+          "Let me apply a one-time credit to your account",
+          "I'll escalate this to our billing specialist team",
+          "I can confirm the charge is correct because your plan renewed on",
+          "I'm waiving the late fee as a one-time courtesy"
+        ],
+        "intent_label_distribution": {
+          "billing_dispute": 0.44,
+          "payment_question": 0.28,
+          "invoice_inquiry": 0.18,
+          "general": 0.10
+        }
+      },
+      "pp_renewal": {
+        "customer_complaint_phrases": [
+          "I got a renewal notice but I'm thinking about cancelling",
+          "What does my protection plan actually cover this year",
+          "Is there a discount if I renew for two years",
+          "I'm moving next month, can I transfer the plan to the new address",
+          "I've had three repairs this year and I'm not sure it's worth it",
+          "The price went up fifteen percent, why?",
+          "My neighbor has the same plan and pays less"
+        ],
+        "intent_label_distribution": {
+          "pp_cancel_intent": 0.38,
+          "renewal_inquiry": 0.35,
+          "price_negotiation": 0.18,
+          "transfer_request": 0.09
+        }
+      },
+      "hvac_service": {
+        "customer_complaint_phrases": [
+          "My furnace stopped working and I need someone today",
+          "I've been waiting three weeks for my annual maintenance",
+          "The technician came but the problem still isn't fixed",
+          "I need to reschedule my maintenance appointment",
+          "What's the status of my service request number",
+          "It's minus twenty outside and my heat isn't working"
+        ],
+        "intent_label_distribution": {
+          "hvac_complaint": 0.41,
+          "scheduling_request": 0.32,
+          "status_inquiry": 0.18,
+          "general": 0.09
+        }
+      },
+      "emergency": {
+        "customer_complaint_phrases": [
+          "My hot water heater is leaking right now",
+          "No heat in the middle of winter, this is an emergency",
+          "Water is coming out of the furnace",
+          "Carbon monoxide alarm is going off near my furnace",
+          "I smell gas near my water heater"
+        ],
+        "intent_label_distribution": {
+          "hvac_complaint": 0.55,
+          "emergency_dispatch": 0.38,
+          "general": 0.07
+        }
+      }
+    },
+    "sentiment_arc": {
+      "description": "Sentiment typically starts neutral, evolves based on resolution outcome",
+      "resolved_fcr_pattern": "starts 0.0±0.2, rises to 0.4–0.7 at close",
+      "escalated_pattern":    "starts -0.1±0.2, drops to -0.5 to -0.8 at escalation point",
+      "unresolved_pattern":   "starts 0.0±0.2, drifts to -0.2 to -0.4 at close"
+    }
+  },
+  "service_visits": {
+    "count": 20000,
+    "equipment_type_distribution": {
+      "HVAC":        0.52,
+      "WATER_HEATER": 0.35,
+      "ECOBEE":       0.13
+    },
+    "service_type_distribution": {
+      "maintenance": 0.48,
+      "repair":      0.31,
+      "install":     0.12,
+      "emergency":   0.09
+    },
+    "sla_breach_rate_by_type": {
+      "maintenance": 0.06,
+      "repair":      0.09,
+      "install":     0.04,
+      "emergency":   0.13
+    }
+  },
+  "pp_contracts": {
+    "count": 5000,
+    "product_distribution": {
+      "HVAC_PLAN":    0.55,
+      "WH_RENTAL_PLAN": 0.45
+    },
+    "renewal_status_distribution": {
+      "renewed":   0.71,
+      "lapsed":    0.16,
+      "cancelled": 0.08,
+      "pending":   0.05
+    },
+    "renewal_channel_distribution": {
+      "inbound_call":   0.38,
+      "outbound_call":  0.29,
+      "online":         0.22,
+      "mail":           0.11
+    },
+    "billing_system_distribution": {
+      "ZUORA":   0.54,
+      "NS":      0.28,
+      "CLARIFY": 0.18
+    },
+    "demo_correlation": {
+      "description": "For demo purposes: customers who called the billing queue in Q1 have a renewal rate 14pp lower than average — this is the insight Copilot should surface",
+      "billing_queue_callers_renewal_rate": 0.57,
+      "non_billing_queue_callers_renewal_rate": 0.76
+    }
+  }
+}

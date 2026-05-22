@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Lakehouse",
+    "displayName": "lh_metadata",
+    "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "77b3a5d2-d0b8-afe8-46dd-9b80d4ba455b"
+  }
+}

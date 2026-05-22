@@ -1,0 +1,155 @@
+table dim_equipment
+	lineageTag: eba97672-594c-48b9-95c6-2ebdcf089b80
+	sourceLineageTag: [dbo].[dim_equipment]
+
+	column EquipmentKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 8ab35f87-94ca-4160-b425-34a6b39fc923
+		sourceLineageTag: EquipmentKey
+		summarizeBy: count
+		sourceColumn: EquipmentKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServiceAccountKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 81059f88-871b-47f9-b3cf-bc89e562c016
+		sourceLineageTag: ServiceAccountKey
+		summarizeBy: count
+		sourceColumn: ServiceAccountKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column EquipmentType
+		dataType: string
+		lineageTag: 64f441f5-ae9e-47ea-8316-d9793332a30a
+		sourceLineageTag: EquipmentType
+		summarizeBy: none
+		sourceColumn: EquipmentType
+
+		annotation SummarizationSetBy = Automatic
+
+	column Make
+		dataType: string
+		lineageTag: 4557ece2-a136-468f-bb1d-f0d9d1852e3e
+		sourceLineageTag: Make
+		summarizeBy: none
+		sourceColumn: Make
+
+		annotation SummarizationSetBy = Automatic
+
+	column Model
+		dataType: string
+		lineageTag: 4c8c4412-07dd-453a-a052-f755f0066258
+		sourceLineageTag: Model
+		summarizeBy: none
+		sourceColumn: Model
+
+		annotation SummarizationSetBy = Automatic
+
+	column SerialNumber
+		dataType: string
+		lineageTag: 8722c1c3-3c02-4ac0-9d72-08dd7566ee5e
+		sourceLineageTag: SerialNumber
+		summarizeBy: none
+		sourceColumn: SerialNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column OwnershipType
+		dataType: string
+		lineageTag: dc6ba4bd-8794-471d-bb98-548637a176d7
+		sourceLineageTag: OwnershipType
+		summarizeBy: none
+		sourceColumn: OwnershipType
+
+		annotation SummarizationSetBy = Automatic
+
+	column FuelType
+		dataType: string
+		lineageTag: 7005f148-b2f4-4676-9ec2-5d1f3aaa746f
+		sourceLineageTag: FuelType
+		summarizeBy: none
+		sourceColumn: FuelType
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstallDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 6970da6e-dc31-478f-91ab-8568cc1cb93f
+		sourceLineageTag: InstallDate
+		summarizeBy: none
+		sourceColumn: InstallDate
+
+		annotation SummarizationSetBy = Automatic
+
+	column WarrantyExpiry
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 51793ec9-72a1-4f9a-b6c3-d3e255322531
+		sourceLineageTag: WarrantyExpiry
+		summarizeBy: none
+		sourceColumn: WarrantyExpiry
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		lineageTag: d7a8e9e0-6600-416f-a4c3-d2efaca3863b
+		sourceLineageTag: Status
+		summarizeBy: none
+		sourceColumn: Status
+
+		annotation SummarizationSetBy = Automatic
+
+	column InstallDateKey
+		dataType: int64
+		formatString: 0
+		lineageTag: a68cf0d4-fbba-4c8b-aa4a-6e9b33e3891a
+		sourceLineageTag: InstallDateKey
+		summarizeBy: count
+		sourceColumn: InstallDateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column WarrantyExpiryDateKey
+		dataType: int64
+		formatString: 0
+		lineageTag: d529364b-46c9-46f6-8358-ec208415c85d
+		sourceLineageTag: WarrantyExpiryDateKey
+		summarizeBy: count
+		sourceColumn: WarrantyExpiryDateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column AgeYears
+		dataType: decimal
+		formatString: \$#,0.###############;(\$#,0.###############);\$#,0.###############
+		lineageTag: d75fc0a4-3ce5-4be0-8c0f-69e685d3c72b
+		sourceLineageTag: AgeYears
+		summarizeBy: sum
+		sourceColumn: AgeYears
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column IsUnderWarranty
+		dataType: int64
+		formatString: 0
+		lineageTag: 3f8f4dff-50ac-4c84-9df6-8f015c940b31
+		sourceLineageTag: IsUnderWarranty
+		summarizeBy: sum
+		sourceColumn: IsUnderWarranty
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_equipment = entity
+		mode: directLake
+		source
+			entityName: dim_equipment
+			expressionSource: 'DirectLake - lh_enercare_demo'
+

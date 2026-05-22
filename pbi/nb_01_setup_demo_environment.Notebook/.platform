@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_01_setup_demo_environment",
+    "description": "Step 1: Creates Delta tables in lh_enercare_demo from Ontario energy company sample data (50 customers, 56 service accounts, 38 equipment, 68 contracts). Run before nb_02."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "98a7d988-3cbe-9afd-4a59-ba52ce1ac64d"
+  }
+}

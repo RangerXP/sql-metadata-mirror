@@ -1,0 +1,149 @@
+table fct_billing
+	lineageTag: fecb9d02-6c2a-4f4b-b2a3-9908e2e668b3
+	sourceLineageTag: [dbo].[fct_billing]
+
+	column TransactionKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 352cf94e-4ced-4842-9511-ef08e4186880
+		sourceLineageTag: TransactionKey
+		summarizeBy: count
+		sourceColumn: TransactionKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column ContractKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 819e24ab-e86c-4dac-bfc1-2fa844ace02c
+		sourceLineageTag: ContractKey
+		summarizeBy: count
+		sourceColumn: ContractKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServiceAccountKey
+		dataType: int64
+		formatString: 0
+		lineageTag: e02cf7fb-a696-4a1a-ba97-eee587f82601
+		sourceLineageTag: ServiceAccountKey
+		summarizeBy: count
+		sourceColumn: ServiceAccountKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 7f4cc0d9-dd58-48d6-8367-bb68cc59c1e8
+		sourceLineageTag: CustomerKey
+		summarizeBy: count
+		sourceColumn: CustomerKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 05a47d3b-5d00-4114-bbfe-a9291f85db85
+		sourceLineageTag: ProductKey
+		summarizeBy: count
+		sourceColumn: ProductKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column TransactionDateKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 4dd44abb-811c-4518-870f-35e9c0cfde05
+		sourceLineageTag: TransactionDateKey
+		summarizeBy: count
+		sourceColumn: TransactionDateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column DueDateKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 65d0b2b9-8bfe-4f93-9397-76f98c7b5e42
+		sourceLineageTag: DueDateKey
+		summarizeBy: count
+		sourceColumn: DueDateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column TransactionType
+		dataType: string
+		lineageTag: 94563cb5-30c5-4d65-a496-b8411749e3fe
+		sourceLineageTag: TransactionType
+		summarizeBy: none
+		sourceColumn: TransactionType
+
+		annotation SummarizationSetBy = Automatic
+
+	column Amount
+		dataType: double
+		lineageTag: e7badcf9-b5e9-4f25-84dd-90584e1b4a97
+		sourceLineageTag: Amount
+		summarizeBy: sum
+		sourceColumn: Amount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TaxAmount
+		dataType: double
+		lineageTag: 8b6de30d-c1de-4ff1-934e-5f987653a1e1
+		sourceLineageTag: TaxAmount
+		summarizeBy: sum
+		sourceColumn: TaxAmount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column TotalAmount
+		dataType: double
+		lineageTag: c3160f6f-ede0-4a11-b097-b6eace69ebdf
+		sourceLineageTag: TotalAmount
+		summarizeBy: sum
+		sourceColumn: TotalAmount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column PaymentMethod
+		dataType: string
+		lineageTag: 5eed7fe9-a9b1-4a5d-9b15-bb06a512c995
+		sourceLineageTag: PaymentMethod
+		summarizeBy: none
+		sourceColumn: PaymentMethod
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		lineageTag: 9d3e90f3-5572-418a-bedd-8675fc755a7e
+		sourceLineageTag: Status
+		summarizeBy: none
+		sourceColumn: Status
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceNumber
+		dataType: string
+		lineageTag: 3a7f4f94-7d6b-4113-b0dc-55d778bb685f
+		sourceLineageTag: InvoiceNumber
+		summarizeBy: none
+		sourceColumn: InvoiceNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fct_billing = entity
+		mode: directLake
+		source
+			entityName: fct_billing
+			expressionSource: 'DirectLake - lh_enercare_demo'
+

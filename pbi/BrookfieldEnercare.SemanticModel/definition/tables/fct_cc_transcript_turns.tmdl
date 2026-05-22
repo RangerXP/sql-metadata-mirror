@@ -1,0 +1,78 @@
+table fct_cc_transcript_turns
+	lineageTag: 9729651f-e461-4ed3-a5a8-3a001963488f
+	sourceLineageTag: [dbo].[fct_cc_transcript_turns]
+
+	column turn_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 91d608ea-d844-4b66-8cf1-5d77c2a5cc28
+		sourceLineageTag: turn_id
+		summarizeBy: sum
+		sourceColumn: turn_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column interaction_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 533f5de9-96c6-44a1-9f81-c4998ca4587f
+		sourceLineageTag: interaction_id
+		summarizeBy: sum
+		sourceColumn: interaction_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column turn_seq
+		dataType: int64
+		formatString: 0
+		lineageTag: 36bd8cbe-0d63-4b11-9276-b655b7820655
+		sourceLineageTag: turn_seq
+		summarizeBy: sum
+		sourceColumn: turn_seq
+
+		annotation SummarizationSetBy = Automatic
+
+	column speaker
+		dataType: string
+		lineageTag: db7a9307-8764-4453-875c-80712e940131
+		sourceLineageTag: speaker
+		summarizeBy: none
+		sourceColumn: speaker
+
+		annotation SummarizationSetBy = Automatic
+
+	column utterance_text
+		dataType: string
+		lineageTag: d282d1a9-f710-4e20-a28a-e90987c3c351
+		sourceLineageTag: utterance_text
+		summarizeBy: none
+		sourceColumn: utterance_text
+
+		annotation SummarizationSetBy = Automatic
+
+	column sentiment_score
+		dataType: double
+		lineageTag: 8dcbf385-b26c-4454-8e38-ce5059197261
+		sourceLineageTag: sentiment_score
+		summarizeBy: sum
+		sourceColumn: sentiment_score
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column intent_label
+		dataType: string
+		lineageTag: eb11bb73-b77d-4742-b2ce-065f5cae6234
+		sourceLineageTag: intent_label
+		summarizeBy: none
+		sourceColumn: intent_label
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fct_cc_transcript_turns = entity
+		mode: directLake
+		source
+			entityName: fct_cc_transcript_turns
+			expressionSource: 'DirectLake - lh_enercare_demo'
+

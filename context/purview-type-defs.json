@@ -1,0 +1,158 @@
+{
+  "version": "1.0",
+  "description": "Purview Atlas custom entity type definitions for Enercare call center domain. POST these to /catalog/api/atlas/v2/types/typedefs before registering assets.",
+  "enumDefs": [
+    {
+      "category": "ENUM",
+      "name": "EnercareQueueType",
+      "description": "Enercare call center queue classification",
+      "elementDefs": [
+        { "value": "billing",        "ordinal": 0 },
+        { "value": "pp_renewal",     "ordinal": 1 },
+        { "value": "hvac_service",   "ordinal": 2 },
+        { "value": "emergency",      "ordinal": 3 },
+        { "value": "new_pp_sales",   "ordinal": 4 },
+        { "value": "ecobee_support", "ordinal": 5 },
+        { "value": "general",        "ordinal": 6 }
+      ]
+    },
+    {
+      "category": "ENUM",
+      "name": "EnercareKPIUnit",
+      "elementDefs": [
+        { "value": "percentage",    "ordinal": 0 },
+        { "value": "score_1_to_5",  "ordinal": 1 },
+        { "value": "seconds",       "ordinal": 2 },
+        { "value": "count",         "ordinal": 3 }
+      ]
+    }
+  ],
+  "structDefs": [],
+  "classificationDefs": [
+    {
+      "category": "CLASSIFICATION",
+      "name": "EnercareCustomerPII",
+      "description": "Column contains Enercare customer personally identifiable information",
+      "attributeDefs": [
+        { "name": "pii_category", "typeName": "string", "isOptional": true }
+      ]
+    },
+    {
+      "category": "CLASSIFICATION",
+      "name": "EncareKPICertified",
+      "description": "This asset represents or feeds a certified Enercare KPI definition"
+    },
+    {
+      "category": "CLASSIFICATION",
+      "name": "EnercareOrphaned",
+      "description": "Asset has no downstream mappings — matches 5_Orphaned_Objects in catalog analysis"
+    }
+  ],
+  "entityDefs": [
+    {
+      "category": "ENTITY",
+      "name": "EnercareKPIDefinition",
+      "description": "A certified KPI definition from dbo.ref_kpi_definitions — the single source of truth for business metrics",
+      "superTypes": ["DataSet"],
+      "attributeDefs": [
+        { "name": "kpi_code",           "typeName": "string",  "isOptional": false, "cardinality": "SINGLE" },
+        { "name": "kpi_name",           "typeName": "string",  "isOptional": false, "cardinality": "SINGLE" },
+        { "name": "business_definition","typeName": "string",  "isOptional": true,  "cardinality": "SINGLE" },
+        { "name": "calculation_logic",  "typeName": "string",  "isOptional": true,  "cardinality": "SINGLE" },
+        { "name": "target_value",       "typeName": "float",   "isOptional": true,  "cardinality": "SINGLE" },
+        { "name": "owner_team_code",    "typeName": "string",  "isOptional": true,  "cardinality": "SINGLE" },
+        { "name": "steward_name",       "typeName": "string",  "isOptional": true,  "cardinality": "SINGLE" },
+        { "name": "certified_flg",      "typeName": "string",  "isOptional": true,  "cardinality": "SINGLE" },
+        { "name": "version_no",         "typeName": "int",     "isOptional": true,  "cardinality": "SINGLE" }
+      ]
+    },
+    {
+      "category": "ENTITY",
+      "name": "EnercareCallCenterTable",
+      "description": "A table in the Enercare call center schema (dw_inbnd_t)",
+      "superTypes": ["DataSet"],
+      "attributeDefs": [
+        { "name": "schema_name",        "typeName": "string",  "isOptional": false, "cardinality": "SINGLE" },
+        { "name": "queue_type",         "typeName": "EnercareQueueType", "isOptional": true, "cardinality": "SINGLE" },
+        { "name": "row_count_approx",   "typeName": "long",    "isOptional": true,  "cardinality": "SINGLE" },
+        { "name": "source_system",      "typeName": "string",  "isOptional": true,  "cardinality": "SINGLE",
+          "description": "Clarify | Zuora | NS | CP360 — which upstream system feeds this table" },
+        { "name": "has_transcripts",    "typeName": "boolean", "isOptional": true,  "cardinality": "SINGLE" },
+        { "name": "ai_search_indexed",  "typeName": "boolean", "isOptional": true,  "cardinality": "SINGLE" }
+      ]
+    },
+    {
+      "category": "ENTITY",
+      "name": "EnercareAIInsight",
+      "description": "An AI-generated insight written back from Copilot/Data Agent analysis — closes the metadata loop",
+      "superTypes": ["Referenceable"],
+      "attributeDefs": [
+        { "name": "insight_text",       "typeName": "string",  "isOptional": false, "cardinality": "SINGLE" },
+        { "name": "generated_by",       "typeName": "string",  "isOptional": false, "cardinality": "SINGLE",
+          "description": "standalone_copilot | data_agent | notebook" },
+        { "name": "source_query",       "typeName": "string",  "isOptional": true,  "cardinality": "SINGLE" },
+        { "name": "confidence_score",   "typeName": "float",   "isOptional": true,  "cardinality": "SINGLE" },
+        { "name": "linked_kpi_codes",   "typeName": "array<string>", "isOptional": true, "cardinality": "LIST" },
+        { "name": "generated_dttm",     "typeName": "date",    "isOptional": false, "cardinality": "SINGLE" },
+        { "name": "reviewed_flg",       "typeName": "boolean", "isOptional": true,  "cardinality": "SINGLE" }
+      ]
+    }
+  ],
+  "businessMetadataDefs": [
+    {
+      "category": "BUSINESS_METADATA",
+      "name": "EnercareBusinessSemantics",
+      "description": "Business-level metadata attributes for Enercare data assets — applied to columns and tables to feed Copilot context",
+      "attributeDefs": [
+        {
+          "name": "BusinessDefinition",
+          "typeName": "string",
+          "isOptional": true,
+          "cardinality": "SINGLE",
+          "description": "Plain-English definition for business users and Copilot"
+        },
+        {
+          "name": "CalculationLogic",
+          "typeName": "string",
+          "isOptional": true,
+          "cardinality": "SINGLE",
+          "description": "How this metric or field is calculated"
+        },
+        {
+          "name": "LinkedKPICode",
+          "typeName": "string",
+          "isOptional": true,
+          "cardinality": "SINGLE",
+          "description": "KPI code from ref_kpi_definitions if this column feeds a certified KPI"
+        },
+        {
+          "name": "DataSteward",
+          "typeName": "string",
+          "isOptional": true,
+          "cardinality": "SINGLE"
+        },
+        {
+          "name": "SourceSystem",
+          "typeName": "string",
+          "isOptional": true,
+          "cardinality": "SINGLE",
+          "description": "Clarify | Zuora | NS | CP360 — upstream origin"
+        },
+        {
+          "name": "AIInstruction",
+          "typeName": "string",
+          "isOptional": true,
+          "cardinality": "SINGLE",
+          "description": "Instruction text for Copilot/Data Agent about how to interpret this field"
+        },
+        {
+          "name": "CertifiedFlg",
+          "typeName": "string",
+          "isOptional": true,
+          "cardinality": "SINGLE",
+          "description": "Y = approved for Copilot verified answer; N = not certified"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,166 @@
+table fct_cc_interactions
+	lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000001
+	sourceLineageTag: [dbo].[fct_cc_interactions]
+
+	column interaction_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000002
+		sourceLineageTag: interaction_id
+		summarizeBy: count
+		sourceColumn: interaction_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column customer_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000003
+		sourceLineageTag: customer_id
+		summarizeBy: count
+		sourceColumn: customer_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column agent_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000004
+		sourceLineageTag: agent_id
+		summarizeBy: count
+		sourceColumn: agent_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column service_account_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000005
+		sourceLineageTag: service_account_id
+		summarizeBy: count
+		sourceColumn: service_account_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column queue_type
+		dataType: string
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000006
+		sourceLineageTag: queue_type
+		summarizeBy: none
+		sourceColumn: queue_type
+
+		annotation SummarizationSetBy = Automatic
+
+	column channel
+		dataType: string
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000007
+		sourceLineageTag: channel
+		summarizeBy: none
+		sourceColumn: channel
+
+		annotation SummarizationSetBy = Automatic
+
+	column interaction_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000008
+		sourceLineageTag: interaction_date
+		summarizeBy: none
+		sourceColumn: interaction_date
+
+		annotation SummarizationSetBy = Automatic
+
+	column handle_time_sec
+		dataType: int64
+		formatString: 0
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000009
+		sourceLineageTag: handle_time_sec
+		summarizeBy: sum
+		sourceColumn: handle_time_sec
+
+		annotation SummarizationSetBy = Automatic
+
+	column hold_time_sec
+		dataType: int64
+		formatString: 0
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000010
+		sourceLineageTag: hold_time_sec
+		summarizeBy: sum
+		sourceColumn: hold_time_sec
+
+		annotation SummarizationSetBy = Automatic
+
+	column csat_score
+		dataType: double
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000011
+		sourceLineageTag: csat_score
+		summarizeBy: sum
+		sourceColumn: csat_score
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column fcr_flag
+		dataType: int64
+		formatString: 0
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000012
+		sourceLineageTag: fcr_flag
+		summarizeBy: sum
+		sourceColumn: fcr_flag
+
+		annotation SummarizationSetBy = Automatic
+
+	column escalated_flag
+		dataType: int64
+		formatString: 0
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000013
+		sourceLineageTag: escalated_flag
+		summarizeBy: sum
+		sourceColumn: escalated_flag
+
+		annotation SummarizationSetBy = Automatic
+
+	column pp_renewal_outcome
+		dataType: string
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000014
+		sourceLineageTag: pp_renewal_outcome
+		summarizeBy: none
+		sourceColumn: pp_renewal_outcome
+
+		annotation SummarizationSetBy = Automatic
+
+	column billing_adj_category
+		dataType: string
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000015
+		sourceLineageTag: billing_adj_category
+		summarizeBy: none
+		sourceColumn: billing_adj_category
+
+		annotation SummarizationSetBy = Automatic
+
+	column disposition_code
+		dataType: string
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000016
+		sourceLineageTag: disposition_code
+		summarizeBy: none
+		sourceColumn: disposition_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column interaction_date_key
+		dataType: int64
+		formatString: 0
+		lineageTag: 7a3f1e20-cc01-4d8b-9fa2-a10000000017
+		sourceLineageTag: interaction_date_key
+		summarizeBy: count
+		sourceColumn: interaction_date_key
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fct_cc_interactions = entity
+		mode: directLake
+		source
+			entityName: fct_cc_interactions
+			expressionSource: 'DirectLake - lh_enercare_demo'
+

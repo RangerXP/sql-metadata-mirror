@@ -1,0 +1,48 @@
+table dim_cc_agent
+	lineageTag: 7a3f1e20-cc02-4d8b-9fa2-a20000000001
+	sourceLineageTag: [dbo].[dim_cc_agent]
+
+	column agent_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 7a3f1e20-cc02-4d8b-9fa2-a20000000002
+		sourceLineageTag: agent_id
+		summarizeBy: count
+		sourceColumn: agent_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column agent_name
+		dataType: string
+		lineageTag: 7a3f1e20-cc02-4d8b-9fa2-a20000000003
+		sourceLineageTag: agent_name
+		summarizeBy: none
+		sourceColumn: agent_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column team
+		dataType: string
+		lineageTag: 7a3f1e20-cc02-4d8b-9fa2-a20000000004
+		sourceLineageTag: team
+		summarizeBy: none
+		sourceColumn: team
+
+		annotation SummarizationSetBy = Automatic
+
+	column hire_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 7a3f1e20-cc02-4d8b-9fa2-a20000000005
+		sourceLineageTag: hire_date
+		summarizeBy: none
+		sourceColumn: hire_date
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_cc_agent = entity
+		mode: directLake
+		source
+			entityName: dim_cc_agent
+			expressionSource: 'DirectLake - lh_enercare_demo'
+

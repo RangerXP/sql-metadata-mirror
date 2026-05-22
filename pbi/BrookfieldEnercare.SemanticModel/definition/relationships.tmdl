@@ -1,0 +1,65 @@
+relationship fct_billing_TransactionDateKey_dim_date_DateKey
+	fromColumn: fct_billing.TransactionDateKey
+	toColumn: dim_date.DateKey
+
+relationship fct_billing_ServiceAccountKey_dim_service_account_ServiceAccountKey
+	fromColumn: fct_billing.ServiceAccountKey
+	toColumn: dim_service_account.ServiceAccountKey
+
+relationship fct_billing_ProductKey_dim_product_ProductKey
+	fromColumn: fct_billing.ProductKey
+	toColumn: dim_product.ProductKey
+
+relationship fct_service_request_CreatedDateKey_dim_date_DateKey
+	fromColumn: fct_service_request.CreatedDateKey
+	toColumn: dim_date.DateKey
+
+relationship fct_service_request_CompletedDateKey_dim_date_DateKey
+	isActive: false
+	fromColumn: fct_service_request.CompletedDateKey
+	toColumn: dim_date.DateKey
+
+relationship fct_service_request_ServiceAccountKey_dim_service_account_ServiceAccountKey
+	fromColumn: fct_service_request.ServiceAccountKey
+	toColumn: dim_service_account.ServiceAccountKey
+
+relationship fct_service_request_EquipmentKey_dim_equipment_EquipmentKey
+	fromColumn: fct_service_request.EquipmentKey
+	toColumn: dim_equipment.EquipmentKey
+
+relationship fct_contract_month_BillingMonthDateKey_dim_date_DateKey
+	fromColumn: fct_contract_month.BillingMonthDateKey
+	toColumn: dim_date.DateKey
+
+relationship fct_contract_month_ServiceAccountKey_dim_service_account_ServiceAccountKey
+	fromColumn: fct_contract_month.ServiceAccountKey
+	toColumn: dim_service_account.ServiceAccountKey
+
+relationship fct_contract_month_ProductKey_dim_product_ProductKey
+	fromColumn: fct_contract_month.ProductKey
+	toColumn: dim_product.ProductKey
+
+relationship dim_service_account_CustomerKey_dim_customer_CustomerKey
+	fromColumn: dim_service_account.CustomerKey
+	toColumn: dim_customer.CustomerKey
+
+relationship fct_cc_interactions_interaction_date_key_dim_date_DateKey
+	fromColumn: fct_cc_interactions.interaction_date_key
+	toColumn: dim_date.DateKey
+
+relationship fct_cc_interactions_agent_id_dim_cc_agent_agent_id
+	fromColumn: fct_cc_interactions.agent_id
+	toColumn: dim_cc_agent.agent_id
+
+relationship fct_cc_interactions_customer_id_dim_customer_CustomerKey
+	fromColumn: fct_cc_interactions.customer_id
+	toColumn: dim_customer.CustomerKey
+
+relationship fct_cc_interactions_billing_adj_category_dim_cc_billing_adj_category_code
+	fromColumn: fct_cc_interactions.billing_adj_category
+	toColumn: dim_cc_billing_adj.category_code
+
+relationship fct_cc_transcript_turns_interaction_id_fct_cc_interactions_interaction_id
+	fromColumn: fct_cc_transcript_turns.interaction_id
+	toColumn: fct_cc_interactions.interaction_id
+

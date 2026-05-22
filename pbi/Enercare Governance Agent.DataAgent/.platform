@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "DataAgent",
+    "displayName": "Enercare Governance Agent",
+    "description": "AI agent for Enercare governance: queries lh_metadata and lh_enercare_demo via natural language for schema exploration, steward review, and reporting."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "f48bed74-25c1-8802-4dbf-4dabf09d3428"
+  }
+}

@@ -1,0 +1,37 @@
+table dim_cc_billing_adj
+	lineageTag: 7a3f1e20-cc03-4d8b-9fa2-a30000000001
+	sourceLineageTag: [dbo].[dim_cc_billing_adj]
+
+	column category_code
+		dataType: string
+		lineageTag: 7a3f1e20-cc03-4d8b-9fa2-a30000000002
+		sourceLineageTag: category_code
+		summarizeBy: none
+		sourceColumn: category_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column category_desc
+		dataType: string
+		lineageTag: 7a3f1e20-cc03-4d8b-9fa2-a30000000003
+		sourceLineageTag: category_desc
+		summarizeBy: none
+		sourceColumn: category_desc
+
+		annotation SummarizationSetBy = Automatic
+
+	column adj_type
+		dataType: string
+		lineageTag: 7a3f1e20-cc03-4d8b-9fa2-a30000000004
+		sourceLineageTag: adj_type
+		summarizeBy: none
+		sourceColumn: adj_type
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_cc_billing_adj = entity
+		mode: directLake
+		source
+			entityName: dim_cc_billing_adj
+			expressionSource: 'DirectLake - lh_enercare_demo'
+

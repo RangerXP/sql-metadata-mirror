@@ -1,0 +1,133 @@
+{
+  "version": "1.0",
+  "owner": "Enercare Data Analytics & Governance",
+  "last_approved": "2026-05-06",
+  "kpi_definitions": [
+    {
+      "kpi_code": "FCR",
+      "kpi_name": "First Contact Resolution",
+      "business_definition": "The percentage of customer interactions resolved without requiring a follow-up contact within 5 business days. An interaction is considered resolved if no subsequent inbound contact occurs from the same customer regarding the same issue within the window.",
+      "calculation_logic": "DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[fcr_flg] = \"Y\"), COUNTROWS(fct_cc_interactions))",
+      "numerator": "Interactions where fcr_flg = 'Y' (no callback within 5 business days)",
+      "denominator": "Total interactions in period",
+      "target_value": 0.78,
+      "warning_threshold": 0.72,
+      "critical_threshold": 0.65,
+      "unit": "percentage",
+      "owner_team_code": "CC_OPS",
+      "steward_name": "Ranbir Singh",
+      "source_table": "dw_inbnd_t.fct_cc_interactions",
+      "source_column": "fcr_flg",
+      "certified_flg": "Y",
+      "purview_glossary_term": "First Contact Resolution Rate",
+      "ai_instruction": "FCR measures whether a customer's issue was resolved in a single interaction. A high FCR means customers do not need to call back. FCR is calculated per interaction, not per customer. Exclude outbound welcome calls from FCR calculation.",
+      "verified_answer_triggers": [
+        "what is our FCR",
+        "first contact resolution",
+        "call back rate",
+        "how often do customers call back"
+      ]
+    },
+    {
+      "kpi_code": "CSAT",
+      "kpi_name": "Customer Satisfaction Score",
+      "business_definition": "Average customer satisfaction score collected via post-call IVR survey on a 1-5 scale (5 = very satisfied). Survey is offered to all inbound calls; response rate approximately 22%. Score is weighted by queue type for aggregate reporting.",
+      "calculation_logic": "AVERAGE(fct_cc_interactions[csat_score])",
+      "numerator": "Sum of csat_score values where csat_score IS NOT NULL",
+      "denominator": "Count of interactions with a non-null csat_score",
+      "target_value": 4.2,
+      "warning_threshold": 3.8,
+      "critical_threshold": 3.4,
+      "unit": "score_1_to_5",
+      "owner_team_code": "CC_OPS",
+      "steward_name": "Ranbir Singh",
+      "source_table": "dw_inbnd_t.fct_cc_interactions",
+      "source_column": "csat_score",
+      "certified_flg": "Y",
+      "purview_glossary_term": "Customer Satisfaction Score",
+      "ai_instruction": "CSAT is a post-call IVR score from 1 to 5. Only approximately 22% of customers complete the survey. Do not interpret a missing CSAT as a bad score — it means the customer did not respond. Average CSAT below 3.5 on a queue indicates a systemic issue, not individual agent performance.",
+      "verified_answer_triggers": [
+        "what is our CSAT",
+        "customer satisfaction",
+        "how happy are customers",
+        "satisfaction score"
+      ]
+    },
+    {
+      "kpi_code": "PP_RNW_RATE",
+      "kpi_name": "Protection Plan Renewal Rate",
+      "business_definition": "Percentage of expiring Protection Plan contracts that are successfully renewed within the renewal window (30 days before to 15 days after contract end date). Applies to HVAC_PLAN and WH_RENTAL_PLAN product codes. Excludes contracts cancelled mid-term.",
+      "calculation_logic": "DIVIDE(CALCULATE(COUNTROWS(fct_pp_contract_renewals), fct_pp_contract_renewals[renewal_status_code] = \"renewed\"), CALCULATE(COUNTROWS(fct_pp_contract_renewals), fct_pp_contract_renewals[renewal_status_code] IN {\"renewed\", \"lapsed\", \"cancelled\"}))",
+      "numerator": "PP contracts with renewal_status_code = 'renewed' in the renewal window",
+      "denominator": "All PP contracts that reached expiry (renewed + lapsed + cancelled), excluding mid-term cancellations",
+      "target_value": 0.82,
+      "warning_threshold": 0.75,
+      "critical_threshold": 0.68,
+      "unit": "percentage",
+      "owner_team_code": "RETENTIONS",
+      "steward_name": "Christopher Dingle",
+      "source_table": "dbo.fct_pp_contract_renewals",
+      "source_column": "renewal_status_code",
+      "certified_flg": "Y",
+      "purview_glossary_term": "Protection Plan Renewal Rate",
+      "ai_instruction": "PP Renewal Rate measures how many customers renew their HVAC or water heater protection plans. This is the primary retention KPI for Enercare. A renewal can happen via inbound call (recorded in dw_inbnd_t), outbound retention call, online portal, or direct mail. When a customer calls the billing queue before their renewal date and does not renew, it often signals billing confusion. PP = Protection Plan throughout this system.",
+      "verified_answer_triggers": [
+        "PP renewal rate",
+        "protection plan renewal",
+        "how many customers renewed",
+        "renewal rate",
+        "contract renewal"
+      ]
+    },
+    {
+      "kpi_code": "AHT",
+      "kpi_name": "Average Handle Time",
+      "business_definition": "Average duration in seconds of an agent's active engagement per interaction, including talk time, hold time, and after-call wrap-up time. Measured per queue type. Target varies by queue (billing: 420s, emergency: 300s, PP renewal: 480s).",
+      "calculation_logic": "AVERAGEX(fct_cc_interactions, fct_cc_interactions[handle_time_sec] + fct_cc_interactions[hold_time_sec])",
+      "numerator": "Sum of (handle_time_sec + hold_time_sec) for all interactions",
+      "denominator": "Count of interactions",
+      "target_value": 420,
+      "warning_threshold": 480,
+      "critical_threshold": 540,
+      "unit": "seconds",
+      "owner_team_code": "CC_OPS",
+      "steward_name": "Ranbir Singh",
+      "source_table": "dw_inbnd_t.fct_cc_interactions",
+      "source_column": "handle_time_sec",
+      "certified_flg": "Y",
+      "purview_glossary_term": "Average Handle Time",
+      "ai_instruction": "AHT = talk time + hold time + wrap time. AHT targets differ by queue: billing=420s, emergency=300s, PP_renewal=480s. High AHT on the billing queue combined with low CSAT often indicates agents cannot resolve the issue in one call, driving up re-contact rates.",
+      "verified_answer_triggers": [
+        "average handle time",
+        "AHT",
+        "how long are calls",
+        "call duration"
+      ]
+    },
+    {
+      "kpi_code": "SLA_BRCH_RATE",
+      "kpi_name": "SLA Breach Rate",
+      "business_definition": "Percentage of field service visits where the technician did not arrive within the committed service window. SLA windows: emergency = 4 hours, maintenance = scheduled date, repair = next business day. Measured per equipment type.",
+      "calculation_logic": "DIVIDE(CALCULATE(COUNTROWS(fct_sv_service_visits), fct_sv_service_visits[sla_breach_flg] = \"Y\"), COUNTROWS(fct_sv_service_visits))",
+      "numerator": "Service visits where sla_breach_flg = 'Y'",
+      "denominator": "Total service visits in period",
+      "target_value": 0.05,
+      "warning_threshold": 0.10,
+      "critical_threshold": 0.15,
+      "unit": "percentage",
+      "owner_team_code": "FIELD_OPS",
+      "steward_name": "Ranbir Singh",
+      "source_table": "dw_t.fct_sv_service_visits",
+      "source_column": "sla_breach_flg",
+      "certified_flg": "Y",
+      "purview_glossary_term": "Field Service SLA Breach Rate",
+      "ai_instruction": "SLA Breach Rate tracks whether field service arrived on time. SLA breaches on HVAC emergency visits directly drive inbound call volume to the emergency queue and correlate with low CSAT. When SLA_BRCH_RATE on HVAC > 10%, expect AHT to increase on the hvac_service queue within 48 hours.",
+      "verified_answer_triggers": [
+        "SLA breach",
+        "missed service window",
+        "technician on time",
+        "service level agreement"
+      ]
+    }
+  ]
+}

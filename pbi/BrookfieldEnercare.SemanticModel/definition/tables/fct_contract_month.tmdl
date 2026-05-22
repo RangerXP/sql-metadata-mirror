@@ -1,0 +1,120 @@
+table fct_contract_month
+	lineageTag: e837b6dd-1f0e-4a47-9d56-896925431dde
+	sourceLineageTag: [dbo].[fct_contract_month]
+
+	column ContractKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 12ecf41f-a52a-4cac-89d9-42fe9c5d87a2
+		sourceLineageTag: ContractKey
+		summarizeBy: count
+		sourceColumn: ContractKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column ServiceAccountKey
+		dataType: int64
+		formatString: 0
+		lineageTag: e2b3a4f5-1e51-45e2-baaa-37229c898b0d
+		sourceLineageTag: ServiceAccountKey
+		summarizeBy: count
+		sourceColumn: ServiceAccountKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 3fbc6329-8f3b-46ac-a51d-6093cc34b729
+		sourceLineageTag: CustomerKey
+		summarizeBy: count
+		sourceColumn: CustomerKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column ProductKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 4490170f-6cbf-4880-9590-6d68ebfeda42
+		sourceLineageTag: ProductKey
+		summarizeBy: count
+		sourceColumn: ProductKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column BillingMonth
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: d2578650-1efe-4504-b492-2e66168426d9
+		sourceLineageTag: BillingMonth
+		summarizeBy: none
+		sourceColumn: BillingMonth
+
+		annotation SummarizationSetBy = Automatic
+
+	column BillingMonthDateKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 76c914bd-a0db-4ea4-aef7-a635b5423d81
+		sourceLineageTag: BillingMonthDateKey
+		summarizeBy: count
+		sourceColumn: BillingMonthDateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column ContractStartDateKey
+		dataType: int64
+		formatString: 0
+		lineageTag: b95d0851-a0bc-43b4-aef4-20b63d0fddcc
+		sourceLineageTag: ContractStartDateKey
+		summarizeBy: count
+		sourceColumn: ContractStartDateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthlyAmount
+		dataType: double
+		lineageTag: bfc06c85-8554-464c-b357-eb9f7e9341d6
+		sourceLineageTag: MonthlyAmount
+		summarizeBy: sum
+		sourceColumn: MonthlyAmount
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ContractStatus
+		dataType: string
+		lineageTag: bbaed8d6-63fd-4a43-b0e0-dcb29e9fb232
+		sourceLineageTag: ContractStatus
+		summarizeBy: none
+		sourceColumn: ContractStatus
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsNew
+		dataType: int64
+		formatString: 0
+		lineageTag: b53d5a9d-e759-4c99-9cd0-ebb9e4ebddec
+		sourceLineageTag: IsNew
+		summarizeBy: sum
+		sourceColumn: IsNew
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsChurn
+		dataType: int64
+		formatString: 0
+		lineageTag: 95d65f43-6f3e-464d-b3c3-5e5cea4e8acc
+		sourceLineageTag: IsChurn
+		summarizeBy: sum
+		sourceColumn: IsChurn
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fct_contract_month = entity
+		mode: directLake
+		source
+			entityName: fct_contract_month
+			expressionSource: 'DirectLake - lh_enercare_demo'
+

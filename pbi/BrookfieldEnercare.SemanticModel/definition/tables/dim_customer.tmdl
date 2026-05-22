@@ -1,0 +1,129 @@
+table dim_customer
+	lineageTag: 4ce75090-884b-444b-ba5d-01ef91eea191
+	sourceLineageTag: [dbo].[dim_customer]
+
+	column CustomerKey
+		dataType: int64
+		formatString: 0
+		lineageTag: 01aec572-4d94-4f6a-ac4c-ccacd3746702
+		sourceLineageTag: CustomerKey
+		summarizeBy: count
+		sourceColumn: CustomerKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column AccountNumber
+		dataType: string
+		lineageTag: 6cefd132-2f79-4810-a99b-5feb1add9554
+		sourceLineageTag: AccountNumber
+		summarizeBy: none
+		sourceColumn: AccountNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column FirstName
+		dataType: string
+		lineageTag: 10f20a3a-2369-4a5b-9d59-aa1625addd26
+		sourceLineageTag: FirstName
+		summarizeBy: none
+		sourceColumn: FirstName
+
+		annotation SummarizationSetBy = Automatic
+
+	column LastName
+		dataType: string
+		lineageTag: e9ad8f0d-bfb6-4e84-abf9-c5285937d5b2
+		sourceLineageTag: LastName
+		summarizeBy: none
+		sourceColumn: LastName
+
+		annotation SummarizationSetBy = Automatic
+
+	column Email
+		dataType: string
+		lineageTag: 7e8b2181-2d26-4f9e-8c94-17543f35d393
+		sourceLineageTag: Email
+		summarizeBy: none
+		sourceColumn: Email
+
+		annotation SummarizationSetBy = Automatic
+
+	column Phone
+		dataType: string
+		lineageTag: 894b6d6a-9518-4c93-956a-b31fcf47f352
+		sourceLineageTag: Phone
+		summarizeBy: none
+		sourceColumn: Phone
+
+		annotation SummarizationSetBy = Automatic
+
+	column CustomerType
+		dataType: string
+		lineageTag: fe0357c5-124a-4a7c-9c45-4ab2b3d43be5
+		sourceLineageTag: CustomerType
+		summarizeBy: none
+		sourceColumn: CustomerType
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		lineageTag: 5fb56981-f95f-4ac4-9705-1e60855b4c32
+		sourceLineageTag: Status
+		summarizeBy: none
+		sourceColumn: Status
+
+		annotation SummarizationSetBy = Automatic
+
+	column City
+		dataType: string
+		lineageTag: 88c22ebb-46e1-417f-81f4-89bdb0062bfa
+		sourceLineageTag: City
+		summarizeBy: none
+		sourceColumn: City
+
+		annotation SummarizationSetBy = Automatic
+
+	column Province
+		dataType: string
+		lineageTag: 394ebe33-c530-4ae9-ba51-bb8bf519f5fe
+		sourceLineageTag: Province
+		summarizeBy: none
+		sourceColumn: Province
+
+		annotation SummarizationSetBy = Automatic
+
+	column PostalCode
+		dataType: string
+		lineageTag: 42a04551-92b0-4392-8b51-98ecd626f3c8
+		sourceLineageTag: PostalCode
+		summarizeBy: none
+		sourceColumn: PostalCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column FSA
+		dataType: string
+		lineageTag: 2679526d-76bb-4118-97d6-f09b9e46c864
+		sourceLineageTag: FSA
+		summarizeBy: none
+		sourceColumn: FSA
+
+		annotation SummarizationSetBy = Automatic
+
+	column CreatedDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: ba2d8cfe-04e7-4392-a85c-ff5f8dddfc7f
+		sourceLineageTag: CreatedDate
+		summarizeBy: none
+		sourceColumn: CreatedDate
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_customer = entity
+		mode: directLake
+		source
+			entityName: dim_customer
+			expressionSource: 'DirectLake - lh_enercare_demo'
+

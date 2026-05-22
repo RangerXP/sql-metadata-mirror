@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Lakehouse",
+    "displayName": "lh_enercare_demo",
+    "description": "Demo transactional Delta tables: customers, service_accounts, equipment_registry, contracts, billing_transactions, service_requests, products"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "7b504b7d-1f16-b228-40d9-2fd30ee837e4"
+  }
+}
