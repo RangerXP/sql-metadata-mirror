@@ -102,7 +102,7 @@ The `fabric/` folder is the only maintained Fabric content surface in git.
 │   │   └── 01_demo_seed_data.sql              Seed data INSERT statements
 │   └── README.md                     Demo-specific run instructions
 │
-├── fabric/                            Fabric workspace sync (branch: enercare, folder: /fabric)
+├── fabric/                            Fabric workspace sync (branch: main, folder: /fabric)
 │   ├── nb_01_setup_demo_environment.Notebook/   Source table loader
 │   ├── nb_02_metadata_pipeline_demo.Notebook/   Governance metadata extractor
 │   ├── nb_03_pbi_star_schema.Notebook/          Star schema builder
