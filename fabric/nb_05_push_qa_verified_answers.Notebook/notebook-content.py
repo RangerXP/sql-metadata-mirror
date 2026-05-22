@@ -8,12 +8,12 @@
 # META   },
 # META   "dependencies": {
 # META     "lakehouse": {
-# META       "default_lakehouse": "d4ba455b-9b80-46dd-afe8-d0b877b3a5d2",
+# META       "default_lakehouse": "824f4a52-baa0-4c3f-88dc-203c1d85c89a",
 # META       "default_lakehouse_name": "lh_metadata",
-# META       "default_lakehouse_workspace_id": "795ce5db-7ea0-4a7c-ba64-e27c9fb568f4",
+# META       "default_lakehouse_workspace_id": "b976cac2-7754-4061-88c2-61c0ac016a99",
 # META       "known_lakehouses": [
 # META         {
-# META           "id": "d4ba455b-9b80-46dd-afe8-d0b877b3a5d2"
+# META           "id": "824f4a52-baa0-4c3f-88dc-203c1d85c89a"
 # META         }
 # META       ]
 # META     }
@@ -35,7 +35,7 @@
 # Default lakehouse: lh_metadata
 
 DEMO_MODE              = False
-WORKSPACE_ID           = "795ce5db-7ea0-4a7c-ba64-e27c9fb568f4"
+WORKSPACE_ID           = "b976cac2-7754-4061-88c2-61c0ac016a99"
 MODEL_NAME             = "BrookfieldEnercare"
 METADATA_LH            = "lh_metadata"
 MAX_ANNOTATION_CHARS   = 3800   # safe limit for PBI_AI_Instructions

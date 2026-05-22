@@ -8,12 +8,12 @@
 # META   },
 # META   "dependencies": {
 # META     "lakehouse": {
-# META       "default_lakehouse": "0ee837e4-2fd3-40d9-b228-1f167b504b7d",
+# META       "default_lakehouse": "e9b09e4e-b7b9-4208-b9ec-bb3433154555",
 # META       "default_lakehouse_name": "lh_enercare_demo",
-# META       "default_lakehouse_workspace_id": "795ce5db-7ea0-4a7c-ba64-e27c9fb568f4",
+# META       "default_lakehouse_workspace_id": "b976cac2-7754-4061-88c2-61c0ac016a99",
 # META       "known_lakehouses": [
 # META         {
-# META           "id": "0ee837e4-2fd3-40d9-b228-1f167b504b7d"
+# META           "id": "e9b09e4e-b7b9-4208-b9ec-bb3433154555"
 # META         }
 # META       ]
 # META     }
@@ -34,7 +34,7 @@
 # secret path outside this repo.
 
 DEMO_MODE                  = False
-WORKSPACE_ID               = "795ce5db-7ea0-4a7c-ba64-e27c9fb568f4"
+WORKSPACE_ID               = "b976cac2-7754-4061-88c2-61c0ac016a99"
 SERVER_NAME                = "sqlserver-sk2.database.windows.net"
 DATABASE_NAME              = "sqldemo"
 SQL_PORT                   = 1433
