@@ -46,8 +46,9 @@
 
 DEMO_LAKEHOUSE = "lh_enercare_demo"
 MIRROR_WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
-MIRROR_ITEM_ID = "f9c3ec22-9f6a-4089-a6a7-6355199b8892"
+MIRROR_ITEM_ID = "f9c3ec22-9f6a-4089-a6a7-6355199b8892"  # Update if mirror ID changed after workspace move
 MIRROR_ONELAKE_DFS_HOST = "westus3-onelake.dfs.fabric.microsoft.com"
+USE_DEMO_FALLBACK = True  # Set to False once SQL mirror is configured in West 3
 
 def mirror_table_path(table_name: str) -> str:
     return (
@@ -57,12 +58,19 @@ def mirror_table_path(table_name: str) -> str:
 
 
 def mirror_table_sql(table_name: str) -> str:
-    return f"delta.`{mirror_table_path(table_name)}`"
+    if USE_DEMO_FALLBACK:
+        # Fallback: read from demo lakehouse directly (populated by nb_01)
+        return f"{DEMO_LAKEHOUSE}.{table_name}"
+    else:
+        # Read from Fabric SQL mirror ABFSS path
+        return f"delta.`{mirror_table_path(table_name)}`"
 
 
-print(f"Mirror source workspace   : {MIRROR_WORKSPACE_ID}")
-print(f"Mirror source item        : {MIRROR_ITEM_ID}")
-print(f"Source / target lakehouse : {DEMO_LAKEHOUSE}")
+print(f"Source lakehouse          : {DEMO_LAKEHOUSE}")
+print(f"Use fallback to demo      : {USE_DEMO_FALLBACK}")
+if not USE_DEMO_FALLBACK:
+    print(f"  Mirror workspace        : {MIRROR_WORKSPACE_ID}")
+    print(f"  Mirror item ID          : {MIRROR_ITEM_ID}")
 print(f"SparkSession              : {spark.version}")
 
 
