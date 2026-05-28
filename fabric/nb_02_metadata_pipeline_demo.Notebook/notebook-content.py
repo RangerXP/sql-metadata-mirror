@@ -8,10 +8,13 @@
 # META   },
 # META   "dependencies": {
 # META     "lakehouse": {
-# META       "default_lakehouse": "e9b09e4e-b7b9-4208-b9ec-bb3433154555",
-# META       "default_lakehouse_name": "lh_enercare_demo",
+# META       "default_lakehouse": "824f4a52-baa0-4c3f-88dc-203c1d85c89a",
+# META       "default_lakehouse_name": "lh_metadata",
 # META       "default_lakehouse_workspace_id": "b976cac2-7754-4061-88c2-61c0ac016a99",
 # META       "known_lakehouses": [
+# META         {
+# META           "id": "824f4a52-baa0-4c3f-88dc-203c1d85c89a"
+# META         },
 # META         {
 # META           "id": "e9b09e4e-b7b9-4208-b9ec-bb3433154555"
 # META         }
