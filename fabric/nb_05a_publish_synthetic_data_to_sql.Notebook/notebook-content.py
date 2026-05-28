@@ -36,7 +36,7 @@
 
 from pyspark.sql import functions as F
 
-DEMO_MODE                 = False
+DEMO_MODE                 = True
 DEMO_LAKEHOUSE            = "lh_enercare_demo"
 WORKSPACE_ID              = "b976cac2-7754-4061-88c2-61c0ac016a99"
 SERVER_NAME               = "sqlserver-sk2.database.windows.net"

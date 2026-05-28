@@ -672,8 +672,8 @@ print(f"  cc_agents: {df_cc_agents.count()} rows written")
 from pyspark.sql.types import *
 
 # DEMO NOTE: This table mirrors dbo.ref_cc_billing_adjustment_category_new
-# in Enercare's actual Azure SQL estate — currently ORPHANED there (no mappings,
-# no descriptions). We recreate it here to demonstrate the governance gap.
+# in Enercare's actual Azure SQL estate. "Orphaned" here means it currently
+# has no semantic-model mapping or curated metadata; it is not a pipeline blocker.
 
 ref_adj_schema = StructType([
     StructField("category_code", StringType(), False),
@@ -698,7 +698,10 @@ ref_adj_data = [
 
 df_ref_adj = spark.createDataFrame(ref_adj_data, schema=ref_adj_schema)
 df_ref_adj.write.format("delta").mode("overwrite").saveAsTable(f"{DEMO_LAKEHOUSE}.ref_cc_billing_adj_category")
-print(f"  ref_cc_billing_adj_category: {df_ref_adj.count()} rows written  [ORPHANED demo asset]")
+print(
+    f"  ref_cc_billing_adj_category: {df_ref_adj.count()} rows written"
+    "  [ORPHANED demo asset - informational only, not blocking nb_04]"
+)
 
 # METADATA ********************
 
@@ -1057,7 +1060,7 @@ print(f"  fct_cc_transcript_turns: {df_turns.count()} rows written")
 print("\nCall center tables written:")
 for tbl, note in [
     ("cc_agents",                    ""),
-    ("ref_cc_billing_adj_category",  "  [ORPHANED demo asset]"),
+    ("ref_cc_billing_adj_category",  "  [ORPHANED demo asset - optional governance review]"),
     ("fct_cc_interactions",          ""),
     ("fct_cc_transcript_turns",      ""),
 ]:
@@ -1065,6 +1068,7 @@ for tbl, note in [
     print(f"  {tbl:<35} {n:>6} rows{note}")
 
 print("\nAll tables ready. Run nb_02_metadata_pipeline_demo.py next.")
+print("Orphaned note is informational only and does not block nb_04_sempy_writeback.")
 
 # METADATA ********************
 

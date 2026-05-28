@@ -47,10 +47,10 @@ from pyspark.sql.functions import col, lit, current_timestamp
 DEMO_LAKEHOUSE   = "lh_enercare_demo"   # source data (Delta tables from nb_01)
 META_LAKEHOUSE   = "lh_metadata"        # metadata hub (same as README Phase 2)
 
-# TODO: in production, set these to your Azure SQL Server connection details
-# SQL_JDBC_URL  = "jdbc:sqlserver://<server>.database.windows.net:1433;database=<db>"
-# SQL_USER      = dbutils.secrets.get(scope="enercare-kv", key="sql-user")
-# SQL_PASSWORD  = dbutils.secrets.get(scope="enercare-kv", key="sql-password")
+# Optional: configure Azure SQL connection details if you want to source
+# SQL module definitions directly from SQL metadata objects.
+# SQL_SERVER_URL = "<server>.database.windows.net"
+# SQL_DATABASE   = "sqldemo"
 
 # TODO: in production, set these for Purview
 # PURVIEW_ACCOUNT    = "enercare-purview"
@@ -59,7 +59,7 @@ META_LAKEHOUSE   = "lh_metadata"        # metadata hub (same as README Phase 2)
 # PURVIEW_SECRET     = dbutils.secrets.get(scope="enercare-kv", key="purview-sp-secret")
 
 # Demo mode — no live connections
-DEMO_MODE  = False   # set False when swapping in production SQL + Purview creds
+DEMO_MODE  = True    # default safe mode; switch to False explicitly for live writes
 SOURCE_DB  = "enercare_demo"  # used in Purview qualified names
 
 print(f"DEMO_MODE          : {DEMO_MODE}")
@@ -77,7 +77,7 @@ print(f"Metadata lakehouse : {META_LAKEHOUSE}")
 # CELL ********************
 
 #
-# In production this dict is replaced by a JDBC read:
+# Optional production variant: replace this dict with a SQL metadata pull.
 #   SELECT o.name, o.type_desc, m.definition
 #   FROM   sys.sql_modules m
 #   JOIN   sys.objects     o ON o.object_id = m.object_id
@@ -85,10 +85,11 @@ print(f"Metadata lakehouse : {META_LAKEHOUSE}")
 #   AND    o.is_ms_shipped = 0
 #
 # The Python extractor in Phase 1 is identical whether the definition comes
-# from this dict or from a live JDBC read — only the data source changes.
+# from this dict or from a live SQL metadata read — only the data source changes.
 # ===========================================================================
 
-# TODO: replace SQL_MODULES with JDBC read from sys.sql_modules (see comment above)
+# NOTE: SQL_MODULES remains supported for deterministic demo runs.
+# It can be swapped with a live metadata source when needed.
 SQL_MODULES = {
     "vw_customer_360": {
         "type": "VIEW",
@@ -284,7 +285,7 @@ for name, mod in SQL_MODULES.items():
 #
 # Python re-implementation of sql/02_extract_from_modules.sql
 # Logic is identical — only the execution engine changes (Python vs T-SQL).
-# In production the module definitions come from a JDBC read (see Cell 2 TODO).
+# In production the module definitions can come from a live SQL metadata read.
 # ===========================================================================
 
 HEADER_RE = re.compile(r'/\*\s*(.*?)\s*\*/', re.DOTALL)
@@ -793,9 +794,9 @@ print("  [~] Phase 5  Purview Atlas payload preview (dry run — DEMO_MODE=True)
 print()
 print("Next steps:")
 print("  1. Add real SQL views/procs to SQL_MODULES (Cell 2)")
-print("     OR swap SQL_MODULES for a JDBC read from sys.sql_modules")
+print("     OR swap SQL_MODULES for a live SQL metadata read")
 print("  2. Set DEMO_MODE = False")
-print("  3. Provide SQL Server JDBC credentials (Cell 1)")
+print("  3. Provide SQL source credentials if using live SQL metadata extraction (Cell 1)")
 print("  4. Provide Purview service principal credentials (Cell 1)")
 print("  5. Schedule this notebook on 15-min trigger (matches README Phase 2)")
 

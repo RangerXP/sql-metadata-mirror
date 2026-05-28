@@ -32,7 +32,7 @@
 # DEMO_MODE = True  → print all SQL/data; no writes to Delta
 # DEMO_MODE = False → execute all ALTER / CREATE / INSERT statements
 
-DEMO_MODE = False          # TODO: set False to execute against lh_metadata
+DEMO_MODE = True           # default safe mode; set False only for live writes
 
 METADATA_LAKEHOUSE = "lh_metadata"
 CERTIFIED_BY       = "Christopher Dingle"
@@ -170,9 +170,42 @@ COMMENT 'Domain data ownership registry — drives steward approval workflow (G9
 if DEMO_MODE:
     print("[DEMO_MODE] Would execute:\n")
     print(sql_create_data_owners)
+    print("[DEMO_MODE] Would populate data_owners from distinct Domain / Owner / Steward values in asset_metadata")
 else:
     spark.sql(sql_create_data_owners)
-    print("data_owners table created")
+    spark.sql(f"""
+    INSERT OVERWRITE {METADATA_LAKEHOUSE}.data_owners
+    WITH owner_candidates AS (
+        SELECT
+            TRIM(Domain)  AS Domain,
+            NULLIF(TRIM(Owner), '')   AS OwnerRaw,
+            NULLIF(TRIM(Steward), '') AS StewardRaw
+        FROM {METADATA_LAKEHOUSE}.asset_metadata
+        WHERE COALESCE(TRIM(Domain), '') <> ''
+          AND (
+              COALESCE(TRIM(Owner), '') <> ''
+              OR COALESCE(TRIM(Steward), '') <> ''
+          )
+    ),
+    domain_owners AS (
+        SELECT
+            Domain,
+            MAX(OwnerRaw)   AS OwnerRaw,
+            MAX(StewardRaw) AS StewardRaw
+        FROM owner_candidates
+        GROUP BY Domain
+    )
+    SELECT
+        Domain,
+        OwnerRaw AS OwnerName,
+        CASE WHEN OwnerRaw LIKE '%@%' THEN OwnerRaw ELSE NULL END AS OwnerEmail,
+        StewardRaw AS StewardName,
+        CASE WHEN StewardRaw LIKE '%@%' THEN StewardRaw ELSE NULL END AS StewardEmail
+    FROM domain_owners
+    ORDER BY Domain
+    """)
+    owners_n = spark.sql(f"SELECT COUNT(*) AS n FROM {METADATA_LAKEHOUSE}.data_owners").first()["n"]
+    print(f"data_owners table created and populated: {owners_n} domain rows")
 
 # METADATA ********************
 
@@ -201,9 +234,43 @@ COMMENT 'Source-to-target lineage graph — consumed by nb_06_purview_lineage.py
 if DEMO_MODE:
     print("[DEMO_MODE] Would execute:\n")
     print(sql_create_lineage)
+    print("[DEMO_MODE] Would populate lineage_edges from asset_metadata.UpstreamAssets relationships extracted by nb_02")
 else:
     spark.sql(sql_create_lineage)
-    print("lineage_edges table created")
+    spark.sql(f"""
+    INSERT OVERWRITE {METADATA_LAKEHOUSE}.lineage_edges
+    WITH asset_lineage AS (
+        SELECT
+            ObjectName,
+            UpstreamAssets
+        FROM {METADATA_LAKEHOUSE}.asset_metadata
+        WHERE COALESCE(TRIM(UpstreamAssets), '') <> ''
+    ),
+    exploded_edges AS (
+        SELECT
+            ObjectName,
+            TRIM(upstream_asset) AS UpstreamAsset
+        FROM asset_lineage
+        LATERAL VIEW explode(split(UpstreamAssets, ' \\| ')) e AS upstream_asset
+    ),
+    cleaned_edges AS (
+        SELECT DISTINCT
+            REGEXP_REPLACE(UpstreamAsset, '^demo\\.', '') AS UpstreamObject,
+            ObjectName
+        FROM exploded_edges
+        WHERE COALESCE(TRIM(UpstreamAsset), '') <> ''
+    )
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY UpstreamObject, ObjectName) AS EdgeID,
+        CONCAT('mssql://enercare_demo/demo/', UpstreamObject) AS SourceQName,
+        CONCAT('mssql://enercare_demo/demo/', ObjectName)     AS TargetQName,
+        'nb_02_metadata_pipeline_demo'                        AS ProcessName,
+        'notebook'                                            AS TransformType
+    FROM cleaned_edges
+    ORDER BY EdgeID
+    """)
+    lineage_n = spark.sql(f"SELECT COUNT(*) AS n FROM {METADATA_LAKEHOUSE}.lineage_edges").first()["n"]
+    print(f"lineage_edges table created and populated: {lineage_n} edges")
 
 # METADATA ********************
 
@@ -660,12 +727,14 @@ Gaps addressed: G1-3 G1-4 G1-5 G1-7 G2-1 G2-2 G1-9
 else:
     kpi_n = spark.sql(f"SELECT COUNT(*) AS n FROM {METADATA_LAKEHOUSE}.kpi_metadata").first()["n"]
     ai_n  = spark.sql(f"SELECT COUNT(*) AS n FROM {METADATA_LAKEHOUSE}.ai_metadata").first()["n"]
+        owners_n = spark.sql(f"SELECT COUNT(*) AS n FROM {METADATA_LAKEHOUSE}.data_owners").first()["n"]
+        lineage_n = spark.sql(f"SELECT COUNT(*) AS n FROM {METADATA_LAKEHOUSE}.lineage_edges").first()["n"]
     print(f"""
 lh_metadata schema extension complete
   kpi_metadata:   10 new columns added | {kpi_n} total KPI rows
   ai_metadata:    created | {ai_n} total rows ({total_va} verified answers + {total_instr} instructions)
-  data_owners:    created
-  lineage_edges:  created
+    data_owners:    created | {owners_n} populated domain rows
+    lineage_edges:  created | {lineage_n} populated edges
   view:           vw_business_metadata_current rebuilt (4 branches)
 
 Gaps closed: G1-3 [done]  G1-4 [done]  G1-5 [done]  G1-7 [done]  G2-1 [done]  G2-2 [done]  G1-9 [done]

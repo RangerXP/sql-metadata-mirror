@@ -31,7 +31,7 @@ The Enercare demo is no longer just a Fabric-native metadata prototype. The targ
 - **Keep the current Fabric assets.** The existing notebooks, `lh_metadata` scaffolding, semantic model, and connectivity work remain useful and should be adapted rather than discarded.
 - **Keep semantic model descriptions.** Even if Purview becomes the catalog system of record, Copilot and Fabric Data Agents still need metadata propagated into the semantic model.
 - **Purview becomes the governed catalog endpoint.** `lh_metadata` remains a working/staging store for authoring, curation, and propagation, but not the final catalog authority.
-- **Define semantic write-back as a hybrid pattern, not a single tool choice.** The baseline repo pattern remains Git-backed TMDL and Fabric Items API updates. SemPy Labs is an allowed integration for targeted semantic-model write-backs when XMLA is enabled, but it is not the primary required deployment path.
+- **Define semantic write-back as a SemPy-first pattern.** SemPy is the required read layer and SemPy Labs is the required write-back layer for semantic-model metadata updates in this repo.
 
 ---
 
@@ -110,10 +110,10 @@ The Enercare demo is no longer just a Fabric-native metadata prototype. The targ
 
 | Path | Role | Status in solution |
 |---|---|---|
-| Git-backed TMDL + Fabric Items API | Primary path for model descriptions, AI instructions, verified answers, and repeatable source-controlled updates | **Required baseline** |
-| SemPy / SemPy Labs integration | Optional targeted write-back path for column and measure descriptions where XMLA-enabled model operations are useful | **Included as optional integration, not baseline** |
+| SemPy + SemPy Labs | Primary path for model descriptions, AI instructions, verified answers, and repeatable semantic model updates | **Required baseline** |
+| Git-backed TMDL source | Secondary artifact and deployment support surface for Fabric Git sync | **Retained as supporting surface, not primary write path** |
 
-This resolves the current repo inconsistency: the solution definition should not say "no SemPy" globally. It should say "no SemPy as the only or primary write-back mechanism." SemPy Labs remains in-scope for focused semantic-model updates.
+This resolves the current repo inconsistency by promoting SemPy/SemPy Labs from optional integration to the required semantic write-back mechanism.
 
 ---
 
@@ -224,12 +224,12 @@ This resolves the current repo inconsistency: the solution definition should not
 
 | # | Task | Status | Owner | Notes |
 |---|---|---|---|---|
-| G6-1 | Preserve current Git-backed TMDL and Fabric Items API write-back approach as the baseline path | 🟡 In Progress | Ajay | Do not regress existing progress |
-| G6-2 | Update `nb_04_generate_tmdl.py` for mirrored-source naming where needed | 🔴 Not Started | Ajay | Align to new architecture |
-| G6-3 | Keep AI instructions and verified Q&A delivery into the semantic model | 🟡 In Progress | Sean | Existing scaffolding already present; stays on Items API/TMDL path |
-| G6-4 | Add SemPy Labs integration point for targeted column/measure description write-backs where XMLA-enabled operations are beneficial | 🔴 Not Started | Ajay / Sean | Optional integration, not the required baseline |
-| G6-5 | Validate that TMDL/Items API and SemPy write-backs do not conflict and remain consistent with Purview publication | 🔴 Not Started | Sean + Alison | No drift between model and catalog |
-| G6-6 | Confirm XMLA/capacity prerequisites if SemPy Labs will be used in this environment | 🔴 Not Started | Sean | Required only for SemPy path |
+| G6-1 | Adopt SemPy + SemPy Labs as the baseline write-back path | 🟢 Done | Ajay / Sean | Primary model implemented in nb_04 and nb_05 |
+| G6-2 | Update `nb_04_sempy_writeback.py` for mirrored-source naming where needed | 🟢 Done | Ajay | Mapping and aliases are now applied in the SemPy notebook path |
+| G6-3 | Keep AI instructions and verified Q&A delivery into the semantic model | 🟢 Done | Sean | Implemented through SemPy Labs annotation write-back |
+| G6-4 | Remove legacy TMDL REST mutation as primary path from notebooks and docs | 🟢 Done | Ajay / Sean | Legacy approach retired from primary flow |
+| G6-5 | Validate SemPy write-back and Purview publication consistency | 🟡 In Progress | Sean + Alison | Validate no drift between semantic model and catalog scans |
+| G6-6 | Confirm environment prerequisites for semantic-link-labs in Fabric runtime | 🟡 In Progress | Sean | Required for live SemPy Labs operations |
 | G6-7 | Maintain `nb_05b_test_sql_connectivity` as a smoke test for private SQL access | 🟢 Done | Sean | End-to-end JDBC test succeeded |
 
 ---
@@ -338,7 +338,7 @@ The following maintained assets remain valid and should stay in the repo:
 - `fabric/nb_02_metadata_pipeline_demo.Notebook/`
 - `fabric/nb_03_pbi_star_schema.Notebook/`
 - `fabric/nb_04a_extend_metadata_schema.Notebook/`
-- `fabric/nb_04_generate_tmdl.Notebook/`
+- `fabric/nb_04_sempy_writeback.Notebook/`
 - `fabric/nb_05a_publish_synthetic_data_to_sql.Notebook/`
 - `fabric/nb_05b_test_sql_connectivity.Notebook/`
 - `fabric/nb_05_push_qa_verified_answers.Notebook/`
@@ -348,7 +348,7 @@ The following maintained assets remain valid and should stay in the repo:
 
 ### Additional retained requirement
 
-- SemPy Labs integration remains in-scope as a targeted semantic-model write-back option for column and measure descriptions. It should be defined as complementary to the TMDL/Items API baseline, not as a replacement for it.
+- SemPy and SemPy Labs are now the baseline semantic-model write-back path. TMDL remains a supporting source-control artifact through Fabric Git sync.
 
 ### Explicitly retired assumptions
 
