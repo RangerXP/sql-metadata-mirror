@@ -21,13 +21,7 @@
 # META       ]
 # META     },
 # META     "warehouse": {
-# META       "default_warehouse": "595a4488-0f92-41b6-9cdb-f7e09337c2de",
-# META       "known_warehouses": [
-# META         {
-# META           "id": "595a4488-0f92-41b6-9cdb-f7e09337c2de",
-# META           "type": "Lakewarehouse"
-# META         }
-# META       ]
+# META       "known_warehouses": []
 # META     }
 # META   }
 # META }
@@ -62,7 +56,7 @@ META_LAKEHOUSE   = "lh_metadata"        # metadata hub (same as README Phase 2)
 # PURVIEW_SECRET     = dbutils.secrets.get(scope="enercare-kv", key="purview-sp-secret")
 
 # Demo mode — no live connections
-DEMO_MODE  = True    # default safe mode; switch to False explicitly for live writes
+DEMO_MODE  = False    # default safe mode; switch to False explicitly for live writes
 SOURCE_DB  = "enercare_demo"  # used in Purview qualified names
 
 print(f"DEMO_MODE          : {DEMO_MODE}")
