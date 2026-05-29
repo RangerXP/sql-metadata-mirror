@@ -39,7 +39,7 @@ from pyspark.sql import functions as F
 DEMO_MODE                 = True
 DEMO_LAKEHOUSE            = "lh_enercare_demo"
 WORKSPACE_ID              = "b976cac2-7754-4061-88c2-61c0ac016a99"
-SERVER_NAME               = "sqlserver-sk2.database.windows.net"
+SERVER_NAME               = "sqlserver-sk2wus3.database.windows.net"
 DATABASE_NAME             = "sqldemo"
 SQL_PORT                  = 1433
 SQL_LOGIN_TIMEOUT_SECONDS = 30
@@ -73,6 +73,8 @@ print("Load order     :", ", ".join(LOAD_ORDER))
 
 # Cell 2: JDBC config and token helper
 
+import base64
+import json
 import time
 
 JDBC_URL = (
@@ -107,6 +109,21 @@ def get_sql_access_token():
     raise last_error
 
 
+def describe_access_token(token: str):
+    payload = token.split(".")[1]
+    padding = "=" * (-len(payload) % 4)
+    claims = json.loads(base64.urlsafe_b64decode(payload + padding))
+    return {
+        "aud": claims.get("aud"),
+        "appid": claims.get("appid"),
+        "name": claims.get("name"),
+        "oid": claims.get("oid"),
+        "scp": claims.get("scp"),
+        "tid": claims.get("tid"),
+        "upn": claims.get("upn"),
+    }
+
+
 def transform_for_sql(table_name, df):
     if table_name == "products":
         return df.withColumn("is_active", F.col("is_active").cast("boolean"))
@@ -134,6 +151,9 @@ if DEMO_MODE:
 else:
     sql_access_token = get_sql_access_token()
     print("Acquired Microsoft Entra access token for Azure SQL.")
+    print("=== SQL TOKEN CLAIMS START ===")
+    print(json.dumps(describe_access_token(sql_access_token), indent=2, sort_keys=True))
+    print("=== SQL TOKEN CLAIMS END ===")
 
 
 # METADATA ********************

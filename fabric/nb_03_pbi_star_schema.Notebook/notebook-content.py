@@ -25,6 +25,8 @@
 
 # CELL ********************
 
+# ===== CELL 1 START: Notebook Purpose And Run Context =====
+
 # =============================================================================
 # nb_03_pbi_star_schema.py
 # Purpose : Builds a Power BI-ready star schema on top of lh_enercare_demo.
@@ -33,6 +35,7 @@
 # Run after : nb_01_setup_demo_environment.py
 # Prereqs   : Attach this notebook to lh_enercare_demo (default lakehouse)
 # =============================================================================
+# ===== CELL 1 END =====
 
 
 # METADATA ********************
@@ -44,11 +47,13 @@
 
 # CELL ********************
 
+# ===== CELL 2 START: Mirror Configuration And Source Resolver =====
+
 DEMO_LAKEHOUSE = "lh_enercare_demo"
 MIRROR_WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
-MIRROR_ITEM_ID = "f9c3ec22-9f6a-4089-a6a7-6355199b8892"  # Update if mirror ID changed after workspace move
+MIRROR_ITEM_ID = "40675f0e-c576-4cb1-ab27-40b9352a18a8"  # Mirrored Azure SQL Database item ID in Enercare-West3
 MIRROR_ONELAKE_DFS_HOST = "westus3-onelake.dfs.fabric.microsoft.com"
-USE_DEMO_FALLBACK = True  # Set to False once SQL mirror is configured in West 3
+USE_DEMO_FALLBACK = False  # Use mirrored Azure SQL source tables
 
 def mirror_table_path(table_name: str) -> str:
     return (
@@ -72,6 +77,7 @@ if not USE_DEMO_FALLBACK:
     print(f"  Mirror workspace        : {MIRROR_WORKSPACE_ID}")
     print(f"  Mirror item ID          : {MIRROR_ITEM_ID}")
 print(f"SparkSession              : {spark.version}")
+# ===== CELL 2 END =====
 
 
 # METADATA ********************
@@ -82,6 +88,8 @@ print(f"SparkSession              : {spark.version}")
 # META }
 
 # CELL ********************
+
+# ===== CELL 3 START: Build And Persist dim_date =====
 
 import pandas as pd
 from pyspark.sql.types import *
@@ -125,6 +133,7 @@ for d in dates:
 df_dim_date = spark.createDataFrame(rows, schema=date_schema)
 df_dim_date.write.format("delta").mode("overwrite").saveAsTable(f"{DEMO_LAKEHOUSE}.dim_date")
 print(f"  dim_date: {df_dim_date.count()} rows written")
+# ===== CELL 3 END =====
 
 
 # METADATA ********************
@@ -135,6 +144,8 @@ print(f"  dim_date: {df_dim_date.count()} rows written")
 # META }
 
 # CELL ********************
+
+# ===== CELL 4 START: Build Core Dimensions =====
 
 spark.sql(f"""
 CREATE OR REPLACE TABLE {DEMO_LAKEHOUSE}.dim_customer USING DELTA AS
@@ -189,6 +200,7 @@ SELECT
 FROM {mirror_table_sql('service_accounts')} sa
 """)
 print(f"  dim_service_account: {spark.table(f'{DEMO_LAKEHOUSE}.dim_service_account').count()} rows")
+# ===== CELL 4 END =====
 
 
 # METADATA ********************
@@ -199,6 +211,8 @@ print(f"  dim_service_account: {spark.table(f'{DEMO_LAKEHOUSE}.dim_service_accou
 # META }
 
 # CELL ********************
+
+# ===== CELL 5 START: Build dim_equipment =====
 
 spark.sql(f"""
 CREATE OR REPLACE TABLE {DEMO_LAKEHOUSE}.dim_equipment USING DELTA AS
@@ -221,6 +235,7 @@ SELECT
 FROM {mirror_table_sql('equipment_registry')} e
 """)
 print(f"  dim_equipment: {spark.table(f'{DEMO_LAKEHOUSE}.dim_equipment').count()} rows")
+# ===== CELL 5 END =====
 
 
 # METADATA ********************
@@ -231,6 +246,8 @@ print(f"  dim_equipment: {spark.table(f'{DEMO_LAKEHOUSE}.dim_equipment').count()
 # META }
 
 # CELL ********************
+
+# ===== CELL 6 START: Build fct_billing =====
 
 spark.sql(f"""
 CREATE OR REPLACE TABLE {DEMO_LAKEHOUSE}.fct_billing USING DELTA AS
@@ -254,6 +271,7 @@ JOIN {mirror_table_sql('service_accounts')} sa ON sa.service_account_id = bt.ser
 JOIN {mirror_table_sql('contracts')} c         ON c.contract_id         = bt.contract_id
 """)
 print(f"  fct_billing: {spark.table(f'{DEMO_LAKEHOUSE}.fct_billing').count()} rows")
+# ===== CELL 6 END =====
 
 
 # METADATA ********************
@@ -264,6 +282,8 @@ print(f"  fct_billing: {spark.table(f'{DEMO_LAKEHOUSE}.fct_billing').count()} ro
 # META }
 
 # CELL ********************
+
+# ===== CELL 7 START: Build fct_service_request =====
 
 spark.sql(f"""
 CREATE OR REPLACE TABLE {DEMO_LAKEHOUSE}.fct_service_request USING DELTA AS
@@ -296,6 +316,7 @@ FROM {mirror_table_sql('service_requests')} sr
 JOIN {mirror_table_sql('service_accounts')} sa ON sa.service_account_id = sr.service_account_id
 """)
 print(f"  fct_service_request: {spark.table(f'{DEMO_LAKEHOUSE}.fct_service_request').count()} rows")
+# ===== CELL 7 END =====
 
 
 # METADATA ********************
@@ -306,6 +327,8 @@ print(f"  fct_service_request: {spark.table(f'{DEMO_LAKEHOUSE}.fct_service_reque
 # META }
 
 # CELL ********************
+
+# ===== CELL 8 START: Build fct_contract_month =====
 
 spark.sql(f"""
 CREATE OR REPLACE TABLE {DEMO_LAKEHOUSE}.fct_contract_month USING DELTA AS
@@ -352,6 +375,7 @@ SELECT
 FROM active_spine
 """)
 print(f"  fct_contract_month: {spark.table(f'{DEMO_LAKEHOUSE}.fct_contract_month').count()} rows")
+# ===== CELL 8 END =====
 
 
 # METADATA ********************
@@ -362,6 +386,8 @@ print(f"  fct_contract_month: {spark.table(f'{DEMO_LAKEHOUSE}.fct_contract_month
 # META }
 
 # CELL ********************
+
+# ===== CELL 9 START: Validate Star Schema Row Counts =====
 
 print("\n=== Star schema row counts ===")
 dims  = ["dim_date", "dim_customer", "dim_product", "dim_equipment", "dim_service_account"]
@@ -376,6 +402,7 @@ for t in facts:
     print(f"    {t:<30} {spark.table(f'{DEMO_LAKEHOUSE}.{t}').count():>6} rows")
 
 print("\nStar schema ready.")
+# ===== CELL 9 END =====
 
 
 # METADATA ********************
@@ -386,6 +413,8 @@ print("\nStar schema ready.")
 # META }
 
 # CELL ********************
+
+# ===== CELL 10 START: Build dim_cc_agent =====
 
 # Call center dimensions — CC extension
 # dim_cc_agent: agent registry for call center agents
@@ -399,6 +428,7 @@ SELECT
 FROM {DEMO_LAKEHOUSE}.cc_agents
 """)
 print(f"dim_cc_agent:          {spark.table(f'{DEMO_LAKEHOUSE}.dim_cc_agent').count()} rows")
+# ===== CELL 10 END =====
 
 
 # METADATA ********************
@@ -409,6 +439,8 @@ print(f"dim_cc_agent:          {spark.table(f'{DEMO_LAKEHOUSE}.dim_cc_agent').co
 # META }
 
 # CELL ********************
+
+# ===== CELL 11 START: Build dim_cc_billing_adj =====
 
 # dim_cc_billing_adj: billing adjustment category reference
 spark.sql(f"""
@@ -420,6 +452,7 @@ SELECT
 FROM {DEMO_LAKEHOUSE}.ref_cc_billing_adj_category
 """)
 print(f"dim_cc_billing_adj:    {spark.table(f'{DEMO_LAKEHOUSE}.dim_cc_billing_adj').count()} rows")
+# ===== CELL 11 END =====
 
 
 # METADATA ********************
@@ -430,6 +463,8 @@ print(f"dim_cc_billing_adj:    {spark.table(f'{DEMO_LAKEHOUSE}.dim_cc_billing_ad
 # META }
 
 # CELL ********************
+
+# ===== CELL 12 START: Validate Call Center Layer =====
 
 print("\n=== Call center layer row counts ===")
 cc_dims  = ["dim_cc_agent", "dim_cc_billing_adj"]
@@ -444,6 +479,7 @@ for t in cc_facts:
     print(f"    {t:<30} {spark.table(f'{DEMO_LAKEHOUSE}.{t}').count():>6} rows")
 
 print("\nCall center extension ready.")
+# ===== CELL 12 END =====
 
 
 # METADATA ********************
@@ -455,8 +491,11 @@ print("\nCall center extension ready.")
 
 # CELL ********************
 
+# ===== CELL 13 START: Session Cleanup =====
+
 spark.catalog.clearCache()
 print("Session cache cleared.")
+# ===== CELL 13 END =====
 
 
 # METADATA ********************

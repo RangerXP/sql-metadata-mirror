@@ -23,7 +23,7 @@
 # CELL ********************
 
 # Fabric Notebook: nb_05b_test_sql_connectivity
-# Purpose: Minimal JDBC smoke test for sqlserver-sk2 over the Enercare
+# Purpose: Minimal JDBC smoke test for sqlserver-sk2wus3 over the Enercare
 #          workspace managed private endpoint.
 #
 # DEMO_MODE = True  -> dry-run only
@@ -35,7 +35,7 @@
 
 DEMO_MODE                  = True
 WORKSPACE_ID               = "b976cac2-7754-4061-88c2-61c0ac016a99"
-SERVER_NAME                = "sqlserver-sk2.database.windows.net"
+SERVER_NAME                = "sqlserver-sk2wus3.database.windows.net"
 DATABASE_NAME              = "sqldemo"
 SQL_PORT                   = 1433
 SQL_LOGIN_TIMEOUT_SECONDS  = 30
