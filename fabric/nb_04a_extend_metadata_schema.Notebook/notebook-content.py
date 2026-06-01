@@ -32,7 +32,7 @@
 # DEMO_MODE = True  → print all SQL/data; no writes to Delta
 # DEMO_MODE = False → execute all ALTER / CREATE / INSERT statements
 
-DEMO_MODE = True           # default safe mode; set False only for live writes
+DEMO_MODE = False           # default safe mode; set False only for live writes
 
 METADATA_LAKEHOUSE = "lh_metadata"
 CERTIFIED_BY       = "Christopher Dingle"
@@ -727,8 +727,8 @@ Gaps addressed: G1-3 G1-4 G1-5 G1-7 G2-1 G2-2 G1-9
 else:
     kpi_n = spark.sql(f"SELECT COUNT(*) AS n FROM {METADATA_LAKEHOUSE}.kpi_metadata").first()["n"]
     ai_n  = spark.sql(f"SELECT COUNT(*) AS n FROM {METADATA_LAKEHOUSE}.ai_metadata").first()["n"]
-        owners_n = spark.sql(f"SELECT COUNT(*) AS n FROM {METADATA_LAKEHOUSE}.data_owners").first()["n"]
-        lineage_n = spark.sql(f"SELECT COUNT(*) AS n FROM {METADATA_LAKEHOUSE}.lineage_edges").first()["n"]
+    owners_n = spark.sql(f"SELECT COUNT(*) AS n FROM {METADATA_LAKEHOUSE}.data_owners").first()["n"]
+    lineage_n = spark.sql(f"SELECT COUNT(*) AS n FROM {METADATA_LAKEHOUSE}.lineage_edges").first()["n"]
     print(f"""
 lh_metadata schema extension complete
   kpi_metadata:   10 new columns added | {kpi_n} total KPI rows
