@@ -1,3 +1,4 @@
+/// Billing transactions used for revenue and payment-status analysis.
 table fct_billing
 	lineageTag: fecb9d02-6c2a-4f4b-b2a3-9908e2e668b3
 	sourceLineageTag: [dbo].[fct_billing]

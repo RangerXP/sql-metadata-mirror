@@ -1,7 +1,9 @@
+/// Unified customer profile combining account details, active contracts, equipment count, and lifetime billing value. Primary analytical surface for customer success and retention teams. One row per customer.
 table dim_customer
 	lineageTag: 4ce75090-884b-444b-ba5d-01ef91eea191
 	sourceLineageTag: [dbo].[dim_customer]
 
+	/// Surrogate key for the customer record
 	column CustomerKey
 		dataType: int64
 		formatString: 0
@@ -12,6 +14,7 @@ table dim_customer
 
 		annotation SummarizationSetBy = Automatic
 
+	/// External-facing identifier used in all customer communications
 	column AccountNumber
 		dataType: string
 		lineageTag: 6cefd132-2f79-4810-a99b-5feb1add9554
@@ -57,6 +60,7 @@ table dim_customer
 
 		annotation SummarizationSetBy = Automatic
 
+	/// Segmentation bucket: Residential | Commercial | MUR
 	column CustomerType
 		dataType: string
 		lineageTag: fe0357c5-124a-4a7c-9c45-4ab2b3d43be5
@@ -66,6 +70,7 @@ table dim_customer
 
 		annotation SummarizationSetBy = Automatic
 
+	/// Current lifecycle state of the account
 	column Status
 		dataType: string
 		lineageTag: 5fb56981-f95f-4ac4-9705-1e60855b4c32
@@ -75,6 +80,7 @@ table dim_customer
 
 		annotation SummarizationSetBy = Automatic
 
+	/// City of the customer's primary service address
 	column City
 		dataType: string
 		lineageTag: 88c22ebb-46e1-417f-81f4-89bdb0062bfa
@@ -93,6 +99,7 @@ table dim_customer
 
 		annotation SummarizationSetBy = Automatic
 
+	/// First 3 chars = FSA (Forward Sortation Area) used for geo-clustering
 	column PostalCode
 		dataType: string
 		lineageTag: 42a04551-92b0-4392-8b51-98ecd626f3c8

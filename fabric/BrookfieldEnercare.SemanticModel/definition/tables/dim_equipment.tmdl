@@ -1,7 +1,9 @@
+/// Active equipment inventory enriched with age, warranty status, and service history. Supports proactive maintenance planning and field operations scheduling.
 table dim_equipment
 	lineageTag: eba97672-594c-48b9-95c6-2ebdcf089b80
 	sourceLineageTag: [dbo].[dim_equipment]
 
+	/// Surrogate key for the equipment record
 	column EquipmentKey
 		dataType: int64
 		formatString: 0
@@ -22,6 +24,7 @@ table dim_equipment
 
 		annotation SummarizationSetBy = Automatic
 
+	/// Category: Water Heater | Furnace | Central AC | Heat Pump | Smart Thermostat
 	column EquipmentType
 		dataType: string
 		lineageTag: 64f441f5-ae9e-47ea-8316-d9793332a30a
@@ -31,6 +34,7 @@ table dim_equipment
 
 		annotation SummarizationSetBy = Automatic
 
+	/// Manufacturer name
 	column Make
 		dataType: string
 		lineageTag: 4557ece2-a136-468f-bb1d-f0d9d1852e3e
@@ -40,6 +44,7 @@ table dim_equipment
 
 		annotation SummarizationSetBy = Automatic
 
+	/// Manufacturer model number or name
 	column Model
 		dataType: string
 		lineageTag: 4c8c4412-07dd-453a-a052-f755f0066258
@@ -49,6 +54,7 @@ table dim_equipment
 
 		annotation SummarizationSetBy = Automatic
 
+	/// Factory serial; used for warranty claims
 	column SerialNumber
 		dataType: string
 		lineageTag: 8722c1c3-3c02-4ac0-9d72-08dd7566ee5e
@@ -58,6 +64,7 @@ table dim_equipment
 
 		annotation SummarizationSetBy = Automatic
 
+	/// Rental = Enercare owns; Customer-Owned = Enercare services only
 	column OwnershipType
 		dataType: string
 		lineageTag: dc6ba4bd-8794-471d-bb98-548637a176d7
@@ -67,6 +74,7 @@ table dim_equipment
 
 		annotation SummarizationSetBy = Automatic
 
+	/// Energy source: Natural Gas | Electric | Propane
 	column FuelType
 		dataType: string
 		lineageTag: 7005f148-b2f4-4676-9ec2-5d1f3aaa746f
@@ -76,6 +84,7 @@ table dim_equipment
 
 		annotation SummarizationSetBy = Automatic
 
+	/// Date equipment was installed at the service address
 	column InstallDate
 		dataType: dateTime
 		formatString: General Date
@@ -125,6 +134,7 @@ table dim_equipment
 
 		annotation SummarizationSetBy = Automatic
 
+	/// Decimal years since install_date
 	column AgeYears
 		dataType: decimal
 		formatString: \$#,0.###############;(\$#,0.###############);\$#,0.###############
@@ -137,6 +147,7 @@ table dim_equipment
 
 		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
 
+	/// 1 if warranty_expiry >= today; 0 if expired or NULL
 	column IsUnderWarranty
 		dataType: int64
 		formatString: 0

@@ -1,7 +1,9 @@
+/// Calculates MRR contribution per contract for each calendar month. Supports Finance and Strategy reporting on revenue growth, churn, and product mix.
 table fct_contract_month
 	lineageTag: e837b6dd-1f0e-4a47-9d56-896925431dde
 	sourceLineageTag: [dbo].[fct_contract_month]
 
+	/// Unique contract identifier; join key to demo.contracts
 	column ContractKey
 		dataType: int64
 		formatString: 0
@@ -12,6 +14,7 @@ table fct_contract_month
 
 		annotation SummarizationSetBy = Automatic
 
+	/// Owning service account; join key to demo.service_accounts
 	column ServiceAccountKey
 		dataType: int64
 		formatString: 0
@@ -72,6 +75,7 @@ table fct_contract_month
 
 		annotation SummarizationSetBy = Automatic
 
+	/// MRR contribution of this contract in CAD
 	column MonthlyAmount
 		dataType: double
 		lineageTag: bfc06c85-8554-464c-b357-eb9f7e9341d6
@@ -83,6 +87,7 @@ table fct_contract_month
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
+	/// Contract state at query time
 	column ContractStatus
 		dataType: string
 		lineageTag: bbaed8d6-63fd-4a43-b0e0-dcb29e9fb232
@@ -92,6 +97,7 @@ table fct_contract_month
 
 		annotation SummarizationSetBy = Automatic
 
+	/// 1 if this is the first billing month for this contract (acquisition)
 	column IsNew
 		dataType: int64
 		formatString: 0
@@ -102,6 +108,7 @@ table fct_contract_month
 
 		annotation SummarizationSetBy = Automatic
 
+	/// 1 if this contract was cancelled in this billing month
 	column IsChurn
 		dataType: int64
 		formatString: 0

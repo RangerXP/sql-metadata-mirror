@@ -1,3 +1,4 @@
+/// Calendar date dimension used for daily, monthly, fiscal, and trend analysis.
 table dim_date
 	lineageTag: d6805d3e-2bed-425c-8607-5b57075c594b
 	sourceLineageTag: [dbo].[dim_date]

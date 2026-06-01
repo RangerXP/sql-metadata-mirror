@@ -1,3 +1,4 @@
+/// Product dimension for rental, protection, heating, cooling, and smart-home offerings.
 table dim_product
 	lineageTag: 7d193b8b-a965-4345-b382-b037ad6cea6b
 	sourceLineageTag: [dbo].[dim_product]
