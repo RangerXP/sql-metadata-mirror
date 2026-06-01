@@ -31,6 +31,21 @@
 # Purpose: Read curated metadata from lh_metadata and write table/column/measure
 #          descriptions plus AI instructions into the semantic model using
 #          SemPy (read) and SemPy Labs (write).
+# High-level flow:
+#   1) Validate runtime dependencies and execution mode.
+#   2) Read curated metadata and AI instructions from lh_metadata.
+#   3) Read semantic model inventory (tables/columns/measures) from SemPy.
+#   4) Build a deterministic write plan for descriptions and annotation payload.
+#   5) Apply writes via SemPy Labs where available, with TOM fallback for object writes.
+# Major functions used across this notebook:
+#   - Metadata normalization and mapping: _norm, _norm_measure_key,
+#     _table_candidates, _column_candidates, resolve_table_description,
+#     resolve_column_description, resolve_measure_description.
+#   - Write planning: _merge_measure_alias_maps, measure_candidates.
+#   - Runtime writer discovery and writeback: _discover_labs_writers,
+#     _discover_tom_connector, _set_object_description,
+#     _set_object_description_via_tom, _set_ai_annotation,
+#     _apply_descriptions_via_batch_update.
 #
 # DEMO_MODE = True  -> dry-run (prints write plan, no model mutation)
 # DEMO_MODE = False -> live (applies SemPy Labs writes)
@@ -130,6 +145,8 @@ print(f"Target model: {MODEL_NAME}")
 # CELL ********************
 
 # Cell 2: Imports
+# High-level: Load SemPy Labs for writeback and establish effective execution mode
+# (live vs dry-run) based on runtime availability.
 
 fabric = None
 fabric_import_error = None
@@ -168,6 +185,8 @@ print(f"Cell 2 status: sempy_fabric_loaded={fabric is not None}")
 # CELL ********************
 
 # Cell 3: Read curated metadata from lh_metadata
+# High-level: Load curated business metadata, KPI definitions, and AI instructions;
+# normalize aliases and build in-memory lookup structures for later matching.
 
 meta_df = spark.sql(f"SELECT * FROM {METADATA_LH}.vw_business_metadata_current")
 rows = meta_df.collect()
@@ -326,6 +345,8 @@ print(f"Loaded: {len(ai_instructions)} AI instructions")
 # CELL ********************
 
 # Cell 4: Read semantic model inventory with SemPy
+# High-level: Read the current semantic model shape (tables, columns, measures)
+# so updates target only objects that currently exist.
 
 semantic_tables = []
 semantic_columns = []
@@ -393,6 +414,8 @@ print(f"SemPy inventory: {len(semantic_tables)} table(s), {len(semantic_columns)
 # CELL ********************
 
 # Cell 5: Build write plan
+# High-level: Resolve best-fit descriptions for semantic objects using exact,
+# alias, fallback, and controlled fuzzy matching; stage planned write payloads.
 
 if "SEMANTIC_MEASURE_METADATA_ALIASES" not in globals():
     SEMANTIC_MEASURE_METADATA_ALIASES = {"_Measures": {}}
@@ -530,8 +553,60 @@ if unmatched_measures:
 # CELL ********************
 
 # Cell 6: Apply SemPy Labs writes
+# High-level: Discover available writer surfaces, execute batch or per-object
+# description writes, fall back to TOM where needed, and apply AI annotation.
 
 from importlib import import_module
+import pkgutil
+
+labs = globals().get("labs")
+
+LABS_SYMBOL_ALLOWLIST = {
+    "connect_semantic_model",
+    "set_semantic_model_storage_format",
+}
+
+# Set True only when actively troubleshooting sempy_labs module exports.
+DEBUG_RUNTIME_SURFACE = False
+
+
+def _inspect_labs_symbol_surface():
+    inspected = {}
+    modules = []
+
+    if labs is not None:
+        modules.append(("labs", labs))
+
+    if labs is not None and hasattr(labs, "__path__"):
+        for module_info in pkgutil.walk_packages(labs.__path__, labs.__name__ + "."):
+            try:
+                modules.append((module_info.name, import_module(module_info.name)))
+            except Exception:
+                pass
+
+    if labs is not None:
+        for mod_name in [
+            "sempy_labs.tom",
+            "sempy_labs.tom._model",
+            "sempy_labs._model",
+            "sempy_labs.annotations",
+        ]:
+            try:
+                modules.append((mod_name, import_module(mod_name)))
+            except Exception:
+                pass
+
+    for module_name, module_obj in modules:
+        callable_names = []
+        for attr in dir(module_obj):
+            if attr.startswith(("set_", "update_", "add_", "connect_")):
+                fn = getattr(module_obj, attr, None)
+                if callable(fn):
+                    callable_names.append(attr)
+        if callable_names:
+            inspected[module_name] = sorted(set(callable_names))
+
+    return inspected
 
 
 def _set_object_description(table_name: str, object_type: str, object_name: str, description: str):
@@ -592,26 +667,50 @@ def _discover_labs_writers():
     if labs is not None:
         modules.append(("labs", labs))
 
-    # Some semantic-link-labs builds keep write helpers under submodules.
-    for mod_name in [
-        "sempy_labs.tom",
-        "sempy_labs.tom._model",
-        "sempy_labs._model",
-        "sempy_labs.annotations",
-    ]:
-        try:
-            modules.append((mod_name, import_module(mod_name)))
-        except Exception:
-            pass
+    # Walk the package surface so the notebook sees the actual runtime exports,
+    # not just a hand-maintained list of submodules.
+    if labs is not None and hasattr(labs, "__path__"):
+        for module_info in pkgutil.walk_packages(labs.__path__, labs.__name__ + "."):
+            try:
+                modules.append((module_info.name, import_module(module_info.name)))
+            except Exception:
+                pass
 
+    if labs is not None:
+        for mod_name in [
+            "sempy_labs.tom",
+            "sempy_labs.tom._model",
+            "sempy_labs._model",
+            "sempy_labs.annotations",
+        ]:
+            try:
+                modules.append((mod_name, import_module(mod_name)))
+            except Exception:
+                pass
+
+    symbol_surface = _inspect_labs_symbol_surface()
     writer_map = {}
     for module_name, module_obj in modules:
         for attr in dir(module_obj):
-            if not attr.startswith("set_"):
+            if attr not in LABS_SYMBOL_ALLOWLIST:
                 continue
             fn = getattr(module_obj, attr, None)
             if callable(fn) and attr not in writer_map:
                 writer_map[attr] = (module_name, fn)
+
+    if DEBUG_RUNTIME_SURFACE:
+        if symbol_surface:
+            print("SemPy Labs callable surface:")
+            for module_name in sorted(symbol_surface):
+                print(f"  {module_name}: {', '.join(symbol_surface[module_name])}")
+        else:
+            print("[INFO] No sempy_labs callable surface discovered in runtime modules.")
+
+    discovered_setters = sorted(writer_map.keys())
+    if discovered_setters:
+        print(f"SemPy Labs discovered module-level setters: {', '.join(discovered_setters)}")
+    else:
+        print("[INFO] No module-level SemPy Labs setters matched the allowlist.")
 
     return writer_map
 
@@ -692,25 +791,31 @@ LABS_WRITER_MAP = _discover_labs_writers() if labs is not None else {}
 TOM_CONNECTOR_NAME, TOM_CONNECTOR = _discover_tom_connector() if labs is not None else (None, None)
 
 
+def _inspect_tomwrapper_writer_surface():
+    if TOM_CONNECTOR is None:
+        return []
+
+    try:
+        with TOM_CONNECTOR(dataset=MODEL_NAME, readonly=True) as tom:
+            return sorted(
+                {
+                    name
+                    for name in dir(tom)
+                    if not name.startswith("_")
+                    and (
+                        "description" in name.lower()
+                        or name.startswith(("set_", "update_", "add_", "sync_"))
+                    )
+                }
+            )
+    except Exception:
+        return []
+
+
+TOM_WRITER_METHODS = _inspect_tomwrapper_writer_surface()
+
+
 def _set_ai_annotation(value: str):
-    method_info = LABS_WRITER_MAP.get("set_semantic_model_annotation")
-    if method_info is not None:
-        _, method = method_info
-        return method(
-            dataset=MODEL_NAME,
-            annotation_name="PBI_AI_Instructions",
-            annotation_value=value,
-        )
-
-    method_info = LABS_WRITER_MAP.get("set_annotation")
-    if method_info is not None:
-        _, method = method_info
-        return method(
-            dataset=MODEL_NAME,
-            annotation_name="PBI_AI_Instructions",
-            annotation_value=value,
-        )
-
     if TOM_CONNECTOR is None:
         return False
 
@@ -738,6 +843,72 @@ def _set_ai_annotation(value: str):
     return False
 
 
+def _apply_descriptions_via_batch_update():
+    method_info = LABS_WRITER_MAP.get("update_descriptions")
+    if method_info is None:
+        return False, "update_descriptions:missing", 0
+
+    method_source, method = method_info
+
+    table_descriptions = {
+        table_name: description
+        for table_name, description, _ in planned_table_updates
+        if isinstance(description, str) and description.strip()
+    }
+    column_descriptions = {
+        f"{table_name}/{column_name}": description
+        for table_name, column_name, description, _, _ in planned_column_updates
+        if isinstance(description, str) and description.strip()
+    }
+    measure_descriptions = {
+        f"{table_name}/{measure_name}": description
+        for table_name, measure_name, description in planned_measure_updates
+        if isinstance(description, str) and description.strip()
+    }
+
+    attempts = [
+        {
+            "dataset": MODEL_NAME,
+            "table_descriptions": table_descriptions,
+            "column_descriptions": column_descriptions,
+            "measure_descriptions": measure_descriptions,
+        },
+        {
+            "dataset": MODEL_NAME,
+            "column_descriptions": column_descriptions,
+            "measure_descriptions": measure_descriptions,
+        },
+        {
+            "dataset": MODEL_NAME,
+            "column_descriptions": column_descriptions,
+        },
+        {
+            "dataset": MODEL_NAME,
+            "measure_descriptions": measure_descriptions,
+        },
+    ]
+
+    last_error = None
+    for kwargs in attempts:
+        kwargs = {k: v for k, v in kwargs.items() if v}
+        if len(kwargs) <= 1:
+            continue
+        try:
+            method(**kwargs)
+            updated_count = 0
+            if "table_descriptions" in kwargs:
+                updated_count += len(kwargs["table_descriptions"])
+            if "column_descriptions" in kwargs:
+                updated_count += len(kwargs["column_descriptions"])
+            if "measure_descriptions" in kwargs:
+                updated_count += len(kwargs["measure_descriptions"])
+            return True, f"{method_source}.update_descriptions(batch)", updated_count
+        except Exception as ex:
+            last_error = ex
+
+    return False, f"update_descriptions:failed:{last_error}", 0
+
+
 if EFFECTIVE_DEMO_MODE:
     print("[DRY RUN] SemPy Labs writes skipped")
 else:
@@ -749,46 +920,59 @@ else:
     available_setters = sorted(LABS_WRITER_MAP.keys())
     available_description_methods = [name for name in available_setters if "description" in name.lower()]
     available_annotation_methods = [name for name in available_setters if "annotation" in name.lower()]
+    used_batch_descriptions = False
+
+    batch_ok, batch_detail, batch_applied = _apply_descriptions_via_batch_update()
+    if batch_ok:
+        used_batch_descriptions = True
+        applied_descriptions += batch_applied
+        print(f"  [APPLIED] description batch via {batch_detail} ({batch_applied} object(s))")
+    elif "update_descriptions:missing" not in batch_detail:
+        print(f"  [WARN] SemPy Labs batch description update failed: {batch_detail}")
+        print("       Falling back to per-object writer resolution.")
 
     if not available_description_methods:
-        print("[WARN] No SemPy Labs description writer methods discovered in this runtime.")
+        print("[INFO] Description writes route through TOM (expected for this sempy_labs runtime).")
         if TOM_CONNECTOR is None:
             print("       Description writes will be skipped for this execution.")
         else:
-            print(f"       Falling back to TOM writer via {TOM_CONNECTOR_NAME}.")
+            print(f"       Using TOM connection via {TOM_CONNECTOR_NAME} for description writes.")
+            if TOM_WRITER_METHODS:
+                print(f"       TOMWrapper writer-like methods detected: {', '.join(TOM_WRITER_METHODS[:12])}")
 
-    for table_name, description, source in planned_table_updates:
-        ok, detail = _set_object_description(table_name, "Table", table_name, description)
-        if ok:
-            applied_descriptions += 1
-            print(f"  [APPLIED] table   {table_name:<28} source={source} via {detail}")
-        else:
-            skipped_descriptions += 1
-            print(f"  [WARN] skipped table   {table_name:<28} source={source} | {detail}")
+    if not used_batch_descriptions:
+        for table_name, description, source in planned_table_updates:
+            ok, detail = _set_object_description(table_name, "Table", table_name, description)
+            if ok:
+                applied_descriptions += 1
+                print(f"  [APPLIED] table   {table_name:<28} source={source} via {detail}")
+            else:
+                skipped_descriptions += 1
+                print(f"  [WARN] skipped table   {table_name:<28} source={source} | {detail}")
 
-    for table_name, column_name, description, source_table, source_column in planned_column_updates:
-        ok, detail = _set_object_description(table_name, "Column", column_name, description)
-        if ok:
-            applied_descriptions += 1
-            print(f"  [APPLIED] column  {table_name}.{column_name:<20} source={source_table}.{source_column} via {detail}")
-        else:
-            skipped_descriptions += 1
-            print(f"  [WARN] skipped column  {table_name}.{column_name:<20} source={source_table}.{source_column} | {detail}")
+        for table_name, column_name, description, source_table, source_column in planned_column_updates:
+            ok, detail = _set_object_description(table_name, "Column", column_name, description)
+            if ok:
+                applied_descriptions += 1
+                print(f"  [APPLIED] column  {table_name}.{column_name:<20} source={source_table}.{source_column} via {detail}")
+            else:
+                skipped_descriptions += 1
+                print(f"  [WARN] skipped column  {table_name}.{column_name:<20} source={source_table}.{source_column} | {detail}")
 
-    for table_name, measure_name, description in planned_measure_updates:
-        ok, detail = _set_object_description(table_name, "Measure", measure_name, description)
-        if ok:
-            applied_descriptions += 1
-            print(f"  [APPLIED] measure {table_name}.{measure_name} via {detail}")
-        else:
-            skipped_descriptions += 1
-            print(f"  [WARN] skipped measure {table_name}.{measure_name} | {detail}")
+        for table_name, measure_name, description in planned_measure_updates:
+            ok, detail = _set_object_description(table_name, "Measure", measure_name, description)
+            if ok:
+                applied_descriptions += 1
+                print(f"  [APPLIED] measure {table_name}.{measure_name} via {detail}")
+            else:
+                skipped_descriptions += 1
+                print(f"  [WARN] skipped measure {table_name}.{measure_name} | {detail}")
 
     print(f"  Description writes: applied={applied_descriptions}, skipped={skipped_descriptions}")
     if skipped_descriptions > 0:
         print(f"  Available SemPy Labs description methods: {available_description_methods}")
         print(f"  Available SemPy Labs annotation methods: {available_annotation_methods}")
-        print(f"  All discovered set_* methods: {available_setters}")
+        print(f"  All discovered set_/update_* methods: {available_setters}")
         print(f"  TOM connector available: {TOM_CONNECTOR is not None}")
         if TOM_CONNECTOR is not None:
             print(f"  TOM connector source: {TOM_CONNECTOR_NAME}")
@@ -811,6 +995,8 @@ else:
 # CELL ********************
 
 # Cell 7: Summary
+# High-level: Emit final execution summary with planned counts and final status
+# (dry-run or applied) for run validation.
 
 print("\n=== SemPy write-back summary ===")
 print(f"  Model: {MODEL_NAME}")
