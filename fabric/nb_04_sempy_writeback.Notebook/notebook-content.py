@@ -109,15 +109,40 @@ print(f"Target model: {MODEL_NAME}")
 
 # Cell 2: Imports
 
-import sempy.fabric as fabric
+fabric = None
+fabric_import_error = None
+
+print("[INFO] sempy.fabric import deferred to Cell 4 (semantic inventory step).")
 
 try:
     import sempy_labs as labs
 except Exception as ex:
     labs = None
-    print("[WARN] sempy_labs import failed.")
-    print("       Install semantic-link-labs in this environment to run write-back.")
-    print(f"       Detail: {ex}")
+
+    if DEMO_MODE is False:
+        print("[WARN] sempy_labs import failed.")
+        print("       Install semantic-link-labs in this Fabric environment, then restart the notebook session.")
+        print(f"       Detail: {ex}")
+    else:
+        print("[INFO] sempy_labs not installed. DEMO_MODE=True so write-back remains dry-run.")
+
+EFFECTIVE_DEMO_MODE = DEMO_MODE or labs is None
+if DEMO_MODE is False and labs is None:
+    print("[WARN] DEMO_MODE=False requested, but sempy_labs is unavailable.")
+    print("       Forcing dry-run mode for this execution.")
+
+print(f"Cell 2 status: sempy_labs_loaded={labs is not None}, effective_demo_mode={EFFECTIVE_DEMO_MODE}")
+print(f"Cell 2 status: sempy_fabric_loaded={fabric is not None}")
+cell2_status = {
+    "cell": 2,
+    "sempy_labs_loaded": labs is not None,
+    "sempy_fabric_loaded": fabric is not None,
+    "effective_demo_mode": EFFECTIVE_DEMO_MODE,
+}
+try:
+    display(cell2_status)
+except Exception:
+    print(cell2_status)
 
 
 # METADATA ********************
@@ -133,6 +158,7 @@ except Exception as ex:
 
 meta_df = spark.sql(f"SELECT * FROM {METADATA_LH}.vw_business_metadata_current")
 rows = meta_df.collect()
+print(f"Cell 3 status: loaded {len(rows)} row(s) from {METADATA_LH}.vw_business_metadata_current")
 
 
 def _norm(value: str) -> str:
@@ -197,6 +223,18 @@ print(f"Loaded: {len(table_descs)} table descriptions")
 print(f"Loaded: {len(col_descs)} column descriptions")
 print(f"Loaded: {len(kpi_descs)} certified KPI descriptions")
 print(f"Loaded: {len(ai_instructions)} AI instructions")
+cell3_status = {
+    "cell": 3,
+    "metadata_rows": len(rows),
+    "table_descriptions": len(table_descs),
+    "column_descriptions": len(col_descs),
+    "certified_kpis": len(kpi_descs),
+    "ai_instructions": len(ai_instructions),
+}
+try:
+    display(cell3_status)
+except Exception:
+    print(cell3_status)
 
 
 # METADATA ********************
@@ -210,19 +248,71 @@ print(f"Loaded: {len(ai_instructions)} AI instructions")
 
 # Cell 4: Read semantic model inventory with SemPy
 
-tables_df = fabric.list_tables(dataset=MODEL_NAME)
-columns_df = fabric.list_columns(dataset=MODEL_NAME)
-measures_df = fabric.list_measures(dataset=MODEL_NAME)
+semantic_tables = []
+semantic_columns = []
+semantic_measures = []
 
-semantic_tables = sorted({str(r[0]) for r in tables_df.select("Name").collect()})
-semantic_columns = sorted(
-    {(str(r[0]), str(r[1])) for r in columns_df.select("Table Name", "Column Name").collect()}
-)
-semantic_measures = sorted(
-    {(str(r[0]), str(r[1])) for r in measures_df.select("Table Name", "Measure Name").collect()}
-)
+if fabric is None:
+    print("Cell 4 status: importing sempy.fabric...")
+    try:
+        import sempy.fabric as fabric
+        print("Cell 4 status: sempy.fabric import succeeded")
+    except Exception as ex:
+        fabric = None
+        fabric_import_error = ex
+        tables_df = None
+        columns_df = None
+        measures_df = None
+        print("[WARN] sempy.fabric import failed.")
+        print("       Semantic model inventory/read operations will be skipped.")
+        print(f"       Detail: {ex}")
+
+if fabric is None:
+    tables_df = None
+    columns_df = None
+    measures_df = None
+    print("Cell 4 status: sempy.fabric unavailable; inventory skipped")
+else:
+    tables_df = fabric.list_tables(dataset=MODEL_NAME)
+    columns_df = fabric.list_columns(dataset=MODEL_NAME)
+    measures_df = fabric.list_measures(dataset=MODEL_NAME)
+    print(
+        "Cell 4 status: inventory fetched "
+        f"(tables_df={type(tables_df).__name__}, columns_df={type(columns_df).__name__}, measures_df={type(measures_df).__name__})"
+    )
+
+def _collect_pairs(df, columns):
+    # SemPy can return Spark or pandas DataFrames depending on runtime.
+    if hasattr(df, "select") and hasattr(df, "collect"):
+        return [tuple(row[c] for c in columns) for row in df.select(*columns).collect()]
+
+    if hasattr(df, "iterrows"):
+        return [tuple(row[c] for c in columns) for _, row in df.iterrows()]
+
+    raise TypeError(f"Unsupported dataframe type from SemPy: {type(df)}")
+
+
+if fabric is not None:
+    semantic_tables = sorted({str(name) for (name,) in _collect_pairs(tables_df, ["Name"])})
+    semantic_columns = sorted(
+        {(str(table_name), str(column_name)) for table_name, column_name in _collect_pairs(columns_df, ["Table Name", "Column Name"]) }
+    )
+    semantic_measures = sorted(
+        {(str(table_name), str(measure_name)) for table_name, measure_name in _collect_pairs(measures_df, ["Table Name", "Measure Name"]) }
+    )
 
 print(f"SemPy inventory: {len(semantic_tables)} table(s), {len(semantic_columns)} column(s), {len(semantic_measures)} measure(s)")
+cell4_status = {
+    "cell": 4,
+    "sempy_fabric_loaded": fabric is not None,
+    "semantic_tables": len(semantic_tables),
+    "semantic_columns": len(semantic_columns),
+    "semantic_measures": len(semantic_measures),
+}
+try:
+    display(cell4_status)
+except Exception:
+    print(cell4_status)
 
 
 # METADATA ********************
@@ -298,20 +388,44 @@ print(f"  Annotation payload present: {bool(annotation_payload)}")
 
 
 def _set_object_description(table_name: str, object_type: str, object_name: str, description: str):
-    method = getattr(labs, "set_object_description", None)
-    if method is None:
-        raise RuntimeError("SemPy Labs method set_object_description is not available")
+    if object_type not in {"Table", "Column", "Measure"}:
+        raise ValueError(f"Unsupported object_type: {object_type}")
+
+    base_kwargs = {
+        "dataset": MODEL_NAME,
+        "table_name": table_name,
+        "description": description,
+    }
 
     if object_type == "Table":
-        return method(dataset=MODEL_NAME, table_name=table_name, description=description)
+        attempts = [
+            ("set_object_description", base_kwargs),
+            ("set_table_description", base_kwargs),
+        ]
+    elif object_type == "Column":
+        attempts = [
+            ("set_object_description", {**base_kwargs, "column_name": object_name}),
+            ("set_column_description", {**base_kwargs, "column_name": object_name}),
+        ]
+    else:
+        attempts = [
+            ("set_object_description", {**base_kwargs, "measure_name": object_name}),
+            ("set_measure_description", {**base_kwargs, "measure_name": object_name}),
+        ]
 
-    if object_type == "Column":
-        return method(dataset=MODEL_NAME, table_name=table_name, column_name=object_name, description=description)
+    errors = []
+    for method_name, kwargs in attempts:
+        method = getattr(labs, method_name, None)
+        if method is None:
+            errors.append(f"{method_name}:missing")
+            continue
+        try:
+            method(**kwargs)
+            return True, method_name
+        except Exception as ex:
+            errors.append(f"{method_name}:{ex}")
 
-    if object_type == "Measure":
-        return method(dataset=MODEL_NAME, table_name=table_name, measure_name=object_name, description=description)
-
-    raise ValueError(f"Unsupported object_type: {object_type}")
+    return False, " | ".join(errors)
 
 
 def _set_ai_annotation(value: str):
@@ -334,23 +448,49 @@ def _set_ai_annotation(value: str):
     raise RuntimeError("No supported SemPy Labs annotation writer found")
 
 
-if DEMO_MODE:
+if EFFECTIVE_DEMO_MODE:
     print("[DRY RUN] SemPy Labs writes skipped")
 else:
     if labs is None:
         raise RuntimeError("DEMO_MODE=False requires sempy_labs to be installed")
 
+    applied_descriptions = 0
+    skipped_descriptions = 0
+    available_description_methods = [
+        name for name in dir(labs)
+        if "description" in name.lower() and callable(getattr(labs, name, None))
+    ]
+
     for table_name, description, source in planned_table_updates:
-        _set_object_description(table_name, "Table", table_name, description)
-        print(f"  [APPLIED] table   {table_name:<28} source={source}")
+        ok, detail = _set_object_description(table_name, "Table", table_name, description)
+        if ok:
+            applied_descriptions += 1
+            print(f"  [APPLIED] table   {table_name:<28} source={source} via {detail}")
+        else:
+            skipped_descriptions += 1
+            print(f"  [WARN] skipped table   {table_name:<28} source={source} | {detail}")
 
     for table_name, column_name, description, source_table, source_column in planned_column_updates:
-        _set_object_description(table_name, "Column", column_name, description)
-        print(f"  [APPLIED] column  {table_name}.{column_name:<20} source={source_table}.{source_column}")
+        ok, detail = _set_object_description(table_name, "Column", column_name, description)
+        if ok:
+            applied_descriptions += 1
+            print(f"  [APPLIED] column  {table_name}.{column_name:<20} source={source_table}.{source_column} via {detail}")
+        else:
+            skipped_descriptions += 1
+            print(f"  [WARN] skipped column  {table_name}.{column_name:<20} source={source_table}.{source_column} | {detail}")
 
     for table_name, measure_name, description in planned_measure_updates:
-        _set_object_description(table_name, "Measure", measure_name, description)
-        print(f"  [APPLIED] measure {table_name}.{measure_name}")
+        ok, detail = _set_object_description(table_name, "Measure", measure_name, description)
+        if ok:
+            applied_descriptions += 1
+            print(f"  [APPLIED] measure {table_name}.{measure_name} via {detail}")
+        else:
+            skipped_descriptions += 1
+            print(f"  [WARN] skipped measure {table_name}.{measure_name} | {detail}")
+
+    print(f"  Description writes: applied={applied_descriptions}, skipped={skipped_descriptions}")
+    if skipped_descriptions > 0:
+        print(f"  Available SemPy Labs description methods: {available_description_methods}")
 
     if annotation_payload:
         _set_ai_annotation(annotation_payload)
@@ -374,7 +514,7 @@ print(f"  Table descriptions planned:   {len(planned_table_updates)}")
 print(f"  Column descriptions planned:  {len(planned_column_updates)}")
 print(f"  Measure descriptions planned: {len(planned_measure_updates)}")
 print(f"  AI instructions available:    {len(ai_instructions)}")
-print(f"  Status: {'DRY RUN' if DEMO_MODE else 'APPLIED'}")
+print(f"  Status: {'DRY RUN' if EFFECTIVE_DEMO_MODE else 'APPLIED'}")
 
 
 # METADATA ********************
