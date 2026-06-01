@@ -31,21 +31,6 @@
 # Purpose: Read curated metadata from lh_metadata and write table/column/measure
 #          descriptions plus AI instructions into the semantic model using
 #          SemPy (read) and SemPy Labs (write).
-# High-level flow:
-#   1) Validate runtime dependencies and execution mode.
-#   2) Read curated metadata and AI instructions from lh_metadata.
-#   3) Read semantic model inventory (tables/columns/measures) from SemPy.
-#   4) Build a deterministic write plan for descriptions and annotation payload.
-#   5) Apply writes via SemPy Labs where available, with TOM fallback for object writes.
-# Major functions used across this notebook:
-#   - Metadata normalization and mapping: _norm, _norm_measure_key,
-#     _table_candidates, _column_candidates, resolve_table_description,
-#     resolve_column_description, resolve_measure_description.
-#   - Write planning: _merge_measure_alias_maps, measure_candidates.
-#   - Runtime writer discovery and writeback: _discover_labs_writers,
-#     _discover_tom_connector, _set_object_description,
-#     _set_object_description_via_tom, _set_ai_annotation,
-#     _apply_descriptions_via_batch_update.
 #
 # DEMO_MODE = True  -> dry-run (prints write plan, no model mutation)
 # DEMO_MODE = False -> live (applies SemPy Labs writes)
@@ -145,8 +130,6 @@ print(f"Target model: {MODEL_NAME}")
 # CELL ********************
 
 # Cell 2: Imports
-# High-level: Load SemPy Labs for writeback and establish effective execution mode
-# (live vs dry-run) based on runtime availability.
 
 fabric = None
 fabric_import_error = None
@@ -185,8 +168,6 @@ print(f"Cell 2 status: sempy_fabric_loaded={fabric is not None}")
 # CELL ********************
 
 # Cell 3: Read curated metadata from lh_metadata
-# High-level: Load curated business metadata, KPI definitions, and AI instructions;
-# normalize aliases and build in-memory lookup structures for later matching.
 
 meta_df = spark.sql(f"SELECT * FROM {METADATA_LH}.vw_business_metadata_current")
 rows = meta_df.collect()
@@ -345,8 +326,6 @@ print(f"Loaded: {len(ai_instructions)} AI instructions")
 # CELL ********************
 
 # Cell 4: Read semantic model inventory with SemPy
-# High-level: Read the current semantic model shape (tables, columns, measures)
-# so updates target only objects that currently exist.
 
 semantic_tables = []
 semantic_columns = []
@@ -414,8 +393,6 @@ print(f"SemPy inventory: {len(semantic_tables)} table(s), {len(semantic_columns)
 # CELL ********************
 
 # Cell 5: Build write plan
-# High-level: Resolve best-fit descriptions for semantic objects using exact,
-# alias, fallback, and controlled fuzzy matching; stage planned write payloads.
 
 if "SEMANTIC_MEASURE_METADATA_ALIASES" not in globals():
     SEMANTIC_MEASURE_METADATA_ALIASES = {"_Measures": {}}
@@ -552,9 +529,66 @@ if unmatched_measures:
 
 # CELL ********************
 
+from sempy_labs.tom import connect_semantic_model
+
+model_name = MODEL_NAME if "MODEL_NAME" in globals() else "BrookfieldEnercare"
+workspace_name = None  # set to your Fabric workspace name only if needed
+
+kwargs = {
+    "dataset": model_name,
+    "readonly": False,
+}
+if workspace_name:
+    kwargs["workspace"] = workspace_name
+
+with connect_semantic_model(**kwargs) as tom:
+    print("Connected object type:", type(tom).__name__)
+
+    # Methods on the TOM wrapper
+    wrapper_writers = [
+        m for m in dir(tom)
+        if not m.startswith("_")
+        and (
+            "description" in m.lower()
+            or m.startswith("set_")
+            or m.startswith("update_")
+            or m.startswith("add_")
+        )
+    ]
+    print("Wrapper methods:")
+    for m in sorted(wrapper_writers):
+        print(" -", m)
+
+    # Methods on the underlying model object
+    model_writers = [
+        m for m in dir(tom.model)
+        if not m.startswith("_")
+        and (
+            "description" in m.lower()
+            or m.startswith("set_")
+            or m.startswith("update_")
+            or m.startswith("add_")
+        )
+    ]
+    print("Model methods:")
+    for m in sorted(model_writers):
+        print(" -", m)
+
+    # Quick object-level proof (where Description is typically set)
+    sample_table = next((t for t in tom.model.Tables if t.Name == "dim_customer"), None)
+    if sample_table is not None:
+        print("Sample table Description before:", sample_table.Description)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 # Cell 6: Apply SemPy Labs writes
-# High-level: Discover available writer surfaces, execute batch or per-object
-# description writes, fall back to TOM where needed, and apply AI annotation.
 
 from importlib import import_module
 import pkgutil
@@ -995,8 +1029,6 @@ else:
 # CELL ********************
 
 # Cell 7: Summary
-# High-level: Emit final execution summary with planned counts and final status
-# (dry-run or applied) for run validation.
 
 print("\n=== SemPy write-back summary ===")
 print(f"  Model: {MODEL_NAME}")

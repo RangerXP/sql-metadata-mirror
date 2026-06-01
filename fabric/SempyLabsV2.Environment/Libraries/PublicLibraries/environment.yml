@@ -1,0 +1,4 @@
+dependencies:
+  - pip:
+      - semantic-link-labs==0.15.1
+      - semantic-link==0.14.1

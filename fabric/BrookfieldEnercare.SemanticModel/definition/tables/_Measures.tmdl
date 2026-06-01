@@ -50,10 +50,12 @@ table _Measures
 		formatString: #,0.0
 		lineageTag: 42f61711-cbe4-4ae0-9ff5-32e1facddbbf
 
+	/// ranbir.singh@enercare.ca
 	measure 'FCR Rate' = DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[fcr_flag] = 1), COUNTROWS(fct_cc_interactions))
 		formatString: 0.0%
 		lineageTag: d68117ad-989c-40ab-a919-aa8725273862
 
+	/// ranbir.singh@enercare.ca
 	measure 'Avg CSAT' = AVERAGEX(FILTER(fct_cc_interactions, NOT ISBLANK(fct_cc_interactions[csat_score])), fct_cc_interactions[csat_score])
 		formatString: #,0.0
 		lineageTag: 0cec6c7b-58c1-400f-b4c6-993cff355807
@@ -62,6 +64,7 @@ table _Measures
 		formatString: 0.0%
 		lineageTag: b0478899-e200-4b7a-b011-429566f09b29
 
+	/// ranbir.singh@enercare.ca
 	measure 'Avg Handle Time (sec)' = AVERAGEX(fct_cc_interactions, fct_cc_interactions[handle_time_sec] + fct_cc_interactions[hold_time_sec])
 		formatString: #,0
 		lineageTag: 40485d8a-3df4-467d-a04b-409d2d37083f
