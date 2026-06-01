@@ -83,6 +83,24 @@ SEMANTIC_COLUMN_METADATA_ALIASES = {
     },
 }
 
+# Optional overrides to map semantic measure names to KPI names/codes.
+# Add entries here when a measure name does not naturally match kpi_metadata.
+SEMANTIC_MEASURE_METADATA_ALIASES = {
+    "_Measures": {
+        # Add/adjust entries as needed for your KPI naming conventions.
+        "Active Contract Count": ["Active Contracts", "ACTIVE_CONTRACTS", "KPI_ACTIVE_CONTRACTS"],
+        "Active Customer Count": ["Active Customers", "ACTIVE_CUSTOMERS", "KPI_ACTIVE_CUSTOMERS"],
+        "Avg Equipment Age Years": ["Equipment Age", "AVG_EQUIPMENT_AGE", "KPI_AVG_EQUIPMENT_AGE"],
+        "Avg Handle Time (sec)": ["AHT", "AVG_HANDLE_TIME", "KPI_AHT"],
+        "Avg Lifetime Value": ["LTV", "AVG_LIFETIME_VALUE", "KPI_LTV"],
+        "Avg Tenure Months": ["Tenure", "AVG_TENURE_MONTHS", "KPI_AVG_TENURE_MONTHS"],
+        "Churned MRR": ["Churn MRR", "MRR_CHURN", "KPI_CHURNED_MRR"],
+        "Escalation Rate": ["Escalation", "ESCALATION_RATE", "KPI_ESCALATION_RATE"],
+        "FCR Rate": ["FCR", "FIRST_CALL_RESOLUTION", "KPI_FCR"],
+        "Avg CSAT": ["CSAT", "CUSTOMER_SATISFACTION", "KPI_CSAT"],
+    },
+}
+
 SEMANTIC_FALLBACK_TABLE_DESCRIPTIONS = {
     "dim_customer": "Enercare customer dimension. One row per customer account across Residential, Commercial, and MUR segments.",
     "dim_date": "Calendar date dimension used for daily, monthly, fiscal, and trend analysis.",
@@ -156,6 +174,11 @@ def _norm(value: str) -> str:
     return value.strip().lower()
 
 
+def _norm_measure_key(value: str) -> str:
+    # Normalize KPI/measure names across spaces, underscores, and case.
+    return "".join(ch for ch in value.strip().lower() if ch.isalnum())
+
+
 def _dedupe_preserve_order(values):
     seen = set()
     result = []
@@ -193,9 +216,23 @@ for r in rows:
 
 try:
     kpi_df = spark.sql(
-        f"SELECT KpiName, Description FROM {METADATA_LH}.kpi_metadata WHERE IsCertified = 1"
+        f"""
+        SELECT KpiName, KPICode, Description
+        FROM {METADATA_LH}.kpi_metadata
+        WHERE IsCertified = 1
+        """
     )
-    kpi_descs = {r.KpiName: r.Description for r in kpi_df.collect() if r.Description}
+
+    # Build a robust lookup so semantic measures can match by KPI name or KPI code.
+    kpi_descs = {}
+    kpi_rows = [r for r in kpi_df.collect() if r.Description]
+    for r in kpi_rows:
+        if r.KpiName:
+            kpi_descs[r.KpiName] = r.Description
+            kpi_descs[_norm_measure_key(r.KpiName)] = r.Description
+        if r.KPICode:
+            kpi_descs[r.KPICode] = r.Description
+            kpi_descs[_norm_measure_key(r.KPICode)] = r.Description
 except Exception:
     kpi_descs = {}
     print("[WARN] kpi_metadata missing IsCertified/Description")
@@ -293,6 +330,10 @@ print(f"SemPy inventory: {len(semantic_tables)} table(s), {len(semantic_columns)
 
 # Cell 5: Build write plan
 
+if "SEMANTIC_MEASURE_METADATA_ALIASES" not in globals():
+    SEMANTIC_MEASURE_METADATA_ALIASES = {"_Measures": {}}
+    print("[WARN] SEMANTIC_MEASURE_METADATA_ALIASES was not initialized; using empty defaults.")
+
 
 def resolve_table_description(table_name: str):
     for candidate in _table_candidates(table_name):
@@ -314,6 +355,55 @@ def resolve_column_description(table_name: str, semantic_column: str):
     return None, None, None
 
 
+def measure_candidates(table_name: str, measure_name: str):
+    aliases = SEMANTIC_MEASURE_METADATA_ALIASES.get(table_name, {}).get(measure_name, [])
+    common_aliases = SEMANTIC_MEASURE_METADATA_ALIASES.get("_Measures", {}).get(measure_name, [])
+
+    generated = [
+        measure_name,
+        measure_name.replace("_", " "),
+        measure_name.replace("_", ""),
+        measure_name.removeprefix("KPI_"),
+        measure_name.removeprefix("kpi_"),
+        measure_name.removeprefix("M_"),
+        measure_name.removeprefix("m_"),
+    ]
+
+    return _dedupe_preserve_order(generated + aliases + common_aliases)
+
+
+def resolve_measure_description(table_name: str, measure_name: str):
+    # 1) Deterministic lookups using exact/normalized aliases.
+    for candidate in measure_candidates(table_name, measure_name):
+        desc = (
+            kpi_descs.get(candidate)
+            or kpi_descs.get(_norm_measure_key(candidate))
+        )
+        if desc:
+            return desc, candidate, "exact_or_alias"
+
+    # 2) Conservative fuzzy fallback if deterministic matches fail.
+    measure_key = _norm_measure_key(measure_name)
+    if len(measure_key) >= 6:
+        fuzzy_descriptions = []
+        for kpi_key, desc in kpi_descs.items():
+            if not isinstance(kpi_key, str):
+                continue
+            kpi_norm = _norm_measure_key(kpi_key)
+            if not kpi_norm:
+                continue
+            if measure_key in kpi_norm or kpi_norm in measure_key:
+                fuzzy_descriptions.append((kpi_key, desc))
+
+        # Only auto-apply if there is a single unique description.
+        unique_descriptions = {d for _, d in fuzzy_descriptions}
+        if len(unique_descriptions) == 1 and fuzzy_descriptions:
+            source_key, only_desc = fuzzy_descriptions[0]
+            return only_desc, source_key, "fuzzy_single"
+
+    return None, None, None
+
+
 planned_table_updates = []
 planned_column_updates = []
 planned_measure_updates = []
@@ -328,10 +418,14 @@ for table_name, column_name in semantic_columns:
     if desc:
         planned_column_updates.append((table_name, column_name, desc, source_table, source_column))
 
+unmatched_measures = []
 for table_name, measure_name in semantic_measures:
-    desc = kpi_descs.get(measure_name)
+    desc, matched_key, strategy = resolve_measure_description(table_name, measure_name)
     if desc:
         planned_measure_updates.append((table_name, measure_name, desc))
+        print(f"  [MATCHED] measure {table_name}.{measure_name} <= {matched_key} ({strategy})")
+    else:
+        unmatched_measures.append(f"{table_name}.{measure_name}")
 
 annotation_payload = " | ".join(ai_instructions).strip()
 
@@ -340,6 +434,9 @@ print(f"  Tables  : {len(planned_table_updates)}")
 print(f"  Columns : {len(planned_column_updates)}")
 print(f"  Measures: {len(planned_measure_updates)}")
 print(f"  Annotation payload present: {bool(annotation_payload)}")
+if unmatched_measures:
+    print(f"  Unmatched semantic measures: {len(unmatched_measures)}")
+    print("  Sample unmatched measures: " + ", ".join(unmatched_measures[:8]))
 
 
 # METADATA ********************
@@ -353,6 +450,8 @@ print(f"  Annotation payload present: {bool(annotation_payload)}")
 
 # Cell 6: Apply SemPy Labs writes
 
+from importlib import import_module
+
 
 def _set_object_description(table_name: str, object_type: str, object_name: str, description: str):
     method = getattr(labs, "set_object_description", None)
@@ -360,35 +459,185 @@ def _set_object_description(table_name: str, object_type: str, object_name: str,
         raise RuntimeError("SemPy Labs method set_object_description is not available")
 
     if object_type == "Table":
-        return method(dataset=MODEL_NAME, table_name=table_name, description=description)
+        attempts = [
+            ("set_object_description", base_kwargs),
+            ("set_table_description", base_kwargs),
+        ]
+    elif object_type == "Column":
+        attempts = [
+            ("set_object_description", {**base_kwargs, "column_name": object_name}),
+            ("set_column_description", {**base_kwargs, "column_name": object_name}),
+        ]
+    else:
+        attempts = [
+            ("set_object_description", {**base_kwargs, "measure_name": object_name}),
+            ("set_measure_description", {**base_kwargs, "measure_name": object_name}),
+        ]
 
-    if object_type == "Column":
-        return method(dataset=MODEL_NAME, table_name=table_name, column_name=object_name, description=description)
+    errors = []
+    for method_name, kwargs in attempts:
+        method = getattr(labs, method_name, None)
+        if method is None:
+            errors.append(f"{method_name}:missing")
+            continue
+        try:
+            method(**kwargs)
+            return True, method_name
+        except Exception as ex:
+            errors.append(f"{method_name}:{ex}")
 
-    if object_type == "Measure":
-        return method(dataset=MODEL_NAME, table_name=table_name, measure_name=object_name, description=description)
+    return False, " | ".join(errors)
 
-    raise ValueError(f"Unsupported object_type: {object_type}")
+
+def _discover_labs_writers():
+    modules = []
+    if labs is not None:
+        modules.append(("labs", labs))
+
+    # Some semantic-link-labs builds keep write helpers under submodules.
+    for mod_name in [
+        "sempy_labs.tom",
+        "sempy_labs.tom._model",
+        "sempy_labs._model",
+        "sempy_labs.annotations",
+    ]:
+        try:
+            modules.append((mod_name, import_module(mod_name)))
+        except Exception:
+            pass
+
+    writer_map = {}
+    for module_name, module_obj in modules:
+        for attr in dir(module_obj):
+            if not attr.startswith("set_"):
+                continue
+            fn = getattr(module_obj, attr, None)
+            if callable(fn) and attr not in writer_map:
+                writer_map[attr] = (module_name, fn)
+
+    return writer_map
+
+
+def _discover_tom_connector():
+    candidates = []
+
+    if labs is not None:
+        fn = getattr(labs, "connect_semantic_model", None)
+        if callable(fn):
+            candidates.append(("labs.connect_semantic_model", fn))
+
+    for mod_name in [
+        "sempy_labs.tom",
+        "sempy_labs.tom._model",
+        "sempy_labs._model",
+    ]:
+        try:
+            module_obj = import_module(mod_name)
+            fn = getattr(module_obj, "connect_semantic_model", None)
+            if callable(fn):
+                candidates.append((f"{mod_name}.connect_semantic_model", fn))
+        except Exception:
+            pass
+
+    return candidates[0] if candidates else (None, None)
+
+
+def _find_collection_item_by_name(collection, name: str):
+    target = name.strip().lower()
+
+    # Try indexer first for performance and exact-name lookup.
+    try:
+        return collection[name]
+    except Exception:
+        pass
+
+    for item in collection:
+        item_name = getattr(item, "Name", None)
+        if isinstance(item_name, str) and item_name.strip().lower() == target:
+            return item
+
+    return None
+
+
+def _set_object_description_via_tom(table_name: str, object_type: str, object_name: str, description: str):
+    if TOM_CONNECTOR is None:
+        return False, "tom_connect_semantic_model:missing"
+
+    try:
+        with TOM_CONNECTOR(dataset=MODEL_NAME, readonly=False) as tom:
+            table_obj = _find_collection_item_by_name(tom.model.Tables, table_name)
+            if table_obj is None:
+                return False, f"tom_table_missing:{table_name}"
+
+            if object_type == "Table":
+                table_obj.Description = description
+                return True, "tom.model.Table.Description"
+
+            if object_type == "Column":
+                col_obj = _find_collection_item_by_name(table_obj.Columns, object_name)
+                if col_obj is None:
+                    return False, f"tom_column_missing:{table_name}.{object_name}"
+                col_obj.Description = description
+                return True, "tom.model.Column.Description"
+
+            measure_obj = _find_collection_item_by_name(table_obj.Measures, object_name)
+            if measure_obj is None:
+                return False, f"tom_measure_missing:{table_name}.{object_name}"
+            measure_obj.Description = description
+            return True, "tom.model.Measure.Description"
+
+    except Exception as ex:
+        return False, f"tom_description_write_failed:{ex}"
+
+
+LABS_WRITER_MAP = _discover_labs_writers() if labs is not None else {}
+TOM_CONNECTOR_NAME, TOM_CONNECTOR = _discover_tom_connector() if labs is not None else (None, None)
 
 
 def _set_ai_annotation(value: str):
-    method = getattr(labs, "set_semantic_model_annotation", None)
-    if method is not None:
+    method_info = LABS_WRITER_MAP.get("set_semantic_model_annotation")
+    if method_info is not None:
+        _, method = method_info
         return method(
             dataset=MODEL_NAME,
             annotation_name="PBI_AI_Instructions",
             annotation_value=value,
         )
 
-    method = getattr(labs, "set_annotation", None)
-    if method is not None:
+    method_info = LABS_WRITER_MAP.get("set_annotation")
+    if method_info is not None:
+        _, method = method_info
         return method(
             dataset=MODEL_NAME,
             annotation_name="PBI_AI_Instructions",
             annotation_value=value,
         )
 
-    raise RuntimeError("No supported SemPy Labs annotation writer found")
+    if TOM_CONNECTOR is None:
+        return False
+
+    try:
+        with TOM_CONNECTOR(dataset=MODEL_NAME, readonly=False) as tom:
+            annotations = getattr(tom.model, "Annotations", None)
+            if annotations is None:
+                return False
+
+            existing = _find_collection_item_by_name(annotations, "PBI_AI_Instructions")
+            if existing is not None:
+                existing.Value = value
+                return True
+
+            # Try common add patterns used by TOM collections.
+            try:
+                annotations.Add("PBI_AI_Instructions", value)
+                return True
+            except Exception:
+                pass
+
+    except Exception:
+        return False
+
+    return False
 
 
 if DEMO_MODE:
@@ -396,6 +645,13 @@ if DEMO_MODE:
 else:
     if labs is None:
         raise RuntimeError("DEMO_MODE=False requires sempy_labs to be installed")
+
+    applied_descriptions = 0
+    skipped_descriptions = 0
+    available_description_methods = [
+        name for name in dir(labs)
+        if "description" in name.lower() and callable(getattr(labs, name, None))
+    ]
 
     for table_name, description, source in planned_table_updates:
         _set_object_description(table_name, "Table", table_name, description)
@@ -406,12 +662,24 @@ else:
         print(f"  [APPLIED] column  {table_name}.{column_name:<20} source={source_table}.{source_column}")
 
     for table_name, measure_name, description in planned_measure_updates:
-        _set_object_description(table_name, "Measure", measure_name, description)
-        print(f"  [APPLIED] measure {table_name}.{measure_name}")
+        ok, detail = _set_object_description(table_name, "Measure", measure_name, description)
+        if ok:
+            applied_descriptions += 1
+            print(f"  [APPLIED] measure {table_name}.{measure_name} via {detail}")
+        else:
+            skipped_descriptions += 1
+            print(f"  [WARN] skipped measure {table_name}.{measure_name} | {detail}")
+
+    print(f"  Description writes: applied={applied_descriptions}, skipped={skipped_descriptions}")
+    if skipped_descriptions > 0:
+        print(f"  Available SemPy Labs description methods: {available_description_methods}")
 
     if annotation_payload:
-        _set_ai_annotation(annotation_payload)
-        print(f"  [APPLIED] annotation PBI_AI_Instructions ({len(ai_instructions)} instruction(s))")
+        annotation_ok = _set_ai_annotation(annotation_payload)
+        if annotation_ok is False:
+            print("  [WARN] skipped annotation PBI_AI_Instructions | no supported annotation writer found")
+        else:
+            print(f"  [APPLIED] annotation PBI_AI_Instructions ({len(ai_instructions)} instruction(s))")
 
 
 # METADATA ********************
