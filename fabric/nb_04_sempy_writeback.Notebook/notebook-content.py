@@ -338,8 +338,30 @@ if "SEMANTIC_MEASURE_METADATA_ALIASES" not in globals():
 def resolve_table_description(table_name: str):
     for candidate in _table_candidates(table_name):
         desc = table_descs.get(_norm(candidate))
-        if desc:
-            return desc, candidate
+    if object_type not in {"Table", "Column", "Measure"}:
+        raise ValueError(f"Unsupported object_type: {object_type}")
+
+    base_kwargs = {
+        "dataset": MODEL_NAME,
+        "table_name": table_name,
+        "description": description,
+    }
+
+    if object_type == "Table":
+        attempts = [
+            ("set_object_description", base_kwargs),
+            ("set_table_description", base_kwargs),
+        ]
+    elif object_type == "Column":
+        attempts = [
+            ("set_object_description", {**base_kwargs, "column_name": object_name}),
+            ("set_column_description", {**base_kwargs, "column_name": object_name}),
+        ]
+    else:
+        attempts = [
+            ("set_object_description", {**base_kwargs, "measure_name": object_name}),
+            ("set_measure_description", {**base_kwargs, "measure_name": object_name}),
+        ]
     fallback = SEMANTIC_FALLBACK_TABLE_DESCRIPTIONS.get(table_name)
     if fallback:
         return fallback, "fallback"
@@ -370,16 +392,31 @@ def measure_candidates(table_name: str, measure_name: str):
     ]
 
     return _dedupe_preserve_order(generated + aliases + common_aliases)
-
-
+        ok, detail = _set_object_description(table_name, "Table", table_name, description)
+        if ok:
+            applied_descriptions += 1
+            print(f"  [APPLIED] table   {table_name:<28} source={source} via {detail}")
+        else:
+            skipped_descriptions += 1
+            print(f"  [WARN] skipped table   {table_name:<28} source={source} | {detail}")
 def resolve_measure_description(table_name: str, measure_name: str):
     # 1) Deterministic lookups using exact/normalized aliases.
-    for candidate in measure_candidates(table_name, measure_name):
-        desc = (
+        ok, detail = _set_object_description(table_name, "Column", column_name, description)
+        if ok:
+            applied_descriptions += 1
+            print(f"  [APPLIED] column  {table_name}.{column_name:<20} source={source_table}.{source_column} via {detail}")
+        else:
+            skipped_descriptions += 1
+            print(f"  [WARN] skipped column  {table_name}.{column_name:<20} source={source_table}.{source_column} | {detail}")
             kpi_descs.get(candidate)
             or kpi_descs.get(_norm_measure_key(candidate))
-        )
-        if desc:
+        ok, detail = _set_object_description(table_name, "Measure", measure_name, description)
+        if ok:
+            applied_descriptions += 1
+            print(f"  [APPLIED] measure {table_name}.{measure_name} via {detail}")
+        else:
+            skipped_descriptions += 1
+            print(f"  [WARN] skipped measure {table_name}.{measure_name} | {detail}")
             return desc, candidate, "exact_or_alias"
 
     # 2) Conservative fuzzy fallback if deterministic matches fail.
@@ -454,9 +491,14 @@ from importlib import import_module
 
 
 def _set_object_description(table_name: str, object_type: str, object_name: str, description: str):
-    method = getattr(labs, "set_object_description", None)
-    if method is None:
-        raise RuntimeError("SemPy Labs method set_object_description is not available")
+    if object_type not in {"Table", "Column", "Measure"}:
+        raise ValueError(f"Unsupported object_type: {object_type}")
+
+    base_kwargs = {
+        "dataset": MODEL_NAME,
+        "table_name": table_name,
+        "description": description,
+    }
 
     if object_type == "Table":
         attempts = [
@@ -476,7 +518,8 @@ def _set_object_description(table_name: str, object_type: str, object_name: str,
 
     errors = []
     for method_name, kwargs in attempts:
-        method = getattr(labs, method_name, None)
+        method_info = LABS_WRITER_MAP.get(method_name)
+        method = method_info[1] if method_info is not None else None
         if method is None:
             errors.append(f"{method_name}:missing")
             continue
@@ -485,6 +528,17 @@ def _set_object_description(table_name: str, object_type: str, object_name: str,
             return True, method_name
         except Exception as ex:
             errors.append(f"{method_name}:{ex}")
+
+    if TOM_CONNECTOR is not None:
+        ok, detail = _set_object_description_via_tom(
+            table_name=table_name,
+            object_type=object_type,
+            object_name=object_name,
+            description=description,
+        )
+        if ok:
+            return True, detail
+        errors.append(detail)
 
     return False, " | ".join(errors)
 
@@ -640,7 +694,7 @@ def _set_ai_annotation(value: str):
     return False
 
 
-if DEMO_MODE:
+if EFFECTIVE_DEMO_MODE:
     print("[DRY RUN] SemPy Labs writes skipped")
 else:
     if labs is None:
@@ -648,18 +702,34 @@ else:
 
     applied_descriptions = 0
     skipped_descriptions = 0
-    available_description_methods = [
-        name for name in dir(labs)
-        if "description" in name.lower() and callable(getattr(labs, name, None))
-    ]
+    available_setters = sorted(LABS_WRITER_MAP.keys())
+    available_description_methods = [name for name in available_setters if "description" in name.lower()]
+    available_annotation_methods = [name for name in available_setters if "annotation" in name.lower()]
+
+    if not available_description_methods:
+        print("[WARN] No SemPy Labs description writer methods discovered in this runtime.")
+        if TOM_CONNECTOR is None:
+            print("       Description writes will be skipped for this execution.")
+        else:
+            print(f"       Falling back to TOM writer via {TOM_CONNECTOR_NAME}.")
 
     for table_name, description, source in planned_table_updates:
-        _set_object_description(table_name, "Table", table_name, description)
-        print(f"  [APPLIED] table   {table_name:<28} source={source}")
+        ok, detail = _set_object_description(table_name, "Table", table_name, description)
+        if ok:
+            applied_descriptions += 1
+            print(f"  [APPLIED] table   {table_name:<28} source={source} via {detail}")
+        else:
+            skipped_descriptions += 1
+            print(f"  [WARN] skipped table   {table_name:<28} source={source} | {detail}")
 
     for table_name, column_name, description, source_table, source_column in planned_column_updates:
-        _set_object_description(table_name, "Column", column_name, description)
-        print(f"  [APPLIED] column  {table_name}.{column_name:<20} source={source_table}.{source_column}")
+        ok, detail = _set_object_description(table_name, "Column", column_name, description)
+        if ok:
+            applied_descriptions += 1
+            print(f"  [APPLIED] column  {table_name}.{column_name:<20} source={source_table}.{source_column} via {detail}")
+        else:
+            skipped_descriptions += 1
+            print(f"  [WARN] skipped column  {table_name}.{column_name:<20} source={source_table}.{source_column} | {detail}")
 
     for table_name, measure_name, description in planned_measure_updates:
         ok, detail = _set_object_description(table_name, "Measure", measure_name, description)
@@ -673,6 +743,11 @@ else:
     print(f"  Description writes: applied={applied_descriptions}, skipped={skipped_descriptions}")
     if skipped_descriptions > 0:
         print(f"  Available SemPy Labs description methods: {available_description_methods}")
+        print(f"  Available SemPy Labs annotation methods: {available_annotation_methods}")
+        print(f"  All discovered set_* methods: {available_setters}")
+        print(f"  TOM connector available: {TOM_CONNECTOR is not None}")
+        if TOM_CONNECTOR is not None:
+            print(f"  TOM connector source: {TOM_CONNECTOR_NAME}")
 
     if annotation_payload:
         annotation_ok = _set_ai_annotation(annotation_payload)
@@ -699,7 +774,7 @@ print(f"  Table descriptions planned:   {len(planned_table_updates)}")
 print(f"  Column descriptions planned:  {len(planned_column_updates)}")
 print(f"  Measure descriptions planned: {len(planned_measure_updates)}")
 print(f"  AI instructions available:    {len(ai_instructions)}")
-print(f"  Status: {'DRY RUN' if DEMO_MODE else 'APPLIED'}")
+print(f"  Status: {'DRY RUN' if EFFECTIVE_DEMO_MODE else 'APPLIED'}")
 
 
 # METADATA ********************
