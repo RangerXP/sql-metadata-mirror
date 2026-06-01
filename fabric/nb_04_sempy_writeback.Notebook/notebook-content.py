@@ -251,6 +251,66 @@ except Exception:
     ai_instructions = []
     print("[WARN] ai_metadata not found")
 
+
+def _first_non_empty_value(data, keys):
+    for key in keys:
+        value = data.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
+SEMANTIC_MEASURE_METADATA_ALIASES_RUNTIME = {"_Measures": {}}
+_measure_alias_source_table = None
+
+for candidate_table in [
+    f"{METADATA_LH}.semantic_measure_kpi_map",
+    f"{METADATA_LH}.measure_kpi_map",
+    f"{METADATA_LH}.kpi_measure_map",
+]:
+    try:
+        mapping_rows = [r.asDict(recursive=True) for r in spark.table(candidate_table).collect()]
+        _measure_alias_source_table = candidate_table
+
+        for raw_row in mapping_rows:
+            row = {str(k).lower(): v for k, v in raw_row.items()}
+
+            is_active = row.get("isactive", row.get("is_active", True))
+            if is_active in (0, "0", False, "false", "False"):
+                continue
+
+            table_name = _first_non_empty_value(row, ["semantictablename", "table_name", "tablename"]) or "_Measures"
+            measure_name = _first_non_empty_value(
+                row,
+                ["semanticmeasurename", "semantic_measure_name", "measurename", "measure_name"],
+            )
+
+            if not measure_name:
+                continue
+
+            alias_values = [
+                _first_non_empty_value(row, ["kpiname", "kpi_name"]),
+                _first_non_empty_value(row, ["kpicode", "kpi_code"]),
+                _first_non_empty_value(row, ["alias", "aliasname", "alias_name"]),
+            ]
+            alias_values = [v for v in alias_values if v]
+            if not alias_values:
+                continue
+
+            table_aliases = SEMANTIC_MEASURE_METADATA_ALIASES_RUNTIME.setdefault(table_name, {})
+            existing = table_aliases.get(measure_name, [])
+            table_aliases[measure_name] = _dedupe_preserve_order(existing + alias_values)
+
+        break
+    except Exception:
+        continue
+
+if _measure_alias_source_table:
+    dynamic_pairs = sum(len(v) for v in SEMANTIC_MEASURE_METADATA_ALIASES_RUNTIME.values())
+    print(f"Loaded dynamic measure alias mapping from {_measure_alias_source_table} ({dynamic_pairs} measure row(s))")
+else:
+    print("[INFO] No dynamic measure alias mapping table found; using in-code aliases.")
+
 print(f"Loaded: {len(table_descs)} table descriptions")
 print(f"Loaded: {len(col_descs)} column descriptions")
 print(f"Loaded: {len(kpi_descs)} certified KPI descriptions")
@@ -342,30 +402,8 @@ if "SEMANTIC_MEASURE_METADATA_ALIASES" not in globals():
 def resolve_table_description(table_name: str):
     for candidate in _table_candidates(table_name):
         desc = table_descs.get(_norm(candidate))
-    if object_type not in {"Table", "Column", "Measure"}:
-        raise ValueError(f"Unsupported object_type: {object_type}")
-
-    base_kwargs = {
-        "dataset": MODEL_NAME,
-        "table_name": table_name,
-        "description": description,
-    }
-
-    if object_type == "Table":
-        attempts = [
-            ("set_object_description", base_kwargs),
-            ("set_table_description", base_kwargs),
-        ]
-    elif object_type == "Column":
-        attempts = [
-            ("set_object_description", {**base_kwargs, "column_name": object_name}),
-            ("set_column_description", {**base_kwargs, "column_name": object_name}),
-        ]
-    else:
-        attempts = [
-            ("set_object_description", {**base_kwargs, "measure_name": object_name}),
-            ("set_measure_description", {**base_kwargs, "measure_name": object_name}),
-        ]
+        if desc:
+            return desc, candidate
     fallback = SEMANTIC_FALLBACK_TABLE_DESCRIPTIONS.get(table_name)
     if fallback:
         return fallback, "fallback"
@@ -381,9 +419,29 @@ def resolve_column_description(table_name: str, semantic_column: str):
     return None, None, None
 
 
+def _merge_measure_alias_maps(primary_map, fallback_map):
+    merged = {}
+    for table_name, table_map in fallback_map.items():
+        merged[table_name] = {k: list(v) for k, v in table_map.items()}
+
+    for table_name, table_map in primary_map.items():
+        current = merged.setdefault(table_name, {})
+        for measure_name, aliases in table_map.items():
+            current_aliases = current.get(measure_name, [])
+            current[measure_name] = _dedupe_preserve_order(current_aliases + list(aliases))
+
+    return merged
+
+
+ACTIVE_MEASURE_ALIAS_MAP = _merge_measure_alias_maps(
+    SEMANTIC_MEASURE_METADATA_ALIASES_RUNTIME,
+    SEMANTIC_MEASURE_METADATA_ALIASES,
+)
+
+
 def measure_candidates(table_name: str, measure_name: str):
-    aliases = SEMANTIC_MEASURE_METADATA_ALIASES.get(table_name, {}).get(measure_name, [])
-    common_aliases = SEMANTIC_MEASURE_METADATA_ALIASES.get("_Measures", {}).get(measure_name, [])
+    aliases = ACTIVE_MEASURE_ALIAS_MAP.get(table_name, {}).get(measure_name, [])
+    common_aliases = ACTIVE_MEASURE_ALIAS_MAP.get("_Measures", {}).get(measure_name, [])
 
     generated = [
         measure_name,
@@ -396,34 +454,17 @@ def measure_candidates(table_name: str, measure_name: str):
     ]
 
     return _dedupe_preserve_order(generated + aliases + common_aliases)
-        ok, detail = _set_object_description(table_name, "Table", table_name, description)
-        if ok:
-            applied_descriptions += 1
-            print(f"  [APPLIED] table   {table_name:<28} source={source} via {detail}")
-        else:
-            skipped_descriptions += 1
-            print(f"  [WARN] skipped table   {table_name:<28} source={source} | {detail}")
+
+
 def resolve_measure_description(table_name: str, measure_name: str):
-    # 1) Deterministic lookups using exact/normalized aliases.
-        ok, detail = _set_object_description(table_name, "Column", column_name, description)
-        if ok:
-            applied_descriptions += 1
-            print(f"  [APPLIED] column  {table_name}.{column_name:<20} source={source_table}.{source_column} via {detail}")
-        else:
-            skipped_descriptions += 1
-            print(f"  [WARN] skipped column  {table_name}.{column_name:<20} source={source_table}.{source_column} | {detail}")
+    for candidate in measure_candidates(table_name, measure_name):
+        desc = (
             kpi_descs.get(candidate)
             or kpi_descs.get(_norm_measure_key(candidate))
-        ok, detail = _set_object_description(table_name, "Measure", measure_name, description)
-        if ok:
-            applied_descriptions += 1
-            print(f"  [APPLIED] measure {table_name}.{measure_name} via {detail}")
-        else:
-            skipped_descriptions += 1
-            print(f"  [WARN] skipped measure {table_name}.{measure_name} | {detail}")
+        )
+        if desc:
             return desc, candidate, "exact_or_alias"
 
-    # 2) Conservative fuzzy fallback if deterministic matches fail.
     measure_key = _norm_measure_key(measure_name)
     if len(measure_key) >= 6:
         fuzzy_descriptions = []
@@ -436,7 +477,6 @@ def resolve_measure_description(table_name: str, measure_name: str):
             if measure_key in kpi_norm or kpi_norm in measure_key:
                 fuzzy_descriptions.append((kpi_key, desc))
 
-        # Only auto-apply if there is a single unique description.
         unique_descriptions = {d for _, d in fuzzy_descriptions}
         if len(unique_descriptions) == 1 and fuzzy_descriptions:
             source_key, only_desc = fuzzy_descriptions[0]
