@@ -33,7 +33,7 @@
 # is not available for the notebook runtime identity, use a Key Vault-backed
 # secret path outside this repo.
 
-DEMO_MODE                  = True
+DEMO_MODE                  = False
 WORKSPACE_ID               = "b976cac2-7754-4061-88c2-61c0ac016a99"
 SERVER_NAME                = "sqlserver-sk2wus3.database.windows.net"
 DATABASE_NAME              = "sqldemo"
