@@ -1,0 +1,10 @@
+policy_row_type,label_name,label_order,assignment_rule,description,owner_upn,scope,enforcement_target
+LABEL,General,1,,Open business information no restriction on sharing. Default label for product catalog and reference data with no personal element.,Ci.Zhu@enercare.ca,Tenant,
+LABEL,Internal,2,,Internal-only business data. Default for operational metadata stewardship lists and audit logs that do not contain raw PII.,Ci.Zhu@enercare.ca,Tenant,
+LABEL,Confidential,3,,Confidential business and personal data. Default for customer master service-account and complaint records. Requires named access need.,Ci.Zhu@enercare.ca,Tenant,
+LABEL,Highly Confidential,4,,Most restricted tier. SIN payment partials banking and other regulated identifiers. Requires explicit approval and audit logging.,Ci.Zhu@enercare.ca,Tenant,
+RULE,Confidential,,Classifier=PersonName OR EmailAddress OR CanadianPostalCode OR DateOfBirth OR GeoCoordinate,Auto-apply Confidential when any standard PII classifier fires on an asset column.,Ci.Zhu@enercare.ca,Tenant,"Fabric Lakehouse;Fabric Semantic Model"
+RULE,Highly Confidential,,Classifier=CanadianSIN OR ENERCARE.CUSTOM.SIN OR CreditCardNumber OR BankRoutingNumber,Auto-apply Highly Confidential when any regulated-identifier classifier fires (built-in OR Enercare custom SIN backstop).,Ci.Zhu@enercare.ca,Tenant,"Fabric Lakehouse;Fabric Semantic Model"
+RULE,Confidential,,Manual=DataProductDP-CUST360,Mandatory label on the Customer 360 data product semantic model regardless of classifier output.,Ci.Zhu@enercare.ca,DataProduct,"BrookfieldEnercare semantic model"
+RULE,Highly Confidential,,Manual=DataProductDP-BILLHEALTH,Mandatory label on the Billing and Contract Health data product because contracts contain financial CDEs.,Ci.Zhu@enercare.ca,DataProduct,"BrookfieldEnercare semantic model"
+RULE,Internal,,Default,Default label for any Fabric item that no other rule matches.,Ci.Zhu@enercare.ca,Tenant,"Fabric Workspace Enercare-West3"
