@@ -271,6 +271,55 @@ else:
 
 # CELL ********************
 
+# CELL B0A: Self-stage SQL scripts and tool files into Lakehouse Files
+
+from pathlib import Path
+from urllib.request import urlopen
+
+FILES_SQL_ROOT = Path("/lakehouse/default/Files/sql")
+FILES_TOOLS_ROOT = Path("/lakehouse/default/Files/tools")
+REPO_RAW_BASE = "https://raw.githubusercontent.com/RangerXP/sql-metadata-mirror/main"
+
+SUPPORT_FILE_URLS = {
+    ("sql", "04_purview_demo_extensions.sql"): f"{REPO_RAW_BASE}/sql/04_purview_demo_extensions.sql",
+    ("sql", "05_seed_purview_demo_data.sql"): f"{REPO_RAW_BASE}/sql/05_seed_purview_demo_data.sql",
+    ("sql", "06_purview_metadata_schema.sql"): f"{REPO_RAW_BASE}/sql/06_purview_metadata_schema.sql",
+    ("sql", "07_seed_purview_metadata.sql"): f"{REPO_RAW_BASE}/sql/07_seed_purview_metadata.sql",
+    ("tools", "sin_luhn_generator.py"): f"{REPO_RAW_BASE}/tools/sin_luhn_generator.py",
+}
+
+
+def stage_support_files_from_git() -> None:
+    FILES_SQL_ROOT.mkdir(parents=True, exist_ok=True)
+    FILES_TOOLS_ROOT.mkdir(parents=True, exist_ok=True)
+
+    for (kind, filename), url in SUPPORT_FILE_URLS.items():
+        target_root = FILES_SQL_ROOT if kind == "sql" else FILES_TOOLS_ROOT
+        target_path = target_root / filename
+        try:
+            with urlopen(url, timeout=60) as response:
+                target_path.write_bytes(response.read())
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to download support file '{filename}' from GitHub. "
+                f"URL: {url}. Upload the file manually to Lakehouse Files or confirm GitHub access from Fabric runtime. "
+                f"Original error: {exc}"
+            ) from exc
+        print(f"Staged {target_path} from {url}")
+
+
+stage_support_files_from_git()
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 # CELL B1 — Execute sql/04_purview_demo_extensions.sql (DDL)
 
 import os
@@ -535,13 +584,13 @@ else:
 # CELL B5 — Backfill Luhn-valid SIN fields
 
 import sys
+import random
 
 TOOLS_PATH = "/lakehouse/default/Files/tools"
 if TOOLS_PATH not in sys.path:
     sys.path.insert(0, TOOLS_PATH)
 
 from sin_luhn_generator import generate_synthetic_sin, hyphenated  # noqa: E402
-import random
 
 if DEMO_MODE:
     print("[DRY RUN] Skipping SIN backfill updates.")
