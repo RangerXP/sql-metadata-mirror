@@ -3,7 +3,7 @@
   "metadata": {
     "type": "Notebook",
     "displayName": "nb_07a_ingest_customer_files",
-    "description": "Ingests Purview customer governance CSV files from lakehouse Files and writes schema-validated Delta tables to lh_metadata.metadata.*"
+    "description": "Ingests SQL-mirrored governance metadata tables and writes schema-validated Delta tables to lh_metadata.metadata.*"
   },
   "config": {
     "version": "2.0",

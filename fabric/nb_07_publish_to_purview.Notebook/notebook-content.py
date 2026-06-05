@@ -39,6 +39,8 @@ METADATA_LAKEHOUSE = "lh_metadata"
 METADATA_SCHEMA = "metadata"
 PURVIEW_ACCOUNT_NAME = "Purview-West3"
 PURVIEW_BASE_URL = f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
+SQL_MIRROR_ONLY_DEPLOYMENT = True
+PURVIEW_PUBLISH_OVERRIDE = False
 APPLY_CHANGES = False
 
 
@@ -60,6 +62,8 @@ def _read_table(table_name: str):
     raise RuntimeError(f"Could not resolve table '{table_name}'. Last error: {last_error}")
 
 print(f"Purview account: {PURVIEW_ACCOUNT_NAME}")
+print(f"SQL mirror only deployment guard: {SQL_MIRROR_ONLY_DEPLOYMENT}")
+print(f"Purview publish override: {PURVIEW_PUBLISH_OVERRIDE}")
 print(f"Apply changes: {APPLY_CHANGES}")
 print(f"Metadata source candidates: {_table_candidates('<table>')}")
 
@@ -263,7 +267,13 @@ def _post_json(path: str, token: str, body: dict):
     return resp.status_code, resp.text
 
 
-if not APPLY_CHANGES:
+if SQL_MIRROR_ONLY_DEPLOYMENT and not PURVIEW_PUBLISH_OVERRIDE:
+    print(
+        "[GUARD] SQL-mirror-only deployment is active. "
+        "Live Purview publish is disabled for this run. "
+        "Set PURVIEW_PUBLISH_OVERRIDE=True to intentionally enable publish."
+    )
+elif not APPLY_CHANGES:
     print("[DRY RUN] APPLY_CHANGES=False. Skipping Purview API calls.")
 else:
     token = mssparkutils.credentials.getToken("https://purview.azure.net")
@@ -294,10 +304,15 @@ else:
 
 # Cell 6: Publish summary
 
+publish_guard_active = SQL_MIRROR_ONLY_DEPLOYMENT and not PURVIEW_PUBLISH_OVERRIDE
+live_publish_enabled = APPLY_CHANGES and not publish_guard_active
+
 summary_rows = [
     ("domains_prepared", len(domain_entities)),
     ("data_products_prepared", len(product_entities)),
     ("roles_available", role_assignments_df.count()),
+    ("publish_guard_active", int(publish_guard_active)),
+    ("live_publish_enabled", int(live_publish_enabled)),
     ("apply_changes", int(APPLY_CHANGES)),
 ]
 

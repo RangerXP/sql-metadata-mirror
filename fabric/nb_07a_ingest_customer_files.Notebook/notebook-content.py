@@ -24,7 +24,7 @@ TARGET_LAKEHOUSE = "lh_metadata"
 SOURCE_MODE = "sql_mirror"
 
 # SQL-first lookup order for metadata source tables in mirrored SQL.
-SQL_MIRROR_CATALOGS = ["sqldemo"]
+SQL_MIRROR_CATALOGS = ["sqldemo", "sqldemo_mirror", "sqldemo-mirror"]
 SQL_MIRROR_SCHEMAS = ["dbo", "metadata"]
 MIRROR_WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
 # Keep both IDs to tolerate environment drift between mirror item GUID and logicalId.
@@ -99,6 +99,15 @@ def try_load_sql_dataset(dataset_name: str) -> tuple[pd.DataFrame | None, str | 
     attempted_names = []
     seen_names = set()
 
+    def _identifier_variants(catalog: str, schema_name: str, table_name: str):
+        return [
+            f"{catalog}.{schema_name}.{table_name}",
+            f"`{catalog}`.{schema_name}.{table_name}",
+            f"`{catalog}`.`{schema_name}`.`{table_name}`",
+            f"{schema_name}.{table_name}",
+            table_name,
+        ]
+
     def _try_table(full_name: str):
         if full_name in seen_names:
             return None
@@ -113,11 +122,7 @@ def try_load_sql_dataset(dataset_name: str) -> tuple[pd.DataFrame | None, str | 
     for catalog in SQL_MIRROR_CATALOGS:
         for schema_name in SQL_MIRROR_SCHEMAS:
             for table_name in table_candidates:
-                for full_name in [
-                    f"{catalog}.{schema_name}.{table_name}",
-                    f"{schema_name}.{table_name}",
-                    table_name,
-                ]:
+                for full_name in _identifier_variants(catalog, schema_name, table_name):
                     loaded = _try_table(full_name)
                     if loaded is not None:
                         return loaded
@@ -146,7 +151,7 @@ def try_load_sql_dataset(dataset_name: str) -> tuple[pd.DataFrame | None, str | 
     return None, None
 
 
-def load_metadata_dataset(dataset_name: str, csv_filename: str) -> tuple[pd.DataFrame, str]:
+def load_metadata_dataset(dataset_name: str) -> tuple[pd.DataFrame, str]:
     sql_df, source_name = try_load_sql_dataset(dataset_name)
     if sql_df is not None:
         return sql_df, f"sql:{source_name}"
@@ -157,7 +162,7 @@ def load_metadata_dataset(dataset_name: str, csv_filename: str) -> tuple[pd.Data
         "Prerequisite SQL objects appear missing from the mirrored source. "
         "Ensure sql/06_purview_metadata_schema.sql and sql/07_seed_purview_metadata.sql have been executed against sub2 Azure SQL, "
         "then refresh/confirm sqldemo mirror sync before rerunning nb_07a. "
-        f"CSV fallback is disabled by design in nb_07a. (csv hint: {CSV_ROOT}/{csv_filename})"
+        "nb_07a is SQL-mirror-only by design; direct CSV fallback is intentionally disabled."
     )
 
 
@@ -206,7 +211,7 @@ domain_type_allowed = {
     "Project",
 }
 
-domains_df, domains_source = load_metadata_dataset("domains", "domain-charter.csv")
+domains_df, domains_source = load_metadata_dataset("domains")
 validate_csv(domains_df, domains_required, {"domain_type": domain_type_allowed})
 count_domains = write_table_from_pandas(domains_df, "domains")
 print(f"domains loaded: {count_domains} (source={domains_source})")
@@ -242,7 +247,7 @@ product_type_allowed = {
     "Master and reference data",
 }
 
-data_products_df, data_products_source = load_metadata_dataset("data_products", "data-product-catalog.csv")
+data_products_df, data_products_source = load_metadata_dataset("data_products")
 validate_csv(data_products_df, data_products_required, {"product_type": product_type_allowed})
 count_data_products = write_table_from_pandas(data_products_df, "data_products")
 print(f"data_products loaded: {count_data_products} (source={data_products_source})")
@@ -275,7 +280,7 @@ glossary_required = [
     "bound_assets",
 ]
 
-glossary_df, glossary_source = load_metadata_dataset("glossary_terms", "glossary-master.csv")
+glossary_df, glossary_source = load_metadata_dataset("glossary_terms")
 validate_csv(glossary_df, glossary_required)
 count_glossary = write_table_from_pandas(glossary_df, "glossary_terms")
 print(f"glossary_terms loaded: {count_glossary} (source={glossary_source})")
@@ -305,7 +310,7 @@ cde_required = [
 
 expected_type_allowed = {"number", "text", "date", "Boolean"}
 
-cde_df, cde_source = load_metadata_dataset("cdes", "cde-catalog.csv")
+cde_df, cde_source = load_metadata_dataset("cdes")
 validate_csv(cde_df, cde_required, {"expected_data_type": expected_type_allowed})
 count_cdes = write_table_from_pandas(cde_df, "cdes")
 print(f"cdes loaded: {count_cdes} (source={cde_source})")
@@ -332,7 +337,7 @@ roles_required = [
     "governance_layer",
 ]
 
-roles_df, roles_source = load_metadata_dataset("role_assignments", "role-directory.csv")
+roles_df, roles_source = load_metadata_dataset("role_assignments")
 validate_csv(roles_df, roles_required)
 count_roles = write_table_from_pandas(roles_df, "role_assignments")
 print(f"role_assignments loaded: {count_roles} (source={roles_source})")
@@ -358,7 +363,7 @@ labels_required = [
     "scope",
 ]
 
-labels_df, labels_source = load_metadata_dataset("label_assignments", "label-policy.csv")
+labels_df, labels_source = load_metadata_dataset("label_assignments")
 validate_csv(labels_df, labels_required)
 count_labels = write_table_from_pandas(labels_df, "label_assignments")
 print(f"label_assignments loaded: {count_labels} (source={labels_source})")
