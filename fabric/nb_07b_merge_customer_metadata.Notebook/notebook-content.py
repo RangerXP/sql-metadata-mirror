@@ -47,7 +47,32 @@ ANNOTATION_KEYS = {
 }
 
 print(f"Semantic model: {SEMANTIC_MODEL}")
-print(f"Metadata source: {METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.*")
+
+
+def _table_candidates(table_name: str):
+    return [
+        f"{METADATA_SCHEMA}.{table_name}",
+        f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.{table_name}",
+        table_name,
+    ]
+
+
+def _read_table(table_name: str):
+    last_error = None
+    for candidate in _table_candidates(table_name):
+        try:
+            return spark.table(candidate), candidate
+        except Exception as ex:
+            last_error = ex
+    raise RuntimeError(f"Could not resolve table '{table_name}'. Last error: {last_error}")
+
+
+def _write_table_name(table_name: str):
+    # Use two-part name for Fabric Spark catalog compatibility.
+    return f"{METADATA_SCHEMA}.{table_name}"
+
+
+print(f"Metadata source candidates: {_table_candidates('<table>')}")
 
 
 # METADATA ********************
@@ -61,22 +86,23 @@ print(f"Metadata source: {METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.*")
 
 # Cell 2: Read metadata source tables
 
-glossary_df = spark.table(f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.glossary_terms")
-cde_df = spark.table(f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.cdes")
-data_products_df = spark.table(f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.data_products")
+glossary_df, glossary_source = _read_table("glossary_terms")
+cde_df, cde_source = _read_table("cdes")
+data_products_df, data_products_source = _read_table("data_products")
 
 # Optional table in case labels were ingested already.
 try:
-    labels_df = spark.table(f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.label_assignments")
+    labels_df, labels_source = _read_table("label_assignments")
 except Exception:
     labels_df = None
+    labels_source = None
     print("[WARN] metadata.label_assignments not found; Sensitivity_Label rows will be sourced only from CDE metadata.")
 
-print(f"glossary_terms rows: {glossary_df.count()}")
-print(f"cdes rows: {cde_df.count()}")
-print(f"data_products rows: {data_products_df.count()}")
+print(f"glossary_terms rows: {glossary_df.count()} (source={glossary_source})")
+print(f"cdes rows: {cde_df.count()} (source={cde_source})")
+print(f"data_products rows: {data_products_df.count()} (source={data_products_source})")
 if labels_df is not None:
-    print(f"label_assignments rows: {labels_df.count()}")
+    print(f"label_assignments rows: {labels_df.count()} (source={labels_source})")
 
 
 # METADATA ********************
@@ -331,7 +357,7 @@ annotations_sdf = annotations_sdf.dropDuplicates(
     annotations_sdf.write
     .mode("overwrite")
     .format("delta")
-    .saveAsTable(f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.sm_annotations")
+    .saveAsTable(_write_table_name("sm_annotations"))
 )
 
 print(f"sm_annotations rows written: {annotations_sdf.count()}")
@@ -349,7 +375,7 @@ print(f"sm_annotations rows written: {annotations_sdf.count()}")
 # Cell 7: Summary by annotation key
 
 summary_df = (
-    spark.table(f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.sm_annotations")
+    spark.table(_write_table_name("sm_annotations"))
     .groupBy("annotation_key")
     .agg(F.count("*").alias("annotation_count"))
     .orderBy("annotation_key")

@@ -41,8 +41,27 @@ PURVIEW_ACCOUNT_NAME = "Purview-West3"
 PURVIEW_BASE_URL = f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
 APPLY_CHANGES = False
 
+
+def _table_candidates(table_name: str):
+    return [
+        f"{METADATA_SCHEMA}.{table_name}",
+        f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.{table_name}",
+        table_name,
+    ]
+
+
+def _read_table(table_name: str):
+    last_error = None
+    for candidate in _table_candidates(table_name):
+        try:
+            return spark.table(candidate), candidate
+        except Exception as ex:
+            last_error = ex
+    raise RuntimeError(f"Could not resolve table '{table_name}'. Last error: {last_error}")
+
 print(f"Purview account: {PURVIEW_ACCOUNT_NAME}")
 print(f"Apply changes: {APPLY_CHANGES}")
+print(f"Metadata source candidates: {_table_candidates('<table>')}")
 
 
 # METADATA ********************
@@ -56,13 +75,13 @@ print(f"Apply changes: {APPLY_CHANGES}")
 
 # Cell 2: Read governance tables
 
-domains_df = spark.table(f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.domains")
-data_products_df = spark.table(f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.data_products")
-role_assignments_df = spark.table(f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.role_assignments")
+domains_df, domains_source = _read_table("domains")
+data_products_df, data_products_source = _read_table("data_products")
+role_assignments_df, roles_source = _read_table("role_assignments")
 
-print(f"domains rows: {domains_df.count()}")
-print(f"data_products rows: {data_products_df.count()}")
-print(f"role_assignments rows: {role_assignments_df.count()}")
+print(f"domains rows: {domains_df.count()} (source={domains_source})")
+print(f"data_products rows: {data_products_df.count()} (source={data_products_source})")
+print(f"role_assignments rows: {role_assignments_df.count()} (source={roles_source})")
 
 
 # METADATA ********************
