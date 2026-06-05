@@ -22,7 +22,7 @@ flowchart LR
     A[nb_01 Seed synthetic source] --> B[lh_enercare_demo source-style tables]
     B --> C[nb_05a Publish to Azure SQL]
     C --> D[Azure SQL sub2 authoritative source]
-    D --> E[Fabric Mirroring sqldemo-mirror]
+    D --> E[Fabric Mirroring sqldemo]
     E --> F[nb_03 Rebuild star schema]
     F --> G[lh_enercare_demo dimensions and facts]
     G --> H[Semantic Model consumer metadata surface]

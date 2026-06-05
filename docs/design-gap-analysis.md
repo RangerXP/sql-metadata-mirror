@@ -45,7 +45,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 
 - Synthetic Enercare data generation in the Fabric notebooks.
 - Synthetic operational dataset published into **Azure SQL** in sub2 (`sqlserver-sk2wus3` / `sqldemo`) for the seven-table mirrored source slice.
-- Fabric workspace `Enercare-West3` has a live mirrored database item (`sqldemo-mirror`) replicating from the Azure SQL source.
+- Fabric workspace `Enercare-West3` has a live mirrored database item (`sqldemo`) replicating from the Azure SQL source.
 - Mirrored operational tables landing in OneLake for `products`, `customers`, `service_accounts`, `equipment_registry`, `contracts`, `service_requests`, `billing_transactions`.
 - Star-schema notebook (`nb_03_pbi_star_schema`) reads the mirrored OneLake source and runs end-to-end.
 - `lh_metadata` lakehouse and supporting metadata tables are scaffolded.
@@ -96,7 +96,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 
 | Subscription | Role | Target assets |
 |---|---|---|
-| `sub1` | Fabric build, mirror landing, Lakehouse, semantic model, Copilot, Data Agents | Fabric workspace `Enercare-West3`, lakehouses (`lh_enercare_demo`, `lh_metadata`), notebooks, mirrored DB `sqldemo-mirror`, semantic model `BrookfieldEnercare` |
+| `sub1` | Fabric build, mirror landing, Lakehouse, semantic model, Copilot, Data Agents | Fabric workspace `Enercare-West3`, lakehouses (`lh_enercare_demo`, `lh_metadata`), notebooks, mirrored DB `sqldemo`, semantic model `BrookfieldEnercare` |
 | `sub2` | Authoritative SQL source for the demo | Azure SQL server `sqlserver-sk2wus3`, `sqldemo` database, source views/procs/tables (now extended per `sql/04_purview_demo_extensions.sql`) |
 | `sub3` | Governance and catalog plane | `Purview-West3`, scans, glossary, CDEs, lineage, classifications, sensitivity labels |
 
@@ -104,7 +104,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 
 1. `nb_01_setup_demo_environment` generates the synthetic Enercare operational dataset.
 2. `nb_05a_publish_synthetic_data_to_sql` publishes the seven source tables (now extended to thirteen — see G12) into **Azure SQL in sub2** as the demo system of record.
-3. **Fabric Mirroring** in sub1 ingests that SQL source into OneLake through `sqldemo-mirror`.
+3. **Fabric Mirroring** in sub1 ingests that SQL source into OneLake through `sqldemo`.
 4. `nb_03_pbi_star_schema` reads the mirrored OneLake tables and rebuilds `lh_enercare_demo`.
 5. Metadata is authored or staged in working stores (`lh_metadata`, notebook-driven tables, customer-supplied governance CSVs in `purview/`).
 6. Metadata is propagated to the **semantic model** so Copilot and Data Agents can use it (SemPy Labs writeback via `nb_04_sempy_writeback`).
@@ -220,7 +220,7 @@ Phase A delivered the design that the rest of the build executes against. Sixtee
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| G4-1 | Create mirrored Azure SQL Database item in Fabric | 🟢 Done | `sqldemo-mirror` provisioned |
+| G4-1 | Create mirrored Azure SQL Database item in Fabric | 🟢 Done | `sqldemo` provisioned |
 | G4-2 | Validate mirrored tables land in OneLake | 🟢 Done | Seven operational tables replicating |
 | G4-3 | Decide how mirrored tables coexist with current demo lakehouse tables | 🟢 Done | Star-schema outputs land in `lh_enercare_demo` |
 | G4-4 | Update star schema / downstream notebooks to read mirrored source | 🟢 Done | `nb_03_pbi_star_schema` reads mirror |

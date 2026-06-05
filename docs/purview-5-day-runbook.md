@@ -208,8 +208,8 @@ service_accounts GPS-backfilled 56
 
 **1.3v [HUMAN]** Save `nb_05a` (top-right floppy icon).
 
-**1.4 [HUMAN]** Wait for Fabric mirror to pick up new tables/columns (5–15 min). Open `sqldemo-mirror` in Purview-West3 → check last sync time advances → confirm 13 tables visible in OneLake explorer under the mirror.
-**Verify:** OneLake shows 13 tables under `sqldemo-mirror` (7 original + 6 new).
+**1.4 [HUMAN]** Wait for Fabric mirror to pick up new tables/columns (5–15 min). Open `sqldemo` in Purview-West3 → check last sync time advances → confirm 13 tables visible in OneLake explorer under the mirror.
+**Verify:** OneLake shows 13 tables under `sqldemo` (7 original + 6 new).
 **If mirror lag exceeds 30 min:** in mirror status page, click "Stop replication" then "Start replication" to force a re-sync.
 
 **1.5 [HUMAN]** Open `nb_03_pbi_star_schema` in Fabric → Run all.

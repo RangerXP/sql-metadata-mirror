@@ -53,7 +53,7 @@ Primary repo surface is `fabric/`. Do not recreate duplicate notebook mirrors el
 
 1. `nb_01_setup_demo_environment` seeds the Fabric baseline.
 2. `nb_05a_publish_synthetic_data_to_sql` publishes the authoritative seven-table source into Azure SQL in `sub2`.
-3. Fabric mirroring ingests that source into `sqldemo-mirror`.
+3. Fabric mirroring ingests that source into `sqldemo`.
 4. `nb_03_pbi_star_schema` rebuilds the DirectLake star schema from the mirrored source.
 5. `nb_02_metadata_pipeline_demo`, `nb_04a_extend_metadata_schema`, `nb_04_sempy_writeback`, and `nb_05_push_qa_verified_answers` maintain metadata and Copilot grounding using SemPy and SemPy Labs.
 6. `nb_05b_test_sql_connectivity` remains the smoke test for private SQL access.

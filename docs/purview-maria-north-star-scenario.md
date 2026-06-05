@@ -179,7 +179,7 @@ Ci Zhu opens Purview Unified Catalog.
 
 ### 3.6 — The lineage
 
-> "Click 'View lineage' on the Net Revenue measure. The chain: Power BI visual → SM measure → `lh_enercare_demo.fct_billing` → mirrored OneLake table from sqldemo-mirror → source `sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions`. Eight edges. Every edge is registered via either native Purview scan output or `tools/purview_custom_lineage.py`. This is the provable chain."
+> "Click 'View lineage' on the Net Revenue measure. The chain: Power BI visual → SM measure → `lh_enercare_demo.fct_billing` → mirrored OneLake table from sqldemo → source `sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions`. Eight edges. Every edge is registered via either native Purview scan output or `tools/purview_custom_lineage.py`. This is the provable chain."
 
 ### 3.7 — The audit answer
 

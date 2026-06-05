@@ -13,7 +13,7 @@ nb_01_setup_demo_environment
     -> lh_enercare_demo baseline tables in Fabric
     -> nb_05a_publish_synthetic_data_to_sql
     -> Azure SQL sqldemo in sub2
-    -> Fabric mirrored database sqldemo-mirror in sub1
+    -> Fabric mirrored database sqldemo in sub1
     -> nb_03_pbi_star_schema rebuilds lh_enercare_demo star schema
     -> nb_02 and nb_04a curate metadata in lh_metadata
     -> nb_04 and nb_05 apply semantic metadata with SemPy and SemPy Labs

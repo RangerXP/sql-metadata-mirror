@@ -47,7 +47,7 @@ Open `fabric/nb_05a_publish_synthetic_data_to_sql.Notebook/` and append the six 
 
 | # | Action | Evidence |
 |---|---|---|
-| 1.4 | Wait for Fabric mirror to pick up new columns and tables (5–15 min). Confirm via OneLake explorer — all 13 source tables visible under `sqldemo-mirror` | All 13 tables reflected in OneLake |
+| 1.4 | Wait for Fabric mirror to pick up new columns and tables (5–15 min). Confirm via OneLake explorer — all 13 source tables visible under `sqldemo` | All 13 tables reflected in OneLake |
 | 1.5 | Open `fabric/nb_03_pbi_star_schema.Notebook/` and run end-to-end | Star schema rebuilds without error; row counts include new dimensions |
 
 ### Morning — Notebook 3: `nb_06a_create_sin_backstop` (custom Purview SIT)
