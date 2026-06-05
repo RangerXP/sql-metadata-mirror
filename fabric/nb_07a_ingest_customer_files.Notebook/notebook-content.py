@@ -24,7 +24,7 @@ TARGET_LAKEHOUSE = "lh_metadata"
 SOURCE_MODE = "auto"  # auto | sql_mirror | csv_files
 
 # SQL-first lookup order for metadata source tables in mirrored SQL.
-SQL_MIRROR_CATALOGS = ["sqldemo", "sqldemo_mirror"]
+SQL_MIRROR_CATALOGS = ["sqldemo"]
 SQL_MIRROR_SCHEMAS = ["dbo", "metadata"]
 
 SQL_SOURCE_TABLES = {

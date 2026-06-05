@@ -60,8 +60,7 @@ tools/
 fabric/
   nb_01_*..nb_06_*.Notebook/      (existing)
   nb_05a_publish_synthetic_data_to_sql.Notebook/
-    notebook-content.py           (existing, Phase B cells appended Day 1)
-    phase_b_cell_additions.py     (NEW Phase A — to be appended to notebook-content.py on Day 1)
+    notebook-content.py           (existing, includes integrated Phase B cells B0-B6)
   nb_06a_create_sin_backstop.Notebook/
     notebook-content.py           (NEW Phase A)
   nb_07a_ingest_customer_files.Notebook/   (BUILT Day 1 afternoon)
@@ -87,8 +86,8 @@ fabric/
 
 | Mount path | Contents |
 |---|---|
-| `/lakehouse/default/Files/sql/` | `04_purview_demo_extensions.sql`, `05_seed_purview_demo_data.sql` |
-| `/lakehouse/default/Files/tools/` | `sin_luhn_generator.py` |
+| `/lakehouse/default/Files/sql/` | `04_purview_demo_extensions.sql`, `05_seed_purview_demo_data.sql`, `06_purview_metadata_schema.sql`, `07_seed_purview_metadata.sql` |
+| `/lakehouse/default/Files/tools/` | Optional: `sin_luhn_generator.py` (not required when notebook fallback is used) |
 | `/lakehouse/default/Files/purview/` | 6 CSVs |
 
 ---
@@ -136,16 +135,17 @@ git commit -m "Phase A — Purview design assets + notebook-based Phase B scaffo
 **0.6 [HUMAN]** Confirm SQL public network access matches `docs/design-gap-analysis.md` §G7-2 posture: *Selected networks ON + AllowAzureServices exception ON*. SSMS connects from your laptop (already verified).
 **Verify:** SSMS successful connection to `sqldemo` from MSFT VPN.
 
-**0.7 [HUMAN + AGENT]** Upload `sql/` and `tools/` to lakehouse Files mount.
-- Fabric portal → `Purview-West3` → `lh_metadata` → `Files` → Upload `sql/04_purview_demo_extensions.sql`, `sql/05_seed_purview_demo_data.sql` into `Files/sql/`
-- Upload `tools/sin_luhn_generator.py` into `Files/tools/`
+**0.7 [HUMAN + AGENT]** Upload SQL scripts to lakehouse Files mount.
+- Fabric portal → `Purview-West3` → `lh_metadata` → `Files` → Upload `sql/04_purview_demo_extensions.sql`, `sql/05_seed_purview_demo_data.sql`, `sql/06_purview_metadata_schema.sql`, and `sql/07_seed_purview_metadata.sql` into `Files/sql/`
+- Optional: upload `tools/sin_luhn_generator.py` into `Files/tools/`.
 
 **Verify:** From any Fabric notebook cell, run:
 ```python
 import os
 assert "04_purview_demo_extensions.sql" in os.listdir("/lakehouse/default/Files/sql")
 assert "05_seed_purview_demo_data.sql" in os.listdir("/lakehouse/default/Files/sql")
-assert "sin_luhn_generator.py" in os.listdir("/lakehouse/default/Files/tools")
+assert "06_purview_metadata_schema.sql" in os.listdir("/lakehouse/default/Files/sql")
+assert "07_seed_purview_metadata.sql" in os.listdir("/lakehouse/default/Files/sql")
 print("Files mount verified")
 ```
 
@@ -176,10 +176,10 @@ Phase B SQL extensions deployed; SINs populated (Luhn-valid); Fabric mirror refl
 
 **1.1a [HUMAN]** Open `nb_05a_publish_synthetic_data_to_sql` in Fabric. Confirm the existing `conn = pyodbc.connect(...)` cell at the top runs cleanly (verifies SQL connectivity from Fabric workspace identity).
 
-**1.1b [HUMAN]** Append the six Phase B cells from `fabric/nb_05a_publish_synthetic_data_to_sql.Notebook/phase_b_cell_additions.py` into `nb_05a`. The file is divided by `# CELL B1` … `# CELL B6` markers — paste each block as a new Fabric cell at the bottom of the notebook, in order.
-**Verify:** Six new cells (B1–B6) visible at the bottom of `nb_05a`.
+**1.1b [HUMAN]** Confirm `nb_05a` already includes integrated Phase B cells (`B0`, `B1` … `B6`, plus `B4A`/`B4B`).
+**Verify:** Those cells are already present in the notebook with no manual cell copy/paste.
 
-**1.1c [HUMAN]** Run Cell B1 (execute `sql/04_purview_demo_extensions.sql` DDL).
+**1.1c [HUMAN]** Run Cell B0 first (pyodbc connection), then run Cell B1 (execute `sql/04_purview_demo_extensions.sql` DDL).
 **Expected output:** `DDL applied: 04_purview_demo_extensions.sql`
 **Verify (Cell B2):** 4 rows, all GREEN.
 **If B1 errors:**
@@ -204,7 +204,7 @@ service_accounts GPS-backfilled 56
 **1.3 [HUMAN]** Run Cell B5 (Layer-1 Luhn SIN backfill).
 **Expected output:** `employees.sin_full populated: 11 rows` and `customers.sin_last_4 populated: 50 rows`
 **Verify (Cell B6):** `ALL GREEN — Layer 1 backstop ready` and `5/5 SINs Luhn-valid`.
-**If B5 errors `ModuleNotFoundError: sin_luhn_generator`:** Step 0.7 upload of `tools/sin_luhn_generator.py` did not complete. Re-upload and re-run B5.
+**If B5 errors on SIN helper import:** notebook fallback generator should run automatically; if not, upload `tools/sin_luhn_generator.py` and re-run B5.
 
 **1.3v [HUMAN]** Save `nb_05a` (top-right floppy icon).
 
@@ -284,7 +284,7 @@ git commit -m "Day 1 — Phase B notebooks live; SQL extensions + SIN SIT + lh_m
 ```
 
 ### Day 1 exit criteria
-- [ ] `nb_05a` Phase B cells B1–B6 all green
+- [ ] `nb_05a` Phase B cells B0–B6 and B4A/B4B all green
 - [ ] OneLake mirror reflects 13 tables
 - [ ] `nb_03_pbi_star_schema` re-ran without error
 - [ ] `ENERCARE.PRIVACY.SIN_BACKSTOP` registered + enabled in Purview

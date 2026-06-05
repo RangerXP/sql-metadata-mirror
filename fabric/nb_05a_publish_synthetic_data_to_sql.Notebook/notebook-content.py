@@ -271,44 +271,30 @@ else:
 
 # CELL ********************
 
-# CELL B0A: Self-stage SQL scripts and tool files into Lakehouse Files
+# CELL B0A: Validate required SQL script files in Lakehouse Files
 
 from pathlib import Path
-from urllib.request import urlopen
 
 FILES_SQL_ROOT = Path("/lakehouse/default/Files/sql")
-FILES_TOOLS_ROOT = Path("/lakehouse/default/Files/tools")
-REPO_RAW_BASE = "https://raw.githubusercontent.com/RangerXP/sql-metadata-mirror/main"
+REQUIRED_SQL_FILES = [
+    "04_purview_demo_extensions.sql",
+    "05_seed_purview_demo_data.sql",
+    "06_purview_metadata_schema.sql",
+    "07_seed_purview_metadata.sql",
+]
 
-SUPPORT_FILE_URLS = {
-    ("sql", "04_purview_demo_extensions.sql"): f"{REPO_RAW_BASE}/sql/04_purview_demo_extensions.sql",
-    ("sql", "05_seed_purview_demo_data.sql"): f"{REPO_RAW_BASE}/sql/05_seed_purview_demo_data.sql",
-    ("sql", "06_purview_metadata_schema.sql"): f"{REPO_RAW_BASE}/sql/06_purview_metadata_schema.sql",
-    ("sql", "07_seed_purview_metadata.sql"): f"{REPO_RAW_BASE}/sql/07_seed_purview_metadata.sql",
-    ("tools", "sin_luhn_generator.py"): f"{REPO_RAW_BASE}/tools/sin_luhn_generator.py",
-}
+missing_sql_files = [name for name in REQUIRED_SQL_FILES if not (FILES_SQL_ROOT / name).exists()]
 
+if missing_sql_files:
+    raise FileNotFoundError(
+        "Missing SQL scripts in Lakehouse Files/sql: "
+        + ", ".join(missing_sql_files)
+        + ". Upload sql/04-07 from this repo into /lakehouse/default/Files/sql and rerun B0A."
+    )
 
-def stage_support_files_from_git() -> None:
-    FILES_SQL_ROOT.mkdir(parents=True, exist_ok=True)
-    FILES_TOOLS_ROOT.mkdir(parents=True, exist_ok=True)
-
-    for (kind, filename), url in SUPPORT_FILE_URLS.items():
-        target_root = FILES_SQL_ROOT if kind == "sql" else FILES_TOOLS_ROOT
-        target_path = target_root / filename
-        try:
-            with urlopen(url, timeout=60) as response:
-                target_path.write_bytes(response.read())
-        except Exception as exc:
-            raise RuntimeError(
-                f"Failed to download support file '{filename}' from GitHub. "
-                f"URL: {url}. Upload the file manually to Lakehouse Files or confirm GitHub access from Fabric runtime. "
-                f"Original error: {exc}"
-            ) from exc
-        print(f"Staged {target_path} from {url}")
-
-
-stage_support_files_from_git()
+print("B0A preflight complete. SQL scripts available:")
+for name in REQUIRED_SQL_FILES:
+    print(f"  - {FILES_SQL_ROOT / name}")
 
 
 # METADATA ********************
@@ -590,7 +576,42 @@ TOOLS_PATH = "/lakehouse/default/Files/tools"
 if TOOLS_PATH not in sys.path:
     sys.path.insert(0, TOOLS_PATH)
 
-from sin_luhn_generator import generate_synthetic_sin, hyphenated  # noqa: E402
+try:
+    from sin_luhn_generator import generate_synthetic_sin, hyphenated, is_luhn_valid  # noqa: E402
+    print("Using sin_luhn_generator from Lakehouse Files/tools.")
+except Exception:
+    print("sin_luhn_generator not found. Using notebook-local SIN helper fallback.")
+
+    def _digits(value: str) -> str:
+        return "".join(ch for ch in str(value) if ch.isdigit())
+
+    def _luhn_check_digit(eight_digits: str) -> str:
+        total = 0
+        for i, ch in enumerate(reversed(eight_digits), start=1):
+            n = int(ch)
+            if i % 2 == 1:
+                n *= 2
+                if n > 9:
+                    n -= 9
+            total += n
+        return str((10 - (total % 10)) % 10)
+
+    def is_luhn_valid(sin_value: str) -> bool:
+        digits = _digits(sin_value)
+        if len(digits) != 9:
+            return False
+        return _luhn_check_digit(digits[:8]) == digits[8]
+
+    def generate_synthetic_sin(first_digit: str = "9", rng: random.Random | None = None) -> str:
+        rng = rng or random.Random()
+        prefix = first_digit if first_digit and first_digit.isdigit() else "9"
+        body = "".join(str(rng.randint(0, 9)) for _ in range(7))
+        first_eight = f"{prefix}{body}"
+        return first_eight + _luhn_check_digit(first_eight)
+
+    def hyphenated(sin_value: str) -> str:
+        digits = _digits(sin_value)
+        return f"{digits[0:3]}-{digits[3:6]}-{digits[6:9]}"
 
 if DEMO_MODE:
     print("[DRY RUN] Skipping SIN backfill updates.")
@@ -634,8 +655,6 @@ else:
 # CELL ********************
 
 # CELL B6 — Spot-check SIN Luhn validity
-
-from sin_luhn_generator import is_luhn_valid  # noqa: E402
 
 if DEMO_MODE:
     print("[DRY RUN] Skipping SIN validity spot-check.")
