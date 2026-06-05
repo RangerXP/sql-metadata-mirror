@@ -21,9 +21,24 @@ spark = SparkSession.builder.getOrCreate()
 CSV_ROOT = "/lakehouse/default/Files/purview"
 SCHEMA = "metadata"
 TARGET_LAKEHOUSE = "lh_metadata"
+SOURCE_MODE = "auto"  # auto | sql_mirror | csv_files
+
+# SQL-first lookup order for metadata source tables in mirrored SQL.
+SQL_MIRROR_CATALOGS = ["sqldemo_mirror", "sqldemo"]
+SQL_MIRROR_SCHEMAS = ["dbo", "metadata"]
+
+SQL_SOURCE_TABLES = {
+    "domains": ["governance_domains", "metadata_domains"],
+    "data_products": ["governance_data_products", "metadata_data_products"],
+    "glossary_terms": ["governance_glossary_terms", "metadata_glossary_terms"],
+    "cdes": ["governance_cdes", "metadata_cdes"],
+    "role_assignments": ["governance_role_assignments", "metadata_role_assignments"],
+    "label_assignments": ["governance_label_assignments", "metadata_label_assignments"],
+}
 
 print(f"CSV root: {CSV_ROOT}")
 print(f"Target schema: {TARGET_LAKEHOUSE}.{SCHEMA}")
+print(f"Source mode: {SOURCE_MODE}")
 
 
 # METADATA ********************
@@ -60,6 +75,42 @@ def load_csv_as_pandas(filename: str) -> pd.DataFrame:
     path = f"{CSV_ROOT}/{filename}"
     sdf = spark.read.option("header", True).csv(path)
     return sdf.toPandas()
+
+
+def try_load_sql_dataset(dataset_name: str) -> tuple[pd.DataFrame | None, str | None]:
+    table_candidates = SQL_SOURCE_TABLES.get(dataset_name, [])
+    for catalog in SQL_MIRROR_CATALOGS:
+        for schema_name in SQL_MIRROR_SCHEMAS:
+            for table_name in table_candidates:
+                full_name = f"{catalog}.{schema_name}.{table_name}"
+                try:
+                    sdf = spark.table(full_name)
+                    return sdf.toPandas(), full_name
+                except Exception:
+                    continue
+    return None, None
+
+
+def load_metadata_dataset(dataset_name: str, csv_filename: str) -> tuple[pd.DataFrame, str]:
+    if SOURCE_MODE in ("auto", "sql_mirror"):
+        sql_df, source_name = try_load_sql_dataset(dataset_name)
+        if sql_df is not None:
+            return sql_df, f"sql:{source_name}"
+        if SOURCE_MODE == "sql_mirror":
+            raise ValueError(
+                f"SQL source mode is enabled, but mirrored metadata table for '{dataset_name}' was not found. "
+                f"Checked catalogs={SQL_MIRROR_CATALOGS}, schemas={SQL_MIRROR_SCHEMAS}, candidates={SQL_SOURCE_TABLES.get(dataset_name, [])}."
+            )
+
+    try:
+        return load_csv_as_pandas(csv_filename), f"csv:{CSV_ROOT}/{csv_filename}"
+    except Exception as ex:
+        raise ValueError(
+            f"Could not load dataset '{dataset_name}' from SQL mirror or CSV. "
+            f"CSV path checked: {CSV_ROOT}/{csv_filename}. "
+            f"For production, maintain governance metadata in SQL and let mirror feed this notebook. "
+            f"Original error: {ex}"
+        )
 
 
 def write_table_from_pandas(df: pd.DataFrame, table_name: str) -> int:
@@ -104,10 +155,10 @@ domain_type_allowed = {
     "Project",
 }
 
-domains_df = load_csv_as_pandas("domain-charter.csv")
+domains_df, domains_source = load_metadata_dataset("domains", "domain-charter.csv")
 validate_csv(domains_df, domains_required, {"domain_type": domain_type_allowed})
 count_domains = write_table_from_pandas(domains_df, "domains")
-print(f"domains loaded: {count_domains}")
+print(f"domains loaded: {count_domains} (source={domains_source})")
 
 
 # METADATA ********************
@@ -140,10 +191,10 @@ product_type_allowed = {
     "Master and reference data",
 }
 
-data_products_df = load_csv_as_pandas("data-product-catalog.csv")
+data_products_df, data_products_source = load_metadata_dataset("data_products", "data-product-catalog.csv")
 validate_csv(data_products_df, data_products_required, {"product_type": product_type_allowed})
 count_data_products = write_table_from_pandas(data_products_df, "data_products")
-print(f"data_products loaded: {count_data_products}")
+print(f"data_products loaded: {count_data_products} (source={data_products_source})")
 
 
 # METADATA ********************
@@ -173,10 +224,10 @@ glossary_required = [
     "bound_assets",
 ]
 
-glossary_df = load_csv_as_pandas("glossary-master.csv")
+glossary_df, glossary_source = load_metadata_dataset("glossary_terms", "glossary-master.csv")
 validate_csv(glossary_df, glossary_required)
 count_glossary = write_table_from_pandas(glossary_df, "glossary_terms")
-print(f"glossary_terms loaded: {count_glossary}")
+print(f"glossary_terms loaded: {count_glossary} (source={glossary_source})")
 
 
 # METADATA ********************
@@ -203,10 +254,10 @@ cde_required = [
 
 expected_type_allowed = {"number", "text", "date", "Boolean"}
 
-cde_df = load_csv_as_pandas("cde-catalog.csv")
+cde_df, cde_source = load_metadata_dataset("cdes", "cde-catalog.csv")
 validate_csv(cde_df, cde_required, {"expected_data_type": expected_type_allowed})
 count_cdes = write_table_from_pandas(cde_df, "cdes")
-print(f"cdes loaded: {count_cdes}")
+print(f"cdes loaded: {count_cdes} (source={cde_source})")
 
 
 # METADATA ********************
@@ -230,10 +281,10 @@ roles_required = [
     "governance_layer",
 ]
 
-roles_df = load_csv_as_pandas("role-directory.csv")
+roles_df, roles_source = load_metadata_dataset("role_assignments", "role-directory.csv")
 validate_csv(roles_df, roles_required)
 count_roles = write_table_from_pandas(roles_df, "role_assignments")
-print(f"role_assignments loaded: {count_roles}")
+print(f"role_assignments loaded: {count_roles} (source={roles_source})")
 
 
 # METADATA ********************
@@ -256,10 +307,10 @@ labels_required = [
     "scope",
 ]
 
-labels_df = load_csv_as_pandas("label-policy.csv")
+labels_df, labels_source = load_metadata_dataset("label_assignments", "label-policy.csv")
 validate_csv(labels_df, labels_required)
 count_labels = write_table_from_pandas(labels_df, "label_assignments")
-print(f"label_assignments loaded: {count_labels}")
+print(f"label_assignments loaded: {count_labels} (source={labels_source})")
 
 
 # METADATA ********************

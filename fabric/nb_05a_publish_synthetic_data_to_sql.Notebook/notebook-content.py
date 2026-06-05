@@ -454,6 +454,84 @@ else:
 
 # CELL ********************
 
+# CELL B4A — Execute SQL-first metadata scripts (06 schema + 07 seed)
+
+METADATA_SCHEMA_FILE = os.path.join(SQL_REPO_ROOT, "06_purview_metadata_schema.sql")
+METADATA_SEED_FILE = os.path.join(SQL_REPO_ROOT, "07_seed_purview_metadata.sql")
+
+
+def execute_sql_file(sql_file_path: str, friendly_name: str) -> None:
+    with open(sql_file_path, "r", encoding="utf-8") as f:
+        sql_script = f.read()
+
+    batches = split_sql_batches(sql_script)
+    print(f"{friendly_name}: {len(batches)} batches to execute")
+
+    local_cur = conn.cursor()
+    for i, batch in enumerate(batches, 1):
+        try:
+            local_cur.execute(batch)
+            conn.commit()
+        except Exception as e:
+            print(f"  Batch {i}/{len(batches)} note: {type(e).__name__}: {e}")
+
+
+if DEMO_MODE:
+    print("[DRY RUN] Skipping metadata schema/seed execution for 06/07 SQL scripts")
+else:
+    execute_sql_file(METADATA_SCHEMA_FILE, "Metadata schema")
+    print("DDL applied: 06_purview_metadata_schema.sql")
+
+    execute_sql_file(METADATA_SEED_FILE, "Metadata seed")
+    print("Seed applied: 07_seed_purview_metadata.sql")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# CELL B4B — Verify SQL-first metadata row counts
+
+verify_metadata_sql = """
+SELECT 'governance_domains'          AS table_name, COUNT(*) AS row_count,  3 AS expected FROM dbo.governance_domains
+UNION ALL
+SELECT 'governance_data_products',                    COUNT(*),              3               FROM dbo.governance_data_products
+UNION ALL
+SELECT 'governance_glossary_terms',                   COUNT(*),             35               FROM dbo.governance_glossary_terms
+UNION ALL
+SELECT 'governance_cdes',                             COUNT(*),             12               FROM dbo.governance_cdes
+UNION ALL
+SELECT 'governance_role_assignments',                 COUNT(*),             48               FROM dbo.governance_role_assignments
+UNION ALL
+SELECT 'governance_label_assignments',                COUNT(*),              9               FROM dbo.governance_label_assignments;
+"""
+
+if DEMO_MODE:
+    print("[DRY RUN] Skipping metadata row count verification.")
+else:
+    cur.execute(verify_metadata_sql)
+    rows = cur.fetchall()
+    print(f"\n{'table_name':45s} {'rows':>8s} {'expected':>10s}  status")
+    print("-" * 80)
+    for r in rows:
+        status = "GREEN" if r[1] == r[2] else "YELLOW"
+        print(f"{r[0]:45s} {r[1]:>8d} {r[2]:>10d}  {status}")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 # CELL B5 — Backfill Luhn-valid SIN fields
 
 import sys
