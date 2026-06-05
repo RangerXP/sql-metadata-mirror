@@ -223,3 +223,306 @@ print("  1. Reconcile exact row counts in Azure SQL after the initial load.")
 print("  2. Create SQL views/procs for metadata extraction only after the source tables are stable.")
 print("  3. Stand up Fabric mirroring against the Azure SQL source.")
 print("  4. If rerunning this load, clear target tables in reverse dependency order first.")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Cell B0: Build pyodbc connection for Phase B SQL script execution
+
+import struct
+import pyodbc
+
+ODBC_SQL_COPT_SS_ACCESS_TOKEN = 1256
+
+if DEMO_MODE:
+    print("[DRY RUN] Skipping pyodbc connection setup for Phase B cells.")
+else:
+    odbc_token = get_sql_access_token().encode("utf-16-le")
+    token_struct = struct.pack(f"<I{len(odbc_token)}s", len(odbc_token), odbc_token)
+    conn_str = (
+        "Driver={ODBC Driver 18 for SQL Server};"
+        f"Server=tcp:{SERVER_NAME},{SQL_PORT};"
+        f"Database={DATABASE_NAME};"
+        "Encrypt=yes;"
+        "TrustServerCertificate=no;"
+        f"Connection Timeout={SQL_LOGIN_TIMEOUT_SECONDS};"
+    )
+    conn = pyodbc.connect(
+        conn_str,
+        attrs_before={ODBC_SQL_COPT_SS_ACCESS_TOKEN: token_struct},
+        autocommit=False,
+    )
+    print("pyodbc connection established for Phase B cells.")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# CELL B1 — Execute sql/04_purview_demo_extensions.sql (DDL)
+
+import os
+
+SQL_REPO_ROOT = "/lakehouse/default/Files/sql"
+DDL_FILE = os.path.join(SQL_REPO_ROOT, "04_purview_demo_extensions.sql")
+
+
+def split_sql_batches(script: str) -> list[str]:
+    batches = []
+    current = []
+    for line in script.splitlines():
+        if line.strip().upper() == "GO":
+            batch = "\n".join(current).strip()
+            if batch:
+                batches.append(batch)
+            current = []
+        else:
+            current.append(line)
+    tail = "\n".join(current).strip()
+    if tail:
+        batches.append(tail)
+    return batches
+
+
+if DEMO_MODE:
+    print("[DRY RUN] Skipping DDL execution for 04_purview_demo_extensions.sql")
+else:
+    with open(DDL_FILE, "r", encoding="utf-8") as f:
+        ddl_script = f.read()
+
+    batches = split_sql_batches(ddl_script)
+    print(f"DDL script: {len(batches)} batches to execute")
+
+    cur = conn.cursor()
+    for i, batch in enumerate(batches, 1):
+        try:
+            cur.execute(batch)
+            conn.commit()
+        except Exception as e:
+            print(f"  Batch {i}/{len(batches)} note: {type(e).__name__}: {e}")
+
+    print("DDL applied: 04_purview_demo_extensions.sql")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# CELL B2 — Verify DDL applied
+
+verify_ddl_sql = """
+SELECT 'new tables present'                    AS check_name,
+       COUNT(*)                                AS count_actual,
+       6                                       AS count_expected
+  FROM sys.tables
+ WHERE name IN ('employees','service_zones','customer_consents',
+                'customer_complaints','data_owners_directory','audit_data_access')
+UNION ALL
+SELECT 'customers PII columns added',
+       CASE WHEN COL_LENGTH('dbo.customers','date_of_birth')   IS NOT NULL
+              AND COL_LENGTH('dbo.customers','sin_last_4')     IS NOT NULL
+              AND COL_LENGTH('dbo.customers','owner_email')    IS NOT NULL
+              AND COL_LENGTH('dbo.customers','marketing_consent') IS NOT NULL
+            THEN 4 ELSE 0 END,
+       4
+UNION ALL
+SELECT 'service_accounts GPS columns added',
+       CASE WHEN COL_LENGTH('dbo.service_accounts','latitude')          IS NOT NULL
+              AND COL_LENGTH('dbo.service_accounts','longitude')         IS NOT NULL
+              AND COL_LENGTH('dbo.service_accounts','service_zone_code') IS NOT NULL
+            THEN 3 ELSE 0 END,
+       3
+UNION ALL
+SELECT 'billing_transactions payment partials added',
+       CASE WHEN COL_LENGTH('dbo.billing_transactions','bank_routing_last_4') IS NOT NULL
+              AND COL_LENGTH('dbo.billing_transactions','card_pan_last_4')    IS NOT NULL
+            THEN 2 ELSE 0 END,
+       2;
+"""
+
+if DEMO_MODE:
+    print("[DRY RUN] Skipping DDL verification query.")
+else:
+    cur.execute(verify_ddl_sql)
+    rows = cur.fetchall()
+    print(f"\n{'check_name':45s} {'actual':>8s} {'expected':>10s}  status")
+    print("-" * 80)
+    for r in rows:
+        status = "GREEN" if r[1] == r[2] else "RED"
+        print(f"{r[0]:45s} {r[1]:>8d} {r[2]:>10d}  {status}")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# CELL B3 — Execute sql/05_seed_purview_demo_data.sql (seed data)
+
+SEED_FILE = os.path.join(SQL_REPO_ROOT, "05_seed_purview_demo_data.sql")
+
+if DEMO_MODE:
+    print("[DRY RUN] Skipping seed execution for 05_seed_purview_demo_data.sql")
+else:
+    with open(SEED_FILE, "r", encoding="utf-8") as f:
+        seed_script = f.read()
+
+    batches = split_sql_batches(seed_script)
+    print(f"Seed script: {len(batches)} batches to execute")
+
+    cur = conn.cursor()
+    for i, batch in enumerate(batches, 1):
+        try:
+            cur.execute(batch)
+            conn.commit()
+        except Exception as e:
+            print(f"  Batch {i}/{len(batches)} note: {type(e).__name__}: {e}")
+
+    print("Seed applied: 05_seed_purview_demo_data.sql")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# CELL B4 — Verify seed counts
+
+verify_seed_sql = """
+SELECT 'employees'              AS table_name, COUNT(*) AS row_count, 11  AS expected FROM dbo.employees
+UNION ALL
+SELECT 'service_zones',                        COUNT(*),                8      FROM dbo.service_zones
+UNION ALL
+SELECT 'customer_consents',                    COUNT(*),              120      FROM dbo.customer_consents
+UNION ALL
+SELECT 'customer_complaints',                  COUNT(*),               18      FROM dbo.customer_complaints
+UNION ALL
+SELECT 'data_owners_directory',                COUNT(*),               13      FROM dbo.data_owners_directory
+UNION ALL
+SELECT 'audit_data_access',                    COUNT(*),              200      FROM dbo.audit_data_access
+UNION ALL
+SELECT 'customers with DOB backfilled',        COUNT(*),               50      FROM dbo.customers
+ WHERE date_of_birth IS NOT NULL
+UNION ALL
+SELECT 'service_accounts with GPS backfilled', COUNT(*),               56      FROM dbo.service_accounts
+ WHERE latitude IS NOT NULL;
+"""
+
+if DEMO_MODE:
+    print("[DRY RUN] Skipping seed verification query.")
+else:
+    cur.execute(verify_seed_sql)
+    rows = cur.fetchall()
+    print(f"\n{'table_name':45s} {'rows':>8s} {'expected':>10s}  status")
+    print("-" * 80)
+    for r in rows:
+        status = "GREEN" if r[1] == r[2] else "YELLOW"
+        print(f"{r[0]:45s} {r[1]:>8d} {r[2]:>10d}  {status}")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# CELL B5 — Backfill Luhn-valid SIN fields
+
+import sys
+
+TOOLS_PATH = "/lakehouse/default/Files/tools"
+if TOOLS_PATH not in sys.path:
+    sys.path.insert(0, TOOLS_PATH)
+
+from sin_luhn_generator import generate_synthetic_sin, hyphenated  # noqa: E402
+import random
+
+if DEMO_MODE:
+    print("[DRY RUN] Skipping SIN backfill updates.")
+else:
+    rng = random.Random(20260605)
+
+    cur.execute("SELECT employee_id FROM dbo.employees WHERE sin_full IS NULL")
+    emp_ids = [row[0] for row in cur.fetchall()]
+    print(f"Backfilling sin_full for {len(emp_ids)} employees...")
+
+    for emp_id in emp_ids:
+        sin9 = generate_synthetic_sin(first_digit="9", rng=rng)
+        cur.execute(
+            "UPDATE dbo.employees SET sin_full = ? WHERE employee_id = ?",
+            hyphenated(sin9), emp_id,
+        )
+    conn.commit()
+    print(f"  employees.sin_full populated: {len(emp_ids)} rows")
+
+    cur.execute("SELECT customer_id FROM dbo.customers WHERE sin_last_4 IS NULL")
+    cust_ids = [row[0] for row in cur.fetchall()]
+    print(f"Backfilling sin_last_4 for {len(cust_ids)} customers...")
+
+    for cust_id in cust_ids:
+        sin9 = generate_synthetic_sin(first_digit="9", rng=rng)
+        cur.execute(
+            "UPDATE dbo.customers SET sin_last_4 = ? WHERE customer_id = ?",
+            sin9[-4:], cust_id,
+        )
+    conn.commit()
+    print(f"  customers.sin_last_4 populated: {len(cust_ids)} rows")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# CELL B6 — Spot-check SIN Luhn validity
+
+from sin_luhn_generator import is_luhn_valid  # noqa: E402
+
+if DEMO_MODE:
+    print("[DRY RUN] Skipping SIN validity spot-check.")
+else:
+    cur.execute("SELECT TOP 5 employee_id, sin_full FROM dbo.employees ORDER BY NEWID()")
+    samples = cur.fetchall()
+
+    print("\nSIN Luhn validation spot-check (Layer 1 backstop):")
+    print(f"{'employee_id':>12s}  {'sin_full':>15s}  result")
+    print("-" * 45)
+    all_valid = True
+    for emp_id, sin_full in samples:
+        valid = is_luhn_valid(sin_full)
+        all_valid = all_valid and valid
+        print(f"{emp_id:>12d}  {sin_full:>15s}  {'GREEN' if valid else 'RED'}")
+
+    print(f"\nOverall: {'ALL GREEN — Layer 1 backstop ready' if all_valid else 'RED — investigate generator'}")
