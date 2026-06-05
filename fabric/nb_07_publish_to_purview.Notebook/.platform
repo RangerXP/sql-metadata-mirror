@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_07_publish_to_purview",
+    "description": "Publishes Day 2 governance domains and data products to Purview Atlas with dry-run by default"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "2252f5f7-af04-4748-9bae-c497b8120dd1"
+  }
+}

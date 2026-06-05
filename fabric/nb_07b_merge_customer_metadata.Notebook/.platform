@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_07b_merge_customer_metadata",
+    "description": "Merges glossary/CDE/label/data-product metadata with BrookfieldEnercare semantic inventory and writes lh_metadata.metadata.sm_annotations"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "89f6755b-487e-4b72-a40f-ee4cf3bf5965"
+  }
+}

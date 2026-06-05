@@ -1045,3 +1045,197 @@ print(f"  Status: {'DRY RUN' if EFFECTIVE_DEMO_MODE else 'APPLIED'}")
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
+
+# CELL ********************
+
+# Cell 8: Read sm_annotations and derive description/annotation intents
+
+sm_annotations = []
+glossary_definitions = {}
+
+try:
+    sm_df = spark.table(f"{METADATA_LH}.metadata.sm_annotations")
+    sm_annotations = [r.asDict(recursive=True) for r in sm_df.collect()]
+    print(f"Cell 8 status: loaded {len(sm_annotations)} row(s) from {METADATA_LH}.metadata.sm_annotations")
+except Exception as ex:
+    print(f"[WARN] metadata.sm_annotations not found or unreadable: {ex}")
+
+try:
+    glossary_rows = spark.table(f"{METADATA_LH}.metadata.glossary_terms").collect()
+    for row in glossary_rows:
+        term_code = getattr(row, "term_code", None)
+        term_name = getattr(row, "term_name", None)
+        definition = getattr(row, "definition", None)
+        if not definition:
+            continue
+        if term_code:
+            glossary_definitions[_norm(str(term_code))] = definition
+        if term_name:
+            glossary_definitions[_norm(str(term_name))] = definition
+except Exception as ex:
+    print(f"[WARN] metadata.glossary_terms unavailable for description join: {ex}")
+
+
+def _parse_glossary_reference(value: str):
+    if value is None:
+        return []
+    tokens = [p.strip() for p in str(value).split("|") if p.strip()]
+    return tokens
+
+
+annotation_intents = []
+description_intents = {}
+
+for row in sm_annotations:
+    table_name = str(row.get("table") or "").strip()
+    object_type = str(row.get("object_type") or "").strip()
+    object_name = str(row.get("object_name") or "").strip()
+    key = str(row.get("annotation_key") or "").strip()
+    value = row.get("annotation_value")
+
+    if not table_name or not object_name or object_type not in {"Column", "Measure"}:
+        continue
+
+    if key in {"CDE_Member_Of", "Glossary_Term_References", "Sensitivity_Label", "Data_Product_Owner"} and value:
+        annotation_intents.append(
+            {
+                "table": table_name,
+                "object_type": object_type,
+                "object_name": object_name,
+                "annotation_key": key,
+                "annotation_value": str(value),
+            }
+        )
+
+    if key == "Glossary_Term_References" and value:
+        object_key = (table_name, object_type, object_name)
+        for token in _parse_glossary_reference(str(value)):
+            definition = glossary_definitions.get(_norm(token))
+            if definition and object_key not in description_intents:
+                description_intents[object_key] = definition
+
+print(f"Cell 8 status: annotation intents={len(annotation_intents)}")
+print(f"Cell 8 status: description intents={len(description_intents)}")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Cell 9: Apply sm_annotations writeback via TOM (annotations + descriptions)
+
+
+def _set_object_annotation_via_tom(table_name: str, object_type: str, object_name: str, key: str, value: str):
+    if TOM_CONNECTOR is None:
+        return False, "tom_connect_semantic_model:missing"
+
+    try:
+        with TOM_CONNECTOR(dataset=MODEL_NAME, readonly=False) as tom:
+            table_obj = _find_collection_item_by_name(tom.model.Tables, table_name)
+            if table_obj is None:
+                return False, f"tom_table_missing:{table_name}"
+
+            if object_type == "Column":
+                target_obj = _find_collection_item_by_name(table_obj.Columns, object_name)
+            elif object_type == "Measure":
+                target_obj = _find_collection_item_by_name(table_obj.Measures, object_name)
+            else:
+                return False, f"unsupported_object_type:{object_type}"
+
+            if target_obj is None:
+                return False, f"tom_object_missing:{table_name}.{object_name}"
+
+            annotations = getattr(target_obj, "Annotations", None)
+            if annotations is None:
+                return False, "tom_annotations_missing"
+
+            existing = _find_collection_item_by_name(annotations, key)
+            if existing is not None:
+                existing.Value = value
+                return True, "tom.object.Annotation.update"
+
+            try:
+                annotations.Add(key, value)
+                return True, "tom.object.Annotation.add"
+            except Exception:
+                return False, "tom_annotation_add_failed"
+
+    except Exception as ex:
+        return False, f"tom_annotation_write_failed:{ex}"
+
+
+applied_ann = 0
+skipped_ann = 0
+applied_desc_from_glossary = 0
+skipped_desc_from_glossary = 0
+
+if EFFECTIVE_DEMO_MODE:
+    print("[DRY RUN] sm_annotations writes skipped")
+else:
+    for intent in annotation_intents:
+        ok, detail = _set_object_annotation_via_tom(
+            table_name=intent["table"],
+            object_type=intent["object_type"],
+            object_name=intent["object_name"],
+            key=intent["annotation_key"],
+            value=intent["annotation_value"],
+        )
+        if ok:
+            applied_ann += 1
+        else:
+            skipped_ann += 1
+            print(
+                f"  [WARN] skipped annotation {intent['table']}.{intent['object_name']}"
+                f" [{intent['annotation_key']}] | {detail}"
+            )
+
+    for (table_name, object_type, object_name), description in description_intents.items():
+        ok, detail = _set_object_description(table_name, object_type, object_name, description)
+        if ok:
+            applied_desc_from_glossary += 1
+        else:
+            skipped_desc_from_glossary += 1
+            print(
+                f"  [WARN] skipped glossary description {table_name}.{object_name}"
+                f" ({object_type}) | {detail}"
+            )
+
+print(f"Cell 9 status: annotations applied={applied_ann}, skipped={skipped_ann}")
+print(
+    "Cell 9 status: glossary descriptions applied="
+    f"{applied_desc_from_glossary}, skipped={skipped_desc_from_glossary}"
+)
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Cell 10: Verify sm_annotations persistence in semantic inventory
+
+verify_counts = {
+    "annotations_requested": len(annotation_intents),
+    "description_updates_requested": len(description_intents),
+    "effective_demo_mode": int(EFFECTIVE_DEMO_MODE),
+}
+
+verify_df = spark.createDataFrame([(k, int(v)) for k, v in verify_counts.items()], ["metric", "value"])
+display(verify_df.orderBy("metric"))
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
