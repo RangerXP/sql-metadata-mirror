@@ -38,6 +38,12 @@ spark = SparkSession.builder.getOrCreate()
 METADATA_LAKEHOUSE = "lh_metadata"
 METADATA_SCHEMA = "metadata"
 SEMANTIC_MODEL = "BrookfieldEnercare"
+REQUIRED_METADATA_TABLES = {
+    "glossary_terms": f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.glossary_terms",
+    "cdes": f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.cdes",
+    "data_products": f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.data_products",
+    "label_assignments": f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.label_assignments",
+}
 
 ANNOTATION_KEYS = {
     "cde": "CDE_Member_Of",
@@ -47,24 +53,36 @@ ANNOTATION_KEYS = {
 }
 
 print(f"Semantic model: {SEMANTIC_MODEL}")
+print(f"Required metadata schema: {METADATA_LAKEHOUSE}.{METADATA_SCHEMA}")
 
 
 def _table_candidates(table_name: str):
-    return [
-        f"{METADATA_SCHEMA}.{table_name}",
-        f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.{table_name}",
-        table_name,
-    ]
+    required_name = REQUIRED_METADATA_TABLES.get(table_name)
+    if not required_name:
+        raise ValueError(f"Unknown required metadata table key: {table_name}")
+    # Try required 3-part first, then 2-part for Spark sessions where the
+    # default lakehouse is already attached and scoped.
+    return [required_name, f"{METADATA_SCHEMA}.{table_name}"]
 
 
 def _read_table(table_name: str):
     last_error = None
-    for candidate in _table_candidates(table_name):
+    candidates = _table_candidates(table_name)
+    for candidate in candidates:
         try:
             return spark.table(candidate), candidate
         except Exception as ex:
             last_error = ex
-    raise RuntimeError(f"Could not resolve table '{table_name}'. Last error: {last_error}")
+
+    raise RuntimeError(
+        f"Could not resolve table '{table_name}'. "
+        f"Candidates tried: {candidates}. "
+        f"Last error: {last_error}. "
+        "Required source: lh_metadata.metadata staged tables only. "
+        "Prerequisite: run nb_07a_ingest_customer_files first to populate "
+        "lh_metadata.metadata.glossary_terms, lh_metadata.metadata.cdes, "
+        "lh_metadata.metadata.data_products, and optionally label_assignments."
+    )
 
 
 def _write_table_name(table_name: str):
@@ -72,7 +90,20 @@ def _write_table_name(table_name: str):
     return f"{METADATA_SCHEMA}.{table_name}"
 
 
-print(f"Metadata source candidates: {_table_candidates('<table>')}")
+def _require_lakehouse_context():
+    try:
+        # A simple command that requires an attached default lakehouse context.
+        spark.sql("SELECT current_database()").collect()
+    except Exception as ex:
+        raise RuntimeError(
+            "No default lakehouse context is attached for this Spark session. "
+            "Attach 'lh_metadata' as the default lakehouse for this notebook, then rerun Cell 1 and Cell 2. "
+            "In Fabric: open the notebook Lakehouse selector and set default lakehouse to lh_metadata. "
+            f"Original error: {ex}"
+        )
+
+
+print(f"Required metadata tables: {REQUIRED_METADATA_TABLES}")
 
 
 # METADATA ********************
@@ -86,23 +117,43 @@ print(f"Metadata source candidates: {_table_candidates('<table>')}")
 
 # Cell 2: Read metadata source tables
 
+print("[Cell 2] Starting metadata source reads...", flush=True)
+_require_lakehouse_context()
+print("[Cell 2] Lakehouse context check passed.", flush=True)
+
 glossary_df, glossary_source = _read_table("glossary_terms")
+print(f"[Cell 2] Resolved glossary_terms source: {glossary_source}", flush=True)
+
 cde_df, cde_source = _read_table("cdes")
+print(f"[Cell 2] Resolved cdes source: {cde_source}", flush=True)
+
 data_products_df, data_products_source = _read_table("data_products")
+print(f"[Cell 2] Resolved data_products source: {data_products_source}", flush=True)
 
 # Optional table in case labels were ingested already.
 try:
     labels_df, labels_source = _read_table("label_assignments")
+    print(f"[Cell 2] Resolved label_assignments source: {labels_source}", flush=True)
 except Exception:
     labels_df = None
     labels_source = None
-    print("[WARN] metadata.label_assignments not found; Sensitivity_Label rows will be sourced only from CDE metadata.")
+    print("[WARN] metadata.label_assignments not found; Sensitivity_Label rows will be sourced only from CDE metadata.", flush=True)
 
-print(f"glossary_terms rows: {glossary_df.count()} (source={glossary_source})")
-print(f"cdes rows: {cde_df.count()} (source={cde_source})")
-print(f"data_products rows: {data_products_df.count()} (source={data_products_source})")
+
+def _safe_count(name, df):
+    try:
+        return df.count()
+    except Exception as ex:
+        print(f"[WARN] Could not count {name}: {ex}", flush=True)
+        return None
+
+print(f"glossary_terms rows: {_safe_count('glossary_terms', glossary_df)} (source={glossary_source})", flush=True)
+print(f"cdes rows: {_safe_count('cdes', cde_df)} (source={cde_source})", flush=True)
+print(f"data_products rows: {_safe_count('data_products', data_products_df)} (source={data_products_source})", flush=True)
 if labels_df is not None:
-    print(f"label_assignments rows: {labels_df.count()} (source={labels_source})")
+    print(f"label_assignments rows: {_safe_count('label_assignments', labels_df)} (source={labels_source})", flush=True)
+
+print("[Cell 2] Metadata source reads completed.", flush=True)
 
 
 # METADATA ********************

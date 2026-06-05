@@ -21,11 +21,21 @@ spark = SparkSession.builder.getOrCreate()
 CSV_ROOT = "/lakehouse/default/Files/purview"
 SCHEMA = "metadata"
 TARGET_LAKEHOUSE = "lh_metadata"
-SOURCE_MODE = "auto"  # auto | sql_mirror | csv_files
+SOURCE_MODE = "sql_mirror"
 
 # SQL-first lookup order for metadata source tables in mirrored SQL.
 SQL_MIRROR_CATALOGS = ["sqldemo"]
 SQL_MIRROR_SCHEMAS = ["dbo", "metadata"]
+MIRROR_WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
+# Keep both IDs to tolerate environment drift between mirror item GUID and logicalId.
+MIRROR_ITEM_IDS = [
+    "cba2d7c3-1ef8-b4c4-4f60-10f00249854c",
+    "40675f0e-c576-4cb1-ab27-40b9352a18a8",
+]
+MIRROR_DFS_HOSTS = [
+    "onelake.dfs.fabric.microsoft.com",
+    "westus3-onelake.dfs.fabric.microsoft.com",
+]
 
 SQL_SOURCE_TABLES = {
     "domains": ["governance_domains", "metadata_domains"],
@@ -40,6 +50,9 @@ print(f"CSV root: {CSV_ROOT}")
 print(f"Target schema: {TARGET_LAKEHOUSE}.{SCHEMA}")
 print(f"Source mode: {SOURCE_MODE}")
 
+if SOURCE_MODE != "sql_mirror":
+    raise ValueError("nb_07a is configured for sql_mirror-only ingestion. Set SOURCE_MODE='sql_mirror'.")
+
 
 # METADATA ********************
 
@@ -51,6 +64,16 @@ print(f"Source mode: {SOURCE_MODE}")
 # CELL ********************
 
 # Cell 2: Validation helpers
+
+print("[Cell 2] Initializing validation and source-resolution helpers...", flush=True)
+print(
+    f"[Cell 2] Source mode={SOURCE_MODE}; mirror catalogs={SQL_MIRROR_CATALOGS}; mirror schemas={SQL_MIRROR_SCHEMAS}",
+    flush=True,
+)
+print(
+    f"[Cell 2] Mirror path resolution enabled: workspace={MIRROR_WORKSPACE_ID}, item_ids={MIRROR_ITEM_IDS}",
+    flush=True,
+)
 
 def validate_csv(df: pd.DataFrame, required_cols: list[str], enum_cols: dict[str, set[str]] | None = None) -> None:
     actual_cols = set(df.columns)
@@ -71,46 +94,71 @@ def validate_csv(df: pd.DataFrame, required_cols: list[str], enum_cols: dict[str
             )
 
 
-def load_csv_as_pandas(filename: str) -> pd.DataFrame:
-    path = f"{CSV_ROOT}/{filename}"
-    sdf = spark.read.option("header", True).csv(path)
-    return sdf.toPandas()
-
-
 def try_load_sql_dataset(dataset_name: str) -> tuple[pd.DataFrame | None, str | None]:
     table_candidates = SQL_SOURCE_TABLES.get(dataset_name, [])
+    attempted_names = []
+    seen_names = set()
+
+    def _try_table(full_name: str):
+        if full_name in seen_names:
+            return None
+        seen_names.add(full_name)
+        attempted_names.append(full_name)
+        try:
+            sdf = spark.table(full_name)
+            return sdf.toPandas(), full_name
+        except Exception:
+            return None
+
     for catalog in SQL_MIRROR_CATALOGS:
         for schema_name in SQL_MIRROR_SCHEMAS:
             for table_name in table_candidates:
-                full_name = f"{catalog}.{schema_name}.{table_name}"
-                try:
-                    sdf = spark.table(full_name)
-                    return sdf.toPandas(), full_name
-                except Exception:
-                    continue
+                for full_name in [
+                    f"{catalog}.{schema_name}.{table_name}",
+                    f"{schema_name}.{table_name}",
+                    table_name,
+                ]:
+                    loaded = _try_table(full_name)
+                    if loaded is not None:
+                        return loaded
+
+    # Mirror tables may be readable only via Delta paths, depending on Spark catalog registration.
+    for host in MIRROR_DFS_HOSTS:
+        for item_id in MIRROR_ITEM_IDS:
+            for schema_name in SQL_MIRROR_SCHEMAS:
+                for table_name in table_candidates:
+                    delta_path = (
+                        f"abfss://{MIRROR_WORKSPACE_ID}@{host}/"
+                        f"{item_id}/Tables/{schema_name}/{table_name}"
+                    )
+                    source_name = f"delta.`{delta_path}`"
+                    attempted_names.append(source_name)
+                    try:
+                        sdf = spark.read.format("delta").load(delta_path)
+                        return sdf.toPandas(), source_name
+                    except Exception:
+                        continue
+
+    print(
+        f"[Cell 2] SQL lookup miss for '{dataset_name}'. Attempted: {attempted_names}",
+        flush=True,
+    )
     return None, None
 
 
 def load_metadata_dataset(dataset_name: str, csv_filename: str) -> tuple[pd.DataFrame, str]:
-    if SOURCE_MODE in ("auto", "sql_mirror"):
-        sql_df, source_name = try_load_sql_dataset(dataset_name)
-        if sql_df is not None:
-            return sql_df, f"sql:{source_name}"
-        if SOURCE_MODE == "sql_mirror":
-            raise ValueError(
-                f"SQL source mode is enabled, but mirrored metadata table for '{dataset_name}' was not found. "
-                f"Checked catalogs={SQL_MIRROR_CATALOGS}, schemas={SQL_MIRROR_SCHEMAS}, candidates={SQL_SOURCE_TABLES.get(dataset_name, [])}."
-            )
+    sql_df, source_name = try_load_sql_dataset(dataset_name)
+    if sql_df is not None:
+        return sql_df, f"sql:{source_name}"
 
-    try:
-        return load_csv_as_pandas(csv_filename), f"csv:{CSV_ROOT}/{csv_filename}"
-    except Exception as ex:
-        raise ValueError(
-            f"Could not load dataset '{dataset_name}' from SQL mirror or CSV. "
-            f"CSV path checked: {CSV_ROOT}/{csv_filename}. "
-            f"For production, maintain governance metadata in SQL and let mirror feed this notebook. "
-            f"Original error: {ex}"
-        )
+    raise ValueError(
+        f"Mirrored metadata table for '{dataset_name}' was not found. "
+        f"Checked catalogs={SQL_MIRROR_CATALOGS}, schemas={SQL_MIRROR_SCHEMAS}, candidates={SQL_SOURCE_TABLES.get(dataset_name, [])}. "
+        "Prerequisite SQL objects appear missing from the mirrored source. "
+        "Ensure sql/06_purview_metadata_schema.sql and sql/07_seed_purview_metadata.sql have been executed against sub2 Azure SQL, "
+        "then refresh/confirm sqldemo mirror sync before rerunning nb_07a. "
+        f"CSV fallback is disabled by design in nb_07a. (csv hint: {CSV_ROOT}/{csv_filename})"
+    )
 
 
 def write_table_from_pandas(df: pd.DataFrame, table_name: str) -> int:
@@ -123,6 +171,9 @@ def write_table_from_pandas(df: pd.DataFrame, table_name: str) -> int:
         .saveAsTable(full_table)
     )
     return int(sdf.count())
+
+
+print(f"[Cell 2] Helpers ready. SQL dataset keys: {sorted(SQL_SOURCE_TABLES.keys())}", flush=True)
 
 
 # METADATA ********************
