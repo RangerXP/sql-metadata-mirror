@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_07a_ingest_customer_files",
+    "description": "Ingests Purview customer governance CSV files from lakehouse Files and writes schema-validated Delta tables to lh_metadata.metadata.*"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "c8f476ce-5c16-40d8-8f71-3dc8874ed8b5"
+  }
+}
