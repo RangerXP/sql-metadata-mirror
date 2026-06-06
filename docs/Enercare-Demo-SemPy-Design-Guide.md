@@ -171,6 +171,61 @@ In the demo, this means:
 
 ---
 
+## 5A. Current Notebook Construct (June 2026)
+
+This is the active notebook construct in the repo today.
+
+### Build and source stages
+
+1. `nb_01_setup_demo_environment`
+- Seeds the baseline demo tables in `lh_enercare_demo`.
+
+2. `nb_05a_publish_synthetic_data_to_sql`
+- Publishes the seven source tables to Azure SQL (`sqldemo`) and then executes SQL scripts `04`-`07` to extend/seed governance metadata in SQL.
+
+3. Fabric mirror sync (operational step)
+- Mirrors SQL objects into Fabric mirrored database surfaces (`sqldemo` / `sqldemo-mirror`).
+
+4. `nb_03_pbi_star_schema`
+- Rebuilds star schema from mirrored SQL source (or fallback to demo tables if explicitly enabled).
+
+### Metadata and semantic-model stages
+
+5. `nb_02_metadata_pipeline_demo`
+- Builds `lh_metadata` metadata tables/views (`asset_metadata`, `column_metadata`, `kpi_metadata`, `vw_business_metadata_current`).
+
+6. `nb_04a_extend_metadata_schema`
+- Extends metadata schema (`ai_metadata`, `data_owners`, `lineage_edges`) and seeds curated KPI/AI metadata.
+
+7. `nb_07a_ingest_customer_files`
+- SQL-mirror-first ingestion of governance metadata into `lh_metadata.metadata.*`.
+
+8. `nb_07b_merge_customer_metadata`
+- Builds `lh_metadata.metadata.sm_annotations` from glossary/CDE/label/data-product mappings.
+
+9. `nb_04_sempy_writeback` and `nb_05_push_qa_verified_answers`
+- Writes curated descriptions/annotations/instructions into the semantic model via SemPy/SemPy Labs.
+
+10. `nb_07_publish_to_purview`
+- Prepares Purview payloads and is guarded for SQL-mirror-only runs unless explicitly overridden.
+
+### Purview admin-ops family (`nb_06`)
+
+- `nb_06a_create_sin_backstop` is active and intentional.
+    - It registers the custom Purview SIT `ENERCARE.PRIVACY.SIN_BACKSTOP` and is part of Day 1 admin setup.
+
+- `nb_06_purview_sql_grants` is not part of the current branch construct.
+    - It existed in historical snapshots as a lineage/grants notebook (`CONTROL DATABASE`, `VIEW DATABASE STATE`, fallback principal grants), but was removed in the current design path.
+    - This was not migrated as a first-class notebook in current branches.
+    - The minimal surviving guidance is now in `nb_05b_test_sql_connectivity` (manual `CREATE USER ... FROM EXTERNAL PROVIDER` and `ALTER ROLE db_datareader ...` hints) plus runbook guidance.
+
+### Why `nb_06_purview_sql_grants` was de-emphasized
+
+- The demo moved to private-safe metadata scanning and custom lineage publication workflows rather than relying on the earlier SQL lineage-grant path as a mandatory runtime step.
+- The semantic-model-first writeback and Fabric scan flow remains the primary implementation pattern.
+
+---
+
 ## 6. Layer Responsibilities (Mental Model)
 
 | Layer | Role | Tool |
