@@ -58,7 +58,7 @@ Example: `20260608-1545-sean-rebuild-01`
 
 | Seq | Stage | Notebook/Step | Dependency Reads | Expected Producer (Earlier Stage) | Expected Outputs | Validation Check | North-Star Link | Status | Evidence |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | Baseline data seed | fabric/nb_01_setup_demo_environment.Notebook | none (seed source) | n/a | lh_enercare_demo source tables populated | row counts present for products/customers/service_accounts/equipment_registry/contracts/service_requests/billing_transactions | NS-1, NS-2 | | |
+| 1 | Baseline data seed | fabric/nb_01_setup_demo_environment.Notebook | none (seed source) | n/a | lh_enercare_demo source tables populated | row counts present for products/customers/service_accounts/equipment_registry/contracts/service_requests/billing_transactions | NS-1, NS-2 | PASS | Completed. Call-center tables written: cc_agents=15, ref_cc_billing_adj_category=12, fct_cc_interactions=300, fct_cc_transcript_turns=3479. `ref_cc_billing_adj_category` flagged as optional orphaned governance review only; non-blocking for nb_04 writeback. |
 | 2 | SQL authoritative publish | fabric/nb_05a_publish_synthetic_data_to_sql.Notebook | lh_enercare_demo.* | Seq 1 | sqldemo dbo base tables loaded; sql/04-07 applied; governance tables seeded | SQL row-count checks GREEN for base + governance sets | NS-4, NS-6 | | |
 | 3 | Mirror operational sync | Fabric mirror refresh (non-notebook) | sqldemo dbo tables | Seq 2 | mirrored SQL tables visible under sqldemo/sqldemo-mirror | all expected mirrored tables visible and queryable | NS-6 | | |
 | 4 | Star schema rebuild | fabric/nb_03_pbi_star_schema.Notebook | mirrored dbo tables (or fallback) | Seq 3 (or Seq 1 fallback) | dim/fact model tables rebuilt in lh_enercare_demo | notebook completes; output table counts present | NS-1, NS-2 | | |
@@ -111,6 +111,12 @@ Use this section to explicitly verify each dependency edge is valid in your run.
 | lh_metadata.ai_metadata (nb_05 push QA) | nb_04a schema extension/seed | table exists and contains active rows | |
 | lh_metadata.metadata.* (nb_07b/nb_07 publish) | nb_07a ingest | expected six-table counts match | |
 | lh_metadata.metadata.sm_annotations (optional nb_04 enrich) | nb_07b merge | table exists, non-zero rows | |
+
+## Live Run Log
+
+| Seq | Update |
+|---|---|
+| 1 | PASS — nb_01 completed. Operator note: "All tables ready. Run nb_02_metadata_pipeline_demo.py next." |
 
 ## Known Construct Notes
 
