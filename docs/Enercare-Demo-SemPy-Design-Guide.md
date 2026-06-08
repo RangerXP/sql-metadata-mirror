@@ -224,6 +224,8 @@ This is the active notebook construct in the repo today.
 - The demo moved to private-safe metadata scanning and custom lineage publication workflows rather than relying on the earlier SQL lineage-grant path as a mandatory runtime step.
 - The semantic-model-first writeback and Fabric scan flow remains the primary implementation pattern.
 
+For run-by-run validation of this construct, use `docs/build-evaluation-matrix.md`.
+
 ---
 
 ## 6. Layer Responsibilities (Mental Model)
