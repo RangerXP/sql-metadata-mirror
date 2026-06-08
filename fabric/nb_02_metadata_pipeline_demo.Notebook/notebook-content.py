@@ -56,8 +56,13 @@ META_LAKEHOUSE   = "lh_metadata"        # metadata hub (same as README Phase 2)
 # PURVIEW_SECRET     = dbutils.secrets.get(scope="enercare-kv", key="purview-sp-secret")
 
 # Demo mode — no live connections
-DEMO_MODE  = False    # default safe mode; switch to False explicitly for live writes
+DEMO_MODE  = False    # set True for dry-run behavior in implemented write paths
 SOURCE_DB  = "enercare_demo"  # used in Purview qualified names
+
+# Phase capability flags so run output can report effective behavior honestly.
+# Some live paths are intentionally scaffolded but not implemented in this notebook.
+WAREHOUSE_XP_LIVE_IMPLEMENTED = False
+PURVIEW_PUSH_LIVE_IMPLEMENTED = False
 
 print(f"DEMO_MODE          : {DEMO_MODE}")
 print(f"Source DB (demo)   : {SOURCE_DB}")
@@ -670,7 +675,8 @@ print(f"\n  Result: {applied} comments applied, {skipped} views skipped")
 # In demo mode we print the TSQL that would be executed.
 # ===========================================================================
 
-print("\nPhase 4 — Warehouse extended properties (dry run)")
+phase4_warehouse_mode = "dry run" if (DEMO_MODE or not WAREHOUSE_XP_LIVE_IMPLEMENTED) else "live"
+print(f"\nPhase 4 — Warehouse extended properties ({phase4_warehouse_mode})")
 print("-" * 60)
 
 asset_df = spark.table(f"{META_LAKEHOUSE}.asset_metadata").collect()
@@ -682,7 +688,13 @@ for row in asset_df:
                 f"@level1type=N'VIEW',   @level1name=N'{row['ObjectName']}'")
         print(f"  [DRY-WAREHOUSE] {tsql[:110]}...")
 
-print("\n  → To execute: set DEMO_MODE=False and ensure Warehouse endpoint is configured")
+if WAREHOUSE_XP_LIVE_IMPLEMENTED:
+    if DEMO_MODE:
+        print("\n  → To execute: set DEMO_MODE=False and ensure Warehouse endpoint is configured")
+    else:
+        print("\n  → Live Warehouse extended property execution enabled")
+else:
+    print("\n  → Note: live Warehouse extended property execution is not implemented in this notebook yet")
 
 # METADATA ********************
 
@@ -701,7 +713,8 @@ print("\n  → To execute: set DEMO_MODE=False and ensure Warehouse endpoint is 
 #       switch from dry-run to live Atlas API push.
 # ===========================================================================
 
-print("\nPhase 5 — Purview Atlas entity preview (dry run)")
+phase5_mode = "dry run" if (DEMO_MODE or not PURVIEW_PUSH_LIVE_IMPLEMENTED) else "live"
+print(f"\nPhase 5 — Purview Atlas entity preview ({phase5_mode})")
 print("=" * 60)
 
 meta_rows = (
@@ -745,9 +758,12 @@ for obj, payload in asset_previews.items():
 print(f"\n  Total assets ready : {len(asset_previews)}")
 print(f"  Total column updates: {sum(len(v['column_updates']) for v in asset_previews.values())}")
 
-if DEMO_MODE:
+if DEMO_MODE or not PURVIEW_PUSH_LIVE_IMPLEMENTED:
     print("\n  [DEMO MODE] Atlas API not called.  To activate:")
-    print("    1. Set DEMO_MODE = False in Cell 1")
+    if DEMO_MODE:
+        print("    1. Set DEMO_MODE = False in Cell 1")
+    else:
+        print("    1. Implement/enable PURVIEW_PUSH_LIVE_IMPLEMENTED path in this notebook")
     print("    2. Provide PURVIEW_ACCOUNT, PURVIEW_TENANT_ID, PURVIEW_CLIENT_ID, PURVIEW_SECRET")
     print("    3. pip install pyapacheatlas (or use purview/06_purview_push_descriptions.py)")
 else:
@@ -786,8 +802,12 @@ print("  [✓] Phase 0  Header convention applied to 4 demo views")
 print("  [✓] Phase 1  Metadata extracted from SQL module definitions")
 print("  [✓] Phase 2  Metadata hub Delta tables written (lh_metadata)")
 print("  [✓] Phase 3  Demo data confirmed in Fabric Delta tables")
-print("  [~] Phase 4  Delta comments and Warehouse XPs (dry run — DEMO_MODE=True)")
-print("  [~] Phase 5  Purview Atlas payload preview (dry run — DEMO_MODE=True)")
+phase4_delta_status = "[~]" if DEMO_MODE else "[✓]"
+phase4_delta_mode = "dry run" if DEMO_MODE else "live"
+phase4_wh_mode = "dry run" if (DEMO_MODE or not WAREHOUSE_XP_LIVE_IMPLEMENTED) else "live"
+phase5_effective_mode = "dry run" if (DEMO_MODE or not PURVIEW_PUSH_LIVE_IMPLEMENTED) else "live"
+print(f"  {phase4_delta_status} Phase 4  Delta comments ({phase4_delta_mode}) + Warehouse XPs ({phase4_wh_mode})")
+print(f"  [~] Phase 5  Purview Atlas payload preview ({phase5_effective_mode})")
 print()
 print("Next steps:")
 print("  1. Add real SQL views/procs to SQL_MODULES (Cell 2)")
