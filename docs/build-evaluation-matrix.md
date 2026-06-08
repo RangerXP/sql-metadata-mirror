@@ -25,6 +25,22 @@ Source alignment:
 | Operator | |
 | Notes | |
 
+### Status Key
+
+| Value | Meaning |
+|---|---|
+| NOT RUN | Step not executed yet in this run |
+| PASS | Step executed and acceptance checks passed |
+| FAIL | Step executed and one or more acceptance checks failed |
+| BLOCKED | Step could not run due to unmet dependency or environment issue |
+| N/A | Not applicable for this run mode |
+
+### Recommended Run ID Format
+
+`YYYYMMDD-HHMM-<operator>-rebuild-01`
+
+Example: `20260608-1545-sean-rebuild-01`
+
 ## North-Star Criteria Legend
 
 | ID | Criterion |
@@ -54,6 +70,35 @@ Source alignment:
 | 10 | Verified Q&A push | fabric/nb_05_push_qa_verified_answers.Notebook | lh_metadata.ai_metadata | Seq 6 | semantic model instruction/verified-answer annotation payload | annotation present in model and within configured length | NS-7, NS-8 | | |
 | 11 | Purview admin SIT setup | fabric/nb_06a_create_sin_backstop.Notebook | Purview API access (no SQL table dependency) | operational prerequisite | ENERCARE.PRIVACY.SIN_BACKSTOP enabled | verify classification and rule enabled | NS-3, NS-5 | | |
 | 12 | Purview publish (guarded) | fabric/nb_07_publish_to_purview.Notebook | lh_metadata.metadata.domains/data_products/role_assignments | Seq 7 | payload artifacts; optional live publish if override enabled | guard status expected for SQL-mirror-only runs; payload files generated | NS-4, NS-6, NS-8 | | |
+
+## Preflight Baseline (Static, before live run)
+
+This section captures the expected sequencing verdict from the current construct before executing notebooks. Update only if architecture changes.
+
+| Seq | Expected Sequencing Verdict | Known Risk | Preflight Status |
+|---|---|---|---|
+| 1 | Root producer, no upstream dependency | Low | NOT RUN |
+| 2 | Depends on Seq 1 | Medium: SQL auth/network and script mount under `/lakehouse/default/Files/sql` | NOT RUN |
+| 3 | Depends on Seq 2 | Medium: mirror lag/refresh delays | NOT RUN |
+| 4 | Depends on Seq 3 (or fallback to Seq 1 if explicitly enabled) | Medium: mirror table visibility | NOT RUN |
+| 5 | Depends on Seq 1/4 data availability | Low | NOT RUN |
+| 6 | Depends on Seq 5 metadata tables | Low | NOT RUN |
+| 7 | Depends on Seq 2 + Seq 3 governance mirror tables | High: missing mirrored governance tables blocks run | NOT RUN |
+| 8 | Depends on Seq 7 and semantic inventory access | Medium: model inventory access and lakehouse context | NOT RUN |
+| 9 | Depends on Seq 5/6; stronger with Seq 8 | Medium: SemPy Labs package/runtime availability | NOT RUN |
+| 10 | Depends on Seq 6 ai metadata | Low | NOT RUN |
+| 11 | Independent of SQL table chain; Purview admin/API dependent | Medium: Purview role/token/API access | NOT RUN |
+| 12 | Depends on Seq 7; publish path intentionally guardable | Medium: expected BLOCKED/N/A for SQL-mirror-only if guard active | NOT RUN |
+
+## Gate Checks Before Seq 1
+
+| Gate | Pass Condition | Result |
+|---|---|---|
+| Branch/commit pinned | Branch and commit captured in Run Metadata | |
+| Lakehouse file mounts present | `/lakehouse/default/Files/sql` and `/lakehouse/default/Files/tools` available for notebook cells that require them | |
+| SQL connectivity smoke test | `nb_05b_test_sql_connectivity` succeeds (or known principal remediation documented) | |
+| Mirror readiness path agreed | Operator confirms whether run uses mirrored source mode vs explicit fallback mode | |
+| Purview mode declared | `SQL_MIRROR_ONLY_DEPLOYMENT` behavior accepted for this run | |
 
 ## Read/Write Dependency Assertions
 
