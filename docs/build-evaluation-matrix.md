@@ -62,7 +62,7 @@ Example: `20260608-1545-sean-rebuild-01`
 | 2 | SQL authoritative publish | fabric/nb_05a_publish_synthetic_data_to_sql.Notebook | lh_enercare_demo.* | Seq 1 | sqldemo dbo base tables loaded; sql/04-07 applied; governance tables seeded | SQL row-count checks GREEN for base + governance sets | NS-4, NS-6 | | |
 | 3 | Mirror operational sync | Fabric mirror refresh (non-notebook) | sqldemo dbo tables | Seq 2 | mirrored SQL tables visible under sqldemo/sqldemo-mirror | all expected mirrored tables visible and queryable | NS-6 | | |
 | 4 | Star schema rebuild | fabric/nb_03_pbi_star_schema.Notebook | mirrored dbo tables (or fallback) | Seq 3 (or Seq 1 fallback) | dim/fact model tables rebuilt in lh_enercare_demo | notebook completes; output table counts present | NS-1, NS-2 | | |
-| 5 | Metadata pipeline | fabric/nb_02_metadata_pipeline_demo.Notebook | lh_enercare_demo.* | Seq 1/4 | lh_metadata.asset_metadata/column_metadata/kpi_metadata/vw_business_metadata_current | view and table counts non-zero; metadata rows load | NS-2, NS-6 | | |
+| 5 | Metadata pipeline | fabric/nb_02_metadata_pipeline_demo.Notebook | lh_enercare_demo.* | Seq 1/4 | lh_metadata.asset_metadata/column_metadata/kpi_metadata/vw_business_metadata_current | view and table counts non-zero; metadata rows load | NS-2, NS-6 | PASS | Run summary: assets_extracted=4, columns_extracted=53, kpis_extracted=12. Phases 0-3 complete. Notebook summary reported Phase 4/5 as dry-run; treated as observed notebook behavior and non-blocking for sequencing into nb_04a/nb_04. |
 | 6 | Metadata schema extension | fabric/nb_04a_extend_metadata_schema.Notebook | lh_metadata.kpi_metadata, asset_metadata | Seq 5 | lh_metadata.ai_metadata/data_owners/lineage_edges and extended kpi metadata | tables exist; seeded rows present | NS-2, NS-4, NS-6 | | |
 | 7 | Governance metadata ingest (SQL-mirror first) | fabric/nb_07a_ingest_customer_files.Notebook | mirrored governance tables (governance_*) | Seq 2 + Seq 3 | lh_metadata.metadata.domains/data_products/glossary_terms/cdes/role_assignments/label_assignments | expected counts 3/3/35/12/48/9 | NS-2, NS-4 | | |
 | 8 | Semantic annotation merge | fabric/nb_07b_merge_customer_metadata.Notebook | lh_metadata.metadata.* + semantic inventory | Seq 7 | lh_metadata.metadata.sm_annotations | sm_annotations row count > 0 and key coverage by annotation type | NS-2, NS-7 | | |
@@ -107,7 +107,7 @@ Use this section to explicitly verify each dependency edge is valid in your run.
 | Consumer Read | Producer Write | Check | Result |
 |---|---|---|---|
 | mirrored dbo base tables (nb_03) | nb_05a SQL publish + mirror sync | mirrored tables query succeeds | |
-| lh_metadata.vw_business_metadata_current (nb_04) | nb_02 metadata pipeline | view exists and row count > 0 | |
+| lh_metadata.vw_business_metadata_current (nb_04) | nb_02 metadata pipeline | view exists and row count > 0 | PASS — nb_02 completed with metadata extraction summary (assets=4, columns=53, kpis=12); downstream nb_04 read path unlocked. |
 | lh_metadata.ai_metadata (nb_05 push QA) | nb_04a schema extension/seed | table exists and contains active rows | |
 | lh_metadata.metadata.* (nb_07b/nb_07 publish) | nb_07a ingest | expected six-table counts match | |
 | lh_metadata.metadata.sm_annotations (optional nb_04 enrich) | nb_07b merge | table exists, non-zero rows | |
@@ -117,6 +117,7 @@ Use this section to explicitly verify each dependency edge is valid in your run.
 | Seq | Update |
 |---|---|
 | 1 | PASS — nb_01 completed. Operator note: "All tables ready. Run nb_02_metadata_pipeline_demo.py next." |
+| 5 | PASS — nb_02 completed. Operator note: "Phases 0-3 completed; notebook summary showed Phase 4/5 dry-run behavior. Next: nb_04a. If needed, separately validate nb_02 comment/XP and Purview credentialed paths in a dedicated run." |
 
 ## Known Construct Notes
 
