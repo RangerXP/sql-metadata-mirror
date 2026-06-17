@@ -39,11 +39,13 @@ from pyspark.sql import functions as F
 DEMO_MODE                 = False
 DEMO_LAKEHOUSE            = "lh_enercare_demo"
 WORKSPACE_ID              = "795ce5db-7ea0-4a7c-ba64-e27c9fb568f4"
-SERVER_NAME               = "sqlserver-sk2.database.windows.net"
+SERVER_NAME               = "sqlserver-sk2wus3.database.windows.net"
 DATABASE_NAME             = "sqldemo"
 SQL_PORT                  = 1433
 SQL_LOGIN_TIMEOUT_SECONDS = 30
 TARGET_SCHEMA             = "dbo"
+BASE_TABLE_LOAD_MODE      = "replace"  # replace | append | skip_existing
+PHASE_B_CHILD_TABLES      = ["customer_complaints", "customer_consents"]
 LOAD_ORDER = [
     "products",
     "customers",
@@ -59,6 +61,7 @@ print(f"Workspace      : {WORKSPACE_ID}")
 print(f"Source lakehouse: {DEMO_LAKEHOUSE}")
 print(f"Target SQL DB  : {SERVER_NAME}:{SQL_PORT} / {DATABASE_NAME}")
 print(f"Target schema  : {TARGET_SCHEMA}")
+print(f"Base load mode : {BASE_TABLE_LOAD_MODE}")
 print("Load order     :", ", ".join(LOAD_ORDER))
 
 
@@ -71,9 +74,15 @@ print("Load order     :", ", ".join(LOAD_ORDER))
 
 # CELL ********************
 
-# Cell 2: JDBC config and token helper
+# Cell 2: JDBC/ODBC config and token helper
 
+import struct
 import time
+import pyodbc
+
+ODBC_SQL_COPT_SS_ACCESS_TOKEN = 1256
+sql_access_token = None
+conn = None
 
 JDBC_URL = (
     f"jdbc:sqlserver://{SERVER_NAME}:{SQL_PORT};"
@@ -104,7 +113,9 @@ def get_sql_access_token():
             print(f"Token acquisition failed for scope: {scope} after {elapsed_seconds} seconds")
             print(str(exc))
             last_error = exc
-    raise last_error
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("Azure SQL token acquisition failed before any token request was attempted.")
 
 
 def transform_for_sql(table_name, df):
@@ -129,11 +140,31 @@ def read_target_count(table_name, access_token):
     return int(count_df.first()["row_count"])
 
 
+def get_sql_odbc_connection(access_token):
+    odbc_token = access_token.encode("utf-16-le")
+    token_struct = struct.pack(f"<I{len(odbc_token)}s", len(odbc_token), odbc_token)
+    conn_str = (
+        "Driver={ODBC Driver 18 for SQL Server};"
+        f"Server=tcp:{SERVER_NAME},{SQL_PORT};"
+        f"Database={DATABASE_NAME};"
+        "Encrypt=yes;"
+        "TrustServerCertificate=no;"
+        f"Connection Timeout={SQL_LOGIN_TIMEOUT_SECONDS};"
+    )
+    return pyodbc.connect(
+        conn_str,
+        attrs_before={ODBC_SQL_COPT_SS_ACCESS_TOKEN: token_struct},
+        autocommit=False,
+    )
+
+
 if DEMO_MODE:
     print("[DRY RUN] Skipping token acquisition.")
 else:
     sql_access_token = get_sql_access_token()
     print("Acquired Microsoft Entra access token for Azure SQL.")
+    conn = get_sql_odbc_connection(sql_access_token)
+    print("pyodbc connection established for SQL control statements.")
 
 
 # METADATA ********************
@@ -173,9 +204,39 @@ if DEMO_MODE:
 
 # Cell 4: Publish source tables to Azure SQL
 
+
+def clear_base_tables(connection):
+    cur = connection.cursor()
+    print("Clearing base tables in reverse dependency order before reload...")
+    for table_name in PHASE_B_CHILD_TABLES:
+        target_table = f"{TARGET_SCHEMA}.{table_name}"
+        cur.execute("SELECT OBJECT_ID(?)", target_table)
+        if cur.fetchone()[0] is not None:
+            print(f"  DELETE FROM {target_table}")
+            cur.execute(f"DELETE FROM {target_table}")
+
+    for table_name in reversed(LOAD_ORDER):
+        target_table = f"{TARGET_SCHEMA}.{table_name}"
+        print(f"  DELETE FROM {target_table}")
+        cur.execute(f"DELETE FROM {target_table}")
+    connection.commit()
+
+
+def target_matches_source(table_name, source_count, access_token):
+    try:
+        return read_target_count(table_name, access_token) == source_count
+    except Exception:
+        return False
+
 if DEMO_MODE:
     print("[DRY RUN] No JDBC writes attempted.")
 else:
+    if BASE_TABLE_LOAD_MODE not in {"append", "replace", "skip_existing"}:
+        raise ValueError("BASE_TABLE_LOAD_MODE must be one of: append, replace, skip_existing")
+
+    if BASE_TABLE_LOAD_MODE == "replace":
+        clear_base_tables(conn)
+
     write_results = []
 
     for table_name in LOAD_ORDER:
@@ -184,6 +245,12 @@ else:
         source_count = source_df.count()
 
         print(f"Writing {table_name} -> {target_table} ({source_count} rows)")
+
+        if BASE_TABLE_LOAD_MODE == "skip_existing" and target_matches_source(table_name, source_count, sql_access_token):
+            target_count = read_target_count(table_name, sql_access_token)
+            write_results.append((table_name, source_count, target_count, True))
+            print(f"Skipped {target_table}: target count already matches source ({target_count})")
+            continue
 
         (
             source_df.write.format("jdbc")
@@ -234,32 +301,17 @@ print("  4. If rerunning this load, clear target tables in reverse dependency or
 
 # CELL ********************
 
-# Cell B0: Build pyodbc connection for Phase B SQL script execution
-
-import struct
-import pyodbc
-
-ODBC_SQL_COPT_SS_ACCESS_TOKEN = 1256
+# Cell B0: Confirm pyodbc connection for Phase B SQL script execution
 
 if DEMO_MODE:
     print("[DRY RUN] Skipping pyodbc connection setup for Phase B cells.")
 else:
-    odbc_token = get_sql_access_token().encode("utf-16-le")
-    token_struct = struct.pack(f"<I{len(odbc_token)}s", len(odbc_token), odbc_token)
-    conn_str = (
-        "Driver={ODBC Driver 18 for SQL Server};"
-        f"Server=tcp:{SERVER_NAME},{SQL_PORT};"
-        f"Database={DATABASE_NAME};"
-        "Encrypt=yes;"
-        "TrustServerCertificate=no;"
-        f"Connection Timeout={SQL_LOGIN_TIMEOUT_SECONDS};"
-    )
-    conn = pyodbc.connect(
-        conn_str,
-        attrs_before={ODBC_SQL_COPT_SS_ACCESS_TOKEN: token_struct},
-        autocommit=False,
-    )
-    print("pyodbc connection established for Phase B cells.")
+    try:
+        conn.cursor().execute("SELECT 1")
+        print("pyodbc connection ready for Phase B cells.")
+    except Exception:
+        conn = get_sql_odbc_connection(sql_access_token)
+        print("pyodbc connection re-established for Phase B cells.")
 
 
 # METADATA ********************
