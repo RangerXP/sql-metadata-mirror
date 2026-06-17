@@ -672,3 +672,10 @@ else:
         print(f"{emp_id:>12d}  {sin_full:>15s}  {'GREEN' if valid else 'RED'}")
 
     print(f"\nOverall: {'ALL GREEN — Layer 1 backstop ready' if all_valid else 'RED — investigate generator'}")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }

@@ -318,3 +318,10 @@ summary_rows = [
 
 summary_df = spark.createDataFrame(summary_rows, ["metric", "value"]).orderBy("metric")
 display(summary_df)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
