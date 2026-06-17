@@ -28,6 +28,7 @@ relationship fct_service_request_EquipmentKey_dim_equipment_EquipmentKey
 	toColumn: dim_equipment.EquipmentKey
 
 relationship dim_equipment_ServiceAccountKey_dim_service_account_ServiceAccountKey
+	isActive: false
 	fromColumn: dim_equipment.ServiceAccountKey
 	toColumn: dim_service_account.ServiceAccountKey
 
