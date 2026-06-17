@@ -37,7 +37,7 @@
 from pyspark.sql import functions as F
 
 DEMO_MODE                 = False
-NOTEBOOK_BUILD_TAG        = "2026-06-17 notebook-owned-sql"
+NOTEBOOK_BUILD_TAG        = "2026-06-17 notebook-owned-sql-truncation-fix"
 DEMO_LAKEHOUSE            = "lh_enercare_demo"
 WORKSPACE_ID              = "795ce5db-7ea0-4a7c-ba64-e27c9fb568f4"
 SERVER_NAME               = "sqlserver-sk2wus3.database.windows.net"
@@ -407,7 +407,7 @@ BEGIN
         customer_id INT NOT NULL,
         service_account_id INT NULL,
         complaint_type VARCHAR(40) NOT NULL,
-        severity VARCHAR(16) NOT NULL,
+        severity VARCHAR(32) NOT NULL,
         opened_date DATE NOT NULL,
         closed_date DATE NULL,
         status VARCHAR(24) NOT NULL,
@@ -418,6 +418,12 @@ BEGIN
         CONSTRAINT FK_customer_complaints_customer FOREIGN KEY (customer_id) REFERENCES dbo.customers (customer_id),
         CONSTRAINT FK_customer_complaints_service_account FOREIGN KEY (service_account_id) REFERENCES dbo.service_accounts (service_account_id)
     );
+END
+GO
+IF OBJECT_ID(N'dbo.customer_complaints', N'U') IS NOT NULL
+   AND COL_LENGTH('dbo.customer_complaints', 'severity') IS NOT NULL
+BEGIN
+    ALTER TABLE dbo.customer_complaints ALTER COLUMN severity VARCHAR(32) NOT NULL;
 END
 GO
 IF OBJECT_ID(N'dbo.data_owners_directory', N'U') IS NULL
@@ -600,12 +606,19 @@ else:
     print(f"DDL script: {len(batches)} batches to execute")
 
     cur = conn.cursor()
+    batch_errors = []
     for i, batch in enumerate(batches, 1):
         try:
             cur.execute(batch)
             conn.commit()
         except Exception as e:
-            print(f"  Batch {i}/{len(batches)} note: {type(e).__name__}: {e}")
+            conn.rollback()
+            message = f"Batch {i}/{len(batches)} failed: {type(e).__name__}: {e}"
+            batch_errors.append(message)
+            print(f"  {message}")
+
+    if batch_errors:
+        raise RuntimeError("DDL execution failed; see batch errors above.")
 
     print("DDL applied: notebook-owned Purview demo extensions")
 
@@ -681,12 +694,19 @@ else:
     print(f"Seed script: {len(batches)} batches to execute")
 
     cur = conn.cursor()
+    batch_errors = []
     for i, batch in enumerate(batches, 1):
         try:
             cur.execute(batch)
             conn.commit()
         except Exception as e:
-            print(f"  Batch {i}/{len(batches)} note: {type(e).__name__}: {e}")
+            conn.rollback()
+            message = f"Batch {i}/{len(batches)} failed: {type(e).__name__}: {e}"
+            batch_errors.append(message)
+            print(f"  {message}")
+
+    if batch_errors:
+        raise RuntimeError("Seed execution failed; see batch errors above.")
 
     print("Seed applied: notebook-owned Purview demo seed data")
 
@@ -751,12 +771,19 @@ def execute_sql_script(sql_script: str, friendly_name: str) -> None:
     print(f"{friendly_name}: {len(batches)} batches to execute")
 
     local_cur = conn.cursor()
+    batch_errors = []
     for i, batch in enumerate(batches, 1):
         try:
             local_cur.execute(batch)
             conn.commit()
         except Exception as e:
-            print(f"  Batch {i}/{len(batches)} note: {type(e).__name__}: {e}")
+            conn.rollback()
+            message = f"Batch {i}/{len(batches)} failed: {type(e).__name__}: {e}"
+            batch_errors.append(message)
+            print(f"  {message}")
+
+    if batch_errors:
+        raise RuntimeError(f"{friendly_name} execution failed; see batch errors above.")
 
 
 if DEMO_MODE:
