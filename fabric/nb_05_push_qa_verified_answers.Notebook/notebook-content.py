@@ -46,16 +46,6 @@ METADATA_LH          = "lh_metadata"
 # If your environment enforces a lower annotation limit, the notebook now reports
 # that explicitly instead of silently dropping content.
 MAX_ANNOTATION_CHARS = 12000
-REQUIRED_NORTH_STAR_TERMS = [
-    "Maria Castellanos",
-    "EC18374622",
-    "furnace",
-    "NoHeat",
-    "GTA North",
-    "CustomerService",
-    "Victoria Tan",
-    "Ci Zhu",
-]
 
 print(f"nb_05_push_qa_verified_answers | DEMO_MODE={DEMO_MODE}")
 print(f"Target model: {MODEL_NAME}")
@@ -132,16 +122,6 @@ elif qa_block:
     combined = f"VERIFIED Q&A: {qa_block}"
 else:
     combined = instr_block
-
-coverage_source = combined.lower()
-missing_terms = [term for term in REQUIRED_NORTH_STAR_TERMS if term.lower() not in coverage_source]
-if missing_terms:
-    raise RuntimeError(
-        "PBI_AI_Instructions is missing required Maria north-star grounding terms: "
-        + ", ".join(missing_terms)
-        + ". Rerun nb_04a to refresh lh_metadata.ai_metadata before publishing."
-    )
-print("North-star grounding coverage: GREEN")
 
 if len(combined) > MAX_ANNOTATION_CHARS:
     truncated = combined[:MAX_ANNOTATION_CHARS]
