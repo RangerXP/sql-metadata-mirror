@@ -37,7 +37,7 @@
 from pyspark.sql import functions as F
 
 DEMO_MODE                 = False
-NOTEBOOK_BUILD_TAG        = "2026-06-17 notebook-owned-sql-truncation-fix"
+NOTEBOOK_BUILD_TAG        = "2026-06-17 maria-north-star-sql-seed"
 DEMO_LAKEHOUSE            = "lh_enercare_demo"
 WORKSPACE_ID              = "795ce5db-7ea0-4a7c-ba64-e27c9fb568f4"
 SERVER_NAME               = "sqlserver-sk2wus3.database.windows.net"
@@ -517,6 +517,60 @@ GO
 INSERT INTO dbo.audit_data_access (audit_id, accessed_at, accessor_upn, accessor_role, object_schema, object_name, operation, rows_affected, purpose_of_use, contains_pii)
 SELECT rn, DATEADD(HOUR, -rn, SYSUTCDATETIME()), CASE rn % 5 WHEN 0 THEN 'Victoria.Tan@enercare.ca' WHEN 1 THEN 'Ci.Zhu@enercare.ca' WHEN 2 THEN 'Rupal.Solanki@enercare.ca' WHEN 3 THEN 'Shruthi.Srinivas@enercare.ca' ELSE 'ranbir.singh@enercare.ca' END, 'Data Reader', 'dbo', CASE rn % 6 WHEN 0 THEN 'customers' WHEN 1 THEN 'service_accounts' WHEN 2 THEN 'billing_transactions' WHEN 3 THEN 'customer_consents' WHEN 4 THEN 'service_requests' ELSE 'contracts' END, 'SELECT', 1 + (rn % 100), CASE rn % 4 WHEN 0 THEN 'BillingSupport' WHEN 1 THEN 'RegulatorReport' WHEN 2 THEN 'MarketingCampaign' ELSE 'DataScience' END, CASE WHEN rn % 6 IN (0, 1, 2, 3) THEN 1 ELSE 0 END FROM n;
 GO
+UPDATE dbo.customers
+   SET account_number = 'EC18374622', first_name = 'Maria', last_name = 'Castellanos',
+       email = 'maria.castellanos@example.com', phone = '+1-905-555-4471',
+       customer_type = 'Residential', status = 'Active', city = 'Markham', province = 'ON',
+       postal_code = 'L4G 2H9', date_of_birth = '1978-02-12', owner_email = 'Rupal.Solanki@enercare.ca',
+       marketing_consent = 1
+ WHERE customer_id = 1;
+UPDATE dbo.service_accounts
+   SET customer_id = 1, account_number = 'SA18374622-01', utility_type = 'HVAC',
+       rate_class = 'Residential Protection Plan', distributor = 'Enercare', status = 'Active',
+       service_address = '47 Birch Drive, Unit 8', city = 'Markham', postal_code = 'L4G 2H9',
+       latitude = 43.8563, longitude = -79.3370, service_zone_code = 'CA-ON-GTA-N'
+ WHERE service_account_id = 1;
+UPDATE dbo.equipment_registry
+   SET service_account_id = 1, equipment_type = 'Furnace', make = 'Lennox',
+       model = 'SLP98V variable-speed gas furnace', serial_number = 'LN-MARIA-2020-001',
+       ownership_type = 'Rental', fuel_type = 'Gas', install_date = '2020-10-14',
+       warranty_expiry = '2030-10-14', status = 'Active'
+ WHERE equipment_id = 1;
+UPDATE dbo.contracts
+   SET service_account_id = 1, product_id = 4, contract_status = 'Active', start_date = '2020-10-14',
+       end_date = NULL, monthly_amount = 89.95, auto_renew = 1,
+       cancellation_date = NULL, cancellation_reason = NULL
+ WHERE contract_id = 1;
+UPDATE dbo.service_requests
+   SET service_account_id = 1, equipment_id = 1, request_type = 'NoHeat', priority = 'High',
+       status = 'Scheduled - Pending Tech',
+       description = 'Maria Castellanos furnace outage opened through portal; dispatch missed SLA.',
+       created_date = '2026-06-13', scheduled_date = '2026-06-18', completed_date = NULL,
+       technician_id = 105, resolution_notes = 'Escalated after no technician dispatched within 24-hour no-heat SLA.'
+ WHERE request_id = 1;
+UPDATE dbo.billing_transactions
+   SET contract_id = 1, service_account_id = 1, transaction_type = 'MonthlyCharge',
+       transaction_date = '2026-06-17', due_date = '2026-06-30', amount = 89.95,
+       tax_amount = 11.69, payment_method = 'PreAuthorizedDebit', status = 'Posted',
+       invoice_number = 'INV-MARIA-202606'
+ WHERE transaction_id = 1;
+UPDATE dbo.customer_consents
+   SET consent_status = 'Granted', granted_date = '2026-06-17', withdrawn_date = NULL,
+       source_channel = 'CallCenter', captured_by_upn = 'tnguyen@enercare.ca'
+ WHERE customer_id = 1 AND consent_type IN ('Marketing-Email', 'Marketing-SMS');
+UPDATE dbo.customer_complaints
+   SET customer_id = 1, service_account_id = 1, complaint_type = 'Service', severity = 'High',
+       opened_date = '2026-06-17', closed_date = NULL, status = 'Escalated',
+       assigned_to_upn = 'tnguyen@enercare.ca',
+       description = 'Maria Castellanos no-heat furnace SLA breach; dispatch did not reassign GTA North work order.',
+       regulator_case_ref = NULL
+ WHERE complaint_id = 1;
+UPDATE dbo.audit_data_access
+   SET accessed_at = SYSUTCDATETIME(), accessor_upn = 'tnguyen@enercare.ca',
+       accessor_role = 'Call Center Specialist', object_schema = 'dbo', object_name = 'customers',
+       operation = 'SELECT', rows_affected = 1, purpose_of_use = 'CustomerService', contains_pii = 1
+ WHERE audit_id = 1;
+GO
 PRINT 'Purview demo seed complete.';
 GO
 """
@@ -742,6 +796,45 @@ SELECT 'service_accounts with GPS backfilled', COUNT(*),               56      F
  WHERE latitude IS NOT NULL;
 """
 
+verify_maria_sql = """
+SELECT 'Maria customer identity' AS check_name, COUNT(*) AS row_count, 1 AS expected
+    FROM dbo.customers
+ WHERE customer_id = 1 AND account_number = 'EC18374622'
+     AND first_name = 'Maria' AND last_name = 'Castellanos' AND postal_code = 'L4G 2H9'
+UNION ALL
+SELECT 'Maria service account', COUNT(*), 1
+    FROM dbo.service_accounts
+ WHERE service_account_id = 1 AND customer_id = 1 AND service_zone_code = 'CA-ON-GTA-N'
+UNION ALL
+SELECT 'Maria furnace equipment', COUNT(*), 1
+    FROM dbo.equipment_registry
+ WHERE equipment_id = 1 AND service_account_id = 1 AND equipment_type = 'Furnace'
+UNION ALL
+SELECT 'Maria active contract', COUNT(*), 1
+    FROM dbo.contracts
+ WHERE contract_id = 1 AND service_account_id = 1 AND monthly_amount = 89.95
+UNION ALL
+SELECT 'Maria no-heat request', COUNT(*), 1
+    FROM dbo.service_requests
+ WHERE request_id = 1 AND service_account_id = 1 AND request_type = 'NoHeat'
+UNION ALL
+SELECT 'Maria posted charge', COUNT(*), 1
+    FROM dbo.billing_transactions
+ WHERE transaction_id = 1 AND contract_id = 1 AND invoice_number = 'INV-MARIA-202606'
+UNION ALL
+SELECT 'Maria granted text/email consent', COUNT(*), 2
+    FROM dbo.customer_consents
+ WHERE customer_id = 1 AND consent_type IN ('Marketing-Email', 'Marketing-SMS') AND consent_status = 'Granted'
+UNION ALL
+SELECT 'Maria service complaint', COUNT(*), 1
+    FROM dbo.customer_complaints
+ WHERE complaint_id = 1 AND customer_id = 1 AND complaint_type = 'Service' AND severity = 'High'
+UNION ALL
+SELECT 'Maria Tom audit entry', COUNT(*), 1
+    FROM dbo.audit_data_access
+ WHERE audit_id = 1 AND accessor_upn = 'tnguyen@enercare.ca' AND purpose_of_use = 'CustomerService';
+"""
+
 if DEMO_MODE:
     print("[DRY RUN] Skipping seed verification query.")
 else:
@@ -751,6 +844,14 @@ else:
     print("-" * 80)
     for r in rows:
         status = "GREEN" if r[1] == r[2] else "YELLOW"
+        print(f"{r[0]:45s} {r[1]:>8d} {r[2]:>10d}  {status}")
+
+    cur.execute(verify_maria_sql)
+    rows = cur.fetchall()
+    print(f"\n{'maria_check':45s} {'rows':>8s} {'expected':>10s}  status")
+    print("-" * 80)
+    for r in rows:
+        status = "GREEN" if r[1] == r[2] else "RED"
         print(f"{r[0]:45s} {r[1]:>8d} {r[2]:>10d}  {status}")
 
 
