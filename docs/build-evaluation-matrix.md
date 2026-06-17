@@ -78,7 +78,7 @@ This section captures the expected sequencing verdict from the current construct
 | Seq | Expected Sequencing Verdict | Known Risk | Preflight Status |
 |---|---|---|---|
 | 1 | Root producer, no upstream dependency | Low | NOT RUN |
-| 2 | Depends on Seq 1 | Medium: SQL auth/network and script mount under `/lakehouse/default/Files/sql` | NOT RUN |
+| 2 | Depends on Seq 1 | Medium: SQL auth/network; Phase B SQL is notebook-owned and does not require `/lakehouse/default/Files/sql` | NOT RUN |
 | 3 | Depends on Seq 2 | Medium: mirror lag/refresh delays | NOT RUN |
 | 4 | Depends on Seq 3 (or fallback to Seq 1 if explicitly enabled) | Medium: mirror table visibility | NOT RUN |
 | 5 | Depends on Seq 1/4 data availability | Low | NOT RUN |
@@ -95,7 +95,7 @@ This section captures the expected sequencing verdict from the current construct
 | Gate | Pass Condition | Result |
 |---|---|---|
 | Branch/commit pinned | Branch and commit captured in Run Metadata | |
-| Lakehouse file mounts present | `/lakehouse/default/Files/sql` and `/lakehouse/default/Files/tools` available for notebook cells that require them | |
+| Lakehouse file mounts present | `/lakehouse/default/Files/tools` optional for SIN helper override; no `/lakehouse/default/Files/sql` upload required for `nb_05a` | |
 | SQL connectivity smoke test | `nb_05b_test_sql_connectivity` succeeds (or known principal remediation documented) | |
 | Mirror readiness path agreed | Operator confirms whether run uses mirrored source mode vs explicit fallback mode | |
 | Purview mode declared | `SQL_MIRROR_ONLY_DEPLOYMENT` behavior accepted for this run | |

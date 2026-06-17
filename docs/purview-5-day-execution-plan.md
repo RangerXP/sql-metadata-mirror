@@ -18,7 +18,7 @@ Estimated time: **2 hours**
 | 0.4 | Confirm Fabric tenant settings allow sensitivity labels (gates Phase 5.6) | Tenant admin screenshot |
 | 0.5 | Confirm asset curation has not yet been enabled (irreversible) | Banner state captured for Day 2 plan |
 | 0.6 | Confirm SQL public network access posture matches design (Selected networks + AllowAzureServices + your laptop) — see `design-gap-analysis.md` G7-2 | SSMS connects to `sqldemo` from your laptop |
-| 0.7 | Upload `tools/` and `sql/` to the lakehouse `Files/` mount that `nb_05a` reads from (matches `SQL_REPO_ROOT` / `TOOLS_PATH` in `phase_b_cell_additions.py`) | Files visible at `/lakehouse/default/Files/sql/` and `/lakehouse/default/Files/tools/` from a Fabric notebook |
+| 0.7 | Confirm `nb_05a` contains notebook-owned Phase B SQL and optionally upload `tools/` for the SIN helper override | No `/lakehouse/default/Files/sql` upload required; `/lakehouse/default/Files/tools/` is optional because the notebook has a local SIN fallback |
 
 ---
 
@@ -28,17 +28,17 @@ Estimated time: **6–8 hours**
 
 > **Build pattern (locked):** All build steps run from inside Fabric notebooks. SSMS is the **validation surface** only — use it to spot-check row counts, inspect classifications, or run ad-hoc SELECTs. SSMS never executes DDL or DML against the source.
 >
-> **SQL files** (`sql/04_*.sql`, `sql/05_*.sql`) remain canonical text references — same pattern as existing `sql/02_*.sql` and `sql/03_*.sql`. They are *executed* by notebook cells.
+> **SQL files** (`sql/04_*.sql`, `sql/05_*.sql`, `sql/06_*.sql`, `sql/07_*.sql`) remain canonical text references. Runtime execution is notebook-owned: `nb_05a` supplies the executable SQL inline and does not read from Lakehouse `Files/sql`.
 
 ### Morning — Notebook 1: Extended `nb_05a` (SQL bring-up + Luhn SIN backfill)
 
-Open `fabric/nb_05a_publish_synthetic_data_to_sql.Notebook/` and append the six cells from `phase_b_cell_additions.py` to the bottom of the notebook.
+Open `fabric/nb_05a_publish_synthetic_data_to_sql.Notebook/`; the Phase B cells are already integrated in the notebook.
 
 | # | Cell | Action | Evidence |
 |---|---|---|---|
-| 1.1 | nb_05a Cell B1 | Read + execute `sql/04_purview_demo_extensions.sql` (DDL) via the existing pyodbc `conn` — `GO`-batches split | Output: `DDL applied: 04_purview_demo_extensions.sql` |
+| 1.1 | nb_05a Cell B1 | Execute notebook-owned Purview extension DDL via the existing pyodbc `conn`; `GO` batches split in-notebook | Output: `DDL applied: notebook-owned Purview demo extensions` |
 | 1.1v | nb_05a Cell B2 | Verify: 6 new tables + 9 PII columns | 4 rows, all GREEN |
-| 1.2 | nb_05a Cell B3 | Read + execute `sql/05_seed_purview_demo_data.sql` (seed) | Output: `Seed applied: 05_seed_purview_demo_data.sql` |
+| 1.2 | nb_05a Cell B3 | Execute notebook-owned Purview seed data | Output: `Seed applied: notebook-owned Purview demo seed data` |
 | 1.2v | nb_05a Cell B4 | Verify seed counts | 8 rows: employees=11, zones=8, consents=~120, complaints=18, owner_dir=13, audit=200, customers DOB-backfilled=50, service_accounts GPS-backfilled=56 |
 | 1.3 | nb_05a Cell B5 | Backfill Luhn-valid SINs via `tools/sin_luhn_generator.py` (Layer 1 backstop) | `employees.sin_full populated: 11 rows`; `customers.sin_last_4 populated: 50 rows` |
 | 1.3v | nb_05a Cell B6 | Spot-check 5 random SINs via `is_luhn_valid()` | `ALL GREEN — Layer 1 backstop ready` |

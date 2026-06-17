@@ -77,7 +77,7 @@ fabric/
 
 ### SQL build pattern (locked)
 
-- SQL DDL/seed lives in `sql/*.sql` as canonical text
+- SQL DDL/seed lives inline in `nb_05a`; `sql/*.sql` remains reference text only
 - Execution always runs from a Fabric notebook cell using `pyodbc`
 - SSMS is for **validation only** (spot-checks, classification inspection, ad-hoc SELECT)
 - Never execute DDL from SSMS — it would diverge from the notebook-replayable record
@@ -86,7 +86,6 @@ fabric/
 
 | Mount path | Contents |
 |---|---|
-| `/lakehouse/default/Files/sql/` | `04_purview_demo_extensions.sql`, `05_seed_purview_demo_data.sql`, `06_purview_metadata_schema.sql`, `07_seed_purview_metadata.sql` |
 | `/lakehouse/default/Files/tools/` | Optional: `sin_luhn_generator.py` (not required when notebook fallback is used) |
 | `/lakehouse/default/Files/purview/` | 6 CSVs |
 
@@ -95,7 +94,7 @@ fabric/
 ## Pre-flight — Day 0 (you, before Day 1 starts)
 
 ### Objective
-Phase A staging is committed to the demo repo; lakehouse Files mount has SQL/tools/CSVs ready; SQL public network access confirmed working from your laptop and from Fabric workspace identity.
+Phase A staging is committed to the demo repo; notebook-owned SQL is present in `nb_05a`; lakehouse Files mount has optional tools/CSVs ready; SQL public network access confirmed working from your laptop and from Fabric workspace identity.
 
 ### Inputs
 - Staging tree at `/mnt/workspace/output/repo-staging/` (19 files)
@@ -117,7 +116,7 @@ git status   # expect 19 new files
 **0.2 [AGENT]** Commit Phase A.
 ```bash
 git add docs/ purview/ sql/ tools/ \
-        fabric/nb_05a_publish_synthetic_data_to_sql.Notebook/phase_b_cell_additions.py \
+  fabric/nb_05a_publish_synthetic_data_to_sql.Notebook/ \
         fabric/nb_06a_create_sin_backstop.Notebook/
 git commit -m "Phase A — Purview design assets + notebook-based Phase B scaffolding"
 ```
@@ -135,18 +134,14 @@ git commit -m "Phase A — Purview design assets + notebook-based Phase B scaffo
 **0.6 [HUMAN]** Confirm SQL public network access matches `docs/design-gap-analysis.md` §G7-2 posture: *Selected networks ON + AllowAzureServices exception ON*. SSMS connects from your laptop (already verified).
 **Verify:** SSMS successful connection to `sqldemo` from MSFT VPN.
 
-**0.7 [HUMAN + AGENT]** Upload SQL scripts to lakehouse Files mount.
-- Fabric portal → `Purview-West3` → `lh_metadata` → `Files` → Upload `sql/04_purview_demo_extensions.sql`, `sql/05_seed_purview_demo_data.sql`, `sql/06_purview_metadata_schema.sql`, and `sql/07_seed_purview_metadata.sql` into `Files/sql/`
+**0.7 [HUMAN + AGENT]** Confirm notebook-owned SQL and optional helper files.
+- No SQL upload is required for `nb_05a`; Phase B DDL/seed and governance metadata SQL are supplied inline by the notebook.
 - Optional: upload `tools/sin_luhn_generator.py` into `Files/tools/`.
 
 **Verify:** From any Fabric notebook cell, run:
 ```python
 import os
-assert "04_purview_demo_extensions.sql" in os.listdir("/lakehouse/default/Files/sql")
-assert "05_seed_purview_demo_data.sql" in os.listdir("/lakehouse/default/Files/sql")
-assert "06_purview_metadata_schema.sql" in os.listdir("/lakehouse/default/Files/sql")
-assert "07_seed_purview_metadata.sql" in os.listdir("/lakehouse/default/Files/sql")
-print("Files mount verified")
+print("SQL upload not required for nb_05a; optional tools present:", os.path.exists("/lakehouse/default/Files/tools"))
 ```
 
 ### Exit criteria
@@ -179,15 +174,15 @@ Phase B SQL extensions deployed; SINs populated (Luhn-valid); Fabric mirror refl
 **1.1b [HUMAN]** Confirm `nb_05a` already includes integrated Phase B cells (`B0`, `B1` … `B6`, plus `B4A`/`B4B`).
 **Verify:** Those cells are already present in the notebook with no manual cell copy/paste.
 
-**1.1c [HUMAN]** Run Cell B0 first (pyodbc connection), then run Cell B1 (execute `sql/04_purview_demo_extensions.sql` DDL).
-**Expected output:** `DDL applied: 04_purview_demo_extensions.sql`
+**1.1c [HUMAN]** Run Cell B0 first (pyodbc connection), then run Cell B1 (execute notebook-owned Purview extension DDL).
+**Expected output:** `DDL applied: notebook-owned Purview demo extensions`
 **Verify (Cell B2):** 4 rows, all GREEN.
 **If B1 errors:**
 - `Invalid object name 'dbo.customers'` → re-run notebook from top so existing schema lands first.
 - `There is already an object named '<table>'` → DDL ran already; skip B1, advance to B2.
 
-**1.2 [HUMAN]** Run Cell B3 (execute `sql/05_seed_purview_demo_data.sql`).
-**Expected output:** `Seed applied: 05_seed_purview_demo_data.sql`
+**1.2 [HUMAN]** Run Cell B3 (execute notebook-owned Purview demo seed data).
+**Expected output:** `Seed applied: notebook-owned Purview demo seed data`
 **Verify (Cell B4):** 8 rows with counts:
 ```
 employees                       11
