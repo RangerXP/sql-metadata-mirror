@@ -27,6 +27,10 @@ relationship fct_service_request_EquipmentKey_dim_equipment_EquipmentKey
 	fromColumn: fct_service_request.EquipmentKey
 	toColumn: dim_equipment.EquipmentKey
 
+relationship dim_equipment_ServiceAccountKey_dim_service_account_ServiceAccountKey
+	fromColumn: dim_equipment.ServiceAccountKey
+	toColumn: dim_service_account.ServiceAccountKey
+
 relationship fct_contract_month_BillingMonthDateKey_dim_date_DateKey
 	fromColumn: fct_contract_month.BillingMonthDateKey
 	toColumn: dim_date.DateKey
