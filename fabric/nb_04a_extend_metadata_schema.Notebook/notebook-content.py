@@ -35,7 +35,7 @@
 DEMO_MODE = False           # default safe mode; set False only for live writes
 
 METADATA_LAKEHOUSE = "lh_metadata"
-CERTIFIED_BY       = "Christopher Dingle"
+CERTIFIED_BY       = "Victoria Tan"
 CERTIFIED_DATE     = "2026-05-06"
 MODEL_NAME         = "BrookfieldEnercare"
 
