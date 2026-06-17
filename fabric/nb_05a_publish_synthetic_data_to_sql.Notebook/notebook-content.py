@@ -37,6 +37,7 @@
 from pyspark.sql import functions as F
 
 DEMO_MODE                 = False
+NOTEBOOK_BUILD_TAG        = "2026-06-17 notebook-owned-sql"
 DEMO_LAKEHOUSE            = "lh_enercare_demo"
 WORKSPACE_ID              = "795ce5db-7ea0-4a7c-ba64-e27c9fb568f4"
 SERVER_NAME               = "sqlserver-sk2wus3.database.windows.net"
@@ -57,6 +58,7 @@ LOAD_ORDER = [
 ]
 
 print(f"nb_05a_publish_synthetic_data_to_sql | DEMO_MODE={DEMO_MODE}")
+print(f"Notebook build : {NOTEBOOK_BUILD_TAG}")
 print(f"Workspace      : {WORKSPACE_ID}")
 print(f"Source lakehouse: {DEMO_LAKEHOUSE}")
 print(f"Target SQL DB  : {SERVER_NAME}:{SQL_PORT} / {DATABASE_NAME}")
@@ -826,7 +828,7 @@ try:
     from sin_luhn_generator import generate_synthetic_sin, hyphenated, is_luhn_valid  # noqa: E402
     print("Using sin_luhn_generator from Lakehouse Files/tools.")
 except Exception:
-    print("sin_luhn_generator not found. Using notebook-local SIN helper fallback.")
+    print("Optional sin_luhn_generator not found in Lakehouse Files/tools; using built-in notebook SIN helper fallback.")
 
     def _digits(value: str) -> str:
         return "".join(ch for ch in str(value) if ch.isdigit())
