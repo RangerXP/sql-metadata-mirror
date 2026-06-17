@@ -282,7 +282,7 @@ else:
 # CELL ********************
 
 # G2-2 Set A — Seed kpi_metadata with 12 existing DAX measures
-# IsCertified=0 — pending business sign-off from Christopher/Ranbir
+# IsCertified=0 — pending business sign-off from Victoria/Ranbir
 
 from pyspark.sql import Row
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType, DateType
@@ -383,9 +383,13 @@ else:
 # CELL ********************
 
 # G2-2 Set B — Seed kpi_metadata with 5 certified call center KPIs
-# IsCertified=1 — pre-certified for demo by Christopher Dingle
+# IsCertified=1 — pre-certified for demo by CERTIFIED_BY
 
 certified_date_obj = date.fromisoformat(CERTIFIED_DATE)
+
+
+def _sql_string(value: str) -> str:
+    return "'" + str(value).replace("'", "''") + "'"
 
 cc_kpi_defs = [
     ("First Contact Resolution",      "FCR",          "Call Center",    "ranbir.singh@enercare.ca",
@@ -400,7 +404,7 @@ cc_kpi_defs = [
      "Survey is offered to all inbound calls; response rate ~22%. "
      "Score is weighted by queue type for aggregate reporting. Target: 4.2.",
      4.2, 3.8, 3.4, "score_1_to_5"),
-    ("Protection Plan Renewal Rate",  "PP_RNW_RATE",  "Retention",      "christopher.dingle@enercare.ca",
+    ("Protection Plan Renewal Rate",  "PP_RNW_RATE",  "Retention",      "victoria.tan@enercare.ca",
      'DIVIDE(CALCULATE(COUNTROWS(fct_pp_contract_renewals), fct_pp_contract_renewals[renewal_status_code] = "renewed"), '
      'CALCULATE(COUNTROWS(fct_pp_contract_renewals), fct_pp_contract_renewals[renewal_status_code] IN {"renewed","lapsed","cancelled"}))',
      "Percentage of expiring Protection Plan contracts successfully renewed within the renewal window "
@@ -436,9 +440,11 @@ if DEMO_MODE:
     print(f"[DEMO_MODE] Set B — {len(rows_set_b)} certified call center KPIs (IsCertified=1):\n")
     df_set_b.select("KPICode", "KPIName", "Domain", "TargetValue", "UnitType", "CertifiedBy").show(truncate=False)
 else:
+    seed_kpi_codes = ", ".join(_sql_string(r.KPICode) for r in rows_set_b)
+    spark.sql(f"DELETE FROM {METADATA_LAKEHOUSE}.kpi_metadata WHERE KPICode IN ({seed_kpi_codes})")
     df_set_b.write.format("delta").mode("append").option("mergeSchema", "true") \
             .saveAsTable(f"{METADATA_LAKEHOUSE}.kpi_metadata")
-    print(f"kpi_metadata seeded: {len(rows_set_b)} certified call center KPIs")
+    print(f"kpi_metadata refreshed: {len(rows_set_b)} certified call center KPIs")
 
 # METADATA ********************
 
@@ -525,9 +531,16 @@ if DEMO_MODE:
     print(f"[DEMO_MODE] Verified answers — {len(rows_va)} rows across FCR, CSAT, PP_RNW_RATE:\n")
     df_va.select("RecordID", "LinkedKPICode", "TriggerText").show(truncate=60)
 else:
+    seed_va_triggers = ", ".join(_sql_string(r.TriggerText) for r in rows_va)
+    spark.sql(
+        f"DELETE FROM {METADATA_LAKEHOUSE}.ai_metadata "
+        f"WHERE ModelName = {_sql_string(MODEL_NAME)} "
+        f"AND RecordType = 'verified_answer' "
+        f"AND TriggerText IN ({seed_va_triggers})"
+    )
     df_va.write.format("delta").mode("append").option("mergeSchema", "true") \
          .saveAsTable(f"{METADATA_LAKEHOUSE}.ai_metadata")
-    print(f"ai_metadata seeded: {len(rows_va)} verified answers")
+    print(f"ai_metadata refreshed: {len(rows_va)} verified answers")
 
 # METADATA ********************
 
@@ -540,6 +553,17 @@ else:
 
 # G1-4, G4 — Seed ai_metadata: model-level AI instruction rows
 # Provides Copilot with business context, terminology, and certified KPI reference
+
+certified_kpi_instruction = (
+    "Five certified call center KPIs: "
+    "FCR target 78% (warning <72%, critical <65%); "
+    "CSAT target 4.2/5 (warning <3.8, critical <3.4); "
+    "PP_RNW_RATE target 82% (warning <75%, critical <68%); "
+    "AHT target 420s billing queue (warning >480s, critical >540s); "
+    "SLA_BRCH_RATE target 5% (warning >10%, critical >15%). "
+    f"Only IsCertified=1 KPIs have been approved by {CERTIFIED_BY}. "
+    "Do not present non-certified measures as authoritative business KPIs."
+)
 
 ai_instructions = [
     ("Business Context", "Enercare context",
@@ -556,15 +580,7 @@ ai_instructions = [
      "SLA Breach = field technician missed committed service window. "
      "WH = Water Heater. HVAC = Heating Ventilation Air Conditioning. "
      "MUR = Multi-Unit Residential. FSA = Forward Sortation Area (first 3 chars of postal code)."),
-    ("KPI Definitions", "certified KPI reference",
-     "Five certified call center KPIs: "
-     "FCR target 78% (warning <72%, critical <65%); "
-     "CSAT target 4.2/5 (warning <3.8, critical <3.4); "
-     "PP_RNW_RATE target 82% (warning <75%, critical <68%); "
-     "AHT target 420s billing queue (warning >480s, critical >540s); "
-     "SLA_BRCH_RATE target 5% (warning >10%, critical >15%). "
-     "Only IsCertified=1 KPIs have been approved by Christopher Dingle. "
-     "Do not present non-certified measures as authoritative business KPIs."),
+    ("KPI Definitions", "certified KPI reference", certified_kpi_instruction),
 ]
 
 rows_instr = [
@@ -582,9 +598,16 @@ if DEMO_MODE:
     print(f"[DEMO_MODE] AI instruction rows — {len(rows_instr)} rows:\n")
     df_instr.select("RecordID", "RecordType", "TriggerText").show(truncate=60)
 else:
+    seed_instruction_triggers = ", ".join(_sql_string(r.TriggerText) for r in rows_instr)
+    spark.sql(
+        f"DELETE FROM {METADATA_LAKEHOUSE}.ai_metadata "
+        f"WHERE ModelName = {_sql_string(MODEL_NAME)} "
+        f"AND RecordType = 'ai_instruction' "
+        f"AND TriggerText IN ({seed_instruction_triggers})"
+    )
     df_instr.write.format("delta").mode("append").option("mergeSchema", "true") \
             .saveAsTable(f"{METADATA_LAKEHOUSE}.ai_metadata")
-    print(f"ai_metadata seeded: {len(rows_instr)} AI instruction rows")
+    print(f"ai_metadata refreshed: {len(rows_instr)} AI instruction rows")
 
 # METADATA ********************
 
