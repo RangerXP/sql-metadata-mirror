@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_08_purview_glossary_cde",
+    "description": "Publishes glossary terms and critical data elements to Purview Atlas with validation and dry-run payloads"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "d77c7f55-74a8-4670-a27b-3e1c0fefcb8a"
+  }
+}

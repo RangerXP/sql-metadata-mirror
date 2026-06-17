@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_10_purview_stewardship_ai",
+    "description": "Validates stewardship, certification, DLP readiness, and governed AI consumption readiness"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "b86ab62e-5ddd-4d6a-91eb-26b02c83a762"
+  }
+}

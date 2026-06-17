@@ -1,0 +1,331 @@
+# Fabric notebook source
+
+# METADATA ********************
+
+# META {
+# META   "kernel_info": {
+# META     "name": "synapse_pyspark"
+# META   },
+# META   "dependencies": {
+# META     "lakehouse": {
+# META       "default_lakehouse": "824f4a52-baa0-4c3f-88dc-203c1d85c89a",
+# META       "default_lakehouse_name": "lh_metadata",
+# META       "default_lakehouse_workspace_id": "b976cac2-7754-4061-88c2-61c0ac016a99",
+# META       "known_lakehouses": [
+# META         {
+# META           "id": "824f4a52-baa0-4c3f-88dc-203c1d85c89a"
+# META         }
+# META       ]
+# META     },
+# META     "environment": {
+# META       "environmentId": "f258b6d4-a1a7-b77b-4ffa-7812e76e51aa",
+# META       "workspaceId": "00000000-0000-0000-0000-000000000000"
+# META     }
+# META   }
+# META }
+
+# CELL ********************
+
+# Cell 1: Imports and config
+
+import hashlib
+import json
+import uuid
+import requests
+from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
+
+spark = SparkSession.builder.getOrCreate()
+
+METADATA_LAKEHOUSE = "lh_metadata"
+METADATA_SCHEMA = "metadata"
+PURVIEW_ACCOUNT_NAME = "Purview-West3"
+PURVIEW_BASE_URL = f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
+APPLY_CHANGES = False
+SQL_MIRROR_ONLY_DEPLOYMENT = True
+PURVIEW_PUBLISH_OVERRIDE = False
+OUTPUT_ROOT = "/lakehouse/default/Files/purview_publish/phase_06_07_labels_lineage"
+
+WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
+SQL_SOURCE_NAME = "ENERCARE-SQL-SOURCE"
+FABRIC_SOURCE_NAME = "ENERCARE-FABRIC-SOURCE"
+SEMANTIC_MODEL_NAME = "BrookfieldEnercare"
+
+print(f"Purview account: {PURVIEW_ACCOUNT_NAME}")
+print(f"Apply changes: {APPLY_CHANGES}")
+print(f"Output root: {OUTPUT_ROOT}")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Cell 2: Read metadata tables
+
+
+def _table_candidates(table_name: str):
+    return [
+        f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.{table_name}",
+        f"{METADATA_SCHEMA}.{table_name}",
+        table_name,
+    ]
+
+
+def _read_table(table_name: str, required=True):
+    last_error = None
+    for candidate in _table_candidates(table_name):
+        try:
+            return spark.table(candidate), candidate
+        except Exception as ex:
+            last_error = ex
+    if required:
+        raise RuntimeError(f"Could not resolve table '{table_name}'. Last error: {last_error}")
+    return None, None
+
+
+cde_df, cde_source = _read_table("cdes")
+labels_df, labels_source = _read_table("label_assignments", required=False)
+data_products_df, data_products_source = _read_table("data_products")
+
+if labels_df is None:
+    print("[WARN] metadata.label_assignments not found; label rules will be inferred from CDE sensitivity_label values.")
+
+print(f"cdes rows: {cde_df.count()} (source={cde_source})")
+if labels_df is not None:
+    print(f"label_assignments rows: {labels_df.count()} (source={labels_source})")
+print(f"data_products rows: {data_products_df.count()} (source={data_products_source})")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Cell 3: Build classification typedefs and attachment payloads
+
+
+def _safe_text(value):
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _guid():
+    return f"-{uuid.uuid4().int % 1000000000}"
+
+
+def _split_tokens(raw_value):
+    text = _safe_text(raw_value)
+    if not text:
+        return []
+    tokens = []
+    for piece in text.replace("\n", ";").replace("|", ";").split(";"):
+        item = piece.strip()
+        if item:
+            tokens.append(item)
+    return tokens
+
+
+def _label_to_type_name(label_name: str) -> str:
+    cleaned = "".join(ch for ch in _safe_text(label_name).title() if ch.isalnum())
+    return f"EnercareSensitivity{cleaned or 'Unspecified'}"
+
+
+labels = set()
+for row in cde_df.select("sensitivity_label").distinct().collect():
+    label = _safe_text(getattr(row, "sensitivity_label", None))
+    if label:
+        labels.add(label)
+if labels_df is not None and "label_name" in labels_df.columns:
+    for row in labels_df.select("label_name").distinct().collect():
+        label = _safe_text(getattr(row, "label_name", None))
+        if label:
+            labels.add(label)
+
+classification_defs = []
+for label in sorted(labels):
+    classification_defs.append(
+        {
+            "category": "CLASSIFICATION",
+            "name": _label_to_type_name(label),
+            "description": f"Enercare governance sensitivity label: {label}",
+            "attributeDefs": [
+                {"name": "label_name", "typeName": "string", "isOptional": True},
+                {"name": "assignment_source", "typeName": "string", "isOptional": True},
+                {"name": "rule", "typeName": "string", "isOptional": True},
+            ],
+        }
+    )
+
+typedef_payload = {"classificationDefs": classification_defs}
+
+classification_manifest = []
+for row in cde_df.collect():
+    label = _safe_text(getattr(row, "sensitivity_label", None))
+    cde_id = _safe_text(getattr(row, "cde_id", None) or getattr(row, "cde_code", None) or getattr(row, "cde_name", None))
+    for token in _split_tokens(getattr(row, "bound_columns", None)):
+        classification_manifest.append(
+            {
+                "asset_ref": token,
+                "classification": _label_to_type_name(label),
+                "label_name": label,
+                "assignment_source": "CDE",
+                "rule": cde_id,
+            }
+        )
+
+if labels_df is not None:
+    for row in labels_df.collect():
+        label = _safe_text(getattr(row, "label_name", None))
+        assets = _safe_text(getattr(row, "applies_to_asset_ids", None) or getattr(row, "enforcement_target", None))
+        rule = _safe_text(getattr(row, "assignment_rule", None))
+        for token in _split_tokens(assets):
+            classification_manifest.append(
+                {
+                    "asset_ref": token,
+                    "classification": _label_to_type_name(label),
+                    "label_name": label,
+                    "assignment_source": "LabelPolicy",
+                    "rule": rule,
+                }
+            )
+
+print(f"Classification defs prepared: {len(classification_defs)}")
+print(f"Classification manifest rows prepared: {len(classification_manifest)}")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Cell 4: Build SQL to Fabric lineage edge manifest
+
+
+def _table_ref_from_sql_asset(asset_ref: str):
+    parts = asset_ref.split(".")
+    if len(parts) >= 2 and parts[0].lower() == "dbo":
+        return f"mssql://sqldemo/dbo/{parts[1]}"
+    return None
+
+
+def _fabric_ref_from_asset(asset_ref: str):
+    if asset_ref.startswith("lh_enercare_demo."):
+        _, table_name = asset_ref.split(".", 1)
+        return f"fabric://{WORKSPACE_ID}/lakehouses/lh_enercare_demo/tables/{table_name}"
+    if asset_ref.startswith(f"{SEMANTIC_MODEL_NAME}/"):
+        return f"fabric://{WORKSPACE_ID}/semanticModels/{SEMANTIC_MODEL_NAME}/{asset_ref.split('/', 1)[1]}"
+    return None
+
+
+lineage_edges = []
+for row in data_products_df.collect():
+    product_name = _safe_text(getattr(row, "data_product_name", None) or getattr(row, "product_name", None))
+    sql_assets = _split_tokens(getattr(row, "sql_assets", None) or getattr(row, "attached_assets", None))
+    fabric_assets = _split_tokens(getattr(row, "fabric_assets", None) or getattr(row, "semantic_model_assets", None))
+
+    source_refs = [ref for ref in (_table_ref_from_sql_asset(asset) for asset in sql_assets) if ref]
+    target_refs = [ref for ref in (_fabric_ref_from_asset(asset) for asset in fabric_assets) if ref]
+
+    for source_ref in source_refs:
+        for target_ref in target_refs:
+            edge_hash = hashlib.sha1(f"{source_ref}|{target_ref}".encode("utf-8")).hexdigest()[:12]
+            lineage_edges.append(
+                {
+                    "process_qualified_name": f"enercare://lineage/{product_name.replace(' ', '-').lower()}/{edge_hash}",
+                    "process_name": f"{product_name} SQL to Fabric lineage",
+                    "source": source_ref,
+                    "target": target_ref,
+                    "data_product": product_name,
+                }
+            )
+
+print(f"Lineage edge rows prepared: {len(lineage_edges)}")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Cell 5: Write payloads and validation table
+
+mssparkutils.fs.mkdirs(OUTPUT_ROOT)
+mssparkutils.fs.put(f"{OUTPUT_ROOT}/classification_typedefs.json", json.dumps(typedef_payload, indent=2), True)
+mssparkutils.fs.put(f"{OUTPUT_ROOT}/classification_manifest.json", json.dumps(classification_manifest, indent=2), True)
+mssparkutils.fs.put(f"{OUTPUT_ROOT}/lineage_edges.json", json.dumps(lineage_edges, indent=2), True)
+
+validation_rows = [
+    ("classification_defs_prepared", len(classification_defs), "PASS" if classification_defs else "FAIL"),
+    ("classification_manifest_rows", len(classification_manifest), "PASS" if classification_manifest else "FAIL"),
+    ("lineage_edges_prepared", len(lineage_edges), "PASS" if lineage_edges else "WARN"),
+    ("sql_source_name_configured", int(bool(SQL_SOURCE_NAME)), "PASS"),
+    ("fabric_source_name_configured", int(bool(FABRIC_SOURCE_NAME)), "PASS"),
+]
+validation_df = spark.createDataFrame(validation_rows, ["check_name", "check_value", "status"])
+validation_df.write.mode("overwrite").format("delta").saveAsTable(f"{METADATA_SCHEMA}.purview_phase_06_07_validation")
+
+print(f"Payloads written to: {OUTPUT_ROOT}")
+display(validation_df.orderBy("check_name"))
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Cell 6: Optional live publish of classification type definitions
+
+
+def _headers(token: str):
+    return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+
+def _post_json(path: str, token: str, body: dict):
+    url = f"{PURVIEW_BASE_URL}{path}"
+    response = requests.post(url, headers=_headers(token), json=body, timeout=60)
+    return response.status_code, response.text
+
+
+publish_guard_active = SQL_MIRROR_ONLY_DEPLOYMENT and not PURVIEW_PUBLISH_OVERRIDE
+
+if publish_guard_active:
+    print("[GUARD] SQL-mirror-only deployment is active. Set PURVIEW_PUBLISH_OVERRIDE=True for live Purview publish.")
+elif not APPLY_CHANGES:
+    print("[DRY RUN] APPLY_CHANGES=False. Skipping Purview API calls.")
+else:
+    token = mssparkutils.credentials.getToken("https://purview.azure.net")
+    typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
+    if typedef_status not in (200, 201) and "already exists" not in typedef_body.lower():
+        raise RuntimeError(f"Classification typedef publish failed: HTTP {typedef_status} | {typedef_body[:500]}")
+    print(f"Classification typedef publish result: HTTP {typedef_status}")
+    print("[INFO] Asset classification attachment is intentionally manifest-driven. Resolve asset GUIDs from scan results before applying live classifications.")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }

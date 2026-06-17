@@ -207,7 +207,19 @@ This is the active notebook construct in the repo today.
 - Writes curated descriptions/annotations/instructions into the semantic model via SemPy/SemPy Labs.
 
 10. `nb_07_publish_to_purview`
-- Prepares Purview payloads and is guarded for SQL-mirror-only runs unless explicitly overridden.
+- Prepares Purview domain and data-product payloads and is guarded for SQL-mirror-only runs unless explicitly overridden.
+
+11. `nb_08_purview_glossary_cde`
+- Publishes Phase 4/5 glossary and CDE payloads from `lh_metadata.metadata.glossary_terms` and `lh_metadata.metadata.cdes`.
+- Writes dry-run artifacts to `/lakehouse/default/Files/purview_publish/phase_04_05_glossary_cde` and records validation in `metadata.purview_phase_04_05_validation`.
+
+12. `nb_09_purview_labels_lineage`
+- Builds Phase 6/7 sensitivity-classification type definitions, classification manifests, and SQL-to-Fabric lineage edge manifests.
+- Writes dry-run artifacts to `/lakehouse/default/Files/purview_publish/phase_06_07_labels_lineage` and records validation in `metadata.purview_phase_06_07_validation`.
+
+13. `nb_10_purview_stewardship_ai`
+- Validates Phase 8-10 stewardship, certification, DLP readiness, and governed AI readiness.
+- Writes closeout state to `metadata.purview_phase_08_stewardship_scorecard`, `metadata.purview_phase_09_controls_validation`, `metadata.purview_phase_10_ai_readiness_validation`, and `metadata.purview_phase_08_10_closeout`.
 
 ### Purview admin-ops family (`nb_06`)
 
@@ -225,6 +237,68 @@ This is the active notebook construct in the repo today.
 - The semantic-model-first writeback and Fabric scan flow remains the primary implementation pattern.
 
 For run-by-run validation of this construct, use `docs/build-evaluation-matrix.md`.
+
+---
+
+## 5B. Azure Purview Delivery Milestones
+
+The open **Enercare Purview Governance Implementation Guide** is treated as the instruction set for the delivery model. The implementation is staged so every milestone has three outputs: a governance decision, a code artifact where applicable, and a validation gate before continuing.
+
+### Milestone 1 — Platform registration and scans
+
+**Governance outcome:** SQL and Fabric are registered in Purview with repeatable scans.
+
+**Code and configuration artifacts:**
+- Purview portal/MCP registration for Azure SQL and Fabric tenant/workspace scope.
+- Existing SQL/Fabric validation notebooks: `nb_05b_test_sql_connectivity`, `nb_07a_ingest_customer_files`.
+
+**Validation gate:** SQL assets and Fabric workspace assets are searchable in Data Map / Unified Catalog; scan history has no credential or connectivity failures.
+
+### Milestone 2 — Governance foundation and data products
+
+**Governance outcome:** Domains, data products, owners, stewards, and initial product descriptions exist.
+
+**Code artifacts:**
+- `sql/06_purview_metadata_schema.sql` creates the SQL-first governance metadata model.
+- `sql/07_seed_purview_metadata.sql` seeds baseline domain/product/glossary/CDE/role/label data.
+- `nb_07_publish_to_purview` prepares and optionally publishes Purview Atlas entities for domains and data products.
+
+**Validation gate:** `nb_07_publish_to_purview` produces domain/data-product payloads and summary counts; at least three data products are attached to real scanned assets.
+
+### Milestone 3 — Glossary and critical data elements
+
+**Governance outcome:** Business glossary terms and CDEs are created, linked to domains, and bound to SQL/Fabric/Semantic assets where supported.
+
+**Code artifacts:**
+- `purview/glossary-master.csv` and `purview/cde-catalog.csv` remain the customer-facing governance seed files.
+- `nb_08_purview_glossary_cde` validates staged metadata, generates Atlas typedefs, creates CDE entities, and prepares glossary term payloads.
+
+**Validation gate:** `metadata.purview_phase_04_05_validation` shows PASS for source rows, glossary payloads, and CDE entities. Dry-run JSON artifacts exist under `Files/purview_publish/phase_04_05_glossary_cde`.
+
+### Milestone 4 — Classification, sensitivity, and lineage
+
+**Governance outcome:** Sensitive assets have a consistent label/classification model, and the SQL to Fabric to semantic lineage story has a native-or-custom path.
+
+**Code artifacts:**
+- `purview/label-policy.csv` defines the sensitivity hierarchy and assignment rules.
+- `nb_09_purview_labels_lineage` emits Atlas classification typedefs, classification manifests, and deterministic SQL-to-Fabric lineage edge manifests.
+
+**Validation gate:** `metadata.purview_phase_06_07_validation` shows PASS for classification definitions and assignment manifests. Lineage rows may be WARN until asset GUID resolution or native Purview lineage is available.
+
+### Milestone 5 — Stewardship, certification, controls, and AI readiness
+
+**Governance outcome:** Products and critical assets have trust indicators, DLP/control decisions, and AI-facing metadata completeness checks.
+
+**Code artifacts:**
+- `nb_07b_merge_customer_metadata` creates the semantic annotation plan from glossary/CDE/label/product mappings.
+- `nb_04_sempy_writeback` and `nb_05_push_qa_verified_answers` push governed metadata into the semantic model.
+- `nb_10_purview_stewardship_ai` validates owner/steward/certification status, DLP readiness, and AI-readiness prerequisites.
+
+**Validation gate:** `metadata.purview_phase_08_10_closeout` has zero `ACTION_REQUIRED` rows before the governance demo is marked ready. Any DLP mode must be explicitly selected as alert-only, policy tip, or block before a live run.
+
+### Operating rule for live Purview writes
+
+All Purview notebooks are dry-run first. Live API calls require `APPLY_CHANGES=True` and, where the SQL-mirror-only guard is active, `PURVIEW_PUBLISH_OVERRIDE=True`. This protects the current deployment path while still producing reviewable payloads after every stage.
 
 ---
 

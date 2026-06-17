@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_09_purview_labels_lineage",
+    "description": "Builds Purview sensitivity classification payloads and validates SQL-to-Fabric lineage stage gates"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "ec79d4ff-63b4-4d10-84e3-431e05f31919"
+  }
+}
