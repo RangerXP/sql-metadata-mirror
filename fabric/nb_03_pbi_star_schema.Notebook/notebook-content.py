@@ -48,7 +48,7 @@
 
 DEMO_LAKEHOUSE = "lh_enercare_demo"
 MIRROR_WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
-MIRROR_ITEM_ID = "40675f0e-c576-4cb1-ab27-40b9352a18a8"  # Mirrored Azure SQL Database item ID in Enercare-West3
+MIRROR_ITEM_ID = "bdf616e8-625e-4b62-8491-519509f6ffaf"  # Mirrored Azure SQL Database item ID in Enercare-West3
 MIRROR_ONELAKE_DFS_HOST = "westus3-onelake.dfs.fabric.microsoft.com"
 USE_DEMO_FALLBACK = False  # Use mirrored Azure SQL source tables
 
