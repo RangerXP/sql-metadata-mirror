@@ -449,7 +449,7 @@ else:
 
 # CELL ********************
 
-# G1-4, G4 — Seed ai_metadata: verified answers for certified KPIs and Maria north-star governance flows
+# G1-4, G4 — Seed ai_metadata: verified answers for FCR, CSAT, PP_RNW_RATE
 # Pre-approved (IsDraft=0) — ready for Copilot "Prep Data for AI"
 
 verified_answers = [
@@ -495,40 +495,6 @@ verified_answers = [
     ("PP_RNW_RATE", "contract renewal",
      "Contract renewal performance is tracked by PP_RNW_RATE. Renewal window: "
      "30 days before to 15 days after the contract end date."),
-    ("NS_MARIA", "what is the status of Maria's furnace",
-     "For Maria Castellanos, answer from the governed Customer 360 and Service Performance surfaces: confirm identity "
-     "through customers/service_accounts, resolve furnace status through equipment_registry and service_requests, include "
-     "service zone and assigned employee context, and call out the SLA breach before discussing billing or credits."),
-    ("NS_MARIA", "why hasn't anyone fixed Maria's furnace",
-     "Use service_requests, equipment_registry, service_zones, and employees to explain dispatch status in business language. "
-     "If the request is SLA-breached, state the committed service window, the current owner, the service zone, and the next "
-     "operational action. Do not expose employee SIN, date of birth, or other unrelated sensitive fields."),
-    ("NS_CONSENT", "can Tom text Maria",
-     "Check customer_consents for the customer and the requested channel before recommending outreach. A text message is "
-     "allowed only when the relevant consent_status is Granted and no withdrawn_date is present. If consent is missing, "
-     "expired, or withdrawn, direct the user to capture consent before taking the action."),
-    ("NS_COMPLAINT", "should this be logged as a complaint",
-     "Use customer_complaints when a customer-impacting failure needs formal quality review. For Maria's no-heat SLA miss, "
-     "log complaint_type Service and severity High; populate regulator_case_ref only when the case is regulator-reportable."),
-    ("NS_AUDIT", "show the audit trail for Maria's case",
-     "Use audit_data_access to prove who accessed customer, consent, billing, or service records, their purpose_of_use, "
-     "rows_returned, and contains_pii flag. For privacy review, summarize access patterns instead of exposing sensitive values."),
-    ("NS_PURVIEW", "who owns Customer 360",
-     "Customer 360 is governed through DOM-CUSTOPS and DP-CUST360. Use governance_domains, governance_data_products, "
-     "governance_role_assignments, and data_owners_directory to identify Victoria Tan as business owner and Rupal Solanki "
-     "as steward for customer operations data."),
-    ("NS_PURVIEW", "where did this number come from",
-     "For any KPI, answer from the certified semantic-model measure first, then describe the lineage chain through Fabric "
-     "lakehouse/mirror back to sub2 Azure SQL. Purview is the catalog and policy authority; the BrookfieldEnercare semantic "
-     "model is the Copilot/Data Agent grounding surface."),
-    ("NS_PRIVACY", "how should SIN be handled",
-     "SIN values are highly confidential synthetic demo data used only to prove classification and policy behavior. Never "
-     "display full employees.sin_full or customers.sin_last_4 unless the user is in an authorized governance/privacy context; "
-     "prefer masked summaries and cite ENERCARE.PRIVACY.SIN_BACKSTOP plus MICROSOFT.CANADIAN.SIN classification."),
-    ("NS_EXEC", "why is GTA North spiking",
-     "Use service_zones, service_requests, and customer_complaints to explain repeat complaint or SLA patterns by zone. "
-     "For Victoria's review, aggregate by service_zone_code and complaint severity; do not present raw customer PII unless "
-     "the question explicitly requires a governed case drill-through."),
 ]
 
 record_id = 1
@@ -555,9 +521,8 @@ AI_SCHEMA = StructType([
 
 df_va = spark.createDataFrame(rows_va, schema=AI_SCHEMA)
 
-# Keep the summary text broad; the seed now carries KPI and north-star governance rows.
 if DEMO_MODE:
-    print(f"[DEMO_MODE] Verified answers — {len(rows_va)} rows across certified KPIs and north-star governance flows:\n")
+    print(f"[DEMO_MODE] Verified answers — {len(rows_va)} rows across FCR, CSAT, PP_RNW_RATE:\n")
     df_va.select("RecordID", "LinkedKPICode", "TriggerText").show(truncate=60)
 else:
     df_va.write.format("delta").mode("append").option("mergeSchema", "true") \
@@ -574,7 +539,7 @@ else:
 # CELL ********************
 
 # G1-4, G4 — Seed ai_metadata: model-level AI instruction rows
-# Provides Copilot with business context, terminology, certified KPI reference, and Purview governance guardrails
+# Provides Copilot with business context, terminology, and certified KPI reference
 
 ai_instructions = [
     ("Business Context", "Enercare context",
@@ -600,24 +565,6 @@ ai_instructions = [
      "SLA_BRCH_RATE target 5% (warning >10%, critical >15%). "
      "Only IsCertified=1 KPIs have been approved by Christopher Dingle. "
      "Do not present non-certified measures as authoritative business KPIs."),
-    ("Maria North Star", "Maria Castellanos scenario",
-     "The demo north star is Maria Castellanos' failed furnace service journey. Tom the agent needs identity, consent, "
-     "equipment, service request, contract, billing, complaint, and audit context in one governed answer. Victoria needs "
-     "aggregate repeat-complaint and SLA patterns by service zone. Ci Zhu needs Purview proof that every KPI, CDE, label, "
-     "role, and lineage edge points back to the same certified definition."),
-    ("Governance Model", "Purview governance model",
-     "Use sub2 Azure SQL as the authoritative operational source, Fabric mirroring/lakehouse/semantic model as the "
-     "analytics and AI grounding plane, and Microsoft Purview as the catalog, glossary, classification, policy, and "
-     "lineage authority. Governance domains, data products, glossary terms, CDEs, role assignments, and label assignments "
-     "are demo-critical metadata, not optional documentation."),
-    ("Privacy Guardrails", "privacy and consent guardrails",
-     "Before recommending customer outreach, check customer_consents and CASL/PIPEDA context. Treat SIN, date of birth, "
-     "payment partials, service address, and complaint narratives as governed data. Do not reveal full SIN values; prefer "
-     "masked summaries and explain that ENERCARE.PRIVACY.SIN_BACKSTOP and MICROSOFT.CANADIAN.SIN drive classification."),
-    ("Audit And Ownership", "audit and stewardship",
-     "When asked who owns data or why access was allowed, use data_owners_directory plus governance_role_assignments for "
-     "owner/steward answers, and audit_data_access for purpose-of-use evidence. Mention whether records contain PII and "
-     "summarize access patterns instead of exposing sensitive row-level detail."),
 ]
 
 rows_instr = [

@@ -47,17 +47,6 @@ METADATA_LH          = "lh_metadata"
 # that explicitly instead of silently dropping content.
 MAX_ANNOTATION_CHARS = 12000
 
-REQUIRED_NORTH_STAR_TERMS = [
-    "maria",
-    "customer_consents",
-    "customer_complaints",
-    "audit_data_access",
-    "service_zones",
-    "data_owners_directory",
-    "purview",
-    "sin",
-]
-
 print(f"nb_05_push_qa_verified_answers | DEMO_MODE={DEMO_MODE}")
 print(f"Target model: {MODEL_NAME}")
 print(f"Max annotation chars: {MAX_ANNOTATION_CHARS}")
@@ -102,21 +91,6 @@ for r in ai_rows:
             verified_answers.append(r)
 
 print(f"Loaded: {len(ai_instructions)} instruction(s), {len(verified_answers)} verified answer(s)")
-
-coverage_text = " ".join(
-    str(value).lower()
-    for row in ai_rows
-    for value in (row.TriggerText, row.ResponseText, row.LinkedKPICode)
-    if value
-)
-missing_terms = [term for term in REQUIRED_NORTH_STAR_TERMS if term not in coverage_text]
-if missing_terms:
-    raise ValueError(
-        "ai_metadata is missing expanded north-star governance coverage. "
-        f"Re-run nb_04a_extend_metadata_schema after pulling the latest seed changes. Missing: {missing_terms}"
-    )
-
-print(f"North-star governance coverage: OK ({len(REQUIRED_NORTH_STAR_TERMS)} required terms)")
 
 
 # METADATA ********************
