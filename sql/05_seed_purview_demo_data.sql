@@ -10,10 +10,10 @@ Coverage:
   - Bank routing / PAN last 4 backfilled on dbo.billing_transactions
   - 15 employees including 6 technicians (matches existing service_requests.technician_id range)
   - 8 service zones, Ontario-focused
-  - ~120 customer consent rows
-  - 18 complaints (3 regulator-reportable)
+    - 124 customer consent rows, including Maria Castellanos's explicit consent state
+    - 19 complaints (3 regulator-reportable), including Maria Castellanos's SLA case
   - data_owners_directory pre-populated for all 13 source tables
-  - 200 audit access rows over the last 30 days
+    - 204 audit access rows over the last 30 days, including Tom Nguyen's Maria access trail
 
 Notes:
   - SIN columns (dbo.employees.sin_full and dbo.customers.sin_last_4) are left
@@ -84,8 +84,72 @@ INSERT INTO dbo.employees (employee_id, upn, first_name, last_name, email, phone
 GO
 
 /* ------------------------------------------------------------------------------
+   2A. Maria Castellanos source-story rows across the authoritative SQL model
+------------------------------------------------------------------------------ */
+
+DELETE FROM dbo.billing_transactions WHERE transaction_id IN (183746223, 183746224);
+DELETE FROM dbo.service_requests WHERE request_id = 2026051142;
+DELETE FROM dbo.contracts WHERE contract_id = 183746222;
+DELETE FROM dbo.equipment_registry WHERE equipment_id = 183746221 OR serial_number = 'LX2020-MARIA98V';
+DELETE FROM dbo.service_accounts WHERE service_account_id = 183746220 OR account_number = 'EC18374622-SVC';
+DELETE FROM dbo.customers WHERE customer_id = 18374622 OR account_number = 'EC18374622';
+GO
+
+INSERT INTO dbo.customers
+    (customer_id, account_number, first_name, last_name, email, phone, customer_type, status,
+     city, province, postal_code, created_date, date_of_birth, sin_last_4, owner_email, marketing_consent)
+VALUES
+(18374622, 'EC18374622', 'Maria', 'Castellanos', 'maria.castellanos@example.ca', '905-555-4622',
+ 'Residential', 'Active', 'Markham', 'ON', 'L4G 2H9', '2020-10-17', '1983-07-09', NULL,
+ 'Rupal.Solanki@enercare.ca', 1);
+GO
+
+INSERT INTO dbo.service_accounts
+    (service_account_id, customer_id, account_number, utility_type, rate_class, distributor, status,
+     service_address, city, postal_code, opened_date, latitude, longitude, service_zone_code)
+VALUES
+(183746220, 18374622, 'EC18374622-SVC', 'Natural Gas', 'Residential', 'Enbridge Gas', 'Active',
+ '47 Birch Drive, Unit 8', 'Markham', 'L4G 2H9', '2020-10-17', 43.879200, -79.263600, 'CA-ON-GTA-N');
+GO
+
+INSERT INTO dbo.equipment_registry
+    (equipment_id, service_account_id, equipment_type, make, model, serial_number, ownership_type,
+     fuel_type, install_date, warranty_expiry, status)
+VALUES
+(183746221, 183746220, 'Furnace', 'Lennox', 'SLP98V', 'LX2020-MARIA98V', 'Rental',
+ 'Natural Gas', '2020-10-17', '2030-10-17', 'Active');
+GO
+
+INSERT INTO dbo.contracts
+    (contract_id, service_account_id, product_id, contract_status, start_date, end_date,
+     monthly_amount, auto_renew, cancellation_date, cancellation_reason)
+VALUES
+(183746222, 183746220, 4, 'Active', '2020-10-17', NULL, 89.95, 1, NULL, NULL);
+GO
+
+INSERT INTO dbo.service_requests
+    (request_id, service_account_id, equipment_id, request_type, priority, status, description,
+     created_date, scheduled_date, completed_date, technician_id, resolution_notes)
+VALUES
+(2026051142, 183746220, 183746221, 'Emergency Repair', 'Emergency', 'InProgress',
+ 'NoHeat furnace case opened through portal; scheduled pending tech after missed 24-hour SLA.',
+ '2026-06-13', '2026-06-14', NULL, 105,
+ 'Scheduled - Pending Tech; GTA North dispatch did not reassign after the SLA breach.');
+GO
+
+INSERT INTO dbo.billing_transactions
+    (transaction_id, contract_id, service_account_id, transaction_type, transaction_date, due_date,
+     amount, tax_amount, payment_method, status, invoice_number, bank_routing_last_4, card_pan_last_4)
+VALUES
+(183746223, 183746222, 183746220, 'MonthlyCharge', '2026-06-15', '2026-06-30',
+ 89.95, 11.69, 'CreditCard', 'Posted', 'INV-MARIA-202606', '1837', '4622'),
+(183746224, 183746222, 183746220, 'Credit', '2026-06-17', NULL,
+ -14.99, 0.00, 'CreditCard', 'Posted', 'CR-MARIA-SLA-202606', '1837', '4622');
+GO
+
+/* ------------------------------------------------------------------------------
    3. Backfill dbo.customers — DOB, SIN last 4, owner_email, marketing_consent
-   Assumes customer_id range 1..50 (per design-gap-analysis dim_customer=50).
+    Assumes customer_id range 1..50 plus Maria Castellanos at customer_id 18374622.
    Steward owner_email rotates across the three customer-ops stewards.
 ------------------------------------------------------------------------------ */
 
@@ -176,6 +240,16 @@ FROM numbers n
 CROSS JOIN consent_types ct;
 GO
 
+INSERT INTO dbo.customer_consents
+    (consent_id, customer_id, consent_type, consent_status, legal_basis,
+     granted_date, withdrawn_date, source_channel, captured_by_upn)
+VALUES
+(183746221, 18374622, 'Marketing-Email', 'Granted', 'CASL',   '2026-06-17', NULL, 'CallCenter', 'tnguyen@enercare.ca'),
+(183746222, 18374622, 'Marketing-SMS',   'Granted', 'CASL',   '2026-06-17', NULL, 'CallCenter', 'tnguyen@enercare.ca'),
+(183746223, 18374622, 'Data-Sharing',    'Granted', 'PIPEDA', '2026-06-17', NULL, 'CallCenter', 'tnguyen@enercare.ca'),
+(183746224, 18374622, 'Retention',       'Granted', 'PIPEDA', '2026-06-17', NULL, 'CallCenter', 'tnguyen@enercare.ca');
+GO
+
 /* ------------------------------------------------------------------------------
    7. customer_complaints — 18 rows, 3 regulator-reportable
 ------------------------------------------------------------------------------ */
@@ -204,6 +278,16 @@ VALUES
 (16, 44, NULL, 'Billing',    'Medium',              '2026-05-06','2026-05-13','Resolved',  'Rupal.Solanki@enercare.ca',  'Late fee dispute, system-generated in error.', NULL),
 (17, 46, NULL, 'Service',    'Low',                 '2026-05-18','2026-05-21','Resolved',  'Shruthi.Srinivas@enercare.ca', 'Technician did not provide service summary.', NULL),
 (18, 49, NULL, 'Other',      'Medium',              '2026-05-24',NULL,        'In Review', 'Rupal.Solanki@enercare.ca',  'Equipment removal request not actioned.', NULL);
+GO
+
+INSERT INTO dbo.customer_complaints
+    (complaint_id, customer_id, service_account_id, complaint_type, severity, opened_date,
+     closed_date, status, assigned_to_upn, description, regulator_case_ref)
+VALUES
+(18374622, 18374622, 183746220, 'Service', 'High', '2026-06-17', NULL, 'Escalated',
+ 'tnguyen@enercare.ca',
+ 'NoHeat furnace request missed the 24-hour SLA in GTA North; customer was still billed monthly rental charge.',
+ NULL);
 GO
 
 /* ------------------------------------------------------------------------------
@@ -286,6 +370,16 @@ JOIN objects_ o ON o.k = ((n.n - 1) % 7) + 1
 JOIN purposes p ON p.k = ((n.n - 1) % 5) + 1;
 GO
 
+INSERT INTO dbo.audit_data_access
+    (audit_id, accessed_at, accessor_upn, accessor_role, object_schema, object_name,
+     operation, rows_affected, purpose_of_use, contains_pii)
+VALUES
+(1837462201, DATEADD(MINUTE, -12, SYSUTCDATETIME()), 'tnguyen@enercare.ca', 'CustomerService', 'dbo', 'customers',             'SELECT', 1, 'CustomerService', 1),
+(1837462202, DATEADD(MINUTE, -11, SYSUTCDATETIME()), 'tnguyen@enercare.ca', 'CustomerService', 'dbo', 'customer_consents',    'SELECT', 4, 'CustomerService', 1),
+(1837462203, DATEADD(MINUTE, -10, SYSUTCDATETIME()), 'tnguyen@enercare.ca', 'CustomerService', 'dbo', 'service_requests',     'SELECT', 1, 'CustomerService', 0),
+(1837462204, DATEADD(MINUTE, -9,  SYSUTCDATETIME()), 'tnguyen@enercare.ca', 'CustomerService', 'dbo', 'billing_transactions', 'SELECT', 2, 'CustomerService', 1);
+GO
+
 PRINT 'Purview demo seed data inserted successfully.';
 GO
 
@@ -299,5 +393,7 @@ GO
 -- SELECT COUNT(*) AS complaints            FROM dbo.customer_complaints;
 -- SELECT COUNT(*) AS owner_directory_rows  FROM dbo.data_owners_directory;
 -- SELECT COUNT(*) AS audit_rows            FROM dbo.audit_data_access;
+-- SELECT * FROM dbo.customers WHERE account_number = 'EC18374622';
+-- SELECT * FROM dbo.service_requests WHERE request_id = 2026051142;
 -- SELECT TOP 5 customer_id, date_of_birth, sin_last_4, owner_email FROM dbo.customers WHERE sin_last_4 IS NOT NULL;
 -- SELECT TOP 5 service_account_id, latitude, longitude, service_zone_code FROM dbo.service_accounts WHERE latitude IS NOT NULL;

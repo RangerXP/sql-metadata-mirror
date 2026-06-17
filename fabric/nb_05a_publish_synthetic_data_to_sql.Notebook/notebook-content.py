@@ -496,6 +496,32 @@ INSERT INTO dbo.employees (employee_id, upn, first_name, last_name, email, phone
 (105,'mhuang@enercare.ca','Mei','Huang','mhuang@enercare.ca','+1-416-555-1105','Field Supervisor','Field Ops',2,'2019-08-18',NULL,'1983-05-21','L4G',1),
 (106,'rpatel@enercare.ca','Rashmi','Patel','rpatel@enercare.ca','+1-416-555-1106','Field Supervisor','Field Ops',2,'2019-10-04',NULL,'1982-09-08','L8N',1);
 GO
+DELETE FROM dbo.billing_transactions WHERE transaction_id IN (183746223, 183746224);
+DELETE FROM dbo.service_requests WHERE request_id = 2026051142;
+DELETE FROM dbo.contracts WHERE contract_id = 183746222;
+DELETE FROM dbo.equipment_registry WHERE equipment_id = 183746221 OR serial_number = 'LX2020-MARIA98V';
+DELETE FROM dbo.service_accounts WHERE service_account_id = 183746220 OR account_number = 'EC18374622-SVC';
+DELETE FROM dbo.customers WHERE customer_id = 18374622 OR account_number = 'EC18374622';
+GO
+INSERT INTO dbo.customers (customer_id, account_number, first_name, last_name, email, phone, customer_type, status, city, province, postal_code, created_date, date_of_birth, sin_last_4, owner_email, marketing_consent) VALUES
+(18374622, 'EC18374622', 'Maria', 'Castellanos', 'maria.castellanos@example.ca', '905-555-4622', 'Residential', 'Active', 'Markham', 'ON', 'L4G 2H9', '2020-10-17', '1983-07-09', NULL, 'Rupal.Solanki@enercare.ca', 1);
+GO
+INSERT INTO dbo.service_accounts (service_account_id, customer_id, account_number, utility_type, rate_class, distributor, status, service_address, city, postal_code, opened_date, latitude, longitude, service_zone_code) VALUES
+(183746220, 18374622, 'EC18374622-SVC', 'Natural Gas', 'Residential', 'Enbridge Gas', 'Active', '47 Birch Drive, Unit 8', 'Markham', 'L4G 2H9', '2020-10-17', 43.879200, -79.263600, 'CA-ON-GTA-N');
+GO
+INSERT INTO dbo.equipment_registry (equipment_id, service_account_id, equipment_type, make, model, serial_number, ownership_type, fuel_type, install_date, warranty_expiry, status) VALUES
+(183746221, 183746220, 'Furnace', 'Lennox', 'SLP98V', 'LX2020-MARIA98V', 'Rental', 'Natural Gas', '2020-10-17', '2030-10-17', 'Active');
+GO
+INSERT INTO dbo.contracts (contract_id, service_account_id, product_id, contract_status, start_date, end_date, monthly_amount, auto_renew, cancellation_date, cancellation_reason) VALUES
+(183746222, 183746220, 4, 'Active', '2020-10-17', NULL, 89.95, 1, NULL, NULL);
+GO
+INSERT INTO dbo.service_requests (request_id, service_account_id, equipment_id, request_type, priority, status, description, created_date, scheduled_date, completed_date, technician_id, resolution_notes) VALUES
+(2026051142, 183746220, 183746221, 'Emergency Repair', 'Emergency', 'InProgress', 'NoHeat furnace case opened through portal; scheduled pending tech after missed 24-hour SLA.', '2026-06-13', '2026-06-14', NULL, 105, 'Scheduled - Pending Tech; GTA North dispatch did not reassign after the SLA breach.');
+GO
+INSERT INTO dbo.billing_transactions (transaction_id, contract_id, service_account_id, transaction_type, transaction_date, due_date, amount, tax_amount, payment_method, status, invoice_number, bank_routing_last_4, card_pan_last_4) VALUES
+(183746223, 183746222, 183746220, 'MonthlyCharge', '2026-06-15', '2026-06-30', 89.95, 11.69, 'CreditCard', 'Posted', 'INV-MARIA-202606', '1837', '4622'),
+(183746224, 183746222, 183746220, 'Credit', '2026-06-17', NULL, -14.99, 0.00, 'CreditCard', 'Posted', 'CR-MARIA-SLA-202606', '1837', '4622');
+GO
 UPDATE dbo.customers SET date_of_birth = COALESCE(date_of_birth, DATEADD(DAY, -((ABS(CHECKSUM(NEWID())) % 14600) + 7300), CAST(GETDATE() AS DATE))), owner_email = COALESCE(owner_email, CASE customer_id % 3 WHEN 0 THEN 'Rupal.Solanki@enercare.ca' WHEN 1 THEN 'Shruthi.Srinivas@enercare.ca' ELSE 'Ci.Zhu@enercare.ca' END), marketing_consent = COALESCE(marketing_consent, CASE WHEN customer_id % 4 = 0 THEN 0 ELSE 1 END);
 GO
 UPDATE dbo.service_accounts SET latitude = COALESCE(latitude, 43.4 + (ABS(CHECKSUM(NEWID())) % 700) / 1000.0), longitude = COALESCE(longitude, -79.8 + (ABS(CHECKSUM(NEWID())) % 900) / 1000.0), service_zone_code = COALESCE(service_zone_code, CASE ABS(CHECKSUM(NEWID())) % 6 WHEN 0 THEN 'CA-ON-GTA-N' WHEN 1 THEN 'CA-ON-GTA-S' WHEN 2 THEN 'CA-ON-GTA-E' WHEN 3 THEN 'CA-ON-GTA-W' WHEN 4 THEN 'CA-ON-OTT' ELSE 'CA-ON-SWO' END);
@@ -506,9 +532,18 @@ GO
 INSERT INTO dbo.customer_consents (consent_id, customer_id, consent_type, consent_status, legal_basis, granted_date, withdrawn_date, source_channel, captured_by_upn)
 SELECT (n.rn - 1) * 4 + ct.k, n.rn, ct.t, CASE WHEN (n.rn + ct.k) % 5 = 0 THEN 'Withdrawn' ELSE 'Granted' END, ct.lb, DATEADD(DAY, -((n.rn * 7 + ct.k * 13) % 800), CAST(GETDATE() AS DATE)), NULL, 'CallCenter', 'Rupal.Solanki@enercare.ca' FROM n CROSS JOIN consent_types ct;
 GO
+INSERT INTO dbo.customer_consents (consent_id, customer_id, consent_type, consent_status, legal_basis, granted_date, withdrawn_date, source_channel, captured_by_upn) VALUES
+(183746221, 18374622, 'Marketing-Email', 'Granted', 'CASL', '2026-06-17', NULL, 'CallCenter', 'tnguyen@enercare.ca'),
+(183746222, 18374622, 'Marketing-SMS', 'Granted', 'CASL', '2026-06-17', NULL, 'CallCenter', 'tnguyen@enercare.ca'),
+(183746223, 18374622, 'Data-Sharing', 'Granted', 'PIPEDA', '2026-06-17', NULL, 'CallCenter', 'tnguyen@enercare.ca'),
+(183746224, 18374622, 'Retention', 'Granted', 'PIPEDA', '2026-06-17', NULL, 'CallCenter', 'tnguyen@enercare.ca');
+GO
 ;WITH n AS (SELECT TOP (18) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn FROM sys.objects)
 INSERT INTO dbo.customer_complaints (complaint_id, customer_id, service_account_id, complaint_type, severity, opened_date, closed_date, status, assigned_to_upn, description, regulator_case_ref)
 SELECT rn, ((rn * 3) % 50) + 1, NULL, CASE rn % 4 WHEN 0 THEN 'Privacy' WHEN 1 THEN 'Billing' WHEN 2 THEN 'Service' ELSE 'AutoRenew' END, CASE WHEN rn IN (3, 7, 15) THEN 'RegulatorReportable' WHEN rn % 3 = 0 THEN 'High' ELSE 'Medium' END, DATEADD(DAY, -rn, CAST(GETDATE() AS DATE)), NULL, CASE WHEN rn % 3 = 0 THEN 'Escalated' ELSE 'Resolved' END, 'Rupal.Solanki@enercare.ca', CONCAT('Synthetic complaint ', rn), CASE WHEN rn IN (3, 7, 15) THEN CONCAT('REG-2026-', RIGHT(CONCAT('0000', rn), 4)) ELSE NULL END FROM n;
+GO
+INSERT INTO dbo.customer_complaints (complaint_id, customer_id, service_account_id, complaint_type, severity, opened_date, closed_date, status, assigned_to_upn, description, regulator_case_ref) VALUES
+(18374622, 18374622, 183746220, 'Service', 'High', '2026-06-17', NULL, 'Escalated', 'tnguyen@enercare.ca', 'NoHeat furnace request missed the 24-hour SLA in GTA North; customer was still billed monthly rental charge.', NULL);
 GO
 INSERT INTO dbo.data_owners_directory (owner_id, object_schema, object_name, object_type, data_owner_upn, data_steward_upn, domain_code, last_reviewed_date) VALUES
 (1,'dbo','customers','Table','Victoria.Tan@enercare.ca','Rupal.Solanki@enercare.ca','DOM-CUSTOPS','2026-05-20'),(2,'dbo','service_accounts','Table','Victoria.Tan@enercare.ca','Rupal.Solanki@enercare.ca','DOM-CUSTOPS','2026-05-20'),(3,'dbo','customer_consents','Table','Victoria.Tan@enercare.ca','Victoria.Tan@enercare.ca','DOM-CUSTOPS','2026-05-20'),(4,'dbo','customer_complaints','Table','Victoria.Tan@enercare.ca','Rupal.Solanki@enercare.ca','DOM-CUSTOPS','2026-05-20'),(5,'dbo','employees','Table','Victoria.Tan@enercare.ca','Victoria.Tan@enercare.ca','DOM-CUSTOPS','2026-05-20'),(6,'dbo','equipment_registry','Table','ranbir.singh@enercare.ca','Shruthi.Srinivas@enercare.ca','DOM-SVCDEL','2026-05-20'),(7,'dbo','service_requests','Table','ranbir.singh@enercare.ca','Shruthi.Srinivas@enercare.ca','DOM-SVCDEL','2026-05-20'),(8,'dbo','service_zones','Table','ranbir.singh@enercare.ca','Shruthi.Srinivas@enercare.ca','DOM-SVCDEL','2026-05-20'),(9,'dbo','products','Table','Ci.Zhu@enercare.ca','Ci.Zhu@enercare.ca','DOM-REVCON','2026-05-20'),(10,'dbo','contracts','Table','Ci.Zhu@enercare.ca','Ci.Zhu@enercare.ca','DOM-REVCON','2026-05-20'),(11,'dbo','billing_transactions','Table','Ci.Zhu@enercare.ca','Ci.Zhu@enercare.ca','DOM-REVCON','2026-05-20'),(12,'dbo','data_owners_directory','Table','Ci.Zhu@enercare.ca','Ci.Zhu@enercare.ca','DOM-CUSTOPS','2026-05-20'),(13,'dbo','audit_data_access','Table','Ci.Zhu@enercare.ca','Ci.Zhu@enercare.ca','DOM-CUSTOPS','2026-05-20');
@@ -516,6 +551,12 @@ GO
 ;WITH n AS (SELECT TOP (200) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn FROM sys.objects a CROSS JOIN sys.objects b)
 INSERT INTO dbo.audit_data_access (audit_id, accessed_at, accessor_upn, accessor_role, object_schema, object_name, operation, rows_affected, purpose_of_use, contains_pii)
 SELECT rn, DATEADD(HOUR, -rn, SYSUTCDATETIME()), CASE rn % 5 WHEN 0 THEN 'Victoria.Tan@enercare.ca' WHEN 1 THEN 'Ci.Zhu@enercare.ca' WHEN 2 THEN 'Rupal.Solanki@enercare.ca' WHEN 3 THEN 'Shruthi.Srinivas@enercare.ca' ELSE 'ranbir.singh@enercare.ca' END, 'Data Reader', 'dbo', CASE rn % 6 WHEN 0 THEN 'customers' WHEN 1 THEN 'service_accounts' WHEN 2 THEN 'billing_transactions' WHEN 3 THEN 'customer_consents' WHEN 4 THEN 'service_requests' ELSE 'contracts' END, 'SELECT', 1 + (rn % 100), CASE rn % 4 WHEN 0 THEN 'BillingSupport' WHEN 1 THEN 'RegulatorReport' WHEN 2 THEN 'MarketingCampaign' ELSE 'DataScience' END, CASE WHEN rn % 6 IN (0, 1, 2, 3) THEN 1 ELSE 0 END FROM n;
+GO
+INSERT INTO dbo.audit_data_access (audit_id, accessed_at, accessor_upn, accessor_role, object_schema, object_name, operation, rows_affected, purpose_of_use, contains_pii) VALUES
+(1837462201, DATEADD(MINUTE, -12, SYSUTCDATETIME()), 'tnguyen@enercare.ca', 'CustomerService', 'dbo', 'customers', 'SELECT', 1, 'CustomerService', 1),
+(1837462202, DATEADD(MINUTE, -11, SYSUTCDATETIME()), 'tnguyen@enercare.ca', 'CustomerService', 'dbo', 'customer_consents', 'SELECT', 4, 'CustomerService', 1),
+(1837462203, DATEADD(MINUTE, -10, SYSUTCDATETIME()), 'tnguyen@enercare.ca', 'CustomerService', 'dbo', 'service_requests', 'SELECT', 1, 'CustomerService', 0),
+(1837462204, DATEADD(MINUTE, -9, SYSUTCDATETIME()), 'tnguyen@enercare.ca', 'CustomerService', 'dbo', 'billing_transactions', 'SELECT', 2, 'CustomerService', 1);
 GO
 PRINT 'Purview demo seed complete.';
 GO
@@ -727,19 +768,53 @@ SELECT 'employees'              AS table_name, COUNT(*) AS row_count, 11  AS exp
 UNION ALL
 SELECT 'service_zones',                        COUNT(*),                8      FROM dbo.service_zones
 UNION ALL
-SELECT 'customer_consents',                    COUNT(*),              120      FROM dbo.customer_consents
+SELECT 'customer_consents',                    COUNT(*),              124      FROM dbo.customer_consents
 UNION ALL
-SELECT 'customer_complaints',                  COUNT(*),               18      FROM dbo.customer_complaints
+SELECT 'customer_complaints',                  COUNT(*),               19      FROM dbo.customer_complaints
 UNION ALL
 SELECT 'data_owners_directory',                COUNT(*),               13      FROM dbo.data_owners_directory
 UNION ALL
-SELECT 'audit_data_access',                    COUNT(*),              200      FROM dbo.audit_data_access
+SELECT 'audit_data_access',                    COUNT(*),              204      FROM dbo.audit_data_access
 UNION ALL
-SELECT 'customers with DOB backfilled',        COUNT(*),               50      FROM dbo.customers
+SELECT 'customers with DOB backfilled',        COUNT(*),               51      FROM dbo.customers
  WHERE date_of_birth IS NOT NULL
 UNION ALL
-SELECT 'service_accounts with GPS backfilled', COUNT(*),               56      FROM dbo.service_accounts
+SELECT 'service_accounts with GPS backfilled', COUNT(*),               57      FROM dbo.service_accounts
  WHERE latitude IS NOT NULL;
+"""
+
+verify_maria_sql = """
+SELECT 'Maria customer row' AS check_name, COUNT(*) AS count_actual, 1 AS count_expected
+    FROM dbo.customers
+ WHERE customer_id = 18374622 AND account_number = 'EC18374622'
+UNION ALL
+SELECT 'Maria service account row', COUNT(*), 1
+    FROM dbo.service_accounts
+ WHERE service_account_id = 183746220 AND customer_id = 18374622 AND service_zone_code = 'CA-ON-GTA-N'
+UNION ALL
+SELECT 'Maria furnace row', COUNT(*), 1
+    FROM dbo.equipment_registry
+ WHERE equipment_id = 183746221 AND service_account_id = 183746220 AND make = 'Lennox' AND model = 'SLP98V'
+UNION ALL
+SELECT 'Maria service request row', COUNT(*), 1
+    FROM dbo.service_requests
+ WHERE request_id = 2026051142 AND service_account_id = 183746220 AND equipment_id = 183746221
+UNION ALL
+SELECT 'Maria billing rows', COUNT(*), 2
+    FROM dbo.billing_transactions
+ WHERE service_account_id = 183746220
+UNION ALL
+SELECT 'Maria consent rows', COUNT(*), 4
+    FROM dbo.customer_consents
+ WHERE customer_id = 18374622
+UNION ALL
+SELECT 'Maria complaint row', COUNT(*), 1
+    FROM dbo.customer_complaints
+ WHERE complaint_id = 18374622 AND customer_id = 18374622
+UNION ALL
+SELECT 'Maria audit rows', COUNT(*), 4
+    FROM dbo.audit_data_access
+ WHERE audit_id BETWEEN 1837462201 AND 1837462204;
 """
 
 if DEMO_MODE:
@@ -748,6 +823,14 @@ else:
     cur.execute(verify_seed_sql)
     rows = cur.fetchall()
     print(f"\n{'table_name':45s} {'rows':>8s} {'expected':>10s}  status")
+    print("-" * 80)
+    for r in rows:
+        status = "GREEN" if r[1] == r[2] else "YELLOW"
+        print(f"{r[0]:45s} {r[1]:>8d} {r[2]:>10d}  {status}")
+
+    cur.execute(verify_maria_sql)
+    rows = cur.fetchall()
+    print(f"\n{'maria_check':45s} {'actual':>8s} {'expected':>10s}  status")
     print("-" * 80)
     for r in rows:
         status = "GREEN" if r[1] == r[2] else "YELLOW"

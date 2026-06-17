@@ -455,7 +455,7 @@ else:
 
 # CELL ********************
 
-# G1-4, G4 — Seed ai_metadata: certified KPI and north-star verified answers
+# G1-4, G4 — Seed ai_metadata: certified KPI and Maria source-story verified answers
 # Pre-approved (IsDraft=0) — ready for Copilot "Prep Data for AI"
 
 verified_answers = [
@@ -502,15 +502,15 @@ verified_answers = [
      "Contract renewal performance is tracked by PP_RNW_RATE. Renewal window: "
      "30 days before to 15 days after the contract end date."),
     ("SLA_BRCH_RATE", "show me Maria's furnace status",
-     "Maria Castellanos is the north-star customer for the demo. Use account EC18374622 and the Markham "
-     "service address at 47 Birch Drive, Unit 8. Her active service request is a NoHeat furnace case tied "
-     "to a Lennox SLP98V unit in GTA North; it missed the 24-hour no-heat SLA and is escalated."),
+        "Maria Castellanos is seeded in the source data as account EC18374622 at the Markham service address "
+        "47 Birch Drive, Unit 8. Her active service request is a NoHeat furnace case tied to a Lennox SLP98V "
+        "unit in GTA North; it missed the 24-hour no-heat SLA and is escalated."),
     ("SLA_BRCH_RATE", "what happened to Maria Castellanos",
      "Maria Castellanos reported a failed furnace after opening a portal service ticket. The request stayed "
      "Scheduled - Pending Tech, the GTA North dispatch queue did not reassign it, and Tom Nguyen logged a "
      "High service complaint after the SLA breach."),
     ("AHT", "can Tom text Maria",
-     "Tom Nguyen may text Maria only after checking customer_consents. For the north-star seed, Maria has "
+        "Tom Nguyen may text Maria only after checking customer_consents. Maria's seeded source row has "
      "Granted Marketing-Email and Marketing-SMS consent captured through the CallCenter channel."),
     ("SLA_BRCH_RATE", "why is GTA North important",
      "GTA North is the service-zone signal in Victoria Tan's review. Maria's case is in CA-ON-GTA-N and "
@@ -546,7 +546,7 @@ AI_SCHEMA = StructType([
 df_va = spark.createDataFrame(rows_va, schema=AI_SCHEMA)
 
 if DEMO_MODE:
-    print(f"[DEMO_MODE] Verified answers — {len(rows_va)} certified KPI and north-star rows:\n")
+    print(f"[DEMO_MODE] Verified answers — {len(rows_va)} certified KPI and Maria source-story rows:\n")
     df_va.select("RecordID", "LinkedKPICode", "TriggerText").show(truncate=60)
 else:
     seed_va_triggers = ", ".join(_sql_string(r.TriggerText) for r in rows_va)
@@ -599,11 +599,11 @@ ai_instructions = [
      "WH = Water Heater. HVAC = Heating Ventilation Air Conditioning. "
      "MUR = Multi-Unit Residential. FSA = Forward Sortation Area (first 3 chars of postal code)."),
     ("KPI Definitions", "certified KPI reference", certified_kpi_instruction),
-    ("Maria North Star", "Maria Castellanos furnace scenario",
-     "The demo north-star scenario is Maria Castellanos, account EC18374622, a residential customer in "
-     "Markham FSA L4G. Her Lennox SLP98V furnace has a NoHeat service request in GTA North that missed "
-     "the 24-hour SLA while an 89.95 monthly charge posted. Tom Nguyen is the agent, Victoria Tan reviews "
-     "the customer-experience impact, Ci Zhu answers the audit lineage question, and Ranbir Singh owns the "
+    ("Maria Source Story", "Maria Castellanos furnace scenario",
+     "Maria Castellanos is seeded as source customer account EC18374622, a residential customer in Markham "
+     "FSA L4G. Her Lennox SLP98V furnace has a NoHeat service request in GTA North that missed the 24-hour "
+     "SLA while an 89.95 monthly charge posted. Tom Nguyen is the agent, Victoria Tan reviews the "
+     "customer-experience impact, Ci Zhu answers the audit lineage question, and Ranbir Singh owns the "
      "service dispatch remediation. Ground answers through Customer 360, Service Performance, Billing "
      "Health, customer_consents, customer_complaints, and audit_data_access."),
 ]
