@@ -1,0 +1,1481 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/dataSource/1.0.0/schema.json",
+  "artifactId": "d19d7f14-ae22-9fde-462b-dafb983dfb0a",
+  "workspaceId": "00000000-0000-0000-0000-000000000000",
+  "dataSourceInstructions": "For Maria source-story questions, use the seeded source rows for account EC18374622. Do not answer by listing all active furnaces. Bind Maria Castellanos to Markham FSA L4G, service address 47 Birch Drive Unit 8, Lennox SLP98V furnace, RequestKey 2026051142, NoHeat service request, GTA North, and the missed 24-hour SLA. Use fct_service_request with dim_customer, dim_service_account, and dim_equipment filters; do not substitute unrelated equipment if the Maria rows are not visible yet.",
+  "displayName": "BrookfieldEnercare",
+  "type": "semantic_model",
+  "userDescription": null,
+  "metadata": {
+    "csdl_relationships": "[{\"FromTable\":\"dim_service_account\",\"FromColumn\":\"CustomerKey\",\"ToTable\":\"dim_customer\",\"ToColumn\":\"CustomerKey\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"},{\"FromTable\":\"fct_service_request\",\"FromColumn\":\"CreatedDateKey\",\"ToTable\":\"dim_date\",\"ToColumn\":\"DateKey\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"},{\"FromTable\":\"fct_service_request\",\"FromColumn\":\"CompletedDateKey\",\"ToTable\":\"dim_date\",\"ToColumn\":\"DateKey\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"},{\"FromTable\":\"fct_service_request\",\"FromColumn\":\"ServiceAccountKey\",\"ToTable\":\"dim_service_account\",\"ToColumn\":\"ServiceAccountKey\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"},{\"FromTable\":\"fct_service_request\",\"FromColumn\":\"EquipmentKey\",\"ToTable\":\"dim_equipment\",\"ToColumn\":\"EquipmentKey\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"},{\"FromTable\":\"fct_billing\",\"FromColumn\":\"TransactionDateKey\",\"ToTable\":\"dim_date\",\"ToColumn\":\"DateKey\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"},{\"FromTable\":\"fct_billing\",\"FromColumn\":\"ServiceAccountKey\",\"ToTable\":\"dim_service_account\",\"ToColumn\":\"ServiceAccountKey\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"},{\"FromTable\":\"fct_billing\",\"FromColumn\":\"ProductKey\",\"ToTable\":\"dim_product\",\"ToColumn\":\"ProductKey\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"},{\"FromTable\":\"fct_contract_month\",\"FromColumn\":\"BillingMonthDateKey\",\"ToTable\":\"dim_date\",\"ToColumn\":\"DateKey\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"},{\"FromTable\":\"fct_contract_month\",\"FromColumn\":\"ServiceAccountKey\",\"ToTable\":\"dim_service_account\",\"ToColumn\":\"ServiceAccountKey\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"},{\"FromTable\":\"fct_contract_month\",\"FromColumn\":\"ProductKey\",\"ToTable\":\"dim_product\",\"ToColumn\":\"ProductKey\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"},{\"FromTable\":\"fct_cc_interactions\",\"FromColumn\":\"interaction_date_key\",\"ToTable\":\"dim_date\",\"ToColumn\":\"DateKey\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"},{\"FromTable\":\"fct_cc_interactions\",\"FromColumn\":\"agent_id\",\"ToTable\":\"dim_cc_agent\",\"ToColumn\":\"agent_id\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"},{\"FromTable\":\"fct_cc_interactions\",\"FromColumn\":\"customer_id\",\"ToTable\":\"dim_customer\",\"ToColumn\":\"CustomerKey\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"},{\"FromTable\":\"fct_cc_interactions\",\"FromColumn\":\"billing_adj_category\",\"ToTable\":\"dim_cc_billing_adj\",\"ToColumn\":\"category_code\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"},{\"FromTable\":\"fct_cc_transcript_turns\",\"FromColumn\":\"interaction_id\",\"ToTable\":\"fct_cc_interactions\",\"ToColumn\":\"interaction_id\",\"IsActive\":true,\"IsBidirectional\":false,\"Cardinality\":\"ManyToOne\"}]"
+  },
+  "elements": [
+    {
+      "id": "2f851d4d-2ff5-4c8d-aea1-d924793cfffa",
+      "is_selected": false,
+      "display_name": "_Measures",
+      "type": "semantic_model.table",
+      "description": null,
+      "children": [
+        {
+          "id": "67d10be5-56d1-4a9f-88d6-af282c3926b2",
+          "is_selected": true,
+          "display_name": "Active Contract Count",
+          "type": "semantic_model.measure",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "fa857cfb-0473-4bee-8685-4d7f18ad6d3d",
+          "is_selected": true,
+          "display_name": "Active Customer Count",
+          "type": "semantic_model.measure",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "0cec6c7b-58c1-400f-b4c6-993cff355807",
+          "is_selected": true,
+          "display_name": "Avg CSAT",
+          "type": "semantic_model.measure",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "42f61711-cbe4-4ae0-9ff5-32e1facddbbf",
+          "is_selected": true,
+          "display_name": "Avg Equipment Age Years",
+          "type": "semantic_model.measure",
+          "data_type": "Decimal",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "40485d8a-3df4-467d-a04b-409d2d37083f",
+          "is_selected": true,
+          "display_name": "Avg Handle Time (sec)",
+          "type": "semantic_model.measure",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7ea012c0-fa98-4944-8e49-579ea4b25cb0",
+          "is_selected": true,
+          "display_name": "Avg Lifetime Value",
+          "type": "semantic_model.measure",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "39fe6c97-94a0-4fda-9608-9fc03ba025fd",
+          "is_selected": true,
+          "display_name": "Avg Tenure Months",
+          "type": "semantic_model.measure",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "a2d284d5-7326-438c-8ccb-f1728edab201",
+          "is_selected": true,
+          "display_name": "Churned MRR",
+          "type": "semantic_model.measure",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "0de9cdd3-9eb1-440d-85b6-f99ff400bf19",
+          "is_selected": true,
+          "display_name": "Escalation Rate",
+          "type": "semantic_model.measure",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "d68117ad-989c-40ab-a919-aa8725273862",
+          "is_selected": true,
+          "display_name": "FCR Rate",
+          "type": "semantic_model.measure",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "22c8b068-2477-4732-bb36-55c6fefde720",
+          "is_selected": true,
+          "display_name": "Net MRR Change",
+          "type": "semantic_model.measure",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "4dcc107e-b2bb-4bce-8cac-89e16fbc1bdf",
+          "is_selected": true,
+          "display_name": "New MRR",
+          "type": "semantic_model.measure",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "b0478899-e200-4b7a-b011-429566f09b29",
+          "is_selected": true,
+          "display_name": "PP Renewal Rate",
+          "type": "semantic_model.measure",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "201b4368-2ce7-4dce-966b-63b3df08c9b1",
+          "is_selected": true,
+          "display_name": "SLA Breach Count",
+          "type": "semantic_model.measure",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "487de699-0427-4396-aea0-9592c7a2a85c",
+          "is_selected": true,
+          "display_name": "SLA Compliance Rate",
+          "type": "semantic_model.measure",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "6984860b-d085-47ca-8662-dba8e75102ca",
+          "is_selected": true,
+          "display_name": "Total MRR",
+          "type": "semantic_model.measure",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "dbf943f6-f02d-4604-ab7f-418daf143bf1",
+          "is_selected": true,
+          "display_name": "Value",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "e95914d2-d684-4414-a1e5-6a71d812eacb",
+          "is_selected": true,
+          "display_name": "Warranty Coverage Rate",
+          "type": "semantic_model.measure",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "7a3f1e20-cc02-4d8b-9fa2-a20000000001",
+      "is_selected": true,
+      "display_name": "dim_cc_agent",
+      "type": "semantic_model.table",
+      "description": null,
+      "children": [
+        {
+          "id": "7a3f1e20-cc02-4d8b-9fa2-a20000000002",
+          "is_selected": true,
+          "display_name": "agent_id",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc02-4d8b-9fa2-a20000000003",
+          "is_selected": true,
+          "display_name": "agent_name",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc02-4d8b-9fa2-a20000000005",
+          "is_selected": true,
+          "display_name": "hire_date",
+          "type": "semantic_model.column",
+          "data_type": "DateTime",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc02-4d8b-9fa2-a20000000004",
+          "is_selected": true,
+          "display_name": "team",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "7a3f1e20-cc03-4d8b-9fa2-a30000000001",
+      "is_selected": true,
+      "display_name": "dim_cc_billing_adj",
+      "type": "semantic_model.table",
+      "description": null,
+      "children": [
+        {
+          "id": "7a3f1e20-cc03-4d8b-9fa2-a30000000004",
+          "is_selected": true,
+          "display_name": "adj_type",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc03-4d8b-9fa2-a30000000002",
+          "is_selected": true,
+          "display_name": "category_code",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc03-4d8b-9fa2-a30000000003",
+          "is_selected": true,
+          "display_name": "category_desc",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "4ce75090-884b-444b-ba5d-01ef91eea191",
+      "is_selected": true,
+      "display_name": "dim_customer",
+      "type": "semantic_model.table",
+      "description": null,
+      "children": [
+        {
+          "id": "6cefd132-2f79-4810-a99b-5feb1add9554",
+          "is_selected": true,
+          "display_name": "AccountNumber",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "88c22ebb-46e1-417f-81f4-89bdb0062bfa",
+          "is_selected": true,
+          "display_name": "City",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "ba2d8cfe-04e7-4392-a85c-ff5f8dddfc7f",
+          "is_selected": true,
+          "display_name": "CreatedDate",
+          "type": "semantic_model.column",
+          "data_type": "DateTime",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "01aec572-4d94-4f6a-ac4c-ccacd3746702",
+          "is_selected": true,
+          "display_name": "CustomerKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "fe0357c5-124a-4a7c-9c45-4ab2b3d43be5",
+          "is_selected": true,
+          "display_name": "CustomerType",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7e8b2181-2d26-4f9e-8c94-17543f35d393",
+          "is_selected": true,
+          "display_name": "Email",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "10f20a3a-2369-4a5b-9d59-aa1625addd26",
+          "is_selected": true,
+          "display_name": "FirstName",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "2679526d-76bb-4118-97d6-f09b9e46c864",
+          "is_selected": true,
+          "display_name": "FSA",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "e9ad8f0d-bfb6-4e84-abf9-c5285937d5b2",
+          "is_selected": true,
+          "display_name": "LastName",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "894b6d6a-9518-4c93-956a-b31fcf47f352",
+          "is_selected": true,
+          "display_name": "Phone",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "42a04551-92b0-4392-8b51-98ecd626f3c8",
+          "is_selected": true,
+          "display_name": "PostalCode",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "394ebe33-c530-4ae9-ba51-bb8bf519f5fe",
+          "is_selected": true,
+          "display_name": "Province",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "5fb56981-f95f-4ac4-9705-1e60855b4c32",
+          "is_selected": true,
+          "display_name": "Status",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "d6805d3e-2bed-425c-8607-5b57075c594b",
+      "is_selected": true,
+      "display_name": "dim_date",
+      "type": "semantic_model.table",
+      "description": null,
+      "children": [
+        {
+          "id": "6a6afb6d-5d3f-446f-be0d-6fc05ffd3b6e",
+          "is_selected": true,
+          "display_name": "DateKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "bb7f191b-1ccb-43ab-8fd0-242a5b5653db",
+          "is_selected": true,
+          "display_name": "Day",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "13a12737-39c6-42b2-8bb4-d74393967356",
+          "is_selected": true,
+          "display_name": "DayName",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "402f3469-d66d-4a94-a3fe-1bdf66fe250f",
+          "is_selected": true,
+          "display_name": "DayOfWeek",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "54bd3409-3eeb-449c-a744-c2be7290b870",
+          "is_selected": true,
+          "display_name": "FiscalQuarter",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "417af944-56b9-4311-951a-1beaa4212244",
+          "is_selected": true,
+          "display_name": "FiscalYear",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "be93e119-5784-46b9-9faf-c299747e4b2a",
+          "is_selected": true,
+          "display_name": "FullDate",
+          "type": "semantic_model.column",
+          "data_type": "DateTime",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "dbf3bf01-0ced-4448-917a-1a8df575b178",
+          "is_selected": true,
+          "display_name": "IsLeapYear",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "b587596b-ab90-446e-a984-aea56c375889",
+          "is_selected": true,
+          "display_name": "IsWeekend",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "ec3d4568-25b0-4849-a4f3-7ce5e7a020e7",
+          "is_selected": true,
+          "display_name": "Month",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "0b2b5483-5166-4941-a167-8226fe926dee",
+          "is_selected": true,
+          "display_name": "MonthName",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "c4ebce5b-3ac3-4ef3-9cf4-f86ed98b213d",
+          "is_selected": true,
+          "display_name": "Quarter",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "298efc88-e40d-4697-89b5-b457273a3086",
+          "is_selected": true,
+          "display_name": "WeekOfYear",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7ca55eaf-1e59-4c6a-b6ba-d4611757eeb9",
+          "is_selected": true,
+          "display_name": "Year",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "eba97672-594c-48b9-95c6-2ebdcf089b80",
+      "is_selected": true,
+      "display_name": "dim_equipment",
+      "type": "semantic_model.table",
+      "description": null,
+      "children": [
+        {
+          "id": "d75fc0a4-3ce5-4be0-8c0f-69e685d3c72b",
+          "is_selected": true,
+          "display_name": "AgeYears",
+          "type": "semantic_model.column",
+          "data_type": "Decimal",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "8ab35f87-94ca-4160-b425-34a6b39fc923",
+          "is_selected": true,
+          "display_name": "EquipmentKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "64f441f5-ae9e-47ea-8316-d9793332a30a",
+          "is_selected": true,
+          "display_name": "EquipmentType",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7005f148-b2f4-4676-9ec2-5d1f3aaa746f",
+          "is_selected": true,
+          "display_name": "FuelType",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "6970da6e-dc31-478f-91ab-8568cc1cb93f",
+          "is_selected": true,
+          "display_name": "InstallDate",
+          "type": "semantic_model.column",
+          "data_type": "DateTime",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "a68cf0d4-fbba-4c8b-aa4a-6e9b33e3891a",
+          "is_selected": true,
+          "display_name": "InstallDateKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "3f8f4dff-50ac-4c84-9df6-8f015c940b31",
+          "is_selected": true,
+          "display_name": "IsUnderWarranty",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "4557ece2-a136-468f-bb1d-f0d9d1852e3e",
+          "is_selected": true,
+          "display_name": "Make",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "4c8c4412-07dd-453a-a052-f755f0066258",
+          "is_selected": true,
+          "display_name": "Model",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "dc6ba4bd-8794-471d-bb98-548637a176d7",
+          "is_selected": true,
+          "display_name": "OwnershipType",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "8722c1c3-3c02-4ac0-9d72-08dd7566ee5e",
+          "is_selected": true,
+          "display_name": "SerialNumber",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "81059f88-871b-47f9-b3cf-bc89e562c016",
+          "is_selected": true,
+          "display_name": "ServiceAccountKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "d7a8e9e0-6600-416f-a4c3-d2efaca3863b",
+          "is_selected": true,
+          "display_name": "Status",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "51793ec9-72a1-4f9a-b6c3-d3e255322531",
+          "is_selected": true,
+          "display_name": "WarrantyExpiry",
+          "type": "semantic_model.column",
+          "data_type": "DateTime",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "d529364b-46c9-46f6-8358-ec208415c85d",
+          "is_selected": true,
+          "display_name": "WarrantyExpiryDateKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "7d193b8b-a965-4345-b382-b037ad6cea6b",
+      "is_selected": true,
+      "display_name": "dim_product",
+      "type": "semantic_model.table",
+      "description": null,
+      "children": [
+        {
+          "id": "b2440bcf-3a7c-4fd6-b5a2-431b0c73c355",
+          "is_selected": true,
+          "display_name": "BasePrice",
+          "type": "semantic_model.column",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "074da48b-5dc5-4c3a-a663-dc344a2762a4",
+          "is_selected": true,
+          "display_name": "BillingFrequency",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "d58876ed-2e37-4a0a-a42e-f3a45920a8f2",
+          "is_selected": true,
+          "display_name": "EffectiveDate",
+          "type": "semantic_model.column",
+          "data_type": "DateTime",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "cb616f26-9722-44b2-bef0-52489e3cfc9f",
+          "is_selected": true,
+          "display_name": "IsActive",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "63766221-60bc-4200-96ef-1b669f0c4767",
+          "is_selected": true,
+          "display_name": "ProductCategory",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "2aac83fe-4417-4963-9b4d-962caf9b8ee7",
+          "is_selected": true,
+          "display_name": "ProductCode",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "86cadba4-638a-4a9b-aab0-5a089f797006",
+          "is_selected": true,
+          "display_name": "ProductKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "18eac4f9-9612-4a44-bcd6-37f65e62619c",
+          "is_selected": true,
+          "display_name": "ProductName",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "da38df92-443e-45b6-80cc-f49e155b9948",
+      "is_selected": true,
+      "display_name": "dim_service_account",
+      "type": "semantic_model.table",
+      "description": null,
+      "children": [
+        {
+          "id": "28387498-e80c-47b2-8746-140880179bfc",
+          "is_selected": true,
+          "display_name": "AccountNumber",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "d0acb95d-51cf-4806-a2b9-8a5e6b999668",
+          "is_selected": true,
+          "display_name": "City",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "97953f5c-39c2-456c-9a10-fab99351ac94",
+          "is_selected": true,
+          "display_name": "CustomerKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "057a3b65-bd9d-42d6-a6dd-7f8d27a6dc30",
+          "is_selected": true,
+          "display_name": "Distributor",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "1b21ddf0-f85f-4ad7-afa1-79a44b3e40b9",
+          "is_selected": true,
+          "display_name": "FSA",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "42e154c7-0279-42b4-8733-a8af3e049d92",
+          "is_selected": true,
+          "display_name": "OpenedDate",
+          "type": "semantic_model.column",
+          "data_type": "DateTime",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "96f42464-aeb8-4681-b15a-bee7adc8c8ae",
+          "is_selected": true,
+          "display_name": "PostalCode",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "d84f6bde-076e-44c7-b14a-615cfb808e4d",
+          "is_selected": true,
+          "display_name": "RateClass",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "9b23f7cf-45e9-4760-a40e-cda3e50e04e4",
+          "is_selected": true,
+          "display_name": "ServiceAccountKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "922a8a47-e0a6-4e8b-be20-4eeb8c78889f",
+          "is_selected": true,
+          "display_name": "ServiceAddress",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "97a3de65-281b-4ab0-b392-49aeda0fd50a",
+          "is_selected": true,
+          "display_name": "Status",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7797d84b-0ec6-4e8f-95e1-541baef71a65",
+          "is_selected": true,
+          "display_name": "UtilityType",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "fecb9d02-6c2a-4f4b-b2a3-9908e2e668b3",
+      "is_selected": true,
+      "display_name": "fct_billing",
+      "type": "semantic_model.table",
+      "description": null,
+      "children": [
+        {
+          "id": "e7badcf9-b5e9-4f25-84dd-90584e1b4a97",
+          "is_selected": true,
+          "display_name": "Amount",
+          "type": "semantic_model.column",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "819e24ab-e86c-4dac-bfc1-2fa844ace02c",
+          "is_selected": true,
+          "display_name": "ContractKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7f4cc0d9-dd58-48d6-8367-bb68cc59c1e8",
+          "is_selected": true,
+          "display_name": "CustomerKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "65d0b2b9-8bfe-4f93-9397-76f98c7b5e42",
+          "is_selected": true,
+          "display_name": "DueDateKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "3a7f4f94-7d6b-4113-b0dc-55d778bb685f",
+          "is_selected": true,
+          "display_name": "InvoiceNumber",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "5eed7fe9-a9b1-4a5d-9b15-bb06a512c995",
+          "is_selected": true,
+          "display_name": "PaymentMethod",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "05a47d3b-5d00-4114-bbfe-a9291f85db85",
+          "is_selected": true,
+          "display_name": "ProductKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "e02cf7fb-a696-4a1a-ba97-eee587f82601",
+          "is_selected": true,
+          "display_name": "ServiceAccountKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "9d3e90f3-5572-418a-bedd-8675fc755a7e",
+          "is_selected": true,
+          "display_name": "Status",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "8b6de30d-c1de-4ff1-934e-5f987653a1e1",
+          "is_selected": true,
+          "display_name": "TaxAmount",
+          "type": "semantic_model.column",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "c3160f6f-ede0-4a11-b097-b6eace69ebdf",
+          "is_selected": true,
+          "display_name": "TotalAmount",
+          "type": "semantic_model.column",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "4dd44abb-811c-4518-870f-35e9c0cfde05",
+          "is_selected": true,
+          "display_name": "TransactionDateKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "352cf94e-4ced-4842-9511-ef08e4186880",
+          "is_selected": true,
+          "display_name": "TransactionKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "94563cb5-30c5-4d65-a496-b8411749e3fe",
+          "is_selected": true,
+          "display_name": "TransactionType",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000001",
+      "is_selected": true,
+      "display_name": "fct_cc_interactions",
+      "type": "semantic_model.table",
+      "description": null,
+      "children": [
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000004",
+          "is_selected": true,
+          "display_name": "agent_id",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000015",
+          "is_selected": true,
+          "display_name": "billing_adj_category",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000007",
+          "is_selected": true,
+          "display_name": "channel",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000011",
+          "is_selected": true,
+          "display_name": "csat_score",
+          "type": "semantic_model.column",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000003",
+          "is_selected": true,
+          "display_name": "customer_id",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000016",
+          "is_selected": true,
+          "display_name": "disposition_code",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000013",
+          "is_selected": true,
+          "display_name": "escalated_flag",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000012",
+          "is_selected": true,
+          "display_name": "fcr_flag",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000009",
+          "is_selected": true,
+          "display_name": "handle_time_sec",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000010",
+          "is_selected": true,
+          "display_name": "hold_time_sec",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000008",
+          "is_selected": true,
+          "display_name": "interaction_date",
+          "type": "semantic_model.column",
+          "data_type": "DateTime",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000017",
+          "is_selected": true,
+          "display_name": "interaction_date_key",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000002",
+          "is_selected": true,
+          "display_name": "interaction_id",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000014",
+          "is_selected": true,
+          "display_name": "pp_renewal_outcome",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000006",
+          "is_selected": true,
+          "display_name": "queue_type",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "7a3f1e20-cc01-4d8b-9fa2-a10000000005",
+          "is_selected": true,
+          "display_name": "service_account_id",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "9729651f-e461-4ed3-a5a8-3a001963488f",
+      "is_selected": true,
+      "display_name": "fct_cc_transcript_turns",
+      "type": "semantic_model.table",
+      "description": null,
+      "children": [
+        {
+          "id": "eb11bb73-b77d-4742-b2ce-065f5cae6234",
+          "is_selected": true,
+          "display_name": "intent_label",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "533f5de9-96c6-44a1-9f81-c4998ca4587f",
+          "is_selected": true,
+          "display_name": "interaction_id",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "8dcbf385-b26c-4454-8e38-ce5059197261",
+          "is_selected": true,
+          "display_name": "sentiment_score",
+          "type": "semantic_model.column",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "db7a9307-8764-4453-875c-80712e940131",
+          "is_selected": true,
+          "display_name": "speaker",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "91d608ea-d844-4b66-8cf1-5d77c2a5cc28",
+          "is_selected": true,
+          "display_name": "turn_id",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "36bd8cbe-0d63-4b11-9276-b655b7820655",
+          "is_selected": true,
+          "display_name": "turn_seq",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "d282d1a9-f710-4e20-a28a-e90987c3c351",
+          "is_selected": true,
+          "display_name": "utterance_text",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "e837b6dd-1f0e-4a47-9d56-896925431dde",
+      "is_selected": true,
+      "display_name": "fct_contract_month",
+      "type": "semantic_model.table",
+      "description": null,
+      "children": [
+        {
+          "id": "d2578650-1efe-4504-b492-2e66168426d9",
+          "is_selected": true,
+          "display_name": "BillingMonth",
+          "type": "semantic_model.column",
+          "data_type": "DateTime",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "76c914bd-a0db-4ea4-aef7-a635b5423d81",
+          "is_selected": true,
+          "display_name": "BillingMonthDateKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "12ecf41f-a52a-4cac-89d9-42fe9c5d87a2",
+          "is_selected": true,
+          "display_name": "ContractKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "b95d0851-a0bc-43b4-aef4-20b63d0fddcc",
+          "is_selected": true,
+          "display_name": "ContractStartDateKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "bbaed8d6-63fd-4a43-b0e0-dcb29e9fb232",
+          "is_selected": true,
+          "display_name": "ContractStatus",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "3fbc6329-8f3b-46ac-a51d-6093cc34b729",
+          "is_selected": true,
+          "display_name": "CustomerKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "95d65f43-6f3e-464d-b3c3-5e5cea4e8acc",
+          "is_selected": true,
+          "display_name": "IsChurn",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "b53d5a9d-e759-4c99-9cd0-ebb9e4ebddec",
+          "is_selected": true,
+          "display_name": "IsNew",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "bfc06c85-8554-464c-b357-eb9f7e9341d6",
+          "is_selected": true,
+          "display_name": "MonthlyAmount",
+          "type": "semantic_model.column",
+          "data_type": "Double",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "4490170f-6cbf-4880-9590-6d68ebfeda42",
+          "is_selected": true,
+          "display_name": "ProductKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "e2b3a4f5-1e51-45e2-baaa-37229c898b0d",
+          "is_selected": true,
+          "display_name": "ServiceAccountKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "82a63417-6d59-4b67-81fc-0dcc3763236a",
+      "is_selected": true,
+      "display_name": "fct_service_request",
+      "type": "semantic_model.table",
+      "description": null,
+      "children": [
+        {
+          "id": "429aac35-dff0-4a3e-8bf2-e2aea2d770a1",
+          "is_selected": true,
+          "display_name": "CompletedDateKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "28885c91-e4fb-4170-9b59-329e0ee3be18",
+          "is_selected": true,
+          "display_name": "CreatedDateKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "d4f03d99-d10e-47d3-91c5-e50ac7092ffb",
+          "is_selected": true,
+          "display_name": "CustomerKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "cd56d4a4-69aa-44e3-8f9e-c9be55b2c35a",
+          "is_selected": true,
+          "display_name": "DaysToComplete",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "9092b70d-8801-4f31-bbeb-eb44f906015d",
+          "is_selected": true,
+          "display_name": "Description",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "5a9408d1-88a8-4efc-915f-508c87929114",
+          "is_selected": true,
+          "display_name": "EquipmentKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "8136adbf-388d-4dc3-bbcf-61c04ed7ede4",
+          "is_selected": true,
+          "display_name": "IsSlaBreachFlag",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "9d6b105b-8ce2-4346-840e-7f66b575bdc9",
+          "is_selected": true,
+          "display_name": "Priority",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "9cf25cc1-5747-4745-a168-7eb601e1b163",
+          "is_selected": true,
+          "display_name": "RequestKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "15f6e877-65ba-4b72-914f-f39d47b6aac5",
+          "is_selected": true,
+          "display_name": "RequestType",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "404d0fdc-82d2-4d0c-97dc-976f1cb30931",
+          "is_selected": true,
+          "display_name": "ResolutionNotes",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "601973ab-2293-4d57-9628-6b64d8a2e85c",
+          "is_selected": true,
+          "display_name": "ScheduledDateKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "35d43064-02af-4342-9172-fd47735270b1",
+          "is_selected": true,
+          "display_name": "ServiceAccountKey",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "678ba601-e19b-41a6-b591-e1b6b1a72abb",
+          "is_selected": true,
+          "display_name": "Status",
+          "type": "semantic_model.column",
+          "data_type": "String",
+          "description": null,
+          "children": []
+        },
+        {
+          "id": "22904e29-2741-492a-a4c5-745ce6ab0472",
+          "is_selected": true,
+          "display_name": "TechnicianId",
+          "type": "semantic_model.column",
+          "data_type": "Int64",
+          "description": null,
+          "children": []
+        }
+      ]
+    }
+  ]
+}
