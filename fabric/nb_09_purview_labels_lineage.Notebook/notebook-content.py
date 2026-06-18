@@ -26,7 +26,9 @@
 
 # CELL ********************
 
-# Cell 1: Imports and config
+# Cell 1: Imports and Config
+# Purpose: Initialize Spark session, import required libraries, and set Purview/Fabric configuration.
+# Outputs: Purview endpoint URL, deployment mode flags, output paths, and Enercare workspace identifiers.
 
 import hashlib
 import json
@@ -55,6 +57,8 @@ print(f"Purview account: {PURVIEW_ACCOUNT_NAME}")
 print(f"Apply changes: {APPLY_CHANGES}")
 print(f"Output root: {OUTPUT_ROOT}")
 
+# Cell 1 complete: Configuration initialized
+
 
 # METADATA ********************
 
@@ -65,8 +69,9 @@ print(f"Output root: {OUTPUT_ROOT}")
 
 # CELL ********************
 
-# Cell 2: Read metadata tables
-
+# Cell 2: Read Metadata Tables
+# Purpose: Load CDEs, label assignments, and data products from lh_metadata lakehouse.
+# Outputs: DataFrames for cdes, label_assignments (optional), and data_products with row counts.
 
 def _table_candidates(table_name: str):
     return [
@@ -100,6 +105,8 @@ if labels_df is not None:
     print(f"label_assignments rows: {labels_df.count()} (source={labels_source})")
 print(f"data_products rows: {data_products_df.count()} (source={data_products_source})")
 
+# Cell 2 complete: Metadata tables loaded
+
 
 # METADATA ********************
 
@@ -110,7 +117,9 @@ print(f"data_products rows: {data_products_df.count()} (source={data_products_so
 
 # CELL ********************
 
-# Cell 3: Build classification typedefs and attachment payloads
+# Cell 3: Build Classification TypeDefs and Manifests
+# Purpose: Create Purview classification typedefs for sensitivity labels and build asset classification manifest.
+# Outputs: typedef_payload (classification definitions), classification_manifest (asset-label mappings).
 
 
 def _safe_text(value):
@@ -202,6 +211,8 @@ if labels_df is not None:
 print(f"Classification defs prepared: {len(classification_defs)}")
 print(f"Classification manifest rows prepared: {len(classification_manifest)}")
 
+# Cell 3 complete: Classification typedefs and manifests built
+
 
 # METADATA ********************
 
@@ -212,7 +223,9 @@ print(f"Classification manifest rows prepared: {len(classification_manifest)}")
 
 # CELL ********************
 
-# Cell 4: Build SQL to Fabric lineage edge manifest
+# Cell 4: Build SQL to Fabric Lineage Edge Manifest
+# Purpose: Extract lineage relationships from data_products (SQL source tables → Fabric target assets).
+# Outputs: lineage_edges list with process qualified names, source/target references, and data product context.
 
 
 def _table_ref_from_sql_asset(asset_ref: str):
@@ -255,6 +268,8 @@ for row in data_products_df.collect():
 
 print(f"Lineage edge rows prepared: {len(lineage_edges)}")
 
+# Cell 4 complete: Lineage edge manifest prepared
+
 
 # METADATA ********************
 
@@ -265,7 +280,10 @@ print(f"Lineage edge rows prepared: {len(lineage_edges)}")
 
 # CELL ********************
 
-# Cell 5: Write payloads and validation table
+# Cell 5: Write Payloads and Validation Summary
+# Purpose: Export classification typedefs, manifest, and lineage edges to Azure Data Lake.
+#          Create validation table tracking readiness of all artifacts (G9 checklist).
+# Outputs: JSON files in OUTPUT_ROOT; metadata.purview_phase_06_07_validation table.
 
 mssparkutils.fs.mkdirs(OUTPUT_ROOT)
 mssparkutils.fs.put(f"{OUTPUT_ROOT}/classification_typedefs.json", json.dumps(typedef_payload, indent=2), True)
@@ -285,6 +303,8 @@ validation_df.write.mode("overwrite").format("delta").saveAsTable(f"{METADATA_SC
 print(f"Payloads written to: {OUTPUT_ROOT}")
 display(validation_df.orderBy("check_name"))
 
+# Cell 5 complete: Payloads written and validation table created
+
 
 # METADATA ********************
 
@@ -295,7 +315,12 @@ display(validation_df.orderBy("check_name"))
 
 # CELL ********************
 
-# Cell 6: Optional live publish of classification types and lineage processes
+# Cell 6: Optional Live Publish to Purview Atlas
+# Purpose: Publish classification typedefs and lineage process entities to Purview via Atlas API.
+#          Resolve scanned asset GUIDs by qualifiedName and register lineage input/output relationships.
+# Guard: SQL_MIRROR_ONLY_DEPLOYMENT + PURVIEW_PUBLISH_OVERRIDE control live execution.
+# Outputs: Classification typedefs registered; lineage processes (with input/output edges) published.
+#          Unresolved edges reported for debugging qualifiedName pattern mismatches.
 
 
 def _headers(token: str):
@@ -423,6 +448,9 @@ else:
         print(json.dumps(unresolved_edges[0], indent=2))
 
     print("[INFO] Asset classification attachment remains manifest-driven. Resolve asset GUIDs from scan results before applying live classifications.")
+
+# Cell 6 complete: Classification typedefs and lineage processes published (or dry-run executed)
+# G9-1 closure: Purview lineage graph modeling now has live Atlas publish step (no longer manifest-only)
 
 
 # METADATA ********************
