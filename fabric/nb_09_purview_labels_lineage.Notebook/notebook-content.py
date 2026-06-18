@@ -492,6 +492,7 @@ def _build_lineage_process_entities(token: str):
 
         source_qn = edge["source"]
         target_qn = edge["target"]
+        print(f"[Cell 6] Resolving edge {idx}/{total_edges} | source={source_qn} | target={target_qn}")
 
         source_entity = _cached_find(source_qn)
         target_entity = _cached_find(target_qn)
