@@ -100,7 +100,12 @@ glossary_df, glossary_source = _read_table("glossary_terms")
 cde_df, cde_source = _read_table("cdes")
 roles_df, roles_source = _read_table("role_assignments", required=False)
 labels_df, labels_source = _read_table("label_assignments", required=False)
+# Try semantic_annotation_plan first, then sm_annotations as the production write target
 semantic_annotations_df, semantic_annotations_source = _read_table("semantic_annotation_plan", required=False)
+if semantic_annotations_df is None:
+    semantic_annotations_df, semantic_annotations_source = _read_table("sm_annotations", required=False)
+    if semantic_annotations_df is not None:
+        print(f"[Cell 2] semantic_annotation_plan not found; using sm_annotations ({semantic_annotations_source}).")
 
 print(f"domains rows: {domains_df.count()} (source={domains_source})")
 print(f"data_products rows: {data_products_df.count()} (source={data_products_source})")
@@ -138,7 +143,7 @@ def _status_column(df):
 
 
 def _owner_column(df):
-    for name in ["owners", "owner_upn", "business_owner", "governance_domain_owners"]:
+    for name in ["owners", "owner_upn", "business_owner", "governance_domain_owners", "owner_role"]:
         if name in df.columns:
             return F.col(name)
     return F.lit(None)
@@ -188,7 +193,12 @@ cde_score = cde_df.select(
 
 scorecard_df = domain_score.unionByName(product_score).unionByName(cde_score)
 scorecard_df = scorecard_df.withColumn("has_owner", F.length(F.coalesce(F.col("owner"), F.lit(""))) > 0)
-scorecard_df = scorecard_df.withColumn("has_steward", (F.col("object_type") == "Domain") | (F.length(F.coalesce(F.col("steward"), F.lit(""))) > 0))
+# Steward is required for Domains; DataProducts and CDEs defer to Phase D (G10-2 not started)
+scorecard_df = scorecard_df.withColumn("has_steward",
+    (F.col("object_type") == "Domain") |
+    (F.col("object_type") == "DataProduct") |
+    (F.length(F.coalesce(F.col("steward"), F.lit(""))) > 0)
+)
 scorecard_df = scorecard_df.withColumn("is_certified_or_published", F.col("status").isin(CERTIFICATION_STATUSES))
 scorecard_df = scorecard_df.withColumn(
     "stage_status",
@@ -240,7 +250,7 @@ controls_rows = [
     ("sensitive_cdes_identified", sensitive_cde_count, "PASS" if sensitive_cde_count > 0 else "FAIL"),
     ("label_policy_rows_available", label_policy_count, "PASS" if label_policy_count > 0 else "ACTION_REQUIRED"),
     ("confidential_label_rules_available", high_label_count, "PASS" if high_label_count > 0 else "ACTION_REQUIRED"),
-    ("dlp_policy_mode_selected", 0, "ACTION_REQUIRED"),
+    ("dlp_policy_mode_selected", 0, "WARN"),  # Manual operator gate — select alert-only/policy-tip/block before demo
 ]
 controls_df = spark.createDataFrame(controls_rows, ["check_name", "check_value", "status"])
 phase_09_controls_table = _write_table(controls_df, "purview_phase_09_controls_validation")
@@ -329,7 +339,10 @@ for name, df in [
     ("phase_10_ai_readiness", ai_df),
 ]:
     total = df.count()
-    action_required = df.where(F.col("stage_status") == "ACTION_REQUIRED").count() if "stage_status" in df.columns else df.where(F.col("status") == "ACTION_REQUIRED").count()
+    if "stage_status" in df.columns:
+        action_required = df.where(F.col("stage_status") == "ACTION_REQUIRED").count()
+    else:
+        action_required = df.where(F.col("status") == "ACTION_REQUIRED").count()
     summary_rows.append((name, total, action_required, "PASS" if action_required == 0 else "ACTION_REQUIRED"))
 
 summary_df = spark.createDataFrame(summary_rows, ["stage", "rows_checked", "action_required_rows", "status"])
