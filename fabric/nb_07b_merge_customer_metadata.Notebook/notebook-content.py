@@ -59,6 +59,19 @@ ANNOTATION_KEYS = {
     "owner": "Data_Product_Owner",
 }
 
+SQL_TO_SEMANTIC_TABLE_MAP = {
+    "customers": ["dim_customer"],
+    "service_accounts": ["dim_service_account", "fct_service_request"],
+    "equipment_registry": ["dim_equipment"],
+    "products": ["dim_product"],
+    "contracts": ["fct_contract_month", "fct_billing"],
+    "service_requests": ["fct_service_request"],
+    "billing_transactions": ["fct_billing"],
+    "customer_consents": ["dim_customer"],
+    "customer_complaints": ["fct_billing", "dim_customer"],
+    "service_zones": ["fct_service_request"],
+}
+
 print(f"Semantic model: {SEMANTIC_MODEL}")
 print(f"Required metadata schema: {METADATA_LAKEHOUSE}.{METADATA_SCHEMA}")
 
@@ -280,6 +293,9 @@ def _parse_asset_ref(token: str):
     source = token.strip()
     lower = source.lower()
 
+    if lower == f"{SEMANTIC_MODEL.lower()}.semanticmodel":
+        return {"kind": "Model", "table": None, "object": source, "source": source}
+
     if "/" in source:
         parts = [p.strip() for p in source.split("/") if p.strip()]
         if len(parts) >= 3 and parts[0].lower() == SEMANTIC_MODEL.lower():
@@ -288,6 +304,11 @@ def _parse_asset_ref(token: str):
             return {"kind": "Column", "table": parts[1], "object": parts[2], "source": source}
         if len(parts) == 2 and parts[0].lower() == SEMANTIC_MODEL.lower():
             return {"kind": "Table", "table": parts[1], "object": parts[1], "source": source}
+
+    if "." in source and source.count(".") == 1:
+        left, right = [p.strip() for p in source.split(".", 1)]
+        if left.lower() == SEMANTIC_MODEL.lower():
+            return {"kind": "Table", "table": right, "object": right, "source": source}
 
     if lower.startswith("dbo."):
         dotted = source.split(".")
@@ -314,6 +335,8 @@ for table_name, measure_name in semantic_measures:
     key = _norm(measure_name)
     measures_by_name.setdefault(key, []).append((table_name, measure_name))
 
+semantic_tables_by_name = {_norm(name): name for name in semantic_tables}
+
 
 def _resolve_targets(parsed_asset):
     kind = parsed_asset["kind"]
@@ -337,8 +360,38 @@ def _resolve_targets(parsed_asset):
             matches = measures_by_name.get(_norm(parsed_asset["object"]), [])
         return [("Measure", t, m) for t, m in matches]
 
+    if kind == "Table":
+        resolved_name = semantic_tables_by_name.get(_norm(parsed_asset["table"]))
+        if resolved_name:
+            return [("Table", resolved_name, resolved_name)]
+        return []
+
     if kind == "SqlColumn":
-        return [("Column", t, c) for t, c in columns_by_name.get(_norm(parsed_asset["object"]), [])]
+        matches = [("Column", t, c) for t, c in columns_by_name.get(_norm(parsed_asset["object"]), [])]
+        if matches:
+            return matches
+
+        mapped_tables = SQL_TO_SEMANTIC_TABLE_MAP.get(_norm(parsed_asset.get("table") or ""), [])
+        if mapped_tables:
+            mapped_set = {_norm(t) for t in mapped_tables}
+            scoped = [
+                ("Column", t, c)
+                for t, c in semantic_columns
+                if _norm(t) in mapped_set and _norm(c) == _norm(parsed_asset["object"])
+            ]
+            if scoped:
+                return scoped
+
+        return []
+
+    if kind == "SqlTable":
+        mapped_tables = SQL_TO_SEMANTIC_TABLE_MAP.get(_norm(parsed_asset.get("table") or ""), [])
+        resolved = []
+        for table_name in mapped_tables:
+            resolved_name = semantic_tables_by_name.get(_norm(table_name))
+            if resolved_name:
+                resolved.append(("Table", resolved_name, resolved_name))
+        return resolved
 
     return []
 
