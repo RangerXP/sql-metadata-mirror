@@ -182,7 +182,9 @@ def load_metadata_dataset(dataset_name: str) -> tuple[pd.DataFrame, str]:
 
 def write_table_from_pandas(df: pd.DataFrame, table_name: str) -> int:
     sdf = spark.createDataFrame(df)
-    full_table = f"{TARGET_LAKEHOUSE}.{SCHEMA}.{table_name}"
+    # In Fabric Spark, lakehouse context is provided by notebook attachment; avoid 3-part catalog names.
+    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA}")
+    full_table = f"{SCHEMA}.{table_name}"
     (
         sdf.write
         .mode("overwrite")
@@ -204,7 +206,7 @@ print(f"[Cell 2] Helpers ready. SQL dataset keys: {sorted(SQL_SOURCE_TABLES.keys
 
 # CELL ********************
 
-# Cell 3: domain-charter.csv -> lh_metadata.metadata.domains
+# Cell 3: domain-charter.csv -> metadata.domains
 
 domains_required = [
     "domain_id",
@@ -240,7 +242,7 @@ print(f"domains loaded: {count_domains} (source={domains_source})")
 
 # CELL ********************
 
-# Cell 4: data-product-catalog.csv -> lh_metadata.metadata.data_products
+# Cell 4: data-product-catalog.csv -> metadata.data_products
 
 data_products_required = [
     "data_product_id",
@@ -276,7 +278,7 @@ print(f"data_products loaded: {count_data_products} (source={data_products_sourc
 
 # CELL ********************
 
-# Cell 5: glossary-master.csv -> lh_metadata.metadata.glossary_terms
+# Cell 5: glossary-master.csv -> metadata.glossary_terms
 
 glossary_required = [
     "term_code",
@@ -309,7 +311,7 @@ print(f"glossary_terms loaded: {count_glossary} (source={glossary_source})")
 
 # CELL ********************
 
-# Cell 6: cde-catalog.csv -> lh_metadata.metadata.cdes
+# Cell 6: cde-catalog.csv -> metadata.cdes
 
 cde_required = [
     "cde_id",
@@ -339,7 +341,7 @@ print(f"cdes loaded: {count_cdes} (source={cde_source})")
 
 # CELL ********************
 
-# Cell 7: role-directory.csv -> lh_metadata.metadata.role_assignments
+# Cell 7: role-directory.csv -> metadata.role_assignments
 
 roles_required = [
     "role_id",
@@ -366,7 +368,7 @@ print(f"role_assignments loaded: {count_roles} (source={roles_source})")
 
 # CELL ********************
 
-# Cell 8: label-policy.csv -> lh_metadata.metadata.label_assignments
+# Cell 8: label-policy.csv -> metadata.label_assignments
 
 labels_required = [
     "label_id",
@@ -395,17 +397,17 @@ print(f"label_assignments loaded: {count_labels} (source={labels_source})")
 # Cell 9: Summary counts (expected vs actual)
 
 summary_query = """
-SELECT 'domains' AS t, COUNT(*) AS actual, 3 AS expected FROM lh_metadata.metadata.domains
+SELECT 'domains' AS t, COUNT(*) AS actual, 3 AS expected FROM metadata.domains
 UNION ALL
-SELECT 'data_products' AS t, COUNT(*) AS actual, 3 AS expected FROM lh_metadata.metadata.data_products
+SELECT 'data_products' AS t, COUNT(*) AS actual, 3 AS expected FROM metadata.data_products
 UNION ALL
-SELECT 'glossary_terms' AS t, COUNT(*) AS actual, 35 AS expected FROM lh_metadata.metadata.glossary_terms
+SELECT 'glossary_terms' AS t, COUNT(*) AS actual, 35 AS expected FROM metadata.glossary_terms
 UNION ALL
-SELECT 'cdes' AS t, COUNT(*) AS actual, 12 AS expected FROM lh_metadata.metadata.cdes
+SELECT 'cdes' AS t, COUNT(*) AS actual, 12 AS expected FROM metadata.cdes
 UNION ALL
-SELECT 'role_assignments' AS t, COUNT(*) AS actual, 48 AS expected FROM lh_metadata.metadata.role_assignments
+SELECT 'role_assignments' AS t, COUNT(*) AS actual, 48 AS expected FROM metadata.role_assignments
 UNION ALL
-SELECT 'label_assignments' AS t, COUNT(*) AS actual, 9 AS expected FROM lh_metadata.metadata.label_assignments
+SELECT 'label_assignments' AS t, COUNT(*) AS actual, 9 AS expected FROM metadata.label_assignments
 ORDER BY t
 """
 
