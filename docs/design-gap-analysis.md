@@ -209,7 +209,7 @@ Phase A delivered the design that the rest of the build executes against. Sixtee
 | G3-2 | Build load/export notebook from Fabric outputs to Azure SQL | 🟢 Done | `nb_05a_publish_synthetic_data_to_sql` |
 | G3-3 | Seed sub2 SQL with current synthetic dataset | 🟢 Done | Phase B re-run includes Luhn-valid SIN injection via `tools/sin_luhn_generator.py` |
 | G3-4 | Reconcile row counts and keys | 🟢 Done | Validation after refresh returned expected mirrored counts |
-| G3-5 | Document rerun behavior for regenerating and republishing synthetic data | 🟡 In Progress — captured in `docs/purview-2-day-execution-plan.md` Day 1 | |
+| G3-5 | Document rerun behavior for regenerating and republishing synthetic data | 🟢 Done | Rerun sequence documented in `docs/purview-2-day-execution-plan.md` (Day 1 B1→B6, mirror wait, `nb_03` rerun, and scan rerun checkpoints) |
 
 ---
 
