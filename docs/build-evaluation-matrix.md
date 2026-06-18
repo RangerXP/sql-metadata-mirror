@@ -13,6 +13,7 @@ Source alignment:
 2. For each row, record evidence and status.
 3. If a row fails, stop and resolve before moving to dependent rows.
 4. At the end, score north-star criteria NS-1 through NS-8.
+5. Run `./tools/validate_build_workflow.ps1` before and after any push that changes Fabric items.
 
 ## Source Control Guardrails (Mandatory)
 
