@@ -40,9 +40,18 @@ Use this pack after any change to the semantic model, Data Agent config, verifie
 | What is our PP renewal rate? | Data Agent answers from the certified semantic-model KPI path with explicit window context. | Refuses, asks unnecessary clarifying questions, or returns a metric without context. |
 | Tell me about request 2026051142 | Data Agent returns operational request details with labeled fields. | Routes the prompt to KPI analytics, refuses the request lookup, or answers from the wrong surface. |
 | What is the status of SR-2026051142? | Data Agent treats the SR-formatted identifier as an operational lookup and returns request status. | Asks which system to use or fails to treat the identifier as a request key. |
+| What should the auditor see for Maria? | Data Agent returns the governed Maria source-story chain (identity/consent, service performance, billing health, and access audit context) without dropping to generic clarifications. | Responds with generic context-only text, misses Maria source-story entities, or asks unnecessary clarifying follow-ups. |
+| What is Maria's FCR? | Data Agent resolves KPI through semantic-model metric path with explicit window context and Maria filter context when available. | Treats prompt as unsupported, asks what FCR means, or returns an unscoped KPI with no window/filter context. |
+| Tell me about Maria's NoHeat request | Data Agent follows operational request-detail path and returns request/ticket status details tied to Maria cues. | Routes to KPI analytics, misses request detail fields, or refuses operational lookup. |
 
 Pass rule:
-All KPI prompts answer directly with the semantic-model metric path and explicit window context, while request-ID prompts stay on the operational request lookup path.
+All KPI prompts answer directly with the semantic-model metric path and explicit window context, while request-ID and Maria operational prompts stay on the operational request lookup path.
+
+## Gate B Behavior Sign-Off (Required Before Release Close)
+
+| Prompt Pack Run | Branch/Commit | Operator | KPI Route Pass | Maria Route Pass | Notes | Gate B Result |
+|---|---|---|---|---|---|---|
+| | | | PASS / FAIL | PASS / FAIL | | PASS / FAIL |
 
 ## Deferred Item (Future Build Cycle)
 
