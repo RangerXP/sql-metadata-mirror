@@ -47,8 +47,9 @@ SQL_LOGIN_TIMEOUT_SECONDS = 30
 TARGET_SCHEMA             = "dbo"
 BASE_TABLE_LOAD_MODE      = "skip_existing"  # replace | append | skip_existing  (replace requires tokenlibrary mode)
 PHASE_B_CHILD_TABLES      = ["customer_complaints", "customer_consents"]
-SQL_AUTH_MODE             = "managed_identity"  # managed_identity | tokenlibrary
+SQL_AUTH_MODE             = "auto"  # auto | managed_identity | tokenlibrary
 SQL_MANAGED_IDENTITY_CLIENT_ID = ""  # Optional: set for user-assigned MI
+EFFECTIVE_SQL_AUTH_MODE   = SQL_AUTH_MODE
 LOAD_ORDER = [
     "products",
     "customers",
@@ -131,20 +132,28 @@ def transform_for_sql(table_name, df):
     return df
 
 
+def is_managed_identity_jdbc_available() -> bool:
+    try:
+        spark._jvm.java.lang.Class.forName("com.azure.identity.ManagedIdentityCredentialBuilder")
+        return True
+    except Exception:
+        return False
+
+
 
 def apply_jdbc_auth(reader, access_token=None):
-    if SQL_AUTH_MODE == "managed_identity":
+    if EFFECTIVE_SQL_AUTH_MODE == "managed_identity":
         reader = reader.option("authentication", "ActiveDirectoryMSI")
         if SQL_MANAGED_IDENTITY_CLIENT_ID:
             reader = reader.option("msiClientId", SQL_MANAGED_IDENTITY_CLIENT_ID)
         return reader
 
-    if SQL_AUTH_MODE == "tokenlibrary":
+    if EFFECTIVE_SQL_AUTH_MODE == "tokenlibrary":
         if not access_token:
             raise RuntimeError("Tokenlibrary auth selected but no access token was provided.")
         return reader.option("accessToken", access_token)
 
-    raise ValueError("SQL_AUTH_MODE must be one of: managed_identity, tokenlibrary")
+    raise ValueError("EFFECTIVE_SQL_AUTH_MODE must be one of: managed_identity, tokenlibrary")
 
 
 def read_target_count(table_name, access_token):
@@ -170,13 +179,13 @@ def get_sql_odbc_connection(access_token):
         f"Connection Timeout={SQL_LOGIN_TIMEOUT_SECONDS};"
     )
 
-    if SQL_AUTH_MODE == "managed_identity":
+    if EFFECTIVE_SQL_AUTH_MODE == "managed_identity":
         conn_str += "Authentication=ActiveDirectoryMsi;"
         if SQL_MANAGED_IDENTITY_CLIENT_ID:
             conn_str += f"UID={SQL_MANAGED_IDENTITY_CLIENT_ID};"
         return pyodbc.connect(conn_str, autocommit=False)
 
-    if SQL_AUTH_MODE == "tokenlibrary":
+    if EFFECTIVE_SQL_AUTH_MODE == "tokenlibrary":
         odbc_token = access_token.encode("utf-16-le")
         token_struct = struct.pack(f"<I{len(odbc_token)}s", len(odbc_token), odbc_token)
         return pyodbc.connect(
@@ -185,22 +194,43 @@ def get_sql_odbc_connection(access_token):
             autocommit=False,
         )
 
-    raise ValueError("SQL_AUTH_MODE must be one of: managed_identity, tokenlibrary")
+    raise ValueError("EFFECTIVE_SQL_AUTH_MODE must be one of: managed_identity, tokenlibrary")
 
 
 if DEMO_MODE:
     print("[DRY RUN] Skipping SQL authentication setup.")
 else:
-    if SQL_AUTH_MODE == "tokenlibrary":
+    EFFECTIVE_SQL_AUTH_MODE = SQL_AUTH_MODE
+
+    if SQL_AUTH_MODE == "auto":
+        if is_managed_identity_jdbc_available():
+            EFFECTIVE_SQL_AUTH_MODE = "managed_identity"
+            print("Using managed identity authentication for Azure SQL JDBC (auto mode).")
+        else:
+            EFFECTIVE_SQL_AUTH_MODE = "tokenlibrary"
+            print("[WARN] Managed identity JDBC classpath is unavailable in this runtime.")
+            print("[INFO] Falling back to TokenLibrary authentication for JDBC.")
+            sql_access_token = get_sql_access_token()
+            print("Acquired Microsoft Entra access token for Azure SQL.")
+    elif SQL_AUTH_MODE == "tokenlibrary":
+        EFFECTIVE_SQL_AUTH_MODE = "tokenlibrary"
         sql_access_token = get_sql_access_token()
         print("Acquired Microsoft Entra access token for Azure SQL.")
-        conn = get_sql_odbc_connection(sql_access_token)
-        print("pyodbc connection established for SQL control statements.")
     elif SQL_AUTH_MODE == "managed_identity":
-        print("Using managed identity authentication for Azure SQL JDBC (MI mode).")
-        print("[INFO] pyodbc connection deferred — Phase B DDL cells require tokenlibrary mode for ODBC control-plane statements.")
+        if not is_managed_identity_jdbc_available():
+            EFFECTIVE_SQL_AUTH_MODE = "tokenlibrary"
+            print("[WARN] Managed identity JDBC classpath is unavailable in this runtime.")
+            print("[INFO] Falling back to TokenLibrary authentication for JDBC.")
+            sql_access_token = get_sql_access_token()
+            print("Acquired Microsoft Entra access token for Azure SQL.")
+        else:
+            EFFECTIVE_SQL_AUTH_MODE = "managed_identity"
+            print("Using managed identity authentication for Azure SQL JDBC (MI mode).")
     else:
-        raise ValueError("SQL_AUTH_MODE must be one of: managed_identity, tokenlibrary")
+        raise ValueError("SQL_AUTH_MODE must be one of: auto, managed_identity, tokenlibrary")
+
+    print(f"Effective SQL auth mode: {EFFECTIVE_SQL_AUTH_MODE}")
+    print("[INFO] pyodbc connection deferred — it will be created only if Phase B/replace control-plane statements need it.")
 
 
 # METADATA ********************
@@ -271,6 +301,9 @@ else:
         raise ValueError("BASE_TABLE_LOAD_MODE must be one of: append, replace, skip_existing")
 
     if BASE_TABLE_LOAD_MODE == "replace":
+        if conn is None and EFFECTIVE_SQL_AUTH_MODE == "tokenlibrary":
+            conn = get_sql_odbc_connection(sql_access_token)
+            print("pyodbc connection established for replace-mode DELETE operations.")
         if conn is None:
             raise RuntimeError(
                 "BASE_TABLE_LOAD_MODE='replace' requires pyodbc DELETE operations. "
@@ -349,7 +382,7 @@ print("  4. If rerunning this load, clear target tables in reverse dependency or
 
 if DEMO_MODE:
     print("[DRY RUN] Skipping pyodbc connection setup for Phase B cells.")
-elif SQL_AUTH_MODE == "managed_identity":
+elif EFFECTIVE_SQL_AUTH_MODE == "managed_identity":
     print("[WARN] Phase B DDL/seed cells require pyodbc and are not available in managed_identity mode.")
     print("[WARN] Switch SQL_AUTH_MODE='tokenlibrary' to run Phase B cells.")
 else:
