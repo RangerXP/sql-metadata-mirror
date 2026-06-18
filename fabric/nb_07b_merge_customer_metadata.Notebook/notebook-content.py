@@ -72,6 +72,10 @@ SQL_TO_SEMANTIC_TABLE_MAP = {
     "service_zones": ["fct_service_request"],
 }
 
+SEMANTIC_TABLE_ALIASES = {
+    "fct_service_requests": "fct_service_request",
+}
+
 print(f"Semantic model: {SEMANTIC_MODEL}")
 print(f"Required metadata schema: {METADATA_LAKEHOUSE}.{METADATA_SCHEMA}")
 
@@ -273,6 +277,10 @@ def _norm(value: str) -> str:
     return value.strip().lower()
 
 
+def _canon(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", _norm(value))
+
+
 def _split_bindings(raw: str):
     if raw is None:
         return []
@@ -335,6 +343,8 @@ for table_name, measure_name in semantic_measures:
     key = _norm(measure_name)
     measures_by_name.setdefault(key, []).append((table_name, measure_name))
 
+measure_canon_pairs = [(_canon(m), t, m) for t, m in semantic_measures]
+
 semantic_tables_by_name = {_norm(name): name for name in semantic_tables}
 
 
@@ -358,10 +368,18 @@ def _resolve_targets(parsed_asset):
         ]
         if not matches:
             matches = measures_by_name.get(_norm(parsed_asset["object"]), [])
+        if not matches:
+            token_canon = _canon(parsed_asset["object"])
+            matches = [(t, m) for m_canon, t, m in measure_canon_pairs if m_canon == token_canon]
+        if not matches and len(_canon(parsed_asset["object"])) <= 6:
+            token_canon = _canon(parsed_asset["object"])
+            matches = [(t, m) for m_canon, t, m in measure_canon_pairs if token_canon and token_canon in m_canon]
         return [("Measure", t, m) for t, m in matches]
 
     if kind == "Table":
-        resolved_name = semantic_tables_by_name.get(_norm(parsed_asset["table"]))
+        table_key = _norm(parsed_asset["table"])
+        table_key = _norm(SEMANTIC_TABLE_ALIASES.get(table_key, table_key))
+        resolved_name = semantic_tables_by_name.get(table_key)
         if resolved_name:
             return [("Table", resolved_name, resolved_name)]
         return []
@@ -451,6 +469,8 @@ def _resolve_targets_with_stats(token: str):
         binding_stats["tokens_resolved"] += 1
         binding_stats["targets_total"] += len(targets)
     else:
+        if parsed.get("kind") == "Model":
+            return targets
         if len(unresolved_token_samples) < 20:
             unresolved_token_samples.add(token)
     return targets
