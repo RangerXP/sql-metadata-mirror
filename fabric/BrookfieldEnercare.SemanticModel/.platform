@@ -3,7 +3,7 @@
   "metadata": {
     "type": "SemanticModel",
     "displayName": "BrookfieldEnercare",
-    "description": "what is our fcr"
+    "description": "Certified KPI and business analytics semantic model for FCR, CSAT, AHT, MRR, PP renewal, and governed customer-story analysis. Not the primary standalone Copilot surface for service request IDs, work orders, dispatch status, or operational ticket lookups."
   },
   "config": {
     "version": "2.0",

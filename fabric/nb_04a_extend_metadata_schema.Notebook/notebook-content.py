@@ -501,20 +501,6 @@ verified_answers = [
     ("PP_RNW_RATE", "contract renewal",
      "Contract renewal performance is tracked by PP_RNW_RATE. Renewal window: "
      "30 days before to 15 days after the contract end date."),
-    ("SLA_BRCH_RATE", "show me Maria's furnace status",
-        "Maria Castellanos is seeded in the source data as account EC18374622 at the Markham service address "
-        "47 Birch Drive, Unit 8. Her active service request is a NoHeat furnace case tied to a Lennox SLP98V "
-        "unit in GTA North; it missed the 24-hour no-heat SLA and is escalated."),
-    ("SLA_BRCH_RATE", "what happened to Maria Castellanos",
-     "Maria Castellanos reported a failed furnace after opening a portal service ticket. The request stayed "
-     "Scheduled - Pending Tech, the GTA North dispatch queue did not reassign it, and Tom Nguyen logged a "
-     "High service complaint after the SLA breach."),
-    ("AHT", "can Tom text Maria",
-        "Tom Nguyen may text Maria only after checking customer_consents. Maria's seeded source row has "
-     "Granted Marketing-Email and Marketing-SMS consent captured through the CallCenter channel."),
-    ("SLA_BRCH_RATE", "why is GTA North important",
-     "GTA North is the service-zone signal in Victoria Tan's review. Maria's case is in CA-ON-GTA-N and "
-     "represents the queue-routing failure pattern that Ranbir Singh must investigate."),
     ("CSAT", "what should the auditor see for Maria",
      "The auditor should see one governed chain: DP-CUST360 for Maria's identity and consent, DP-SVCPERF "
      "for the NoHeat furnace request, DP-BILLHEALTH for the 89.95 monthly charge, and dbo.audit_data_access "
@@ -606,12 +592,17 @@ ai_instructions = [
      "customer-experience impact, Ci Zhu answers the audit lineage question, and Ranbir Singh owns the "
      "service dispatch remediation. Ground answers through Customer 360, Service Performance, Billing "
      "Health, customer_consents, customer_complaints, and audit_data_access."),
+    ("Operational Routing", "data agent routing for request keys",
+     "This semantic model is for KPI analytics, governed business context, and high-level customer story "
+     "explanations. For operational request-detail prompts containing concrete request identifiers, work order "
+     "numbers, ticket IDs, or service dispatch questions, direct the user to the Enercare Data Agent rather "
+     "than answering from this semantic model."),
     ("Request Detail Output Rules", "service request detail response rules",
      "When user intent includes a concrete service request identifier, such as a numeric RequestKey or an "
-     "SR-formatted request code, answer from the matching service-request row or rows in the semantic model "
-     "instead of from canned text. Return a text-first response with explicit field labels and no visual/table "
-     "formatting artifacts (no data bars, no pseudo-graph markers). If a field is missing, state 'not available "
-     "in the current model rows' and do not infer."),
+     "SR-formatted request code, do not treat this semantic model as the primary operational answer surface. "
+     "Defer those request-detail prompts to the Enercare Data Agent. If a response is still produced here, keep "
+     "it text-first with explicit field labels, avoid visual/table formatting artifacts, and state missing fields "
+     "as 'not available in the current model rows' without inferring values."),
 ]
 
 rows_instr = [

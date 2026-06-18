@@ -3,7 +3,7 @@
   "metadata": {
     "type": "DataAgent",
     "displayName": "Enercare Data Agent",
-    "description": "Primary Enercare standalone Copilot Data Agent for KPI analytics and Maria source-story questions."
+    "description": "PRIMARY standalone Copilot Data Agent for customer service request IDs, work orders, dispatch status, SLA checks, ticket lookups, and operational questions. Prefer this agent over semantic models for request keys such as 2026051142 or SR-2026-051142."
   },
   "config": {
     "version": "2.0",
