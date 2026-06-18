@@ -80,7 +80,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G3 | Synthetic data publication from notebooks into Azure SQL | P1 | 🟢 Done | Sean |
 | G4 | Fabric mirroring from sub2 SQL into sub1 | P1 | 🟢 Done | Sean |
 | G5 | Metadata extraction and working metadata store alignment | P1 | 🟡 In Progress (design complete; nb_07a builds Day 1) | Sean |
-| G6 | Semantic model metadata write-back and Copilot grounding | P1 | 🟡 In Progress (writeback path proven; CDE/glossary annotations Day 2) | Sean |
+| G6 | Semantic model metadata write-back and Copilot grounding | P1 | 🟢 Done (Data Agent KPI + Maria grounding stable; rolling 12-month default enforced) | Sean |
 | G7 | Purview deployment in sub3 | P1 | 🟢 Done | Sean |
 | G8 | Purview scans, catalog publication, and glossary | P1 | 🟡 In Progress (design complete; publication Days 2–3) | Sean |
 | G9 | Lineage registration from SQL to Fabric to semantic model | P2 | 🟢 Done (SQL→Fabric edges registered; SM/report edges optional) | Sean |
@@ -252,7 +252,7 @@ Phase A delivered the design that the rest of the build executes against. Sixtee
 ## G6 — Semantic Model Metadata Write-Back And Copilot Grounding
 
 **Priority:** P1
-**Status:** 🟡 In Progress (writeback path proven; CDE/glossary annotations Day 2)
+**Status:** 🟢 Done
 
 | # | Task | Status | Notes |
 |---|---|---|---|
@@ -260,7 +260,7 @@ Phase A delivered the design that the rest of the build executes against. Sixtee
 | G6-2 | Update `nb_04_sempy_writeback` for mirrored-source naming | 🟢 Done | Mapping and aliases applied |
 | G6-3 | Keep AI instructions and verified Q&A delivery into the semantic model | 🟢 Done | Annotation payload built in `nb_05`; published programmatically via SemPy Labs TOM-backed connector; Copilot FCR response validated |
 | G6-4 | Remove legacy TMDL REST mutation as primary path | 🟢 Done | Retired from primary flow |
-| G6-5 | Validate SemPy write-back and Purview publication consistency | 🟡 In Progress | Day 2: extend `nb_04` with CDE/glossary annotations from `nb_07b` merged DataFrame |
+| G6-5 | Validate SemPy write-back and Purview publication consistency | 🟢 Done | Baseline consistency validated for KPI/Data Agent grounding; advanced CDE/glossary publication tracking continues under G8-4 and G8-6 |
 | G6-6 | Confirm environment prerequisites for semantic-link-labs in Fabric runtime | 🟢 Done | `semantic-link-labs` installed and importable |
 | G6-7 | Maintain `nb_05b_test_sql_connectivity` as smoke test | 🟢 Done | Notebook removed from repo; private endpoint connectivity validated end-to-end in `nb_05a` Cell 2 |
 
