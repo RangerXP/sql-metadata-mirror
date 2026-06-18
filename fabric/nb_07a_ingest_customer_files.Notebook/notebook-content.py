@@ -180,18 +180,51 @@ def load_metadata_dataset(dataset_name: str) -> tuple[pd.DataFrame, str]:
     )
 
 
+WRITTEN_TABLE_NAMES: dict[str, str] = {}
+
+
 def write_table_from_pandas(df: pd.DataFrame, table_name: str) -> int:
     sdf = spark.createDataFrame(df)
-    # In Fabric Spark, lakehouse context is provided by notebook attachment; avoid 3-part catalog names.
-    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA}")
-    full_table = f"{SCHEMA}.{table_name}"
-    (
-        sdf.write
-        .mode("overwrite")
-        .format("delta")
-        .saveAsTable(full_table)
+    table_candidates = [f"{SCHEMA}.{table_name}", table_name]
+    last_error = None
+    for full_table in table_candidates:
+        try:
+            (
+                sdf.write
+                .mode("overwrite")
+                .format("delta")
+                .saveAsTable(full_table)
+            )
+            WRITTEN_TABLE_NAMES[table_name] = full_table
+            return int(sdf.count())
+        except Exception as ex:
+            last_error = ex
+            continue
+
+    raise RuntimeError(
+        f"Unable to write table '{table_name}'. Tried {table_candidates}. Last error: {last_error}"
     )
-    return int(sdf.count())
+
+
+def resolve_written_table_name(table_name: str) -> str:
+    return WRITTEN_TABLE_NAMES.get(table_name, f"{SCHEMA}.{table_name}")
+
+
+def summary_count_select(table_name: str, expected: int) -> str:
+    resolved = resolve_written_table_name(table_name)
+    return f"SELECT '{table_name}' AS t, COUNT(*) AS actual, {expected} AS expected FROM {resolved}"
+
+
+def build_summary_query() -> str:
+    checks = [
+        ("domains", 3),
+        ("data_products", 3),
+        ("glossary_terms", 35),
+        ("cdes", 12),
+        ("role_assignments", 48),
+        ("label_assignments", 9),
+    ]
+    return "\nUNION ALL\n".join(summary_count_select(name, expected) for name, expected in checks) + "\nORDER BY t"
 
 
 print(f"[Cell 2] Helpers ready. SQL dataset keys: {sorted(SQL_SOURCE_TABLES.keys())}", flush=True)
@@ -396,20 +429,7 @@ print(f"label_assignments loaded: {count_labels} (source={labels_source})")
 
 # Cell 9: Summary counts (expected vs actual)
 
-summary_query = """
-SELECT 'domains' AS t, COUNT(*) AS actual, 3 AS expected FROM metadata.domains
-UNION ALL
-SELECT 'data_products' AS t, COUNT(*) AS actual, 3 AS expected FROM metadata.data_products
-UNION ALL
-SELECT 'glossary_terms' AS t, COUNT(*) AS actual, 35 AS expected FROM metadata.glossary_terms
-UNION ALL
-SELECT 'cdes' AS t, COUNT(*) AS actual, 12 AS expected FROM metadata.cdes
-UNION ALL
-SELECT 'role_assignments' AS t, COUNT(*) AS actual, 48 AS expected FROM metadata.role_assignments
-UNION ALL
-SELECT 'label_assignments' AS t, COUNT(*) AS actual, 9 AS expected FROM metadata.label_assignments
-ORDER BY t
-"""
+summary_query = build_summary_query()
 
 summary_df = spark.sql(summary_query).withColumn(
     "status",
