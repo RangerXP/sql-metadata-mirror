@@ -593,7 +593,10 @@ ai_instructions = [
      "service dispatch remediation. Ground answers through Customer 360, Service Performance, Billing "
      "Health, customer_consents, customer_complaints, and audit_data_access."),
     ("Verified Answer Consistency", "verified answer output contract",
-     "For all verified KPI answers, always include an explicit calculation window. Default window is trailing "
+        "Apply this contract only to verified KPI analytics answers (metric/percentage/calculation outputs). "
+        "Do not apply this contract to operational customer service issues, request/ticket status details, "
+        "dispatch updates, or case-level troubleshooting responses. "
+        "For all verified KPI answers, always include an explicit calculation window. Default window is trailing "
      "30 complete calendar days ending yesterday, unless the user specifies a different date range. "
      "When returning a KPI value, include: Calculation Window, Numerator, Denominator, and Applied Filters. "
      "Do not return KPI percentages without those context fields."),
