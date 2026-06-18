@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/dataSource/1.0.0/schema.json",
-  "artifactId": "d19d7f14-ae22-9fde-462b-dafb983dfb0a",
-  "workspaceId": "00000000-0000-0000-0000-000000000000",
+  "artifactId": "8cb6f6a6-6a9c-4560-9f28-17a1dc4a921c",
+  "workspaceId": "b976cac2-7754-4061-88c2-61c0ac016a99",
   "dataSourceInstructions": "For Maria source-story questions, use the seeded source rows for account EC18374622. Do not answer by listing all active furnaces. Bind Maria Castellanos to Markham FSA L4G, service address 47 Birch Drive Unit 8, Lennox SLP98V furnace, RequestKey 2026051142, NoHeat service request, GTA North, and the missed 24-hour SLA. Use fct_service_request with dim_customer, dim_service_account, and dim_equipment filters; do not substitute unrelated equipment if the Maria rows are not visible yet.",
   "displayName": "BrookfieldEnercare",
   "type": "semantic_model",

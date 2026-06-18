@@ -82,6 +82,36 @@ foreach ($relativePath in $requiredConfigFiles) {
     }
 }
 
+# Data Agent datasource binding checks
+$placeholderWorkspaceId = "00000000-0000-0000-0000-000000000000"
+$placeholderArtifactId = "d19d7f14-ae22-9fde-462b-dafb983dfb0a"
+$datasourceFiles = @(
+    "Files/Config/draft/semantic-model-BrookfieldEnercare/datasource.json",
+    "Files/Config/published/semantic-model-BrookfieldEnercare/datasource.json"
+)
+
+foreach ($relativePath in $datasourceFiles) {
+    $fullPath = Join-Path $canonicalAgentPath $relativePath
+    if (-not (Test-Path $fullPath)) {
+        Add-Issue "Missing required Data Agent datasource file: fabric/Enercare Data Agent.DataAgent/$relativePath"
+        continue
+    }
+
+    try {
+        $json = Get-Content -Raw $fullPath | ConvertFrom-Json
+    } catch {
+        Add-Issue "Invalid JSON in datasource file: fabric/Enercare Data Agent.DataAgent/$relativePath"
+        continue
+    }
+
+    if ($json.workspaceId -eq $placeholderWorkspaceId) {
+        Add-Issue "Placeholder workspaceId found in datasource file: fabric/Enercare Data Agent.DataAgent/$relativePath"
+    }
+    if ($json.artifactId -eq $placeholderArtifactId) {
+        Add-Issue "Placeholder artifactId found in datasource file: fabric/Enercare Data Agent.DataAgent/$relativePath"
+    }
+}
+
 # Trigger condition reminder: if latest commit touched Fabric items, sync must follow push.
 $lastCommitFiles = git diff-tree --no-commit-id --name-only -r HEAD
 if ($LASTEXITCODE -eq 0 -and $lastCommitFiles) {
