@@ -114,6 +114,37 @@ def _write_table_name(table_name: str):
     return f"{METADATA_SCHEMA}.{table_name}"
 
 
+WRITTEN_TABLE_NAMES: dict[str, str] = {}
+
+
+def _write_table_candidates(table_name: str):
+    return [f"{METADATA_SCHEMA}.{table_name}", table_name]
+
+
+def _write_with_fallback(sdf, table_name: str):
+    last_error = None
+    for candidate in _write_table_candidates(table_name):
+        try:
+            (
+                sdf.write
+                .mode("overwrite")
+                .format("delta")
+                .saveAsTable(candidate)
+            )
+            WRITTEN_TABLE_NAMES[table_name] = candidate
+            return candidate
+        except Exception as ex:
+            last_error = ex
+
+    raise RuntimeError(
+        f"Could not write table '{table_name}'. Candidates tried: {_write_table_candidates(table_name)}. Last error: {last_error}"
+    )
+
+
+def _resolve_written_table_name(table_name: str):
+    return WRITTEN_TABLE_NAMES.get(table_name, _write_table_name(table_name))
+
+
 def _require_lakehouse_context():
     try:
         # A simple command that requires an attached default lakehouse context.
@@ -410,7 +441,7 @@ print(f"Raw annotation rows created: {len(annotation_rows)}")
 
 # CELL ********************
 
-# Cell 6: Write lh_metadata.metadata.sm_annotations (overwrite)
+# Cell 6: Write sm_annotations (overwrite with schema fallback)
 
 annotation_schema = StructType(
     [
@@ -428,14 +459,10 @@ annotations_sdf = annotations_sdf.dropDuplicates(
     ["model", "table", "object_type", "object_name", "annotation_key", "annotation_value"]
 )
 
-(
-    annotations_sdf.write
-    .mode("overwrite")
-    .format("delta")
-    .saveAsTable(_write_table_name("sm_annotations"))
-)
+written_sm_annotations_table = _write_with_fallback(annotations_sdf, "sm_annotations")
 
 print(f"sm_annotations rows written: {annotations_sdf.count()}")
+print(f"sm_annotations target table: {written_sm_annotations_table}")
 
 
 # METADATA ********************
@@ -450,7 +477,7 @@ print(f"sm_annotations rows written: {annotations_sdf.count()}")
 # Cell 7: Summary by annotation key
 
 summary_df = (
-    spark.table(_write_table_name("sm_annotations"))
+    spark.table(_resolve_written_table_name("sm_annotations"))
     .groupBy("annotation_key")
     .agg(F.count("*").alias("annotation_count"))
     .orderBy("annotation_key")
