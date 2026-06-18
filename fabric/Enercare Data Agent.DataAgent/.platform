@@ -3,7 +3,7 @@
   "metadata": {
     "type": "DataAgent",
     "displayName": "Enercare Data Agent",
-    "description": "PRIMARY standalone Copilot Data Agent for customer service request IDs, work orders, dispatch status, SLA checks, ticket lookups, and operational questions. Prefer this agent over semantic models for request keys such as 2026051142 or SR-2026-051142."
+    "description": "PRIMARY standalone Copilot Data Agent for customer service request IDs, work orders, dispatch status, SLA checks, ticket lookups, and operational questions. Route prompts like 'tell me about request 2026051142', 'request SR-2026-051142', 'ticket status', and 'dispatch SLA' to this agent. Prefer this agent over semantic models for all request-key lookups."
   },
   "config": {
     "version": "2.0",
