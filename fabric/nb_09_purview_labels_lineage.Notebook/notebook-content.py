@@ -32,6 +32,7 @@
 
 import hashlib
 import json
+import time
 import uuid
 import requests
 from pyspark.sql import SparkSession
@@ -254,11 +255,34 @@ def _fabric_ref_from_asset(asset_ref: str):
     return None
 
 
+def _split_sql_and_fabric_assets(tokens):
+    sql_assets = []
+    fabric_assets = []
+    for token in tokens:
+        t = _safe_text(token)
+        if not t:
+            continue
+        if t.lower().startswith("dbo."):
+            sql_assets.append(t)
+            continue
+        if t.startswith("lh_enercare_demo.") or t.startswith(f"{SEMANTIC_MODEL_NAME}/"):
+            fabric_assets.append(t)
+            continue
+    return sql_assets, fabric_assets
+
+
 lineage_edges = []
 for row in data_products_df.collect():
     product_name = _safe_text(getattr(row, "data_product_name", None) or getattr(row, "product_name", None))
-    sql_assets = _split_tokens(getattr(row, "sql_assets", None) or getattr(row, "attached_assets", None))
-    fabric_assets = _split_tokens(getattr(row, "fabric_assets", None) or getattr(row, "semantic_model_assets", None))
+
+    attached_tokens = _split_tokens(getattr(row, "attached_assets", None))
+    explicit_sql_tokens = _split_tokens(getattr(row, "sql_assets", None))
+    explicit_fabric_tokens = _split_tokens(getattr(row, "fabric_assets", None) or getattr(row, "semantic_model_assets", None))
+
+    inferred_sql_assets, inferred_fabric_assets = _split_sql_and_fabric_assets(attached_tokens)
+
+    sql_assets = explicit_sql_tokens or inferred_sql_assets
+    fabric_assets = explicit_fabric_tokens or inferred_fabric_assets
 
     source_refs = [ref for ref in (_table_ref_from_sql_asset(asset) for asset in sql_assets) if ref]
     target_refs = [ref for ref in (_fabric_ref_from_asset(asset) for asset in fabric_assets) if ref]
@@ -390,6 +414,31 @@ def _post_json(path: str, token: str, body: dict):
     return _request("POST", path, token, body=body)
 
 
+def _get_purview_token_with_retry() -> str:
+    resource_candidates = [
+        "https://purview.azure.net",
+        "https://purview.azure.net/.default",
+    ]
+    last_error = None
+
+    for resource in resource_candidates:
+        for attempt in range(1, 4):
+            try:
+                token = mssparkutils.credentials.getToken(resource)
+                if token and _safe_text(token):
+                    print(f"[Cell 6] Acquired Purview token using resource='{resource}' on attempt {attempt}.")
+                    return token
+            except Exception as ex:
+                last_error = ex
+
+            if attempt < 3:
+                time.sleep(3 * attempt)
+
+    raise RuntimeError(
+        f"Failed to acquire Purview token after retries. Last error: {last_error}"
+    )
+
+
 def _find_entity_by_qualified_name(token: str, qualified_name: str):
     # Atlas DSL query returns discovered assets with guid/typeName when the qualifiedName matches.
     query = f"from * where qualifiedName = '{qualified_name}'"
@@ -472,7 +521,7 @@ if publish_guard_active:
 elif not APPLY_CHANGES:
     print("[DRY RUN] APPLY_CHANGES=False. Skipping Purview API calls.")
 else:
-    token = mssparkutils.credentials.getToken("https://purview.azure.net")
+    token = _get_purview_token_with_retry()
 
     typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
     if typedef_status not in (200, 201) and "already exists" not in typedef_body.lower():
