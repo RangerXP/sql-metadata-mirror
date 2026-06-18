@@ -287,7 +287,23 @@ display(ai_df.orderBy("check_name"))
 
 # Cell 6: Write closeout manifest
 
-mssparkutils.fs.mkdirs(OUTPUT_ROOT)
+def _normalize_output_root(path: str) -> str:
+    p = (path or "").strip()
+    if p.startswith("/lakehouse/default/"):
+        p = p[len("/lakehouse/default/") :]
+    elif p.startswith("lakehouse/default/"):
+        p = p[len("lakehouse/default/") :]
+    if p.startswith("/"):
+        p = p[1:]
+    if not p:
+        return "Files/purview_publish/phase_08_10_stewardship_ai"
+    if p.startswith("Files/") or p.startswith("Tables/"):
+        return p
+    return f"Files/{p}"
+
+
+output_root = _normalize_output_root(OUTPUT_ROOT)
+mssparkutils.fs.mkdirs(output_root)
 
 manifest = {
     "generated_on": str(date.today()),
@@ -304,7 +320,7 @@ manifest = {
     ],
 }
 
-mssparkutils.fs.put(f"{OUTPUT_ROOT}/stewardship_ai_closeout_manifest.json", json.dumps(manifest, indent=2), True)
+mssparkutils.fs.put(f"{output_root}/stewardship_ai_closeout_manifest.json", json.dumps(manifest, indent=2), True)
 
 summary_rows = []
 for name, df in [
@@ -319,7 +335,7 @@ for name, df in [
 summary_df = spark.createDataFrame(summary_rows, ["stage", "rows_checked", "action_required_rows", "status"])
 phase_08_10_closeout_table = _write_table(summary_df, "purview_phase_08_10_closeout")
 
-print(f"Closeout manifest written to: {OUTPUT_ROOT}")
+print(f"Closeout manifest written to: {output_root}")
 print(f"[Cell 6] Wrote closeout summary to: {phase_08_10_closeout_table}")
 display(summary_df.orderBy("stage"))
 
