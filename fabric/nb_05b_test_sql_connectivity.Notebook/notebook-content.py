@@ -40,6 +40,8 @@ DATABASE_NAME              = "sqldemo"
 SQL_PORT                   = 1433
 SQL_LOGIN_TIMEOUT_SECONDS  = 30
 TEST_QUERY                 = "SELECT 1 AS connectivity_check"
+SQL_AUTH_MODE              = "managed_identity"  # managed_identity | tokenlibrary
+SQL_MANAGED_IDENTITY_CLIENT_ID = ""  # Optional: set for user-assigned MI
 
 print(f"nb_05b_test_sql_connectivity | DEMO_MODE={DEMO_MODE}")
 print(f"Workspace: {WORKSPACE_ID}")
@@ -55,7 +57,7 @@ print(f"Target: {SERVER_NAME}:{SQL_PORT} / {DATABASE_NAME}")
 
 # CELL ********************
 
-# Cell 2: Build JDBC config and acquire token
+# Cell 2: Build JDBC config and authentication mode
 
 import base64
 import json
@@ -101,15 +103,21 @@ def describe_access_token(token: str):
 
 print("JDBC URL prepared.")
 print(f"Smoke-test query: {TEST_QUERY}")
+print(f"SQL auth mode: {SQL_AUTH_MODE}")
 
 if DEMO_MODE:
-    print("[DRY RUN] Skipping token acquisition and JDBC call.")
+    print("[DRY RUN] Skipping authentication and JDBC call.")
     print("[DRY RUN] Switch DEMO_MODE=False to run the query through the workspace managed private endpoint.")
 else:
-    sql_access_token = get_sql_access_token()
-    print("Acquired Microsoft Entra access token for Azure SQL.")
-    print("Token identity claims:")
-    print(describe_access_token(sql_access_token))
+    if SQL_AUTH_MODE == "tokenlibrary":
+        sql_access_token = get_sql_access_token()
+        print("Acquired Microsoft Entra access token for Azure SQL.")
+        print("Token identity claims:")
+        print(describe_access_token(sql_access_token))
+    elif SQL_AUTH_MODE == "managed_identity":
+        print("Using managed identity authentication for Azure SQL JDBC.")
+    else:
+        raise ValueError("SQL_AUTH_MODE must be one of: managed_identity, tokenlibrary")
 
 
 # METADATA ********************
@@ -127,14 +135,21 @@ if DEMO_MODE:
     print("[DRY RUN] No JDBC connection attempted.")
 else:
     try:
-        test_df = (
+        reader = (
             spark.read.format("jdbc")
             .option("url", JDBC_URL)
             .option("driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver")
             .option("query", TEST_QUERY)
-            .option("accessToken", sql_access_token)
-            .load()
         )
+
+        if SQL_AUTH_MODE == "tokenlibrary":
+            reader = reader.option("accessToken", sql_access_token)
+        else:
+            reader = reader.option("authentication", "ActiveDirectoryMSI")
+            if SQL_MANAGED_IDENTITY_CLIENT_ID:
+                reader = reader.option("msiClientId", SQL_MANAGED_IDENTITY_CLIENT_ID)
+
+        test_df = reader.load()
 
         print("JDBC connectivity test succeeded.")
         print(f"Rows returned: {test_df.count()}")

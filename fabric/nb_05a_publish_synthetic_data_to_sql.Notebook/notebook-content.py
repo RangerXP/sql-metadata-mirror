@@ -47,6 +47,8 @@ SQL_LOGIN_TIMEOUT_SECONDS = 30
 TARGET_SCHEMA             = "dbo"
 BASE_TABLE_LOAD_MODE      = "replace"  # replace | append | skip_existing
 PHASE_B_CHILD_TABLES      = ["customer_complaints", "customer_consents"]
+SQL_AUTH_MODE             = "managed_identity"  # managed_identity | tokenlibrary
+SQL_MANAGED_IDENTITY_CLIENT_ID = ""  # Optional: set for user-assigned MI
 LOAD_ORDER = [
     "products",
     "customers",
@@ -64,6 +66,7 @@ print(f"Source lakehouse: {DEMO_LAKEHOUSE}")
 print(f"Target SQL DB  : {SERVER_NAME}:{SQL_PORT} / {DATABASE_NAME}")
 print(f"Target schema  : {TARGET_SCHEMA}")
 print(f"Base load mode : {BASE_TABLE_LOAD_MODE}")
+print(f"SQL auth mode  : {SQL_AUTH_MODE}")
 print("Load order     :", ", ".join(LOAD_ORDER))
 
 
@@ -76,7 +79,7 @@ print("Load order     :", ", ".join(LOAD_ORDER))
 
 # CELL ********************
 
-# Cell 2: JDBC/ODBC config and token helper
+# Cell 2: JDBC/ODBC config and authentication helpers
 
 import struct
 import time
@@ -128,23 +131,36 @@ def transform_for_sql(table_name, df):
     return df
 
 
+
+def apply_jdbc_auth(reader, access_token=None):
+    if SQL_AUTH_MODE == "managed_identity":
+        reader = reader.option("authentication", "ActiveDirectoryMSI")
+        if SQL_MANAGED_IDENTITY_CLIENT_ID:
+            reader = reader.option("msiClientId", SQL_MANAGED_IDENTITY_CLIENT_ID)
+        return reader
+
+    if SQL_AUTH_MODE == "tokenlibrary":
+        if not access_token:
+            raise RuntimeError("Tokenlibrary auth selected but no access token was provided.")
+        return reader.option("accessToken", access_token)
+
+    raise ValueError("SQL_AUTH_MODE must be one of: managed_identity, tokenlibrary")
+
+
 def read_target_count(table_name, access_token):
     target_table = f"{TARGET_SCHEMA}.{table_name}"
     query = f"SELECT COUNT(1) AS row_count FROM {target_table}"
-    count_df = (
+    reader = (
         spark.read.format("jdbc")
         .option("url", JDBC_URL)
         .option("driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver")
         .option("query", query)
-        .option("accessToken", access_token)
-        .load()
     )
+    count_df = apply_jdbc_auth(reader, access_token).load()
     return int(count_df.first()["row_count"])
 
 
 def get_sql_odbc_connection(access_token):
-    odbc_token = access_token.encode("utf-16-le")
-    token_struct = struct.pack(f"<I{len(odbc_token)}s", len(odbc_token), odbc_token)
     conn_str = (
         "Driver={ODBC Driver 18 for SQL Server};"
         f"Server=tcp:{SERVER_NAME},{SQL_PORT};"
@@ -153,18 +169,35 @@ def get_sql_odbc_connection(access_token):
         "TrustServerCertificate=no;"
         f"Connection Timeout={SQL_LOGIN_TIMEOUT_SECONDS};"
     )
-    return pyodbc.connect(
-        conn_str,
-        attrs_before={ODBC_SQL_COPT_SS_ACCESS_TOKEN: token_struct},
-        autocommit=False,
-    )
+
+    if SQL_AUTH_MODE == "managed_identity":
+        conn_str += "Authentication=ActiveDirectoryMsi;"
+        if SQL_MANAGED_IDENTITY_CLIENT_ID:
+            conn_str += f"UID={SQL_MANAGED_IDENTITY_CLIENT_ID};"
+        return pyodbc.connect(conn_str, autocommit=False)
+
+    if SQL_AUTH_MODE == "tokenlibrary":
+        odbc_token = access_token.encode("utf-16-le")
+        token_struct = struct.pack(f"<I{len(odbc_token)}s", len(odbc_token), odbc_token)
+        return pyodbc.connect(
+            conn_str,
+            attrs_before={ODBC_SQL_COPT_SS_ACCESS_TOKEN: token_struct},
+            autocommit=False,
+        )
+
+    raise ValueError("SQL_AUTH_MODE must be one of: managed_identity, tokenlibrary")
 
 
 if DEMO_MODE:
-    print("[DRY RUN] Skipping token acquisition.")
+    print("[DRY RUN] Skipping SQL authentication setup.")
 else:
-    sql_access_token = get_sql_access_token()
-    print("Acquired Microsoft Entra access token for Azure SQL.")
+    if SQL_AUTH_MODE == "tokenlibrary":
+        sql_access_token = get_sql_access_token()
+        print("Acquired Microsoft Entra access token for Azure SQL.")
+    elif SQL_AUTH_MODE == "managed_identity":
+        print("Using managed identity authentication for Azure SQL JDBC/ODBC.")
+    else:
+        raise ValueError("SQL_AUTH_MODE must be one of: managed_identity, tokenlibrary")
     conn = get_sql_odbc_connection(sql_access_token)
     print("pyodbc connection established for SQL control statements.")
 
@@ -255,11 +288,14 @@ else:
             continue
 
         (
-            source_df.write.format("jdbc")
+            apply_jdbc_auth(
+                source_df.write.format("jdbc")
             .option("url", JDBC_URL)
             .option("driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver")
             .option("dbtable", target_table)
-            .option("accessToken", sql_access_token)
+            ,
+                sql_access_token,
+            )
             .mode("append")
             .save()
         )
