@@ -1,4 +1,0 @@
-{
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/publishInfo/1.0.0/schema.json",
-  "description": "PRIMARY standalone Copilot Data Agent (`Enercare Data Agent West3`) for operational Enercare questions: customer service request IDs, work orders, dispatch status, SLA breaches, ticket lookups, and service-account level operations. Route prompts like 'tell me about request 2026051142', 'request SR-2026-051142', and 'ticket status for request key' to this agent. Use this agent for operational request lookup even when governance metadata agents are unpublished or unavailable. Prefer this agent over semantic models for request-key prompts."
-}
