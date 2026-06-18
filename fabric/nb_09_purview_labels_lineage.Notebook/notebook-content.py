@@ -32,6 +32,8 @@
 
 import hashlib
 import json
+import os
+import shutil
 import subprocess
 import time
 import uuid
@@ -56,7 +58,8 @@ FAIL_ON_TOKEN_ACQUISITION_ERROR = False
 TOKEN_RESOURCE_CANDIDATES = ["https://purview.azure.net"]
 TOKEN_OUTER_RETRY_ATTEMPTS = 1
 DISABLE_LIVE_PURVIEW_PUBLISH = False
-TOKEN_ACQUISITION_MODE = "azcli"  # auto | azcli | tokenlibrary
+TOKEN_ACQUISITION_MODE = "azcli"  # auto | manual | azcli | tokenlibrary
+MANUAL_PURVIEW_BEARER_TOKEN = ""
 AZ_CLI_TIMEOUT_SECONDS = 15
 
 WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
@@ -431,7 +434,28 @@ def _post_json(path: str, token: str, body: dict):
     return _request("POST", path, token, body=body)
 
 
+def _get_purview_token_from_manual() -> str:
+    token = _safe_text(globals().get("MANUAL_PURVIEW_BEARER_TOKEN", ""))
+    if not token:
+        token = _safe_text(os.environ.get("PURVIEW_BEARER_TOKEN", ""))
+    if not token:
+        raise RuntimeError(
+            "No manual token provided. Set MANUAL_PURVIEW_BEARER_TOKEN in Cell 1 "
+            "or environment variable PURVIEW_BEARER_TOKEN."
+        )
+
+    print("[Cell 6] Using manually supplied Purview bearer token.")
+    return token
+
+
 def _get_purview_token_via_az_cli() -> str:
+    if shutil.which("az") is None:
+        raise RuntimeError(
+            "'az' CLI is not available in this runtime. "
+            "Use TOKEN_ACQUISITION_MODE='manual' with MANUAL_PURVIEW_BEARER_TOKEN, "
+            "or run publish outside the notebook runtime."
+        )
+
     cmd = [
         "az",
         "account",
@@ -490,8 +514,11 @@ def _get_purview_token_via_tokenlibrary() -> str:
 
 def _get_purview_token_with_retry() -> str:
     mode = _safe_text(globals().get("TOKEN_ACQUISITION_MODE", "auto")).lower()
-    if mode not in {"auto", "azcli", "tokenlibrary"}:
-        raise RuntimeError(f"Unsupported TOKEN_ACQUISITION_MODE='{mode}'. Use auto, azcli, or tokenlibrary.")
+    if mode not in {"auto", "manual", "azcli", "tokenlibrary"}:
+        raise RuntimeError(f"Unsupported TOKEN_ACQUISITION_MODE='{mode}'. Use auto, manual, azcli, or tokenlibrary.")
+
+    if mode == "manual":
+        return _get_purview_token_from_manual()
 
     if mode == "azcli":
         return _get_purview_token_via_az_cli()
@@ -499,7 +526,12 @@ def _get_purview_token_with_retry() -> str:
     if mode == "tokenlibrary":
         return _get_purview_token_via_tokenlibrary()
 
-    # auto mode: prefer Azure CLI first, then fallback to TokenLibrary.
+    # auto mode: prefer manual token, then Azure CLI, then TokenLibrary.
+    try:
+        return _get_purview_token_from_manual()
+    except Exception as manual_ex:
+        print(f"[Cell 6][WARN] Manual token path unavailable; trying Azure CLI. Error: {manual_ex}")
+
     try:
         return _get_purview_token_via_az_cli()
     except Exception as az_ex:
@@ -647,7 +679,8 @@ print(
     f"PURVIEW_PUBLISH_OVERRIDE={PURVIEW_PUBLISH_OVERRIDE}, "
     f"fail_on_token_error={fail_on_token_error}, "
     f"disable_live_publish={DISABLE_LIVE_PURVIEW_PUBLISH}, "
-    f"token_mode={TOKEN_ACQUISITION_MODE}"
+    f"token_mode={TOKEN_ACQUISITION_MODE}, "
+    f"manual_token_supplied={bool(_safe_text(globals().get('MANUAL_PURVIEW_BEARER_TOKEN', '')))}"
 )
 
 if publish_guard_active:
