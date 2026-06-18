@@ -343,6 +343,13 @@ def _resolve_targets(parsed_asset):
     return []
 
 
+print(
+    f"[Cell 4] Parser ready. semantic_tables={len(semantic_tables)}, "
+    f"semantic_columns={len(semantic_columns)}, semantic_measures={len(semantic_measures)}",
+    flush=True,
+)
+
+
 # METADATA ********************
 
 # META {
@@ -355,6 +362,12 @@ def _resolve_targets(parsed_asset):
 # Cell 5: Build annotation rows
 
 annotation_rows = []
+binding_stats = {
+    "tokens_total": 0,
+    "tokens_resolved": 0,
+    "targets_total": 0,
+}
+unresolved_token_samples = set()
 
 
 def _append_annotation(targets, key_name, value):
@@ -377,13 +390,25 @@ def _append_annotation(targets, key_name, value):
         )
 
 
+def _resolve_targets_with_stats(token: str):
+    binding_stats["tokens_total"] += 1
+    parsed = _parse_asset_ref(token)
+    targets = _resolve_targets(parsed)
+    if targets:
+        binding_stats["tokens_resolved"] += 1
+        binding_stats["targets_total"] += len(targets)
+    else:
+        if len(unresolved_token_samples) < 20:
+            unresolved_token_samples.add(token)
+    return targets
+
+
 for row in glossary_df.collect():
     term_code = getattr(row, "term_code", None) or getattr(row, "term_name", None)
     term_name = getattr(row, "term_name", None)
     glossary_value = " | ".join([v for v in [term_code, term_name] if v])
     for token in _split_bindings(getattr(row, "bound_assets", None)):
-        parsed = _parse_asset_ref(token)
-        targets = _resolve_targets(parsed)
+        targets = _resolve_targets_with_stats(token)
         _append_annotation(targets, ANNOTATION_KEYS["glossary"], glossary_value)
 
 for row in cde_df.collect():
@@ -393,8 +418,7 @@ for row in cde_df.collect():
     sensitivity = getattr(row, "sensitivity_label", None)
 
     for token in _split_bindings(getattr(row, "bound_columns", None)):
-        parsed = _parse_asset_ref(token)
-        targets = _resolve_targets(parsed)
+        targets = _resolve_targets_with_stats(token)
         _append_annotation(targets, ANNOTATION_KEYS["cde"], cde_value)
         _append_annotation(targets, ANNOTATION_KEYS["label"], sensitivity)
 
@@ -403,8 +427,7 @@ if labels_df is not None:
         label_name = getattr(row, "label_name", None)
         applies_to = getattr(row, "applies_to_asset_ids", None)
         for token in _split_bindings(applies_to):
-            parsed = _parse_asset_ref(token)
-            targets = _resolve_targets(parsed)
+            targets = _resolve_targets_with_stats(token)
             _append_annotation(targets, ANNOTATION_KEYS["label"], label_name)
 
 for row in data_products_df.collect():
@@ -425,11 +448,18 @@ for row in data_products_df.collect():
         binding_tokens.extend(_split_bindings(raw))
 
     for token in binding_tokens:
-        parsed = _parse_asset_ref(token)
-        targets = _resolve_targets(parsed)
+        targets = _resolve_targets_with_stats(token)
         _append_annotation(targets, ANNOTATION_KEYS["owner"], owner_value)
 
 print(f"Raw annotation rows created: {len(annotation_rows)}")
+print(
+    f"[Cell 5] Binding resolution stats: tokens_total={binding_stats['tokens_total']}, "
+    f"tokens_resolved={binding_stats['tokens_resolved']}, targets_total={binding_stats['targets_total']}",
+    flush=True,
+)
+if unresolved_token_samples:
+    sample = sorted(unresolved_token_samples)[:10]
+    print(f"[Cell 5][WARN] Unresolved binding token sample ({len(sample)} shown): {sample}", flush=True)
 
 
 # METADATA ********************
