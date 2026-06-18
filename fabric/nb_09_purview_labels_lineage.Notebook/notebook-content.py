@@ -49,6 +49,8 @@ SQL_MIRROR_ONLY_DEPLOYMENT = True
 PURVIEW_PUBLISH_OVERRIDE = True
 OUTPUT_ROOT = "/lakehouse/default/Files/purview_publish/phase_06_07_labels_lineage"
 PURVIEW_HTTP_TIMEOUT_SECONDS = 20
+MAX_ENTITY_RESOLUTION_SECONDS = 120
+MAX_EDGES_TO_RESOLVE = 50
 
 WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
 SQL_SOURCE_NAME = "ENERCARE-SQL-SOURCE"
@@ -475,6 +477,7 @@ def _build_lineage_process_entities(token: str):
     process_entities = []
     unresolved = []
     lookup_cache = {}
+    started_at = time.time()
 
     def _cached_find(qualified_name: str):
         if qualified_name in lookup_cache:
@@ -487,6 +490,45 @@ def _build_lineage_process_entities(token: str):
     print(f"[Cell 6] Resolving entity GUIDs for {total_edges} lineage edges...")
 
     for idx, edge in enumerate(lineage_edges, start=1):
+        elapsed = time.time() - started_at
+        if elapsed > MAX_ENTITY_RESOLUTION_SECONDS:
+            print(
+                f"[Cell 6][WARN] Resolution time cap reached ({MAX_ENTITY_RESOLUTION_SECONDS}s). "
+                f"Stopping after {idx - 1} edges."
+            )
+            unresolved.append(
+                {
+                    "process_qualified_name": "__resolution_timeout__",
+                    "source": None,
+                    "target": None,
+                    "source_found": False,
+                    "target_found": False,
+                    "reason": "resolution_time_cap_reached",
+                    "resolved_edges": idx - 1,
+                    "total_edges": total_edges,
+                }
+            )
+            break
+
+        if idx > MAX_EDGES_TO_RESOLVE:
+            print(
+                f"[Cell 6][WARN] Edge cap reached ({MAX_EDGES_TO_RESOLVE}). "
+                f"Stopping before edge {idx}."
+            )
+            unresolved.append(
+                {
+                    "process_qualified_name": "__resolution_edge_cap__",
+                    "source": None,
+                    "target": None,
+                    "source_found": False,
+                    "target_found": False,
+                    "reason": "resolution_edge_cap_reached",
+                    "resolved_edges": idx - 1,
+                    "total_edges": total_edges,
+                }
+            )
+            break
+
         if idx == 1 or idx % 10 == 0 or idx == total_edges:
             print(f"[Cell 6] Progress: {idx}/{total_edges}")
 
