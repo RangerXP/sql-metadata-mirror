@@ -54,6 +54,7 @@ MAX_EDGES_TO_RESOLVE = 50
 FAIL_ON_TOKEN_ACQUISITION_ERROR = False
 TOKEN_RESOURCE_CANDIDATES = ["https://purview.azure.net"]
 TOKEN_OUTER_RETRY_ATTEMPTS = 1
+DISABLE_LIVE_PURVIEW_PUBLISH = False
 
 WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
 SQL_SOURCE_NAME = "ENERCARE-SQL-SOURCE"
@@ -586,11 +587,14 @@ print(
     f"APPLY_CHANGES={APPLY_CHANGES}, "
     f"SQL_MIRROR_ONLY_DEPLOYMENT={SQL_MIRROR_ONLY_DEPLOYMENT}, "
     f"PURVIEW_PUBLISH_OVERRIDE={PURVIEW_PUBLISH_OVERRIDE}, "
-    f"fail_on_token_error={fail_on_token_error}"
+    f"fail_on_token_error={fail_on_token_error}, "
+    f"disable_live_publish={DISABLE_LIVE_PURVIEW_PUBLISH}"
 )
 
 if publish_guard_active:
     print("[GUARD] SQL-mirror-only deployment is active. Set PURVIEW_PUBLISH_OVERRIDE=True for live Purview publish.")
+elif DISABLE_LIVE_PURVIEW_PUBLISH:
+    print("[DRY RUN] DISABLE_LIVE_PURVIEW_PUBLISH=True. Skipping token acquisition and Purview API calls.")
 elif not APPLY_CHANGES:
     print("[DRY RUN] APPLY_CHANGES=False. Skipping Purview API calls.")
 else:
