@@ -48,6 +48,7 @@ APPLY_CHANGES = True
 SQL_MIRROR_ONLY_DEPLOYMENT = True
 PURVIEW_PUBLISH_OVERRIDE = True
 OUTPUT_ROOT = "/lakehouse/default/Files/purview_publish/phase_06_07_labels_lineage"
+PURVIEW_HTTP_TIMEOUT_SECONDS = 20
 
 WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
 SQL_SOURCE_NAME = "ENERCARE-SQL-SOURCE"
@@ -406,7 +407,14 @@ def _headers(token: str):
 
 def _request(method: str, path: str, token: str, body: dict = None, params: dict = None):
     url = f"{PURVIEW_BASE_URL}{path}"
-    response = requests.request(method, url, headers=_headers(token), json=body, params=params, timeout=60)
+    response = requests.request(
+        method,
+        url,
+        headers=_headers(token),
+        json=body,
+        params=params,
+        timeout=PURVIEW_HTTP_TIMEOUT_SECONDS,
+    )
     return response.status_code, response.text
 
 
@@ -466,13 +474,27 @@ def _find_entity_by_qualified_name(token: str, qualified_name: str):
 def _build_lineage_process_entities(token: str):
     process_entities = []
     unresolved = []
+    lookup_cache = {}
 
-    for edge in lineage_edges:
+    def _cached_find(qualified_name: str):
+        if qualified_name in lookup_cache:
+            return lookup_cache[qualified_name]
+        result = _find_entity_by_qualified_name(token, qualified_name)
+        lookup_cache[qualified_name] = result
+        return result
+
+    total_edges = len(lineage_edges)
+    print(f"[Cell 6] Resolving entity GUIDs for {total_edges} lineage edges...")
+
+    for idx, edge in enumerate(lineage_edges, start=1):
+        if idx == 1 or idx % 10 == 0 or idx == total_edges:
+            print(f"[Cell 6] Progress: {idx}/{total_edges}")
+
         source_qn = edge["source"]
         target_qn = edge["target"]
 
-        source_entity = _find_entity_by_qualified_name(token, source_qn)
-        target_entity = _find_entity_by_qualified_name(token, target_qn)
+        source_entity = _cached_find(source_qn)
+        target_entity = _cached_find(target_qn)
 
         if not source_entity or not target_entity:
             unresolved.append(
@@ -523,6 +545,7 @@ elif not APPLY_CHANGES:
 else:
     token = _get_purview_token_with_retry()
 
+    print("[Cell 6] Publishing classification typedefs...")
     typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
     if typedef_status not in (200, 201) and "already exists" not in typedef_body.lower():
         raise RuntimeError(f"Classification typedef publish failed: HTTP {typedef_status} | {typedef_body[:500]}")
@@ -535,8 +558,11 @@ else:
         # Atlas entity/bulk supports upsert by qualifiedName for entity types.
         batch_size = 50
         published = 0
+        total_batches = (len(process_entities) + batch_size - 1) // batch_size
         for i in range(0, len(process_entities), batch_size):
             batch = process_entities[i : i + batch_size]
+            batch_number = (i // batch_size) + 1
+            print(f"[Cell 6] Publishing lineage batch {batch_number}/{total_batches} ({len(batch)} entities)...")
             payload = {"entities": batch}
             entity_status, entity_body = _post_json("/catalog/api/atlas/v2/entity/bulk", token, payload)
             if entity_status not in (200, 201):
