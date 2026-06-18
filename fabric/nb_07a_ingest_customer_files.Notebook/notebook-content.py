@@ -29,8 +29,8 @@ SQL_MIRROR_SCHEMAS = ["dbo", "metadata"]
 MIRROR_WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
 # Keep both IDs to tolerate environment drift between mirror item GUID and logicalId.
 MIRROR_ITEM_IDS = [
-    "cba2d7c3-1ef8-b4c4-4f60-10f00249854c",
-    "40675f0e-c576-4cb1-ab27-40b9352a18a8",
+    "bdf616e8-625e-4b62-8491-519509f6ffaf",
+    "09f6ffaf-5195-8491-4b62-625ebdf616e8",
 ]
 MIRROR_DFS_HOSTS = [
     "onelake.dfs.fabric.microsoft.com",
