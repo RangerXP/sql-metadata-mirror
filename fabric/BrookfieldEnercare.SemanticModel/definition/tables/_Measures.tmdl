@@ -38,7 +38,7 @@ table _Measures
 		formatString: #,0
 		lineageTag: 201b4368-2ce7-4dce-966b-63b3df08c9b1
 
-	measure 'SLA Compliance Rate' = DIVIDE(COUNTROWS(fct_service_request) - [SLA Breach Count], COUNTROWS(fct_service_request))
+	measure 'SLA Compliance Rate' = VAR _hasDateFilter = ISCROSSFILTERED(dim_date[DateKey]) || ISCROSSFILTERED(dim_date[FullDate]) VAR _anchorDate = MAXX(ALL(dim_date), dim_date[FullDate]) RETURN IF(_hasDateFilter, DIVIDE(COUNTROWS(fct_service_request) - [SLA Breach Count], COUNTROWS(fct_service_request)), CALCULATE(DIVIDE(COUNTROWS(fct_service_request) - [SLA Breach Count], COUNTROWS(fct_service_request)), DATESINPERIOD(dim_date[FullDate], _anchorDate, -12, MONTH)))
 		formatString: 0.0%
 		lineageTag: 487de699-0427-4396-aea0-9592c7a2a85c
 
@@ -51,21 +51,21 @@ table _Measures
 		lineageTag: 42f61711-cbe4-4ae0-9ff5-32e1facddbbf
 
 	/// ranbir.singh@enercare.ca
-	measure 'FCR Rate' = DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[fcr_flag] = 1), COUNTROWS(fct_cc_interactions))
+	measure 'FCR Rate' = VAR _hasDateFilter = ISCROSSFILTERED(dim_date[DateKey]) || ISCROSSFILTERED(dim_date[FullDate]) VAR _anchorDate = MAXX(ALL(dim_date), dim_date[FullDate]) RETURN IF(_hasDateFilter, DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[fcr_flag] = 1), COUNTROWS(fct_cc_interactions)), CALCULATE(DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[fcr_flag] = 1), COUNTROWS(fct_cc_interactions)), DATESINPERIOD(dim_date[FullDate], _anchorDate, -12, MONTH)))
 		formatString: 0.0%
 		lineageTag: d68117ad-989c-40ab-a919-aa8725273862
 
 	/// ranbir.singh@enercare.ca
-	measure 'Avg CSAT' = AVERAGEX(FILTER(fct_cc_interactions, NOT ISBLANK(fct_cc_interactions[csat_score])), fct_cc_interactions[csat_score])
+	measure 'Avg CSAT' = VAR _hasDateFilter = ISCROSSFILTERED(dim_date[DateKey]) || ISCROSSFILTERED(dim_date[FullDate]) VAR _anchorDate = MAXX(ALL(dim_date), dim_date[FullDate]) RETURN IF(_hasDateFilter, AVERAGEX(FILTER(fct_cc_interactions, NOT ISBLANK(fct_cc_interactions[csat_score])), fct_cc_interactions[csat_score]), CALCULATE(AVERAGEX(FILTER(fct_cc_interactions, NOT ISBLANK(fct_cc_interactions[csat_score])), fct_cc_interactions[csat_score]), DATESINPERIOD(dim_date[FullDate], _anchorDate, -12, MONTH)))
 		formatString: #,0.0
 		lineageTag: 0cec6c7b-58c1-400f-b4c6-993cff355807
 
-	measure 'PP Renewal Rate' = DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[pp_renewal_outcome] = "accepted"), CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[queue_type] = "pp_renewal"))
+	measure 'PP Renewal Rate' = VAR _hasDateFilter = ISCROSSFILTERED(dim_date[DateKey]) || ISCROSSFILTERED(dim_date[FullDate]) VAR _anchorDate = MAXX(ALL(dim_date), dim_date[FullDate]) RETURN IF(_hasDateFilter, DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[pp_renewal_outcome] = "accepted"), CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[queue_type] = "pp_renewal")), CALCULATE(DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[pp_renewal_outcome] = "accepted"), CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[queue_type] = "pp_renewal")), DATESINPERIOD(dim_date[FullDate], _anchorDate, -12, MONTH)))
 		formatString: 0.0%
 		lineageTag: b0478899-e200-4b7a-b011-429566f09b29
 
 	/// ranbir.singh@enercare.ca
-	measure 'Avg Handle Time (sec)' = AVERAGEX(fct_cc_interactions, fct_cc_interactions[handle_time_sec] + fct_cc_interactions[hold_time_sec])
+	measure 'Avg Handle Time (sec)' = VAR _hasDateFilter = ISCROSSFILTERED(dim_date[DateKey]) || ISCROSSFILTERED(dim_date[FullDate]) VAR _anchorDate = MAXX(ALL(dim_date), dim_date[FullDate]) RETURN IF(_hasDateFilter, AVERAGEX(fct_cc_interactions, fct_cc_interactions[handle_time_sec] + fct_cc_interactions[hold_time_sec]), CALCULATE(AVERAGEX(fct_cc_interactions, fct_cc_interactions[handle_time_sec] + fct_cc_interactions[hold_time_sec]), DATESINPERIOD(dim_date[FullDate], _anchorDate, -12, MONTH)))
 		formatString: #,0
 		lineageTag: 40485d8a-3df4-467d-a04b-409d2d37083f
 

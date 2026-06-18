@@ -393,26 +393,25 @@ def _sql_string(value: str) -> str:
 
 cc_kpi_defs = [
     ("First Contact Resolution",      "FCR",          "Call Center",    "ranbir.singh@enercare.ca",
-     'DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[fcr_flag] = 1), COUNTROWS(fct_cc_interactions))',
+    'VAR _hasDateFilter = ISCROSSFILTERED(dim_date[DateKey]) || ISCROSSFILTERED(dim_date[FullDate]) VAR _anchorDate = MAXX(ALL(dim_date), dim_date[FullDate]) RETURN IF(_hasDateFilter, DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[fcr_flag] = 1), COUNTROWS(fct_cc_interactions)), CALCULATE(DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[fcr_flag] = 1), COUNTROWS(fct_cc_interactions)), DATESINPERIOD(dim_date[FullDate], _anchorDate, -12, MONTH)))',
      "Percentage of customer interactions resolved without a follow-up within 5 business days. "
      "An interaction is resolved if no subsequent inbound contact occurs from the same customer "
      "about the same issue within the window. Target: 78%.",
      0.78, 0.72, 0.65, "percentage"),
     ("Customer Satisfaction Score",   "CSAT",         "Call Center",    "ranbir.singh@enercare.ca",
-     "AVERAGE(fct_cc_interactions[csat_score])",
+    'VAR _hasDateFilter = ISCROSSFILTERED(dim_date[DateKey]) || ISCROSSFILTERED(dim_date[FullDate]) VAR _anchorDate = MAXX(ALL(dim_date), dim_date[FullDate]) RETURN IF(_hasDateFilter, AVERAGEX(FILTER(fct_cc_interactions, NOT ISBLANK(fct_cc_interactions[csat_score])), fct_cc_interactions[csat_score]), CALCULATE(AVERAGEX(FILTER(fct_cc_interactions, NOT ISBLANK(fct_cc_interactions[csat_score])), fct_cc_interactions[csat_score]), DATESINPERIOD(dim_date[FullDate], _anchorDate, -12, MONTH)))',
      "Average post-call IVR survey score on a 1–5 scale (5 = very satisfied). "
      "Survey is offered to all inbound calls; response rate ~22%. "
      "Score is weighted by queue type for aggregate reporting. Target: 4.2.",
      4.2, 3.8, 3.4, "score_1_to_5"),
     ("Protection Plan Renewal Rate",  "PP_RNW_RATE",  "Retention",      "victoria.tan@enercare.ca",
-     'DIVIDE(CALCULATE(COUNTROWS(fct_pp_contract_renewals), fct_pp_contract_renewals[renewal_status_code] = "renewed"), '
-     'CALCULATE(COUNTROWS(fct_pp_contract_renewals), fct_pp_contract_renewals[renewal_status_code] IN {"renewed","lapsed","cancelled"}))',
+    'VAR _hasDateFilter = ISCROSSFILTERED(dim_date[DateKey]) || ISCROSSFILTERED(dim_date[FullDate]) VAR _anchorDate = MAXX(ALL(dim_date), dim_date[FullDate]) RETURN IF(_hasDateFilter, DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[pp_renewal_outcome] = "accepted"), CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[queue_type] = "pp_renewal")), CALCULATE(DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[pp_renewal_outcome] = "accepted"), CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[queue_type] = "pp_renewal")), DATESINPERIOD(dim_date[FullDate], _anchorDate, -12, MONTH)))',
      "Percentage of expiring Protection Plan contracts successfully renewed within the renewal window "
      "(30 days before to 15 days after contract end date). Applies to HVAC_PLAN and WH_RENTAL_PLAN. "
      "Excludes mid-term cancellations. Target: 82%.",
      0.82, 0.75, 0.68, "percentage"),
     ("Average Handle Time",           "AHT",          "Call Center",    "ranbir.singh@enercare.ca",
-     "AVERAGEX(fct_cc_interactions, fct_cc_interactions[handle_time_sec] + fct_cc_interactions[hold_time_sec])",
+    'VAR _hasDateFilter = ISCROSSFILTERED(dim_date[DateKey]) || ISCROSSFILTERED(dim_date[FullDate]) VAR _anchorDate = MAXX(ALL(dim_date), dim_date[FullDate]) RETURN IF(_hasDateFilter, AVERAGEX(fct_cc_interactions, fct_cc_interactions[handle_time_sec] + fct_cc_interactions[hold_time_sec]), CALCULATE(AVERAGEX(fct_cc_interactions, fct_cc_interactions[handle_time_sec] + fct_cc_interactions[hold_time_sec]), DATESINPERIOD(dim_date[FullDate], _anchorDate, -12, MONTH)))',
      "Average seconds of agent engagement per interaction: talk time + hold time + after-call wrap-up. "
      "Measured per queue type. Targets: billing=420s, emergency=300s, PP_renewal=480s.",
      420.0, 480.0, 540.0, "seconds"),
@@ -460,9 +459,9 @@ else:
 
 verified_answers = [
     ("FCR", "what is our FCR",
-     "FCR (First Contact Resolution) measures whether a customer's issue was resolved in a single interaction "
-     "without a callback within 5 business days. Target: 78%. FCR is per interaction, not per customer. "
-     "Outbound welcome calls are excluded from FCR calculation."),
+    "Use the FCR Rate measure from the semantic model. Default calculation window is rolling 12 months ending "
+    "on the latest available model date unless the user specifies another range. FCR measures whether a "
+    "customer's issue was resolved in a single interaction without a callback within 5 business days."),
     ("FCR", "first contact resolution",
      "First Contact Resolution Rate is the percentage of inbound interactions that did not generate a "
      "follow-up contact within 5 business days. It is our primary call center efficiency KPI."),
@@ -473,9 +472,9 @@ verified_answers = [
      "FCR tracks this. An FCR below 72% (warning threshold) means more than 28% of customers needed a "
      "follow-up contact within 5 business days."),
     ("CSAT", "what is our CSAT",
-     "CSAT (Customer Satisfaction Score) is a post-call IVR survey score from 1 to 5 (5 = very satisfied). "
-     "Only ~22% of customers complete the survey. Target: 4.2. "
-     "A NULL csat_score means the customer did not respond — do not treat it as a low score."),
+        "Use the Avg CSAT measure from the semantic model. Default calculation window is rolling 12 months ending "
+        "on the latest available model date unless the user specifies another range. A NULL csat_score means the "
+        "customer did not respond — do not treat it as a low score."),
     ("CSAT", "customer satisfaction",
      "Customer satisfaction is measured via post-call IVR survey on a 1–5 scale. "
      "CSAT below 3.5 on a queue indicates a systemic issue, not individual agent performance."),
@@ -486,9 +485,9 @@ verified_answers = [
      "CSAT averages the IVR survey score across interactions. "
      "Filter to completed surveys (csat_score IS NOT NULL) when calculating. Target: 4.2 out of 5."),
     ("PP_RNW_RATE", "PP renewal rate",
-     "PP Renewal Rate measures how many customers renew their HVAC or water heater Protection Plans. "
-     "This is the primary retention KPI. Renewal window: 30 days before to 15 days after contract end. "
-     "Target: 82%. Excludes mid-term cancellations."),
+        "Use the PP Renewal Rate measure from the semantic model. Default calculation window is rolling 12 months "
+        "ending on the latest available model date unless the user specifies another range. This is the primary "
+        "retention KPI."),
     ("PP_RNW_RATE", "protection plan renewal",
      "Protection Plan Renewal Rate = renewed / (renewed + lapsed + cancelled) contracts that reached expiry. "
      "Applies to HVAC_PLAN and WH_RENTAL_PLAN product codes only."),
@@ -565,8 +564,11 @@ certified_kpi_instruction = (
     "PP_RNW_RATE target 82% (warning <75%, critical <68%); "
     "AHT target 420s billing queue (warning >480s, critical >540s); "
     "SLA_BRCH_RATE target 5% (warning >10%, critical >15%). "
+    "When no explicit date filter is requested, certified KPI answers default to a rolling 12-month window "
+    "ending on the latest available model date. "
     f"Only IsCertified=1 KPIs have been approved by {CERTIFIED_BY}. "
-    "Do not present non-certified measures as authoritative business KPIs."
+    "Do not present non-certified measures as authoritative business KPIs. Use the semantic model measure "
+    "definitions as the source of truth."
 )
 
 ai_instructions = [
@@ -596,8 +598,9 @@ ai_instructions = [
         "Apply this contract only to verified KPI analytics answers (metric/percentage/calculation outputs). "
         "Do not apply this contract to operational customer service issues, request/ticket status details, "
         "dispatch updates, or case-level troubleshooting responses. "
-        "For all verified KPI answers, always include an explicit calculation window. Default window is trailing "
-     "30 complete calendar days ending yesterday, unless the user specifies a different date range. "
+          "For all verified KPI answers, always include an explicit calculation window. Default window is rolling "
+      "12 months ending on the latest available model date, unless the user specifies a different date range. "
+          "Do not ask a follow-up question just to establish the default KPI time window. "
      "When returning a KPI value, include: Calculation Window, Numerator, Denominator, and Applied Filters. "
      "Do not return KPI percentages without those context fields."),
     ("Operational Routing", "data agent routing for request keys",

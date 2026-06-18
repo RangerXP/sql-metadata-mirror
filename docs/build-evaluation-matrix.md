@@ -27,6 +27,23 @@ Do not patch Fabric item metadata through API/portal while pending Source Contro
 4. Conflict recovery rule:
 If Fabric reports duplicate-name conflicts for a Data Agent, treat git as source of truth, remove unbound workspace duplicates, then re-run Source Control update.
 
+## KPI Regression Prompt Pack
+
+Use this pack after any change to the semantic model, Data Agent config, verified-answer notebooks, or Fabric Source Control sync.
+
+| Prompt | Expected Behavior | Failure Signal |
+|---|---|---|
+| What is our FCR? | Data Agent answers directly from semantic model with a KPI value and explicit rolling 12-month window when no date range is supplied. | Asks clarifying question about which period to use, refuses the KPI, or returns a value with no window context. |
+| What is our CSAT? | Data Agent answers directly from semantic model with KPI value, window, numerator/denominator or response-count context, and applied filters. | Asks for a time period, omits window context, or treats null surveys as low scores. |
+| What is our AHT? | Data Agent answers directly from semantic model using the rolling 12-month default unless the user specifies another range. | Asks for timeframe clarification or returns a value without naming the metric window. |
+| What is our FCR for the last 90 days? | Data Agent respects the explicit user range instead of the default rolling 12-month window. | Still answers with rolling 12 months or asks for an unnecessary date clarification. |
+| What is our PP renewal rate? | Data Agent answers from the certified semantic-model KPI path with explicit window context. | Refuses, asks unnecessary clarifying questions, or returns a metric without context. |
+| Tell me about request 2026051142 | Data Agent returns operational request details with labeled fields. | Routes the prompt to KPI analytics, refuses the request lookup, or answers from the wrong surface. |
+| What is the status of SR-2026051142? | Data Agent treats the SR-formatted identifier as an operational lookup and returns request status. | Asks which system to use or fails to treat the identifier as a request key. |
+
+Pass rule:
+All KPI prompts answer directly with the semantic-model metric path and explicit window context, while request-ID prompts stay on the operational request lookup path.
+
 ## Deferred Item (Future Build Cycle)
 
 1. Governance Agent rebuild is intentionally deferred when deleted during troubleshooting.
