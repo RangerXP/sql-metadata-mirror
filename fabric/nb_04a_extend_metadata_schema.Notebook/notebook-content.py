@@ -460,8 +460,13 @@ else:
 verified_answers = [
     ("FCR", "what is our FCR",
     "Use the FCR Rate measure from the semantic model. Default calculation window is rolling 12 months ending "
-    "on the latest available model date unless the user specifies another range. FCR measures whether a "
-    "customer's issue was resolved in a single interaction without a callback within 5 business days."),
+        "on the latest available model date unless the user specifies another range. FCR measures whether a "
+        "customer's issue was resolved in a single interaction without a callback within 5 business days. "
+        "Do not ask which report or area to use when the user asks this exact question."),
+        ("FCR", "what is FCR",
+        "Use the FCR Rate measure from the semantic model. Default calculation window is rolling 12 months ending "
+        "on the latest available model date unless the user specifies another range. FCR means First Contact "
+        "Resolution. Do not ask for more context when the user asks this exact question."),
     ("FCR", "first contact resolution",
      "First Contact Resolution Rate is the percentage of inbound interactions that did not generate a "
      "follow-up contact within 5 business days. It is our primary call center efficiency KPI."),
