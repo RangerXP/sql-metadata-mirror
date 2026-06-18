@@ -592,6 +592,11 @@ ai_instructions = [
      "customer-experience impact, Ci Zhu answers the audit lineage question, and Ranbir Singh owns the "
      "service dispatch remediation. Ground answers through Customer 360, Service Performance, Billing "
      "Health, customer_consents, customer_complaints, and audit_data_access."),
+    ("Verified Answer Consistency", "verified answer output contract",
+     "For all verified KPI answers, always include an explicit calculation window. Default window is trailing "
+     "30 complete calendar days ending yesterday, unless the user specifies a different date range. "
+     "When returning a KPI value, include: Calculation Window, Numerator, Denominator, and Applied Filters. "
+     "Do not return KPI percentages without those context fields."),
     ("Operational Routing", "data agent routing for request keys",
      "This semantic model is for KPI analytics, governed business context, and high-level customer story "
      "explanations. For operational request-detail prompts containing concrete request identifiers, work order "
