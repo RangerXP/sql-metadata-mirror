@@ -90,6 +90,14 @@ for r in ai_rows:
             _seen_qa.add(key)
             verified_answers.append(r)
 
+# Exact service request IDs should rank first in grounding payload assembly.
+verified_answers.sort(
+    key=lambda r: (
+        0 if any(ch.isdigit() for ch in (r.TriggerText or "")) else 1,
+        (r.TriggerText or "").lower(),
+    )
+)
+
 print(f"Loaded: {len(ai_instructions)} instruction(s), {len(verified_answers)} verified answer(s)")
 
 
@@ -111,7 +119,7 @@ def _safe(text: str) -> str:
 
 instr_block = " | ".join(_safe(t) for t in ai_instructions)
 qa_parts = [
-    f"Q: {_safe(r.TriggerText)} -> {_safe(r.ResponseText[:150])}"
+    f"Q: {_safe(r.TriggerText)} -> {_safe(r.ResponseText)}"
     for r in verified_answers
 ]
 qa_block = " | ".join(qa_parts)
