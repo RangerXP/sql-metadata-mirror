@@ -51,6 +51,7 @@ OUTPUT_ROOT = "/lakehouse/default/Files/purview_publish/phase_06_07_labels_linea
 PURVIEW_HTTP_TIMEOUT_SECONDS = 20
 MAX_ENTITY_RESOLUTION_SECONDS = 120
 MAX_EDGES_TO_RESOLVE = 50
+FAIL_ON_TOKEN_ACQUISITION_ERROR = False
 
 WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
 SQL_SOURCE_NAME = "ENERCARE-SQL-SOURCE"
@@ -586,39 +587,63 @@ if publish_guard_active:
 elif not APPLY_CHANGES:
     print("[DRY RUN] APPLY_CHANGES=False. Skipping Purview API calls.")
 else:
-    token = _get_purview_token_with_retry()
+    token = None
+    unresolved_edges = []
+    try:
+        token = _get_purview_token_with_retry()
+    except Exception as ex:
+        if FAIL_ON_TOKEN_ACQUISITION_ERROR:
+            raise
 
-    print("[Cell 6] Publishing classification typedefs...")
-    typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
-    if typedef_status not in (200, 201) and "already exists" not in typedef_body.lower():
-        raise RuntimeError(f"Classification typedef publish failed: HTTP {typedef_status} | {typedef_body[:500]}")
-    print(f"Classification typedef publish result: HTTP {typedef_status}")
+        print(f"[WARN] Token acquisition failed; skipping live publish. Error: {ex}")
+        print("[DRY RUN FALLBACK] Payloads are ready from Cell 5. Retry Cell 6 later or publish outside Fabric runtime.")
+        try:
+            if "output_root" in globals():
+                marker = {
+                    "event": "purview_token_acquisition_failed",
+                    "error": str(ex),
+                    "timestamp_utc": int(time.time()),
+                }
+                mssparkutils.fs.put(
+                    f"{output_root}/publish_blocked_token_error.json",
+                    json.dumps(marker, indent=2),
+                    True,
+                )
+        except Exception:
+            pass
 
-    process_entities, unresolved_edges = _build_lineage_process_entities(token)
-    if not process_entities:
-        print("[WARN] No lineage process entities were built. Verify qualifiedName patterns and scan freshness.")
-    else:
-        # Atlas entity/bulk supports upsert by qualifiedName for entity types.
-        batch_size = 50
-        published = 0
-        total_batches = (len(process_entities) + batch_size - 1) // batch_size
-        for i in range(0, len(process_entities), batch_size):
-            batch = process_entities[i : i + batch_size]
-            batch_number = (i // batch_size) + 1
-            print(f"[Cell 6] Publishing lineage batch {batch_number}/{total_batches} ({len(batch)} entities)...")
-            payload = {"entities": batch}
-            entity_status, entity_body = _post_json("/catalog/api/atlas/v2/entity/bulk", token, payload)
-            if entity_status not in (200, 201):
-                raise RuntimeError(f"Lineage process publish failed: HTTP {entity_status} | {entity_body[:500]}")
-            published += len(batch)
-        print(f"Lineage processes published: {published}")
+    if token:
+        print("[Cell 6] Publishing classification typedefs...")
+        typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
+        if typedef_status not in (200, 201) and "already exists" not in typedef_body.lower():
+            raise RuntimeError(f"Classification typedef publish failed: HTTP {typedef_status} | {typedef_body[:500]}")
+        print(f"Classification typedef publish result: HTTP {typedef_status}")
 
-    if unresolved_edges:
-        print(f"[WARN] Unresolved lineage edges: {len(unresolved_edges)}")
-        print("[WARN] First unresolved edge sample:")
-        print(json.dumps(unresolved_edges[0], indent=2))
+        process_entities, unresolved_edges = _build_lineage_process_entities(token)
+        if not process_entities:
+            print("[WARN] No lineage process entities were built. Verify qualifiedName patterns and scan freshness.")
+        else:
+            # Atlas entity/bulk supports upsert by qualifiedName for entity types.
+            batch_size = 50
+            published = 0
+            total_batches = (len(process_entities) + batch_size - 1) // batch_size
+            for i in range(0, len(process_entities), batch_size):
+                batch = process_entities[i : i + batch_size]
+                batch_number = (i // batch_size) + 1
+                print(f"[Cell 6] Publishing lineage batch {batch_number}/{total_batches} ({len(batch)} entities)...")
+                payload = {"entities": batch}
+                entity_status, entity_body = _post_json("/catalog/api/atlas/v2/entity/bulk", token, payload)
+                if entity_status not in (200, 201):
+                    raise RuntimeError(f"Lineage process publish failed: HTTP {entity_status} | {entity_body[:500]}")
+                published += len(batch)
+            print(f"Lineage processes published: {published}")
 
-    print("[INFO] Asset classification attachment remains manifest-driven. Resolve asset GUIDs from scan results before applying live classifications.")
+        if unresolved_edges:
+            print(f"[WARN] Unresolved lineage edges: {len(unresolved_edges)}")
+            print("[WARN] First unresolved edge sample:")
+            print(json.dumps(unresolved_edges[0], indent=2))
+
+        print("[INFO] Asset classification attachment remains manifest-driven. Resolve asset GUIDs from scan results before applying live classifications.")
 
 # Cell 6 complete: Classification typedefs and lineage processes published (or dry-run executed)
 # G9-1 closure: Purview lineage graph modeling now has live Atlas publish step (no longer manifest-only)
