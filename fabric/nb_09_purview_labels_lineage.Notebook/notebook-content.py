@@ -52,6 +52,8 @@ PURVIEW_HTTP_TIMEOUT_SECONDS = 20
 MAX_ENTITY_RESOLUTION_SECONDS = 120
 MAX_EDGES_TO_RESOLVE = 50
 FAIL_ON_TOKEN_ACQUISITION_ERROR = False
+TOKEN_RESOURCE_CANDIDATES = ["https://purview.azure.net"]
+TOKEN_OUTER_RETRY_ATTEMPTS = 1
 
 WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
 SQL_SOURCE_NAME = "ENERCARE-SQL-SOURCE"
@@ -426,14 +428,10 @@ def _post_json(path: str, token: str, body: dict):
 
 
 def _get_purview_token_with_retry() -> str:
-    resource_candidates = [
-        "https://purview.azure.net",
-        "https://purview.azure.net/.default",
-    ]
     last_error = None
 
-    for resource in resource_candidates:
-        for attempt in range(1, 4):
+    for resource in TOKEN_RESOURCE_CANDIDATES:
+        for attempt in range(1, TOKEN_OUTER_RETRY_ATTEMPTS + 1):
             try:
                 token = mssparkutils.credentials.getToken(resource)
                 if token and _safe_text(token):
@@ -442,7 +440,7 @@ def _get_purview_token_with_retry() -> str:
             except Exception as ex:
                 last_error = ex
 
-            if attempt < 3:
+            if attempt < TOKEN_OUTER_RETRY_ATTEMPTS:
                 time.sleep(3 * attempt)
 
     raise RuntimeError(
