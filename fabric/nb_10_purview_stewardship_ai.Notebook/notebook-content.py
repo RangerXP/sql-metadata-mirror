@@ -78,6 +78,22 @@ def _read_table(table_name: str, required=True):
     return None, None
 
 
+def _write_table(df, table_name: str, mode: str = "overwrite"):
+    candidates = [
+        f"{METADATA_SCHEMA}.{table_name}",
+        f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.{table_name}",
+        table_name,
+    ]
+    last_error = None
+    for candidate in candidates:
+        try:
+            df.write.mode(mode).format("delta").saveAsTable(candidate)
+            return candidate
+        except Exception as ex:
+            last_error = ex
+    raise RuntimeError(f"Could not write table '{table_name}'. Last error: {last_error}")
+
+
 domains_df, domains_source = _read_table("domains")
 data_products_df, data_products_source = _read_table("data_products")
 glossary_df, glossary_source = _read_table("glossary_terms")
@@ -179,7 +195,8 @@ scorecard_df = scorecard_df.withColumn(
     F.when(F.col("has_owner") & F.col("has_steward") & F.col("is_certified_or_published"), F.lit("PASS")).otherwise(F.lit("ACTION_REQUIRED")),
 )
 
-scorecard_df.write.mode("overwrite").format("delta").saveAsTable(f"{METADATA_SCHEMA}.purview_phase_08_stewardship_scorecard")
+phase_08_scorecard_table = _write_table(scorecard_df, "purview_phase_08_stewardship_scorecard")
+print(f"[Cell 3] Wrote stewardship scorecard to: {phase_08_scorecard_table}")
 display(scorecard_df.orderBy("object_type", "object_name"))
 
 
@@ -209,7 +226,8 @@ controls_rows = [
     ("dlp_policy_mode_selected", 0, "ACTION_REQUIRED"),
 ]
 controls_df = spark.createDataFrame(controls_rows, ["check_name", "check_value", "status"])
-controls_df.write.mode("overwrite").format("delta").saveAsTable(f"{METADATA_SCHEMA}.purview_phase_09_controls_validation")
+phase_09_controls_table = _write_table(controls_df, "purview_phase_09_controls_validation")
+print(f"[Cell 4] Wrote controls validation to: {phase_09_controls_table}")
 display(controls_df.orderBy("check_name"))
 
 
@@ -236,7 +254,8 @@ ai_rows = [
     ("semantic_annotation_plan_available", annotation_count, "PASS" if annotation_count > 0 else "ACTION_REQUIRED"),
 ]
 ai_df = spark.createDataFrame(ai_rows, ["check_name", "check_value", "status"])
-ai_df.write.mode("overwrite").format("delta").saveAsTable(f"{METADATA_SCHEMA}.purview_phase_10_ai_readiness_validation")
+phase_10_ai_table = _write_table(ai_df, "purview_phase_10_ai_readiness_validation")
+print(f"[Cell 5] Wrote AI readiness validation to: {phase_10_ai_table}")
 display(ai_df.orderBy("check_name"))
 
 
@@ -257,9 +276,9 @@ manifest = {
     "generated_on": str(date.today()),
     "semantic_model": SEMANTIC_MODEL,
     "stage_tables": {
-        "phase_08_scorecard": f"{METADATA_SCHEMA}.purview_phase_08_stewardship_scorecard",
-        "phase_09_controls": f"{METADATA_SCHEMA}.purview_phase_09_controls_validation",
-        "phase_10_ai_readiness": f"{METADATA_SCHEMA}.purview_phase_10_ai_readiness_validation",
+        "phase_08_scorecard": phase_08_scorecard_table,
+        "phase_09_controls": phase_09_controls_table,
+        "phase_10_ai_readiness": phase_10_ai_table,
     },
     "manual_gate_notes": [
         "Select DLP policy mode before demo: alert-only, policy tip, or block.",
@@ -281,9 +300,10 @@ for name, df in [
     summary_rows.append((name, total, action_required, "PASS" if action_required == 0 else "ACTION_REQUIRED"))
 
 summary_df = spark.createDataFrame(summary_rows, ["stage", "rows_checked", "action_required_rows", "status"])
-summary_df.write.mode("overwrite").format("delta").saveAsTable(f"{METADATA_SCHEMA}.purview_phase_08_10_closeout")
+phase_08_10_closeout_table = _write_table(summary_df, "purview_phase_08_10_closeout")
 
 print(f"Closeout manifest written to: {OUTPUT_ROOT}")
+print(f"[Cell 6] Wrote closeout summary to: {phase_08_10_closeout_table}")
 display(summary_df.orderBy("stage"))
 
 
