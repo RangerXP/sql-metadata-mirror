@@ -79,7 +79,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G2 | Azure SQL source system in sub2 | P1 | 🟢 Done | Sean |
 | G3 | Synthetic data publication from notebooks into Azure SQL | P1 | 🟢 Done | Sean |
 | G4 | Fabric mirroring from sub2 SQL into sub1 | P1 | 🟢 Done | Sean |
-| G5 | Metadata extraction and working metadata store alignment | P1 | 🟡 In Progress (design complete; nb_07a builds Day 1) | Sean |
+| G5 | Metadata extraction and working metadata store alignment | P1 | 🟢 Done (customer-files-first ingestion path implemented via nb_07a) | Sean |
 | G6 | Semantic model metadata write-back and Copilot grounding | P1 | 🟢 Done (Data Agent KPI + Maria grounding stable; rolling 12-month default enforced) | Sean |
 | G7 | Purview deployment in sub3 | P1 | 🟢 Done | Sean |
 | G8 | Purview scans, catalog publication, and glossary | P1 | 🟡 In Progress (design complete; publication Days 2–3) | Sean |
@@ -237,14 +237,14 @@ Phase A delivered the design that the rest of the build executes against. Sixtee
 ## G5 — Metadata Extraction And Working Metadata Store Alignment
 
 **Priority:** P1
-**Status:** 🟡 In Progress (design complete; `nb_07a` builds Day 1)
+**Status:** 🟢 Done
 
 | # | Task | Status | Notes |
 |---|---|---|---|
 | G5-1 | Keep `lh_metadata` as the working metadata cache/staging store | 🟢 Done | Role confirmed |
 | G5-2 | Reconcile current metadata schema against README build recommendations | 🟢 Done | New tables defined: `metadata.domains`, `metadata.data_products`, `metadata.glossary_terms`, `metadata.cdes`, `metadata.role_assignments`, `metadata.label_assignments` |
 | G5-3 | Define metadata extraction approach from SQL views/procs or sidecar conventions | 🟢 Done | Replaced with customer-files ingestion: `purview/*.csv` → `lh_metadata` via `nb_07a_ingest_customer_files` (Day 1) |
-| G5-4 | Update notebook extractor logic to support customer-files-first metadata | 🟡 In Progress | Day 1: `nb_07a` build |
+| G5-4 | Update notebook extractor logic to support customer-files-first metadata | 🟢 Done | Implemented in `nb_07a_ingest_customer_files`; validates required schema and writes `lh_metadata.metadata.*` targets |
 | G5-5 | Distinguish curated metadata rows from AI draft rows and scan-derived rows | 🟢 Done | `status` column on each CSV; reconciliation in `nb_07b_merge_customer_metadata` (Day 2) |
 
 ---
