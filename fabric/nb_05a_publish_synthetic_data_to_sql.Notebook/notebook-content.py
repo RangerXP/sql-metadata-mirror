@@ -50,6 +50,15 @@ PHASE_B_CHILD_TABLES      = ["customer_complaints", "customer_consents"]
 SQL_AUTH_MODE             = "auto"  # auto | managed_identity | tokenlibrary
 SQL_MANAGED_IDENTITY_CLIENT_ID = ""  # Optional: set for user-assigned MI
 EFFECTIVE_SQL_AUTH_MODE   = SQL_AUTH_MODE
+TABLE_PRIMARY_KEYS        = {
+    "products": ["product_id"],
+    "customers": ["customer_id"],
+    "service_accounts": ["service_account_id"],
+    "equipment_registry": ["equipment_id"],
+    "contracts": ["contract_id"],
+    "service_requests": ["request_id"],
+    "billing_transactions": ["transaction_id"],
+}
 LOAD_ORDER = [
     "products",
     "customers",
@@ -167,6 +176,19 @@ def read_target_count(table_name, access_token):
     )
     count_df = apply_jdbc_auth(reader, access_token).load()
     return int(count_df.first()["row_count"])
+
+
+def read_target_keys(table_name, key_columns, access_token):
+    target_table = f"{TARGET_SCHEMA}.{table_name}"
+    key_list = ", ".join(key_columns)
+    query = f"SELECT {key_list} FROM {target_table}"
+    reader = (
+        spark.read.format("jdbc")
+        .option("url", JDBC_URL)
+        .option("driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver")
+        .option("query", query)
+    )
+    return apply_jdbc_auth(reader, access_token).load().select(*key_columns).dropDuplicates()
 
 
 def get_sql_odbc_connection(access_token):
@@ -287,13 +309,6 @@ def clear_base_tables(connection):
         cur.execute(f"DELETE FROM {target_table}")
     connection.commit()
 
-
-def target_matches_source(table_name, source_count, access_token):
-    try:
-        return read_target_count(table_name, access_token) == source_count
-    except Exception:
-        return False
-
 if DEMO_MODE:
     print("[DRY RUN] No JDBC writes attempted.")
 else:
@@ -317,18 +332,32 @@ else:
         target_table = f"{TARGET_SCHEMA}.{table_name}"
         source_df = transform_for_sql(table_name, spark.table(f"{DEMO_LAKEHOUSE}.{table_name}"))
         source_count = source_df.count()
+        write_df = source_df
+        write_count = source_count
 
         print(f"Writing {table_name} -> {target_table} ({source_count} rows)")
 
-        if BASE_TABLE_LOAD_MODE == "skip_existing" and target_matches_source(table_name, source_count, sql_access_token):
-            target_count = read_target_count(table_name, sql_access_token)
-            write_results.append((table_name, source_count, target_count, True))
-            print(f"Skipped {target_table}: target count already matches source ({target_count})")
-            continue
+        if BASE_TABLE_LOAD_MODE == "skip_existing":
+            key_columns = TABLE_PRIMARY_KEYS.get(table_name, [])
+            if key_columns and all(col in source_df.columns for col in key_columns):
+                existing_keys_df = read_target_keys(table_name, key_columns, sql_access_token)
+                write_df = source_df.alias("src").join(existing_keys_df.alias("tgt"), on=key_columns, how="left_anti")
+                write_count = write_df.count()
+                skipped_count = source_count - write_count
+                if skipped_count > 0:
+                    print(f"Skipped {skipped_count} existing rows in {target_table} based on keys {key_columns}.")
+            else:
+                print(f"[WARN] No valid primary key mapping found for {table_name}; writing all source rows.")
+
+            if write_count == 0:
+                target_count = read_target_count(table_name, sql_access_token)
+                write_results.append((table_name, source_count, target_count, True))
+                print(f"Skipped {target_table}: no new rows to insert.")
+                continue
 
         (
             apply_jdbc_auth(
-                source_df.write.format("jdbc")
+                write_df.write.format("jdbc")
             .option("url", JDBC_URL)
             .option("driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver")
             .option("dbtable", target_table)
