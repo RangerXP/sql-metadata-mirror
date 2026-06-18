@@ -3,7 +3,7 @@
 **Purpose:** This is the orienting scenario for the Enercare Purview + Fabric demo. Every design choice (data products, glossary terms, CDEs, sensitivity labels, term policies, SemPy writeback annotations, verified Q&A entries) earns its place in the build by serving this scenario. If a piece of the design doesn't show up here, it doesn't ship.
 
 **Status:** Demo north star — committed Phase A.
-**Linked from:** `docs/purview-demo-data-design.md`, `docs/purview-design-readiness-assessment.md`, `docs/purview-5-day-execution-plan.md` (2-day cadence), `docs/Enercare-Demo-SemPy-Design-Guide.md`.
+**Linked from:** `docs/purview-demo-data-design.md`, `docs/purview-design-readiness-assessment.md`, `docs/purview-2-day-execution-plan.md` (2-day cadence), `docs/Enercare-Demo-SemPy-Design-Guide.md`.
 
 ---
 
@@ -240,3 +240,4 @@ These are intentionally out of the 2-day window:
 If a future change to the design (new glossary term, new data product, new role assignment, new policy) doesn't serve some part of this scenario — either Tom's call, Victoria's review, or Ci Zhu's audit answer — interrogate whether it belongs in the demo at all.
 
 The scenario is the test. Pass it, ship it.
+

@@ -11,7 +11,7 @@
 1. Day 0 pre-flight steps run as same-day prep immediately before execution start.
 2. Day 1 covers prior Day 1 and Day 2 workstreams.
 3. Day 2 covers prior Day 3 through Day 5 workstreams, including Maria scenario E2E and rehearsal.
-4. File path remains `docs/purview-5-day-execution-plan.md` for backward compatibility, but operational cadence is 2-day.
+4. File path remains `docs/purview-2-day-execution-plan.md` for backward compatibility, but operational cadence is 2-day.
 
 ## Day 0 — Phase A commit (you, today)
 
@@ -257,3 +257,4 @@ The demo is ready when **all three personas** can be served from the same govern
 3. **Ci Zhu (governance)** — Walks the Purview catalog showing domain → data product → glossary term → CDE → label → lineage → certified KPI bound to SM measure — every claim provable
 
 If any persona's view diverges from the others, KPI drift has won and the demo fails on the central thesis.
+

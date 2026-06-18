@@ -7,7 +7,7 @@
 **Out of demo scope:** Christopher Dingle (VP Data Analytics & Governance at Enercare — intentional exclusion; his real-world governance authoring functions are represented in the demo by Ci Zhu)
 
 > **What changed in this version**
-> Phase A design is complete. This document is updated to reflect single-owner accountability, the Maria north-star scenario as the demo's pass/fail bar, the corrected `nb_07` family notebook numbering, the four-tier placement model, and the 5-day execution plan for Phase B/C.
+> Phase A design is complete. This document is updated to reflect single-owner accountability, the Maria north-star scenario as the demo's pass/fail bar, the corrected `nb_07` family notebook numbering, the four-tier placement model, and the 2-day execution plan for Phase B/C.
 >
 > `sub1` = Microsoft Fabric workspace and semantic model plane
 > `sub2` = Azure SQL Server source system populated with synthetic Enercare data
@@ -58,7 +58,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 - Custom Atlas lineage tooling (`tools/purview_custom_lineage.py`) registers SQL → Fabric edge sets.
 - **Phase A design committed** — see "Phase A Design Commit" section below.
 
-### What is not yet built (target: Days 1–5)
+### What is not yet built (target: 2-day window)
 
 - Customer-files ingestion notebook `nb_07a_ingest_customer_files` (Day 1).
 - Customer-metadata reconciliation notebook `nb_07b_merge_customer_metadata` (Day 2).
@@ -143,7 +143,7 @@ Phase A delivered the design that the rest of the build executes against. Sixtee
 | `docs/purview-csv-alignment.md` | Maps every Purview required field to its CSV column, with brief reference and deliberate-deviation list. Demonstrates schema completeness. |
 | `docs/purview-sin-classifier-backstop.md` | Three-layer SIN classification guarantee (Luhn-valid generation + custom SIT + direct annotation). Closes the open decision on SIN check digits. |
 | `docs/purview-design-readiness-assessment.md` | Honest gap analysis against the end-state goal; phased commit plan (A → B → C → D). |
-| `docs/purview-5-day-execution-plan.md` | Day-by-day deliverables targeting Phase C complete in 2 days (compressed cadence). |
+| `docs/purview-2-day-execution-plan.md` | Day-by-day deliverables targeting Phase C complete in 2 days (compressed cadence). |
 | `docs/design-gap-analysis.md` | **This document.** |
 | `purview/domain-charter.csv` | 3 governance domains with two Domain Owners each (Phase 2.2 compliant). |
 | `purview/data-product-catalog.csv` | 3 data products with Type, business_use_case, audience, access policies (Phase 3 compliant). |
@@ -209,7 +209,7 @@ Phase A delivered the design that the rest of the build executes against. Sixtee
 | G3-2 | Build load/export notebook from Fabric outputs to Azure SQL | 🟢 Done | `nb_05a_publish_synthetic_data_to_sql` |
 | G3-3 | Seed sub2 SQL with current synthetic dataset | 🟢 Done | Phase B re-run includes Luhn-valid SIN injection via `tools/sin_luhn_generator.py` |
 | G3-4 | Reconcile row counts and keys | 🟢 Done | Validation after refresh returned expected mirrored counts |
-| G3-5 | Document rerun behavior for regenerating and republishing synthetic data | 🟡 In Progress — captured in `docs/purview-5-day-execution-plan.md` Day 1 | |
+| G3-5 | Document rerun behavior for regenerating and republishing synthetic data | 🟡 In Progress — captured in `docs/purview-2-day-execution-plan.md` Day 1 | |
 
 ---
 
@@ -390,7 +390,7 @@ G8-3 completion evidence (captured Day 5):
 | G12-6 | SIN classifier backstop strategy (three-layer guarantee) | 🟢 Done | `docs/purview-sin-classifier-backstop.md`; `tools/sin_luhn_generator.py` (self-test passes); `tools/purview_create_sin_backstop.py` |
 | G12-7 | Notebook numbering aligned to `nb_07a → nb_07b → nb_07` convention | 🟢 Done | Mirrors established `nb_04a → nb_04` pattern; reflected in 2-day plan and data-design doc |
 | G12-8 | Demo north-star scenario (Maria) memorialized | 🟢 Done | `docs/purview-maria-north-star-scenario.md` — three acts, 8 acceptance criteria, feature traceability |
-| G12-9 | Readiness assessment + 2-day execution plan | 🟢 Done | `docs/purview-design-readiness-assessment.md`, `docs/purview-5-day-execution-plan.md` |
+| G12-9 | Readiness assessment + 2-day execution plan | 🟢 Done | `docs/purview-design-readiness-assessment.md`, `docs/purview-2-day-execution-plan.md` |
 | G12-10 | Phase A commit to `enercare` branch | 🟡 In Progress | 16 files staged at `/mnt/workspace/output/repo-staging/`; copy + commit pending |
 
 ---
@@ -429,7 +429,7 @@ These maintained assets remain valid:
 - `docs/purview-csv-alignment.md`
 - `docs/purview-sin-classifier-backstop.md`
 - `docs/purview-design-readiness-assessment.md`
-- `docs/purview-5-day-execution-plan.md`
+- `docs/purview-2-day-execution-plan.md`
 - `purview/domain-charter.csv`
 - `purview/data-product-catalog.csv`
 - `purview/role-directory.csv`
@@ -452,7 +452,7 @@ These maintained assets remain valid:
 
 ## Immediate Next Build Steps (2-Day Compressed Window)
 
-The full execution plan is in `docs/purview-5-day-execution-plan.md` (2-day cadence). Summary:
+The full execution plan is in `docs/purview-2-day-execution-plan.md` (2-day cadence). Summary:
 
 | Day | Goal | Phase |
 |---|---|---|
@@ -497,3 +497,4 @@ The demo is accepted when:
 ## Single-owner accountability statement
 
 Sean Kelley is the sole accountable owner for every Build Gap and every task in this document. Microsoft delivery support is available from Alison Pouw (Purview SE), Ajay Jagannathan (Fabric/Data), Brian Lung (Account Tech Strategist), and Naunihal Singh Sidhu (Azure Fabric FSI Data SE) — but accountability does not delegate. Post-handoff role transitions to Enercare-side owners (Ci Zhu for tenant governance; Victoria Tan for DOM-CUSTOPS) are documented in `purview/role-directory.csv` and flagged with `assignment_note` describing the transfer trigger.
+

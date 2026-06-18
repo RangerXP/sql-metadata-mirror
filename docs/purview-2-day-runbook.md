@@ -55,8 +55,8 @@ docs/
   purview-maria-north-star-scenario.md
   purview-design-readiness-assessment.md
   design-gap-analysis.md
-  purview-5-day-execution-plan.md
-  purview-5-day-runbook.md        ← THIS FILE
+  purview-2-day-execution-plan.md
+  purview-2-day-runbook.md        ← THIS FILE
 purview/
   domain-charter.csv              (3 rows)
   data-product-catalog.csv        (3 rows)
@@ -796,4 +796,5 @@ The agent should treat these as authoritative context. Re-read on demand when a 
 | `docs/purview-maria-north-star-scenario.md` | Maria scenario script, required Q&A, required SM measures |
 | `docs/purview-design-readiness-assessment.md` | Phase 0–5 mapping to the SOW phases; what's gated by what |
 | `docs/design-gap-analysis.md` | Known gaps and resolutions, including SQL network posture (G7-2) |
-| `docs/purview-5-day-execution-plan.md` | Earlier activity-table view of this same plan (kept for stakeholder reference) |
+| `docs/purview-2-day-execution-plan.md` | Earlier activity-table view of this same plan (kept for stakeholder reference) |
+

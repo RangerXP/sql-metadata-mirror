@@ -4,7 +4,7 @@ Purpose: provide a clean, repeatable rebuild matrix to validate sequencing, depe
 
 Source alignment:
 - Design construct: docs/Enercare-Demo-SemPy-Design-Guide.md
-- Execution plan (2-day cadence): docs/purview-5-day-execution-plan.md
+- Execution plan (2-day cadence): docs/purview-2-day-execution-plan.md
 - North star: docs/purview-maria-north-star-scenario.md
 
 ## How To Use
@@ -160,3 +160,4 @@ Use this section to explicitly verify each dependency edge is valid in your run.
 | Primary Blocker | |
 | Remediation Owner | |
 | Retest Date | |
+
