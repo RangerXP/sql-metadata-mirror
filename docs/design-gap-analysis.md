@@ -83,7 +83,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G6 | Semantic model metadata write-back and Copilot grounding | P1 | 🟢 Done (Data Agent KPI + Maria grounding stable; rolling 12-month default enforced) | Sean |
 | G7 | Purview deployment in sub3 | P1 | 🟢 Done | Sean |
 | G8 | Purview scans, catalog publication, and glossary | P1 | 🟢 Done (SQL + Fabric sources registered; scan runs executing consistently) | Sean |
-| G9 | Lineage registration from SQL to Fabric to semantic model | P2 | 🟢 Done (SQL→Fabric edges registered; SM/report edges optional) | Sean |
+| G9 | Lineage registration from SQL to Fabric to semantic model | P2 | 🟡 In Progress (SQL→Fabric edges registered; SM/report edges optional) | Sean |
 | G10 | Steward workflow and AI-assisted metadata drafting | P3 | 🔴 Not Started — deferred to Phase D (post-MVP) | Sean |
 | G11 | Optional ontology and B2C extensions | P4 | ⏸ Blocked / Deferred to Phase D | Sean |
 | **G12** | **Phase A design commit (north star, dataset, CSVs, SIN backstop, 2-day plan)** | **P1** | **🟢 Done** | **Sean** |
@@ -335,7 +335,7 @@ G8-3 completion evidence (captured Day 5):
 ## G9 — Lineage Registration From SQL To Fabric To Semantic Model
 
 **Priority:** P2
-**Status:** 🟢 Done (SQL→Fabric edges registered; SM/report edges optional Phase C extension)
+**Status:** 🟡 In Progress (SQL→Fabric edges registered; SM/report edges optional Phase C extension)
 
 | # | Task | Status | Notes |
 |---|---|---|---|
