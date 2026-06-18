@@ -54,8 +54,6 @@ print(f"Max annotation chars: {MAX_ANNOTATION_CHARS}")
 
 # METADATA ********************
 
-# METADATA ********************
-
 # META {
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
@@ -381,15 +379,6 @@ else:
 
 # CELL ********************
 
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
-# META }
-
-# CELL ********************
-
 # Cell 5: Summary
 
 print("\n=== nb_05 Summary ===")
@@ -402,9 +391,6 @@ print(f"  Status: {status}")
 if not DEMO_MODE:
     print(f"  Write detail:       {annotation_write_detail}")
 print("\nTo verify: ask Copilot 'what is our FCR?' or 'what is our CSAT score?'")
-
-
-# METADATA ********************
 
 
 # METADATA ********************
