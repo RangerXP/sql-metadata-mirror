@@ -211,13 +211,30 @@ display(scorecard_df.orderBy("object_type", "object_name"))
 
 # Cell 4: DLP and governance-control readiness checks
 
-sensitive_cdes_df = cde_df.where(F.col("sensitivity_label").isin("Confidential", "Highly Confidential"))
-sensitive_cde_count = sensitive_cdes_df.count()
+high_sensitivity_labels = ["Confidential", "Highly Confidential"]
+
+if "sensitivity_label" in cde_df.columns:
+    sensitive_cde_count = cde_df.where(F.col("sensitivity_label").isin(*high_sensitivity_labels)).count()
+elif labels_df is not None and "label_name" in labels_df.columns:
+    labeled_sensitive_df = labels_df.where(F.col("label_name").isin(*high_sensitivity_labels))
+    if "cde_id" in labeled_sensitive_df.columns and "cde_id" in cde_df.columns:
+        sensitive_cde_count = (
+            cde_df.join(labeled_sensitive_df.select("cde_id").distinct(), on="cde_id", how="inner")
+            .select("cde_id")
+            .distinct()
+            .count()
+        )
+    else:
+        sensitive_cde_count = labeled_sensitive_df.count()
+    print("[Cell 4] cdes.sensitivity_label not found; deriving sensitive CDE coverage from label_assignments.")
+else:
+    sensitive_cde_count = 0
+    print("[Cell 4][WARN] No sensitivity label columns found in cdes or label_assignments.")
 
 label_policy_count = labels_df.count() if labels_df is not None else 0
 high_label_count = 0
 if labels_df is not None and "label_name" in labels_df.columns:
-    high_label_count = labels_df.where(F.col("label_name").isin("Confidential", "Highly Confidential")).count()
+    high_label_count = labels_df.where(F.col("label_name").isin(*high_sensitivity_labels)).count()
 
 controls_rows = [
     ("sensitive_cdes_identified", sensitive_cde_count, "PASS" if sensitive_cde_count > 0 else "FAIL"),
