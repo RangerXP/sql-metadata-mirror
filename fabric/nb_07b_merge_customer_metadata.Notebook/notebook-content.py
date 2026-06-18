@@ -45,6 +45,13 @@ REQUIRED_METADATA_TABLES = {
     "label_assignments": f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.label_assignments",
 }
 
+TABLE_NAME_ALIASES = {
+    "glossary_terms": ["glossary_terms", "governance_glossary_terms", "metadata_glossary_terms"],
+    "cdes": ["cdes", "governance_cdes", "metadata_cdes"],
+    "data_products": ["data_products", "governance_data_products", "metadata_data_products"],
+    "label_assignments": ["label_assignments", "governance_label_assignments", "metadata_label_assignments"],
+}
+
 ANNOTATION_KEYS = {
     "cde": "CDE_Member_Of",
     "glossary": "Glossary_Term_References",
@@ -60,9 +67,27 @@ def _table_candidates(table_name: str):
     required_name = REQUIRED_METADATA_TABLES.get(table_name)
     if not required_name:
         raise ValueError(f"Unknown required metadata table key: {table_name}")
-    # Try required 3-part first, then 2-part for Spark sessions where the
-    # default lakehouse is already attached and scoped.
-    return [required_name, f"{METADATA_SCHEMA}.{table_name}"]
+
+    aliases = TABLE_NAME_ALIASES.get(table_name, [table_name])
+    candidates = []
+
+    # Try 3-part then 2-part then unqualified names to tolerate catalog/schema drift.
+    for alias in aliases:
+        candidates.extend([
+            f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.{alias}",
+            f"{METADATA_SCHEMA}.{alias}",
+            alias,
+        ])
+
+    # Deduplicate while preserving order.
+    deduped = []
+    seen = set()
+    for candidate in candidates:
+        if candidate not in seen:
+            deduped.append(candidate)
+            seen.add(candidate)
+
+    return deduped
 
 
 def _read_table(table_name: str):
@@ -78,10 +103,9 @@ def _read_table(table_name: str):
         f"Could not resolve table '{table_name}'. "
         f"Candidates tried: {candidates}. "
         f"Last error: {last_error}. "
-        "Required source: lh_metadata.metadata staged tables only. "
+        "Required source: lh_metadata staged tables (schema-qualified or unqualified). "
         "Prerequisite: run nb_07a_ingest_customer_files first to populate "
-        "lh_metadata.metadata.glossary_terms, lh_metadata.metadata.cdes, "
-        "lh_metadata.metadata.data_products, and optionally label_assignments."
+        "glossary_terms/cdes/data_products (and optionally label_assignments) in lh_metadata."
     )
 
 
