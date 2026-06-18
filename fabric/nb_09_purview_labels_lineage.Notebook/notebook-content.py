@@ -581,6 +581,15 @@ def _build_lineage_process_entities(token: str):
 
 
 publish_guard_active = SQL_MIRROR_ONLY_DEPLOYMENT and not PURVIEW_PUBLISH_OVERRIDE
+fail_on_token_error = bool(globals().get("FAIL_ON_TOKEN_ACQUISITION_ERROR", False))
+
+print(
+    "[Cell 6] Entry | "
+    f"APPLY_CHANGES={APPLY_CHANGES}, "
+    f"SQL_MIRROR_ONLY_DEPLOYMENT={SQL_MIRROR_ONLY_DEPLOYMENT}, "
+    f"PURVIEW_PUBLISH_OVERRIDE={PURVIEW_PUBLISH_OVERRIDE}, "
+    f"fail_on_token_error={fail_on_token_error}"
+)
 
 if publish_guard_active:
     print("[GUARD] SQL-mirror-only deployment is active. Set PURVIEW_PUBLISH_OVERRIDE=True for live Purview publish.")
@@ -592,7 +601,7 @@ else:
     try:
         token = _get_purview_token_with_retry()
     except Exception as ex:
-        if FAIL_ON_TOKEN_ACQUISITION_ERROR:
+        if fail_on_token_error:
             raise
 
         print(f"[WARN] Token acquisition failed; skipping live publish. Error: {ex}")
