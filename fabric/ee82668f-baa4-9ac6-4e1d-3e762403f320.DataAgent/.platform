@@ -2,7 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
   "metadata": {
     "type": "DataAgent",
-    "displayName": "Enercare Data Agent"
+    "displayName": "Enercare Data Agent",
+    "description": "PRIMARY standalone Copilot Data Agent for operational Enercare questions: service request IDs, work orders, dispatch, SLA. Route prompts like 'tell me about request 2026051142' here."
   },
   "config": {
     "version": "2.0",

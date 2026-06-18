@@ -23,8 +23,7 @@ Primary repo surface is `fabric/`. Do not recreate duplicate notebook mirrors el
 |- fabric/
 |  |- BrookfieldEnercare.Report/
 |  |- BrookfieldEnercare.SemanticModel/
-|  |- Enercare Data Agent.DataAgent/
-|  |- Enercare Governance Agent.DataAgent/
+|  |- ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/   (Enercare Data Agent — operational request/SLA lookup)
 |  |- lh_enercare_demo.Lakehouse/
 |  |- lh_metadata.Lakehouse/
 |  |- nb_01_setup_demo_environment.Notebook/

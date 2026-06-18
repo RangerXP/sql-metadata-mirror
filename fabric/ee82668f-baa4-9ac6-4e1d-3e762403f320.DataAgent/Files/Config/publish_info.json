@@ -1,0 +1,4 @@
+{
+  "description": "PRIMARY standalone Copilot Data Agent for operational Enercare: service request IDs, dispatch, SLA. Route requests like 2026051142 here.",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/publishInfo/1.0.0/schema.json"
+}
