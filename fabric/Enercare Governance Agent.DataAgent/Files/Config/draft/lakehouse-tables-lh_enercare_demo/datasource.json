@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/dataSource/1.0.0/schema.json",
   "artifactId": "7b504b7d-1f16-b228-40d9-2fd30ee837e4",
   "workspaceId": "00000000-0000-0000-0000-000000000000",
-  "dataSourceInstructions": null,
+  "dataSourceInstructions": "Use only for governance context such as dataset/asset presence and lineage support. Do not use this source for operational request/ticket lookups, dispatch status, or SLA-by-request answers.",
   "displayName": "lh_enercare_demo",
   "type": "lakehouse_tables",
   "userDescription": null,

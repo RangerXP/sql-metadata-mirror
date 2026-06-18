@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/dataSource/1.0.0/schema.json",
   "artifactId": "77b3a5d2-d0b8-afe8-46dd-9b80d4ba455b",
   "workspaceId": "00000000-0000-0000-0000-000000000000",
-  "dataSourceInstructions": null,
+  "dataSourceInstructions": "Governance metadata source. Use for glossary terms, stewardship ownership, certification status, CDE mappings, lineage notes, and sensitivity policy context.",
   "displayName": "lh_metadata",
   "type": "lakehouse_tables",
   "userDescription": "\r\n",
