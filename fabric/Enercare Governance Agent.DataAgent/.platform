@@ -3,7 +3,7 @@
   "metadata": {
     "type": "DataAgent",
     "displayName": "Enercare Governance Agent",
-    "description": "AI agent for Enercare governance: queries lh_metadata and lh_enercare_demo via natural language for schema exploration, steward review, and reporting."
+    "description": "GOVERNANCE-ONLY agent for metadata stewardship, glossary, labels, CDEs, and policy. Not for service requests, ticket IDs, work orders, or dispatch/SLA operations."
   },
   "config": {
     "version": "2.0",
