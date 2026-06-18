@@ -339,7 +339,7 @@ G8-3 completion evidence (captured Day 5):
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| G9-1 | Update `lineage_edges` modeling for SQL → mirrored → SM path | 🟡 In Progress | `context/lineage-edges.csv` carries SQL → lakehouse edges; SM/report edges extend Phase C |
+| G9-1 | Update Purview lineage graph modeling for SQL → mirrored → SM path | 🟡 In Progress | Purview lineage graph edge modeling currently covers SQL → lakehouse edges; SM/report edges extend Phase C |
 | G9-2 | Validate whether native Purview lineage appears for the Fabric SM path | 🟢 Done | Native SP lineage incompatible with private-only scan; custom Atlas lineage is the path |
 | G9-3 | Build Purview lineage registration notebook/script | 🟢 Done | `tools/purview_custom_lineage.py` registers type defs, creates Fabric target assets, publishes Atlas Process entities |
 | G9-4 | Register at least one complete sample lineage chain | 🟢 Done | Seven SQL source → Fabric lakehouse edges published and API-verified |
