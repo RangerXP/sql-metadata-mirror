@@ -519,16 +519,6 @@ verified_answers = [
      "The auditor should see one governed chain: DP-CUST360 for Maria's identity and consent, DP-SVCPERF "
      "for the NoHeat furnace request, DP-BILLHEALTH for the 89.95 monthly charge, and dbo.audit_data_access "
      "showing Tom Nguyen's CustomerService access."),
-    ("SLA_BRCH_RATE", "Tell me about customer service request 2026051142",
-     "Customer service request 2026051142 (SR-2026-051142) is InProgress and classified as Emergency Repair "
-     "for a NoHeat furnace incident. Customer: Maria Castellanos (account EC18374622 / service account "
-     "183746220), service address 47 Birch Drive Unit 8, Markham (GTA North). SLA status: 1 breach, "
-     "0.0% compliance, with missed 24-hour no-heat commitment."),
-    ("SLA_BRCH_RATE", "show all available details for customer service request ID 2026051142",
-     "For request 2026051142: status InProgress; priority Emergency Repair; request type NoHeat furnace; "
-     "customer Maria Castellanos; account EC18374622 / service account 183746220; location 47 Birch Drive "
-     "Unit 8, Markham (GTA North); SLA breach count 1; SLA compliance 0.0%. If owner/queue or timestamps "
-     "are not present in current model rows, state those fields as unavailable instead of inferring values."),
 ]
 
 record_id = 1
@@ -617,10 +607,11 @@ ai_instructions = [
      "service dispatch remediation. Ground answers through Customer 360, Service Performance, Billing "
      "Health, customer_consents, customer_complaints, and audit_data_access."),
     ("Request Detail Output Rules", "service request detail response rules",
-     "When user intent includes a concrete request identifier (for example 2026051142 or SR-2026-051142), "
-     "prefer the matching verified_answer text first. Return a text-first response with explicit field labels "
-     "and no visual/table formatting artifacts (no data bars, no pseudo-graph markers). If a field is missing, "
-     "state 'not available in the current model rows' and do not infer."),
+     "When user intent includes a concrete service request identifier, such as a numeric RequestKey or an "
+     "SR-formatted request code, answer from the matching service-request row or rows in the semantic model "
+     "instead of from canned text. Return a text-first response with explicit field labels and no visual/table "
+     "formatting artifacts (no data bars, no pseudo-graph markers). If a field is missing, state 'not available "
+     "in the current model rows' and do not infer."),
 ]
 
 rows_instr = [
