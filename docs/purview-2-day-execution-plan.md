@@ -6,6 +6,12 @@
 **Owner:** Sean Kelley
 **Date authored:** 2026-06-04
 
+## Deferred Backlog (Future Cycle)
+
+1. Governance Agent lifecycle reset is deferred by design.
+2. If `Enercare Governance Agent` is deleted for troubleshooting, rebuild it in a future cycle only after standalone operational routing is stable on `Enercare Data Agent West3`.
+3. Rebuild scope when resumed: governance-only behavior (glossary, CDEs, labels, policies, lineage) and explicit exclusion of operational request/ticket lookup.
+
 ## 2-Day Cadence Map (Locked)
 
 1. Day 0 pre-flight steps run as same-day prep immediately before execution start.

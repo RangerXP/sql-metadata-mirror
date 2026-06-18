@@ -27,6 +27,11 @@ Do not patch Fabric item metadata through API/portal while pending Source Contro
 4. Conflict recovery rule:
 If Fabric reports duplicate-name conflicts for a Data Agent, treat git as source of truth, remove unbound workspace duplicates, then re-run Source Control update.
 
+## Deferred Item (Future Build Cycle)
+
+1. Governance Agent rebuild is intentionally deferred when deleted during troubleshooting.
+2. Reintroduce `Enercare Governance Agent` only in a future cycle after standalone operational request lookup is stable on `Enercare Data Agent West3`.
+
 ## Run Metadata
 
 | Field | Value |
