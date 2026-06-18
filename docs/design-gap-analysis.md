@@ -192,7 +192,7 @@ Phase A delivered the design that the rest of the build executes against. Sixtee
 |---|---|---|---|
 | G2-1 | Finalize target SQL server and database | 🟢 Done | `sqlserver-sk2wus3` / `sqldemo` |
 | G2-2 | Create or confirm source schema for synthetic Enercare tables | 🟢 Done | Initial DDL in `sql/02_sub2_sql_source_schema.sql`; **Phase A extensions in `sql/04_purview_demo_extensions.sql` add 9 PII columns + 6 new tables** |
-| G2-3 | Define which views/procs carry business semantics | 🟢 Done — customer-facing semantics proven through synthetic mirrored demo path (no SQL view/proc dependency) | Business semantics are carried by published glossary/CDE metadata and semantic-model measures grounded in mirrored SQL |
+| G2-3 | Define which views/procs carry business semantics | 🟢 Done — customer-facing semantics proven through synthetic mirrored demo path (no SQL view/proc dependency) | SQL semantic script lines are now operationalized through the runbook/notebook execution path; business semantics are carried by published glossary/CDE metadata and semantic-model measures grounded in mirrored SQL |
 | G2-4 | Decide whether metadata helper tables live in SQL | 🟢 Done | Hybrid: T1 (SQL) holds ownership reference tables (`data_owners_directory`, `audit_data_access`); T2 (customer files) holds policy artifacts |
 | G2-5 | Validate SQL source shape is stable enough for mirroring | 🟢 Done | Current slice live in `sqldemo`; extensions to be mirrored Day 1 |
 
