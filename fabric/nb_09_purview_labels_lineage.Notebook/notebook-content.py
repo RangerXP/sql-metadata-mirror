@@ -43,9 +43,9 @@ METADATA_LAKEHOUSE = "lh_metadata"
 METADATA_SCHEMA = "metadata"
 PURVIEW_ACCOUNT_NAME = "Purview-West3"
 PURVIEW_BASE_URL = f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
-APPLY_CHANGES = False
+APPLY_CHANGES = True
 SQL_MIRROR_ONLY_DEPLOYMENT = True
-PURVIEW_PUBLISH_OVERRIDE = False
+PURVIEW_PUBLISH_OVERRIDE = True
 OUTPUT_ROOT = "/lakehouse/default/Files/purview_publish/phase_06_07_labels_lineage"
 
 WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
