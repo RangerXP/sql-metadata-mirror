@@ -295,10 +295,34 @@ print(f"Lineage edge rows prepared: {len(lineage_edges)}")
 #          Create validation table tracking readiness of all artifacts (G9 checklist).
 # Outputs: JSON files in OUTPUT_ROOT; metadata.purview_phase_06_07_validation table.
 
-mssparkutils.fs.mkdirs(OUTPUT_ROOT)
-mssparkutils.fs.put(f"{OUTPUT_ROOT}/classification_typedefs.json", json.dumps(typedef_payload, indent=2), True)
-mssparkutils.fs.put(f"{OUTPUT_ROOT}/classification_manifest.json", json.dumps(classification_manifest, indent=2), True)
-mssparkutils.fs.put(f"{OUTPUT_ROOT}/lineage_edges.json", json.dumps(lineage_edges, indent=2), True)
+def _normalize_output_root(path: str) -> str:
+    raw = (path or "").strip()
+    if not raw:
+        return "Files/purview_publish/phase_06_07_labels_lineage"
+
+    cleaned = raw.replace("\\", "/").strip("/")
+    lowered = cleaned.lower()
+
+    if lowered.startswith("files/") or lowered.startswith("tables/"):
+        return cleaned
+
+    if lowered.startswith("lakehouse/default/files/"):
+        suffix = cleaned[len("lakehouse/default/files/") :]
+        return f"Files/{suffix}" if suffix else "Files"
+
+    if lowered.startswith("lakehouse/default/tables/"):
+        suffix = cleaned[len("lakehouse/default/tables/") :]
+        return f"Tables/{suffix}" if suffix else "Tables"
+
+    return f"Files/{cleaned}"
+
+
+output_root = _normalize_output_root(OUTPUT_ROOT)
+
+mssparkutils.fs.mkdirs(output_root)
+mssparkutils.fs.put(f"{output_root}/classification_typedefs.json", json.dumps(typedef_payload, indent=2), True)
+mssparkutils.fs.put(f"{output_root}/classification_manifest.json", json.dumps(classification_manifest, indent=2), True)
+mssparkutils.fs.put(f"{output_root}/lineage_edges.json", json.dumps(lineage_edges, indent=2), True)
 
 validation_rows = [
     ("classification_defs_prepared", len(classification_defs), "PASS" if classification_defs else "FAIL"),
@@ -310,7 +334,7 @@ validation_rows = [
 validation_df = spark.createDataFrame(validation_rows, ["check_name", "check_value", "status"])
 validation_df.write.mode("overwrite").format("delta").saveAsTable(f"{METADATA_SCHEMA}.purview_phase_06_07_validation")
 
-print(f"Payloads written to: {OUTPUT_ROOT}")
+print(f"Payloads written to: {output_root}")
 display(validation_df.orderBy("check_name"))
 
 # Cell 5 complete: Payloads written and validation table created
