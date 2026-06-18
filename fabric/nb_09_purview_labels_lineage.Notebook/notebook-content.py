@@ -332,9 +332,28 @@ validation_rows = [
     ("fabric_source_name_configured", int(bool(FABRIC_SOURCE_NAME)), "PASS"),
 ]
 validation_df = spark.createDataFrame(validation_rows, ["check_name", "check_value", "status"])
-validation_df.write.mode("overwrite").format("delta").saveAsTable(f"{METADATA_SCHEMA}.purview_phase_06_07_validation")
+
+validation_table_candidates = [
+    f"{METADATA_SCHEMA}.purview_phase_06_07_validation",
+    "purview_phase_06_07_validation",
+]
+validation_table_name = None
+last_validation_error = None
+for candidate in validation_table_candidates:
+    try:
+        validation_df.write.mode("overwrite").format("delta").saveAsTable(candidate)
+        validation_table_name = candidate
+        break
+    except Exception as ex:
+        last_validation_error = ex
+
+if validation_table_name is None:
+    raise RuntimeError(
+        f"Unable to write validation table. Tried {validation_table_candidates}. Last error: {last_validation_error}"
+    )
 
 print(f"Payloads written to: {output_root}")
+print(f"Validation table written to: {validation_table_name}")
 display(validation_df.orderBy("check_name"))
 
 # Cell 5 complete: Payloads written and validation table created
