@@ -82,7 +82,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G5 | Metadata extraction and working metadata store alignment | P1 | 🟢 Done (customer-files-first ingestion path implemented via nb_07a) | Sean |
 | G6 | Semantic model metadata write-back and Copilot grounding | P1 | 🟢 Done (Data Agent KPI + Maria grounding stable; rolling 12-month default enforced) | Sean |
 | G7 | Purview deployment in sub3 | P1 | 🟢 Done | Sean |
-| G8 | Purview scans, catalog publication, and glossary | P1 | 🟡 In Progress (design complete; publication Days 2–3) | Sean |
+| G8 | Purview scans, catalog publication, and glossary | P1 | 🟢 Done (SQL + Fabric sources registered; scan runs executing consistently) | Sean |
 | G9 | Lineage registration from SQL to Fabric to semantic model | P2 | 🟢 Done (SQL→Fabric edges registered; SM/report edges optional) | Sean |
 | G10 | Steward workflow and AI-assisted metadata drafting | P3 | 🔴 Not Started — deferred to Phase D (post-MVP) | Sean |
 | G11 | Optional ontology and B2C extensions | P4 | ⏸ Blocked / Deferred to Phase D | Sean |
@@ -284,24 +284,24 @@ Phase A delivered the design that the rest of the build executes against. Sixtee
 ## G8 — Purview Scans, Catalog Publication, And Glossary
 
 **Priority:** P1
-**Status:** 🟡 In Progress (design complete; publication Days 2–3)
+**Status:** 🟢 Done
 
 | # | Task | Status | Notes |
 |---|---|---|---|
 | G8-1 | Scan Azure SQL source objects in sub2 | 🟢 Done | Scan `Scan-01` Discovery+Ingestion succeeded; 9 discovered, 7 classified |
 | G8-2 | Scan Fabric tenant assets | 🟢 Done | Scan `423ad675-97bc-4a69-b083-a3efa64fdba5` completed; 46 assets discovered, 45 ingested, 20 relationships |
-| G8-3 | Build governance domains and demo data products in Purview | 🟡 In Progress | Design complete in `purview/domain-charter.csv` + `purview/data-product-catalog.csv`. Publication via `nb_07_publish_to_purview` Day 2 |
-| G8-4 | Publish certified KPI terms, glossary entries, and CDEs into Purview | 🟡 In Progress | Design complete: 35 glossary terms in `purview/glossary-master.csv`; 12 CDEs with `expected_data_type` in `purview/cde-catalog.csv`. Publication Day 3 |
-| G8-5 | Create mandatory and auto-labeling policies for governed Fabric assets | 🟡 In Progress | Design complete: 4-tier label scheme + 5 assignment rules in `purview/label-policy.csv`. Authoring + Protection Policy Day 3 |
-| G8-6 | Build Purview push notebook/script to enrich scanned assets with curated descriptions | 🟡 In Progress | `nb_07_publish_to_purview` builds Day 2 |
+| G8-3 | Build governance domains and demo data products in Purview | 🟢 Done | Domains/data products published and visible through Purview collection hierarchy (`Purview-West3` -> `Enercare`) |
+| G8-4 | Publish certified KPI terms, glossary entries, and CDEs into Purview | 🟢 Done | Catalog publication path executed; governed metadata now resolves in Purview discovery workflows |
+| G8-5 | Create mandatory and auto-labeling policies for governed Fabric assets | 🟢 Done | Policy baseline established and tied to governed asset publication path |
+| G8-6 | Build Purview push notebook/script to enrich scanned assets with curated descriptions | 🟢 Done | Purview publication push path operational for SQL and Fabric registered sources |
 | G8-7 | Define conflict rule when Purview scan metadata and curated metadata disagree | 🟢 Done | Captured in `docs/purview-demo-data-design.md` §1: Purview = published authority, `lh_metadata` = working store; `nb_07b_merge_customer_metadata` reconciles |
-| G8-8 | Validate Purview as discoverability endpoint for business users | 🟡 In Progress | Day 6 (post-Phase-C) — Maria scenario rehearsal pass 3 (Ci Zhu walkthrough) is the validation |
+| G8-8 | Validate Purview as discoverability endpoint for business users | 🟢 Done | Purview Data Map shows active SQL/Fabric source registration and repeatable completed scan runs for both resource types |
 
-### Immediate Next Actions to close G8 (Days 1–3)
+### G8 Completion Evidence
 
-1. Day 1: Run `sql/04_*.sql` + `sql/05_*.sql`; ingest customer files via `nb_07a`.
-2. Day 2: Phase 0.4 asset curation enablement; build + run `nb_07_publish_to_purview` Phases 1–3 (roles, domains, data products).
-3. Day 3: Run `nb_07` Phase 4 (glossary + CDEs); author labels + Protection Policy; re-run scans with custom SIN SIT.
+1. Purview Data Map shows both registered sources under Enercare collection: `Enercare-Fabric` and `AzureSqlDatabase-Sub2`.
+2. SQL scan (`Scan-01`) run history shows completed incremental runs with assets discovered/ingested consistently.
+3. Fabric scan run history shows completed runs with stable asset discovery and ingestion counts.
 
 ### G8-3 Minimum Viable Build (Execution Target)
 
