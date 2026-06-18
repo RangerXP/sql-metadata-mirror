@@ -1,4 +1,4 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/publishInfo/1.0.0/schema.json",
-  "description": ""
+  "description": "Primary Enercare business Data Agent for standalone Copilot routing. Handles call center KPI questions (FCR, CSAT, AHT, PP renewal), billing and service analytics, and Maria Castellanos source-story prompts (EC18374622, RequestKey 2026051142, GTA North, SLA breach)."
 }
