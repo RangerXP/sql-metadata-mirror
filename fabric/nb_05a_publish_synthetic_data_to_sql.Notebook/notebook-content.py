@@ -45,7 +45,7 @@ DATABASE_NAME             = "sqldemo"
 SQL_PORT                  = 1433
 SQL_LOGIN_TIMEOUT_SECONDS = 30
 TARGET_SCHEMA             = "dbo"
-BASE_TABLE_LOAD_MODE      = "replace"  # replace | append | skip_existing
+BASE_TABLE_LOAD_MODE      = "skip_existing"  # replace | append | skip_existing  (replace requires tokenlibrary mode)
 PHASE_B_CHILD_TABLES      = ["customer_complaints", "customer_consents"]
 SQL_AUTH_MODE             = "managed_identity"  # managed_identity | tokenlibrary
 SQL_MANAGED_IDENTITY_CLIENT_ID = ""  # Optional: set for user-assigned MI
@@ -194,12 +194,13 @@ else:
     if SQL_AUTH_MODE == "tokenlibrary":
         sql_access_token = get_sql_access_token()
         print("Acquired Microsoft Entra access token for Azure SQL.")
+        conn = get_sql_odbc_connection(sql_access_token)
+        print("pyodbc connection established for SQL control statements.")
     elif SQL_AUTH_MODE == "managed_identity":
-        print("Using managed identity authentication for Azure SQL JDBC/ODBC.")
+        print("Using managed identity authentication for Azure SQL JDBC (MI mode).")
+        print("[INFO] pyodbc connection deferred — Phase B DDL cells require tokenlibrary mode for ODBC control-plane statements.")
     else:
         raise ValueError("SQL_AUTH_MODE must be one of: managed_identity, tokenlibrary")
-    conn = get_sql_odbc_connection(sql_access_token)
-    print("pyodbc connection established for SQL control statements.")
 
 
 # METADATA ********************
@@ -270,6 +271,11 @@ else:
         raise ValueError("BASE_TABLE_LOAD_MODE must be one of: append, replace, skip_existing")
 
     if BASE_TABLE_LOAD_MODE == "replace":
+        if conn is None:
+            raise RuntimeError(
+                "BASE_TABLE_LOAD_MODE='replace' requires pyodbc DELETE operations. "
+                "Set SQL_AUTH_MODE='tokenlibrary' or change BASE_TABLE_LOAD_MODE to 'append' or 'skip_existing'."
+            )
         clear_base_tables(conn)
 
     write_results = []
@@ -343,6 +349,9 @@ print("  4. If rerunning this load, clear target tables in reverse dependency or
 
 if DEMO_MODE:
     print("[DRY RUN] Skipping pyodbc connection setup for Phase B cells.")
+elif SQL_AUTH_MODE == "managed_identity":
+    print("[WARN] Phase B DDL/seed cells require pyodbc and are not available in managed_identity mode.")
+    print("[WARN] Switch SQL_AUTH_MODE='tokenlibrary' to run Phase B cells.")
 else:
     try:
         conn.cursor().execute("SELECT 1")
