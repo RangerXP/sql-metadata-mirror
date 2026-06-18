@@ -32,6 +32,7 @@
 
 import hashlib
 import json
+import subprocess
 import time
 import uuid
 import requests
@@ -55,6 +56,8 @@ FAIL_ON_TOKEN_ACQUISITION_ERROR = False
 TOKEN_RESOURCE_CANDIDATES = ["https://purview.azure.net"]
 TOKEN_OUTER_RETRY_ATTEMPTS = 1
 DISABLE_LIVE_PURVIEW_PUBLISH = False
+TOKEN_ACQUISITION_MODE = "auto"  # auto | azcli | tokenlibrary
+AZ_CLI_TIMEOUT_SECONDS = 15
 
 WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
 SQL_SOURCE_NAME = "ENERCARE-SQL-SOURCE"
@@ -428,7 +431,43 @@ def _post_json(path: str, token: str, body: dict):
     return _request("POST", path, token, body=body)
 
 
-def _get_purview_token_with_retry() -> str:
+def _get_purview_token_via_az_cli() -> str:
+    cmd = [
+        "az",
+        "account",
+        "get-access-token",
+        "--resource",
+        "https://purview.azure.net",
+        "--query",
+        "accessToken",
+        "-o",
+        "tsv",
+    ]
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=AZ_CLI_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except Exception as ex:
+        raise RuntimeError(f"Azure CLI token command failed to execute: {ex}")
+
+    if result.returncode != 0:
+        stderr = (result.stderr or "").strip()
+        raise RuntimeError(f"Azure CLI token command failed (exit {result.returncode}): {stderr}")
+
+    token = _safe_text(result.stdout)
+    if not token:
+        raise RuntimeError("Azure CLI returned an empty access token.")
+
+    print("[Cell 6] Acquired Purview token via Azure CLI.")
+    return token
+
+
+def _get_purview_token_via_tokenlibrary() -> str:
     last_error = None
 
     for resource in TOKEN_RESOURCE_CANDIDATES:
@@ -436,7 +475,7 @@ def _get_purview_token_with_retry() -> str:
             try:
                 token = mssparkutils.credentials.getToken(resource)
                 if token and _safe_text(token):
-                    print(f"[Cell 6] Acquired Purview token using resource='{resource}' on attempt {attempt}.")
+                    print(f"[Cell 6] Acquired Purview token using TokenLibrary resource='{resource}' on attempt {attempt}.")
                     return token
             except Exception as ex:
                 last_error = ex
@@ -445,8 +484,27 @@ def _get_purview_token_with_retry() -> str:
                 time.sleep(3 * attempt)
 
     raise RuntimeError(
-        f"Failed to acquire Purview token after retries. Last error: {last_error}"
+        f"Failed to acquire Purview token via TokenLibrary after retries. Last error: {last_error}"
     )
+
+
+def _get_purview_token_with_retry() -> str:
+    mode = _safe_text(globals().get("TOKEN_ACQUISITION_MODE", "auto")).lower()
+    if mode not in {"auto", "azcli", "tokenlibrary"}:
+        raise RuntimeError(f"Unsupported TOKEN_ACQUISITION_MODE='{mode}'. Use auto, azcli, or tokenlibrary.")
+
+    if mode == "azcli":
+        return _get_purview_token_via_az_cli()
+
+    if mode == "tokenlibrary":
+        return _get_purview_token_via_tokenlibrary()
+
+    # auto mode: prefer Azure CLI first, then fallback to TokenLibrary.
+    try:
+        return _get_purview_token_via_az_cli()
+    except Exception as az_ex:
+        print(f"[Cell 6][WARN] Azure CLI token path failed; falling back to TokenLibrary. Error: {az_ex}")
+        return _get_purview_token_via_tokenlibrary()
 
 
 def _find_entity_by_qualified_name(token: str, qualified_name: str):
@@ -588,7 +646,8 @@ print(
     f"SQL_MIRROR_ONLY_DEPLOYMENT={SQL_MIRROR_ONLY_DEPLOYMENT}, "
     f"PURVIEW_PUBLISH_OVERRIDE={PURVIEW_PUBLISH_OVERRIDE}, "
     f"fail_on_token_error={fail_on_token_error}, "
-    f"disable_live_publish={DISABLE_LIVE_PURVIEW_PUBLISH}"
+    f"disable_live_publish={DISABLE_LIVE_PURVIEW_PUBLISH}, "
+    f"token_mode={TOKEN_ACQUISITION_MODE}"
 )
 
 if publish_guard_active:
