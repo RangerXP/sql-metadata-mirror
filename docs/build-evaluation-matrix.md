@@ -14,6 +14,18 @@ Source alignment:
 3. If a row fails, stop and resolve before moving to dependent rows.
 4. At the end, score north-star criteria NS-1 through NS-8.
 
+## Source Control Guardrails (Mandatory)
+
+1. Canonical Data Agent folder pattern:
+`fabric/Enercare Data Agent.DataAgent/` is the only valid repo path for the primary operational agent.
+Do not keep or create parallel GUID-named DataAgent folders for the same display name.
+2. Sync checkpoint after git pushes:
+If a commit changes any file under `fabric/*.DataAgent/` or any `fabric/*.Notebook/`, stop and run Fabric Source Control sync before any additional live workspace edits.
+3. Do not interleave unsynced planes:
+Do not patch Fabric item metadata through API/portal while pending Source Control updates or conflicts exist.
+4. Conflict recovery rule:
+If Fabric reports duplicate-name conflicts for a Data Agent, treat git as source of truth, remove unbound workspace duplicates, then re-run Source Control update.
+
 ## Run Metadata
 
 | Field | Value |

@@ -29,6 +29,15 @@
 
 ## Repository conventions
 
+### Source-control guardrail pattern (mandatory)
+
+1. Canonical operational Data Agent repo path is:
+`fabric/Enercare Data Agent.DataAgent/`
+2. Do not keep parallel GUID-named DataAgent folders for the same display name.
+3. If a commit touches `fabric/*.DataAgent/` or `fabric/*.Notebook/`, run Fabric Source Control sync immediately after push.
+4. Do not execute additional live workspace patches (portal/API) until Source Control shows zero pending conflicts.
+5. If duplicate-name conflict appears for a Data Agent, keep git-backed canonical content and remove unbound workspace duplicates before retrying update.
+
 ### File layout (after Day 0)
 
 ```
@@ -81,6 +90,12 @@ fabric/
 - Execution always runs from a Fabric notebook cell using `pyodbc`
 - SSMS is for **validation only** (spot-checks, classification inspection, ad-hoc SELECT)
 - Never execute DDL from SSMS — it would diverge from the notebook-replayable record
+
+### Fabric sync checkpoint pattern (locked)
+
+1. Push repo changes to `main`.
+2. Immediately run Fabric Source Control `Refresh` then `Update all`.
+3. Verify zero pending conflicts before additional notebook edits or item metadata changes.
 
 ### Lakehouse file paths (referenced by notebooks)
 

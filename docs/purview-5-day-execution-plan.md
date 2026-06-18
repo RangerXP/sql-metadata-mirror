@@ -10,6 +10,14 @@
 
 Estimated time: **2 hours**
 
+### Source Control Pattern (Locked)
+
+1. Keep exactly one primary Data Agent folder in git:
+`fabric/Enercare Data Agent.DataAgent/`.
+2. After any commit that modifies `fabric/*.DataAgent/` or `fabric/*.Notebook/`, run Fabric Source Control update immediately before additional workspace edits.
+3. Do not continue notebook execution or live item patching while Source Control shows unresolved conflicts.
+4. If a duplicate-name Data Agent conflict occurs, resolve by keeping the git-backed canonical item and removing unbound workspace duplicates before retrying update.
+
 | # | Step | Evidence |
 |---|---|---|
 | 0.1 | Copy staging tree → demo repo `Documents/Demos/sql-metadata-mirror/` | Git status shows new untracked files in `purview/`, `docs/`, `sql/`, `tools/`, `fabric/nb_05a_*/`, `fabric/nb_06a_*/` |
@@ -29,6 +37,8 @@ Estimated time: **6–8 hours**
 > **Build pattern (locked):** All build steps run from inside Fabric notebooks. SSMS is the **validation surface** only — use it to spot-check row counts, inspect classifications, or run ad-hoc SELECTs. SSMS never executes DDL or DML against the source.
 >
 > **SQL files** (`sql/04_*.sql`, `sql/05_*.sql`, `sql/06_*.sql`, `sql/07_*.sql`) remain canonical text references. Runtime execution is notebook-owned: `nb_05a` supplies the executable SQL inline and does not read from Lakehouse `Files/sql`.
+>
+> **Source-control checkpoint (locked):** After any git push that touches Fabric items, immediately run Fabric Source Control update before further workspace edits. This prevents branch/workspace divergence and Data Agent name-collision conflicts.
 
 ### Morning — Notebook 1: Extended `nb_05a` (SQL bring-up + Luhn SIN backfill)
 
