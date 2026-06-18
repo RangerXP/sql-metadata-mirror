@@ -98,7 +98,7 @@ labels_df, labels_source = _read_table("label_assignments", required=False)
 data_products_df, data_products_source = _read_table("data_products")
 
 if labels_df is None:
-    print("[WARN] metadata.label_assignments not found; label rules will be inferred from CDE sensitivity_label values.")
+    print("[WARN] metadata.label_assignments not found; label rules will be inferred from CDE values when possible.")
 
 print(f"cdes rows: {cde_df.count()} (source={cde_source})")
 if labels_df is not None:
@@ -150,15 +150,20 @@ def _label_to_type_name(label_name: str) -> str:
 
 
 labels = set()
-for row in cde_df.select("sensitivity_label").distinct().collect():
-    label = _safe_text(getattr(row, "sensitivity_label", None))
-    if label:
-        labels.add(label)
+cde_has_sensitivity_label = "sensitivity_label" in cde_df.columns
+if cde_has_sensitivity_label:
+    for row in cde_df.select("sensitivity_label").distinct().collect():
+        label = _safe_text(getattr(row, "sensitivity_label", None))
+        if label:
+            labels.add(label)
 if labels_df is not None and "label_name" in labels_df.columns:
     for row in labels_df.select("label_name").distinct().collect():
         label = _safe_text(getattr(row, "label_name", None))
         if label:
             labels.add(label)
+
+if not labels:
+    labels.add("Internal")
 
 classification_defs = []
 for label in sorted(labels):
@@ -178,19 +183,24 @@ for label in sorted(labels):
 typedef_payload = {"classificationDefs": classification_defs}
 
 classification_manifest = []
-for row in cde_df.collect():
-    label = _safe_text(getattr(row, "sensitivity_label", None))
-    cde_id = _safe_text(getattr(row, "cde_id", None) or getattr(row, "cde_code", None) or getattr(row, "cde_name", None))
-    for token in _split_tokens(getattr(row, "bound_columns", None)):
-        classification_manifest.append(
-            {
-                "asset_ref": token,
-                "classification": _label_to_type_name(label),
-                "label_name": label,
-                "assignment_source": "CDE",
-                "rule": cde_id,
-            }
-        )
+if cde_has_sensitivity_label:
+    for row in cde_df.collect():
+        label = _safe_text(getattr(row, "sensitivity_label", None))
+        if not label:
+            continue
+        cde_id = _safe_text(getattr(row, "cde_id", None) or getattr(row, "cde_code", None) or getattr(row, "cde_name", None))
+        for token in _split_tokens(getattr(row, "bound_columns", None)):
+            classification_manifest.append(
+                {
+                    "asset_ref": token,
+                    "classification": _label_to_type_name(label),
+                    "label_name": label,
+                    "assignment_source": "CDE",
+                    "rule": cde_id,
+                }
+            )
+else:
+    print("[Cell 3] cdes.sensitivity_label not found; using label_assignments as classification source.")
 
 if labels_df is not None:
     for row in labels_df.collect():
