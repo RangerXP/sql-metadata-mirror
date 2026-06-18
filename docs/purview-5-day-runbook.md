@@ -1,6 +1,6 @@
-[](https://example.com)# Purview Demo — 5-Day Build Runbook
+[](https://example.com)# Purview Demo — 2-Day Build Runbook
 
-**Audience:** VS Code Copilot / Claude Code agent executing the Phase B + C build, with Sean Kelley (`seankelley@microsoft.com`) as the human-in-the-loop for portal actions.
+**Audience:** VS Code Copilot / Claude Code agent executing the Phase B + C build in a 2-day compressed cadence, with Sean Kelley (`seankelley@microsoft.com`) as the human-in-the-loop for portal actions.
 **Tenant:** `MngEnvMCAP660444.onmicrosoft.com` (demo)
 **Subscription:** `bde41857-48c2-4eb5-9959-208f768deafb` (Azure West 3)
 **Fabric workspace:** `Purview-West3`
@@ -24,6 +24,13 @@
 5. **Commits:** Each day has an explicit evening commit. Do not commit mid-day unless a step says to.
 6. **Failure recovery:** Every step has a `If it errors` block. Apply the recovery first; escalate only if the recovery fails.
 7. **Never improvise scope:** If a step's verification gate cannot be satisfied with the inputs as defined, stop and ask. Do not add features, retries, or "while I'm here" cleanups.
+
+## 2-Day Cadence Map (Locked)
+
+1. Day 0 pre-flight is same-day prep before execution.
+2. Day 1 executes the former Day 1 and Day 2 sections.
+3. Day 2 executes the former Day 3, Day 4, and Day 5 sections.
+4. Keep section labels as written for traceability, but schedule all work in a 2-day window.
 
 ---
 

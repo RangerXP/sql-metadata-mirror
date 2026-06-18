@@ -101,7 +101,7 @@ What it would NOT do well today is the "ask in business terms" experience for a 
 | **C — Agent enablement** | Equipment ontology (5–6 terms), customer-experience KPIs (NPS / CSAT / AHT / Quality / Repeat Complaint), agent vocabulary (HVAC / HRV / AC / WH / HP / Tankless), term-level policies on consent/PIPEDA/CASL, verified Q&A pack for call-center scenarios | Maria scenario answerable by a Data Agent in business language; exec view complete |
 | **D — Ontology** (deferred) | Typed relationships, certified-KPI endorsement workflow | Post-MVP; depends on Purview ontology GA and G10 steward workflow |
 
-**Target for the 5-day window: Phase C complete.** See `purview-5-day-execution-plan.md` for day-by-day deliverables.
+**Target for the 2-day window: Phase C complete.** See `purview-5-day-execution-plan.md` for compressed day-by-day deliverables.
 
 ---
 
@@ -114,7 +114,7 @@ What it would NOT do well today is the "ask in business terms" experience for a 
 - **Full PCI-scope data** — Partial last-4 only by design; never put full PANs in a demo.
 - **Asset curation enablement** — One-way per brief Gap Check #1. Schedule as a single coordinated step with named owner approving; do once in Phase B.
 
-## 8. Risks for the 5-day window
+## 8. Risks for the 2-day window
 
 | Risk | Impact | Mitigation |
 |---|---|---|
@@ -128,4 +128,4 @@ What it would NOT do well today is the "ask in business terms" experience for a 
 
 ## Conclusion
 
-The structural foundation is committable. Moving forward, the work shifts from *designing the model* to *populating, publishing, and demonstrating it*. The 5-day plan is aggressive but Phase C completion is achievable if scans run cleanly and licensing is verified Day 1.
+The structural foundation is committable. Moving forward, the work shifts from *designing the model* to *populating, publishing, and demonstrating it*. The 2-day compressed plan is aggressive but Phase C completion is achievable if scans run cleanly and licensing is verified at startup.

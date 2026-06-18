@@ -3,7 +3,7 @@
 **Purpose:** This is the orienting scenario for the Enercare Purview + Fabric demo. Every design choice (data products, glossary terms, CDEs, sensitivity labels, term policies, SemPy writeback annotations, verified Q&A entries) earns its place in the build by serving this scenario. If a piece of the design doesn't show up here, it doesn't ship.
 
 **Status:** Demo north star — committed Phase A.
-**Linked from:** `docs/purview-demo-data-design.md`, `docs/purview-design-readiness-assessment.md`, `docs/purview-5-day-execution-plan.md`, `docs/Enercare-Demo-SemPy-Design-Guide.md`.
+**Linked from:** `docs/purview-demo-data-design.md`, `docs/purview-design-readiness-assessment.md`, `docs/purview-5-day-execution-plan.md` (2-day cadence), `docs/Enercare-Demo-SemPy-Design-Guide.md`.
 
 ---
 
@@ -226,7 +226,7 @@ If any of those eight acceptance criteria fails when the scenario runs, the demo
 
 ## What's NOT in Maria's scenario (Phase D scope)
 
-These are intentionally out of the 5-day window:
+These are intentionally out of the 2-day window:
 
 - **Ontology with typed relationships** — Maria's profile DOES traverse Customer → Service Account → Equipment → Service Request, but those traversals happen through SQL foreign keys, not declared Purview relationships. A future ontology layer would let the Data Agent answer "what other Marias have a Lennox SLP98V?" by ontology query rather than JOIN.
 - **Certified-KPI endorsement workflow** — KPIs are Published. They aren't formally Certified with an expiry, an attesting role, and a re-certification cadence. Steward workflow (G10) closes this in Phase D.

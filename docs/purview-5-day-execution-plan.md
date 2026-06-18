@@ -1,10 +1,17 @@
-# Enercare Purview Demo — 5-Day Execution Plan
+# Enercare Purview Demo — 2-Day Execution Plan
 
-**Target:** Complete Phase C (agent enablement) within 5 development days.
+**Target:** Complete Phase C (agent enablement) within 2 development days.
 **Constraint:** Compressed timeline; Phase D (ontology, certified-KPI endorsement workflow) explicitly out of scope.
 **North Star:** `docs/purview-maria-north-star-scenario.md` — every day's deliverables either move the Maria scenario closer to passing or are out of scope.
 **Owner:** Sean Kelley
 **Date authored:** 2026-06-04
+
+## 2-Day Cadence Map (Locked)
+
+1. Day 0 pre-flight steps run as same-day prep immediately before execution start.
+2. Day 1 covers prior Day 1 and Day 2 workstreams.
+3. Day 2 covers prior Day 3 through Day 5 workstreams, including Maria scenario E2E and rehearsal.
+4. File path remains `docs/purview-5-day-execution-plan.md` for backward compatibility, but operational cadence is 2-day.
 
 ## Day 0 — Phase A commit (you, today)
 
