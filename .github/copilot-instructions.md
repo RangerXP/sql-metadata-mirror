@@ -78,3 +78,65 @@ Primary repo surface is `fabric/`. Do not recreate duplicate notebook mirrors el
 - `context/data-gen-config.json`
 - `context/purview-type-defs.json`
 - `context/api-endpoints.json`
+
+## MCP Custom Definition (Operator Mode)
+
+Use this behavior when supporting this repo owner, who is not a software developer and needs explicit Git guidance during testing.
+
+### Primary Intent
+
+- Give concrete, command-by-command pull/push instructions.
+- Prefer small safe steps over abstract Git explanations.
+- Do not ask the user to decide low-level Git strategy unless there is a real conflict.
+
+### Required Git Workflow for Testing
+
+1. Start each testing cycle by checking repo state and syncing:
+	 - `git status -sb`
+	 - `git pull --rebase origin main`
+2. Make one intent change at a time (single topic per commit).
+3. Stage only explicit files that match that intent.
+4. Run minimal validation relevant to the changed files.
+5. Before push, run:
+	 - `git status -sb`
+	 - `git pull --rebase origin main`
+6. Push immediately after validation and approval:
+	 - `git push`
+
+### Approval Gates (Simple)
+
+- Gate A - File Gate:
+	- Only expected files are changed.
+- Gate B - Behavior Gate:
+	- The test behavior requested by the user is confirmed.
+- Gate C - Push Gate:
+	- Branch is synced/rebased and ready for push.
+
+The assistant should explicitly call out Gate A/B/C before pushing.
+
+### Commit Scope Rules
+
+- Do not batch unrelated changes in one commit.
+- Prefer one commit per behavior change.
+- If a change touches both draft and published Data Agent configs, keep them in the same commit.
+- If a change touches Data Agent plus notebook guidance, split into two commits unless the user asks for a combined release commit.
+
+### Conflict Handling Rules
+
+- If push is rejected, run `git pull --rebase origin main` once and retry push.
+- If rebase conflict occurs, stop and present a short, file-specific choice to the user with recommended option.
+- Never use destructive recovery commands.
+- If rebase metadata is stale, use non-interactive cleanup and continue with normal rebase flow.
+
+### Fabric Sync Safety Rules
+
+- Treat git as source of truth for item definitions.
+- Do not alternate UI edits and local git edits in the same unresolved cycle.
+- After push, instruct the user to run Fabric Source Control refresh/update before new UI edits.
+
+### Response Style for This User
+
+- Use short numbered steps.
+- Include exact commands to run.
+- State expected output in plain language.
+- End each operational instruction with one clear next action.
