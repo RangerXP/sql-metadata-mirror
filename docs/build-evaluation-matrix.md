@@ -154,6 +154,31 @@ Use this section to explicitly verify each dependency edge is valid in your run.
 | 1 | PASS — nb_01 completed. Operator note: "All tables ready. Run nb_02_metadata_pipeline_demo.py next." |
 | 5 | PASS — nb_02 completed. Operator note: "Phases 0-3 completed; notebook summary showed Phase 4/5 dry-run behavior. Next: nb_04a. If needed, separately validate nb_02 comment/XP and Purview credentialed paths in a dedicated run." |
 
+## Closed Section: KPI + Data Agent Stabilization (2026-06-18)
+
+Status: CLOSED
+
+Closure evidence:
+1. Enercare Data Agent resolves KPI prompts directly (example: "What is our FCR?") without generic clarification fallback.
+2. KPI default time-window behavior is model-driven (rolling 12 months unless user provides a range).
+3. Request-ID prompts continue to resolve via operational Data Agent routing.
+4. Regression prompt pack added to this document and used as the acceptance path.
+
+Primary source updates included in closure:
+1. Data Agent KPI/query behavior: `fabric/ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/Files/Config/draft/stage_config.json` and `fabric/ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/Files/Config/published/stage_config.json`
+2. Semantic KPI default-window logic: `fabric/BrookfieldEnercare.SemanticModel/definition/tables/_Measures.tmdl`
+3. Verified-answer/AI instruction seeding: `fabric/nb_04a_extend_metadata_schema.Notebook/notebook-content.py`
+4. Annotation publish path: `fabric/nb_05_push_qa_verified_answers.Notebook/notebook-content.py`
+
+## Next Development Goal
+
+Goal: Productionize KPI + Maria regression validation as a repeatable release gate.
+
+Definition of done:
+1. Add Maria-specific prompts to the regression prompt pack with explicit expected routing and output shape.
+2. Record per-prompt pass/fail evidence for each Git push that touches semantic model, Data Agent config, or annotation notebooks.
+3. Require Gate B sign-off (behavior pass) before any release-cycle close.
+
 ## Known Construct Notes
 
 1. nb_06_purview_sql_grants is not part of the current branch construct.
