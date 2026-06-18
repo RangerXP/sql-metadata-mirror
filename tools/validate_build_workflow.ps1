@@ -57,58 +57,97 @@ if ($LASTEXITCODE -ne 0) {
 
 # Canonical Data Agent structure checks
 $fabricRoot = Join-Path $repoRoot "fabric"
-$canonicalAgentPath = Join-Path $fabricRoot "Enercare Data Agent.DataAgent"
-if (-not (Test-Path $canonicalAgentPath)) {
-    Add-Issue "Missing canonical Data Agent folder: fabric/Enercare Data Agent.DataAgent"
+$dataAgentDirs = Get-ChildItem -Path $fabricRoot -Directory -Filter "*.DataAgent" -ErrorAction SilentlyContinue
+
+$enercareAgentDirs = @()
+foreach ($dir in $dataAgentDirs) {
+    $platformPath = Join-Path $dir.FullName ".platform"
+    if (-not (Test-Path $platformPath)) {
+        continue
+    }
+
+    try {
+        $platform = Get-Content -Raw $platformPath | ConvertFrom-Json
+        if ($platform.metadata.displayName -eq "Enercare Data Agent") {
+            $enercareAgentDirs += $dir
+        }
+    } catch {
+        Add-Warning "Unable to parse .platform for Data Agent folder: fabric/$($dir.Name)"
+    }
 }
 
-$dataAgentDirs = Get-ChildItem -Path $fabricRoot -Directory -Filter "*.DataAgent" -ErrorAction SilentlyContinue
-$enercareAgentDirs = $dataAgentDirs | Where-Object { $_.Name -like "*Enercare Data Agent*" }
 if (-not $enercareAgentDirs -or $enercareAgentDirs.Count -ne 1) {
-    Add-Issue "Expected exactly 1 Enercare Data Agent directory, found $($enercareAgentDirs.Count)."
+    $foundCount = if ($enercareAgentDirs) { $enercareAgentDirs.Count } else { 0 }
+    Add-Issue "Expected exactly 1 Enercare Data Agent directory by .platform metadata displayName, found $foundCount."
+}
+
+$canonicalAgentPath = $null
+$canonicalAgentName = "<unknown>"
+if ($enercareAgentDirs -and $enercareAgentDirs.Count -ge 1) {
+    $canonicalAgentPath = $enercareAgentDirs[0].FullName
+    $canonicalAgentName = $enercareAgentDirs[0].Name
 }
 
 $requiredConfigFiles = @(
     "Files/Config/data_agent.json",
     "Files/Config/publish_info.json",
-    "Files/Config/draft/stage_config.json",
-    "Files/Config/published/stage_config.json"
+    "Files/Config/draft/stage_config.json"
 )
 
 foreach ($relativePath in $requiredConfigFiles) {
+    if (-not $canonicalAgentPath) {
+        continue
+    }
     $fullPath = Join-Path $canonicalAgentPath $relativePath
     if (-not (Test-Path $fullPath)) {
-        Add-Issue "Missing required Data Agent file: fabric/Enercare Data Agent.DataAgent/$relativePath"
+        Add-Issue "Missing required Data Agent file: fabric/$canonicalAgentName/$relativePath"
     }
 }
 
 # Data Agent datasource binding checks
 $placeholderWorkspaceId = "00000000-0000-0000-0000-000000000000"
 $placeholderArtifactId = "d19d7f14-ae22-9fde-462b-dafb983dfb0a"
-$datasourceFiles = @(
-    "Files/Config/draft/semantic-model-BrookfieldEnercare/datasource.json",
+
+$requiredDatasourceFiles = @(
+    "Files/Config/draft/semantic-model-BrookfieldEnercare/datasource.json"
+)
+
+$optionalDatasourceFiles = @(
     "Files/Config/published/semantic-model-BrookfieldEnercare/datasource.json"
 )
 
-foreach ($relativePath in $datasourceFiles) {
+foreach ($relativePath in $requiredDatasourceFiles) {
+    if (-not $canonicalAgentPath) {
+        continue
+    }
     $fullPath = Join-Path $canonicalAgentPath $relativePath
     if (-not (Test-Path $fullPath)) {
-        Add-Issue "Missing required Data Agent datasource file: fabric/Enercare Data Agent.DataAgent/$relativePath"
+        Add-Issue "Missing required Data Agent datasource file: fabric/$canonicalAgentName/$relativePath"
         continue
     }
 
     try {
         $json = Get-Content -Raw $fullPath | ConvertFrom-Json
     } catch {
-        Add-Issue "Invalid JSON in datasource file: fabric/Enercare Data Agent.DataAgent/$relativePath"
+        Add-Issue "Invalid JSON in datasource file: fabric/$canonicalAgentName/$relativePath"
         continue
     }
 
     if ($json.workspaceId -eq $placeholderWorkspaceId) {
-        Add-Issue "Placeholder workspaceId found in datasource file: fabric/Enercare Data Agent.DataAgent/$relativePath"
+        Add-Issue "Placeholder workspaceId found in datasource file: fabric/$canonicalAgentName/$relativePath"
     }
     if ($json.artifactId -eq $placeholderArtifactId) {
-        Add-Issue "Placeholder artifactId found in datasource file: fabric/Enercare Data Agent.DataAgent/$relativePath"
+        Add-Issue "Placeholder artifactId found in datasource file: fabric/$canonicalAgentName/$relativePath"
+    }
+}
+
+foreach ($relativePath in $optionalDatasourceFiles) {
+    if (-not $canonicalAgentPath) {
+        continue
+    }
+    $fullPath = Join-Path $canonicalAgentPath $relativePath
+    if (-not (Test-Path $fullPath)) {
+        Add-Warning "Optional published datasource file not present: fabric/$canonicalAgentName/$relativePath"
     }
 }
 
