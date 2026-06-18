@@ -66,6 +66,8 @@ WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
 SQL_SOURCE_NAME = "ENERCARE-SQL-SOURCE"
 FABRIC_SOURCE_NAME = "ENERCARE-FABRIC-SOURCE"
 SEMANTIC_MODEL_NAME = "BrookfieldEnercare"
+SEMANTIC_MODEL_LOGICAL_ID = "d19d7f14-ae22-9fde-462b-dafb983dfb0a"
+SQL_SERVER_FQDN = "sqlserver-sk2wus3.database.windows.net"
 
 print(f"Purview account: {PURVIEW_ACCOUNT_NAME}")
 print(f"Apply changes: {APPLY_CHANGES}")
@@ -563,17 +565,124 @@ def _find_entity_by_qualified_name(token: str, qualified_name: str):
     }
 
 
+def _find_entity_by_basic_search(token: str, query_text: str, role: str):
+    status, body = _request(
+        "GET",
+        "/catalog/api/atlas/v2/search/basic",
+        token,
+        params={"query": query_text, "limit": 20},
+    )
+    if status != 200:
+        return None
+
+    try:
+        payload = json.loads(body)
+    except Exception:
+        return None
+
+    entities = payload.get("entities") or []
+    if not entities:
+        return None
+
+    query_lower = _safe_text(query_text).lower()
+    for entity in entities:
+        qualified_name = _safe_text(entity.get("qualifiedName"))
+        qn_lower = qualified_name.lower()
+        if not qn_lower:
+            continue
+        if query_lower and query_lower not in qn_lower:
+            continue
+        if role == "source" and "mssql://" not in qn_lower:
+            continue
+        if role == "target" and not any(marker in qn_lower for marker in ("fabric://", "powerbi://")):
+            continue
+        return {
+            "guid": entity.get("guid"),
+            "typeName": entity.get("typeName"),
+            "qualifiedName": qualified_name,
+        }
+
+    return None
+
+
+def _entity_lookup_candidates(qualified_name: str, role: str):
+    candidates = []
+    qn = _safe_text(qualified_name)
+    if not qn:
+        return candidates
+
+    candidates.append(qn)
+
+    if role == "source" and qn.startswith("mssql://"):
+        parts = qn[len("mssql://") :].split("/")
+        if len(parts) >= 3:
+            db_name = parts[0]
+            schema_name = parts[1]
+            table_name = parts[2]
+            candidates.append(f"mssql://{SQL_SERVER_FQDN}/{db_name}/{schema_name}/{table_name}")
+            if schema_name.lower() == "dbo":
+                candidates.append(f"mssql://{SQL_SERVER_FQDN}/{db_name}/demo/{table_name}")
+                candidates.append(f"mssql://{db_name}/demo/{table_name}")
+
+    if role == "target" and qn.startswith("fabric://") and "/semanticModels/" in qn:
+        parts = qn.split("/")
+        if len(parts) >= 6:
+            workspace_id = parts[2]
+            asset_name = parts[-1]
+            candidates.append(f"fabric://{workspace_id}/semanticModels/{SEMANTIC_MODEL_LOGICAL_ID}/{asset_name}")
+            candidates.append(f"fabric://{workspace_id}/semanticModels/{SEMANTIC_MODEL_NAME}/{asset_name}")
+
+    seen = set()
+    unique = []
+    for candidate in candidates:
+        if candidate and candidate not in seen:
+            unique.append(candidate)
+            seen.add(candidate)
+
+    return unique
+
+
+def _resolve_entity(token: str, qualified_name: str, role: str):
+    candidates = _entity_lookup_candidates(qualified_name, role)
+
+    for candidate in candidates:
+        entity = _find_entity_by_qualified_name(token, candidate)
+        if entity:
+            entity["matched_by"] = "qualified_name"
+            entity["matched_value"] = candidate
+            return entity, candidates
+
+    search_terms = []
+    if role == "source":
+        table_name = _safe_text(qualified_name.split("/")[-1]).split("#")[0]
+        search_terms.append(table_name)
+    else:
+        search_terms.append(_safe_text(qualified_name.split("/")[-1]))
+
+    for term in search_terms:
+        if not term:
+            continue
+        entity = _find_entity_by_basic_search(token, term, role)
+        if entity:
+            entity["matched_by"] = "basic_search"
+            entity["matched_value"] = term
+            return entity, candidates
+
+    return None, candidates
+
+
 def _build_lineage_process_entities(token: str):
     process_entities = []
     unresolved = []
     lookup_cache = {}
     started_at = time.time()
 
-    def _cached_find(qualified_name: str):
-        if qualified_name in lookup_cache:
-            return lookup_cache[qualified_name]
-        result = _find_entity_by_qualified_name(token, qualified_name)
-        lookup_cache[qualified_name] = result
+    def _cached_find(qualified_name: str, role: str):
+        cache_key = f"{role}:{qualified_name}"
+        if cache_key in lookup_cache:
+            return lookup_cache[cache_key]
+        result = _resolve_entity(token, qualified_name, role)
+        lookup_cache[cache_key] = result
         return result
 
     total_edges = len(lineage_edges)
@@ -626,8 +735,8 @@ def _build_lineage_process_entities(token: str):
         target_qn = edge["target"]
         print(f"[Cell 6] Resolving edge {idx}/{total_edges} | source={source_qn} | target={target_qn}")
 
-        source_entity = _cached_find(source_qn)
-        target_entity = _cached_find(target_qn)
+        source_entity, source_candidates = _cached_find(source_qn, "source")
+        target_entity, target_candidates = _cached_find(target_qn, "target")
 
         if not source_entity or not target_entity:
             unresolved.append(
@@ -637,6 +746,8 @@ def _build_lineage_process_entities(token: str):
                     "target": target_qn,
                     "source_found": bool(source_entity),
                     "target_found": bool(target_entity),
+                    "source_candidates": source_candidates,
+                    "target_candidates": target_candidates,
                 }
             )
             continue
