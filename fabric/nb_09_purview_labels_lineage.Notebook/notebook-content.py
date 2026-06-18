@@ -295,17 +295,96 @@ display(validation_df.orderBy("check_name"))
 
 # CELL ********************
 
-# Cell 6: Optional live publish of classification type definitions
+# Cell 6: Optional live publish of classification types and lineage processes
 
 
 def _headers(token: str):
     return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 
-def _post_json(path: str, token: str, body: dict):
+def _request(method: str, path: str, token: str, body: dict = None, params: dict = None):
     url = f"{PURVIEW_BASE_URL}{path}"
-    response = requests.post(url, headers=_headers(token), json=body, timeout=60)
+    response = requests.request(method, url, headers=_headers(token), json=body, params=params, timeout=60)
     return response.status_code, response.text
+
+
+def _post_json(path: str, token: str, body: dict):
+    return _request("POST", path, token, body=body)
+
+
+def _find_entity_by_qualified_name(token: str, qualified_name: str):
+    # Atlas DSL query returns discovered assets with guid/typeName when the qualifiedName matches.
+    query = f"from * where qualifiedName = '{qualified_name}'"
+    status, body = _request("GET", "/catalog/api/atlas/v2/search/dsl", token, params={"query": query, "limit": 1})
+    if status != 200:
+        return None
+
+    try:
+        payload = json.loads(body)
+    except Exception:
+        return None
+
+    entities = payload.get("entities") or []
+    if not entities:
+        return None
+
+    entity = entities[0]
+    return {
+        "guid": entity.get("guid"),
+        "typeName": entity.get("typeName"),
+        "qualifiedName": qualified_name,
+    }
+
+
+def _build_lineage_process_entities(token: str):
+    process_entities = []
+    unresolved = []
+
+    for edge in lineage_edges:
+        source_qn = edge["source"]
+        target_qn = edge["target"]
+
+        source_entity = _find_entity_by_qualified_name(token, source_qn)
+        target_entity = _find_entity_by_qualified_name(token, target_qn)
+
+        if not source_entity or not target_entity:
+            unresolved.append(
+                {
+                    "process_qualified_name": edge["process_qualified_name"],
+                    "source": source_qn,
+                    "target": target_qn,
+                    "source_found": bool(source_entity),
+                    "target_found": bool(target_entity),
+                }
+            )
+            continue
+
+        process_entities.append(
+            {
+                "typeName": "Process",
+                "attributes": {
+                    "qualifiedName": edge["process_qualified_name"],
+                    "name": edge["process_name"],
+                    "description": f"{edge['data_product']} lineage: {source_qn} -> {target_qn}",
+                },
+                "relationshipAttributes": {
+                    "inputs": [
+                        {
+                            "guid": source_entity["guid"],
+                            "typeName": source_entity["typeName"],
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "guid": target_entity["guid"],
+                            "typeName": target_entity["typeName"],
+                        }
+                    ],
+                },
+            }
+        )
+
+    return process_entities, unresolved
 
 
 publish_guard_active = SQL_MIRROR_ONLY_DEPLOYMENT and not PURVIEW_PUBLISH_OVERRIDE
@@ -316,11 +395,34 @@ elif not APPLY_CHANGES:
     print("[DRY RUN] APPLY_CHANGES=False. Skipping Purview API calls.")
 else:
     token = mssparkutils.credentials.getToken("https://purview.azure.net")
+
     typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
     if typedef_status not in (200, 201) and "already exists" not in typedef_body.lower():
         raise RuntimeError(f"Classification typedef publish failed: HTTP {typedef_status} | {typedef_body[:500]}")
     print(f"Classification typedef publish result: HTTP {typedef_status}")
-    print("[INFO] Asset classification attachment is intentionally manifest-driven. Resolve asset GUIDs from scan results before applying live classifications.")
+
+    process_entities, unresolved_edges = _build_lineage_process_entities(token)
+    if not process_entities:
+        print("[WARN] No lineage process entities were built. Verify qualifiedName patterns and scan freshness.")
+    else:
+        # Atlas entity/bulk supports upsert by qualifiedName for entity types.
+        batch_size = 50
+        published = 0
+        for i in range(0, len(process_entities), batch_size):
+            batch = process_entities[i : i + batch_size]
+            payload = {"entities": batch}
+            entity_status, entity_body = _post_json("/catalog/api/atlas/v2/entity/bulk", token, payload)
+            if entity_status not in (200, 201):
+                raise RuntimeError(f"Lineage process publish failed: HTTP {entity_status} | {entity_body[:500]}")
+            published += len(batch)
+        print(f"Lineage processes published: {published}")
+
+    if unresolved_edges:
+        print(f"[WARN] Unresolved lineage edges: {len(unresolved_edges)}")
+        print("[WARN] First unresolved edge sample:")
+        print(json.dumps(unresolved_edges[0], indent=2))
+
+    print("[INFO] Asset classification attachment remains manifest-driven. Resolve asset GUIDs from scan results before applying live classifications.")
 
 
 # METADATA ********************
