@@ -1,6 +1,7 @@
 param(
     [string]$WorkspaceId = "b976cac2-7754-4061-88c2-61c0ac016a99",
     [string]$SemanticModelName = "BrookfieldEnercare",
+    [switch]$FixIds,
     [switch]$Apply
 )
 
@@ -26,6 +27,10 @@ $targetWorkspaceId = $WorkspaceId
 
 Write-Host "Target semantic model ID: $targetArtifactId"
 Write-Host "Target workspace ID:     $targetWorkspaceId"
+if (-not $FixIds) {
+    Write-Host "ID repair disabled by default: Fabric may canonicalize Data Agent datasource IDs to logicalId/0000."
+    Write-Host "Use -FixIds only for one-off troubleshooting checks."
+}
 
 function Update-DataSourceFile {
     param([string]$Path)
@@ -33,16 +38,18 @@ function Update-DataSourceFile {
     $json = Get-Content $Path -Raw | ConvertFrom-Json
     $changed = $false
 
-    if ($json.artifactId -ne $targetArtifactId) {
-        Write-Host "[$Path] artifactId: $($json.artifactId) -> $targetArtifactId"
-        $json.artifactId = $targetArtifactId
-        $changed = $true
-    }
+    if ($FixIds) {
+        if ($json.artifactId -ne $targetArtifactId) {
+            Write-Host "[$Path] artifactId: $($json.artifactId) -> $targetArtifactId"
+            $json.artifactId = $targetArtifactId
+            $changed = $true
+        }
 
-    if ($json.workspaceId -ne $targetWorkspaceId) {
-        Write-Host "[$Path] workspaceId: $($json.workspaceId) -> $targetWorkspaceId"
-        $json.workspaceId = $targetWorkspaceId
-        $changed = $true
+        if ($json.workspaceId -ne $targetWorkspaceId) {
+            Write-Host "[$Path] workspaceId: $($json.workspaceId) -> $targetWorkspaceId"
+            $json.workspaceId = $targetWorkspaceId
+            $changed = $true
+        }
     }
 
     if ($json.elements) {
