@@ -50,12 +50,12 @@ table _Measures
 		formatString: #,0.0
 		lineageTag: 42f61711-cbe4-4ae0-9ff5-32e1facddbbf
 
-	/// ranbir.singh@enercare.ca
+	/// First Contact Resolution Rate - percentage of customer service interactions resolved on the first call without callback or escalation. Rolling 12-month aggregate. Target: 85%+.
 	measure 'FCR Rate' = VAR _hasDateFilter = ISCROSSFILTERED(dim_date[DateKey]) || ISCROSSFILTERED(dim_date[FullDate]) VAR _anchorDate = MAXX(ALL(dim_date), dim_date[FullDate]) RETURN IF(_hasDateFilter, DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[fcr_flag] = 1), COUNTROWS(fct_cc_interactions)), CALCULATE(DIVIDE(CALCULATE(COUNTROWS(fct_cc_interactions), fct_cc_interactions[fcr_flag] = 1), COUNTROWS(fct_cc_interactions)), DATESINPERIOD(dim_date[FullDate], _anchorDate, -12, MONTH)))
 		formatString: 0.0%
 		lineageTag: d68117ad-989c-40ab-a919-aa8725273862
 
-	/// ranbir.singh@enercare.ca
+	/// Average Customer Satisfaction Score - mean post-call survey rating (1-5 scale). Rolling 12-month aggregate. Target: 4.2+.
 	measure 'Avg CSAT' = VAR _hasDateFilter = ISCROSSFILTERED(dim_date[DateKey]) || ISCROSSFILTERED(dim_date[FullDate]) VAR _anchorDate = MAXX(ALL(dim_date), dim_date[FullDate]) RETURN IF(_hasDateFilter, AVERAGEX(FILTER(fct_cc_interactions, NOT ISBLANK(fct_cc_interactions[csat_score])), fct_cc_interactions[csat_score]), CALCULATE(AVERAGEX(FILTER(fct_cc_interactions, NOT ISBLANK(fct_cc_interactions[csat_score])), fct_cc_interactions[csat_score]), DATESINPERIOD(dim_date[FullDate], _anchorDate, -12, MONTH)))
 		formatString: #,0.0
 		lineageTag: 0cec6c7b-58c1-400f-b4c6-993cff355807
@@ -64,7 +64,7 @@ table _Measures
 		formatString: 0.0%
 		lineageTag: b0478899-e200-4b7a-b011-429566f09b29
 
-	/// ranbir.singh@enercare.ca
+	/// Average Handle Time - mean total call duration including hold time in seconds. Rolling 12-month aggregate. Target: <300 seconds.
 	measure 'Avg Handle Time (sec)' = VAR _hasDateFilter = ISCROSSFILTERED(dim_date[DateKey]) || ISCROSSFILTERED(dim_date[FullDate]) VAR _anchorDate = MAXX(ALL(dim_date), dim_date[FullDate]) RETURN IF(_hasDateFilter, AVERAGEX(fct_cc_interactions, fct_cc_interactions[handle_time_sec] + fct_cc_interactions[hold_time_sec]), CALCULATE(AVERAGEX(fct_cc_interactions, fct_cc_interactions[handle_time_sec] + fct_cc_interactions[hold_time_sec]), DATESINPERIOD(dim_date[FullDate], _anchorDate, -12, MONTH)))
 		formatString: #,0
 		lineageTag: 40485d8a-3df4-467d-a04b-409d2d37083f

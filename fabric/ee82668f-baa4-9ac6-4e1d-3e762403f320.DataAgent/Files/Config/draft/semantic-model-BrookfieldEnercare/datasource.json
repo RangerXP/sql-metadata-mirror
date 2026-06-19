@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/dataSource/1.0.0/schema.json",
   "artifactId": "d19d7f14-ae22-9fde-462b-dafb983dfb0a",
-  "workspaceId": "00000000-0000-0000-0000-000000000000",
+  "workspaceId": "b976cac2-7754-4061-88c2-61c0ac016a99",
   "dataSourceInstructions": null,
   "displayName": "BrookfieldEnercare",
   "type": "semantic_model",
@@ -140,7 +140,7 @@
           "display_name": "FCR Rate",
           "type": "semantic_model.measure",
           "data_type": "Double",
-          "description": "ranbir.singh@enercare.ca",
+          "description": "First Contact Resolution Rate - percentage of customer service interactions resolved on the first call without callback or escalation. Rolling 12-month aggregate. Higher is better. Target: 85%+.",
           "children": []
         },
         {
@@ -149,7 +149,7 @@
           "display_name": "Avg CSAT",
           "type": "semantic_model.measure",
           "data_type": "Double",
-          "description": "ranbir.singh@enercare.ca",
+          "description": "Average Customer Satisfaction Score - mean post-call survey rating (1-5 scale). Rolling 12-month aggregate. Higher is better. Target: 4.2+.",
           "children": []
         },
         {
@@ -167,7 +167,7 @@
           "display_name": "Avg Handle Time (sec)",
           "type": "semantic_model.measure",
           "data_type": "Double",
-          "description": "ranbir.singh@enercare.ca",
+          "description": "Average Handle Time - mean total call duration including hold time in seconds. Rolling 12-month aggregate. Lower is better. Target: <300 seconds.",
           "children": []
         },
         {
