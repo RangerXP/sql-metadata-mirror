@@ -46,6 +46,7 @@ METADATA_LAKEHOUSE = "lh_metadata"
 METADATA_SCHEMA = "metadata"
 PURVIEW_ACCOUNT_NAME = os.getenv("PURVIEW_ACCOUNT_NAME", "Purview-West3")
 PURVIEW_API_BASE_URL = os.getenv("PURVIEW_API_BASE_URL", "").strip()
+PURVIEW_ACCESS_TOKEN = os.getenv("PURVIEW_ACCESS_TOKEN", "").strip()
 PURVIEW_BASE_URL = (
     PURVIEW_API_BASE_URL.rstrip("/")
     if PURVIEW_API_BASE_URL
@@ -68,6 +69,7 @@ REQUIRED_TABLES = {
 
 print(f"Purview account: {PURVIEW_ACCOUNT_NAME}")
 print(f"Purview API base URL: {PURVIEW_BASE_URL}")
+print(f"Purview access token provided via env: {bool(PURVIEW_ACCESS_TOKEN)}")
 print(f"Purview glossary name: {PURVIEW_GLOSSARY_NAME}")
 print(f"Purview glossary guid provided: {bool(PURVIEW_GLOSSARY_GUID)}")
 print(f"Apply changes: {APPLY_CHANGES}")
@@ -341,6 +343,10 @@ def _request(method: str, path: str, token: str, body=None):
 
 
 def _get_purview_token_with_retry(max_attempts: int = 5, initial_delay_seconds: int = 3) -> str:
+    if PURVIEW_ACCESS_TOKEN:
+        print("[AUTH] Using PURVIEW_ACCESS_TOKEN from environment variable.")
+        return PURVIEW_ACCESS_TOKEN
+
     last_error = None
     delay = initial_delay_seconds
     for attempt in range(1, max_attempts + 1):
