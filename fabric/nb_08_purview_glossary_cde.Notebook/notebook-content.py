@@ -26,6 +26,7 @@
 
 import json
 import os
+import base64
 import uuid
 import requests
 from pyspark.sql import SparkSession
@@ -379,6 +380,28 @@ def _capture_purview_access_token(raw_token: str) -> str:
         raise RuntimeError(
             "PURVIEW_ACCESS_TOKEN is missing or malformed. "
             "Capture a token with: az account get-access-token --resource https://purview.azure.net --query accessToken -o tsv"
+        )
+
+    # Fail fast on expired/near-expiry tokens to avoid mid-run 401 errors.
+    try:
+        payload = token.split(".")[1]
+        payload += "=" * (-len(payload) % 4)
+        claims = json.loads(base64.urlsafe_b64decode(payload.encode("utf-8")).decode("utf-8"))
+        exp = int(claims.get("exp", 0))
+    except Exception:
+        exp = 0
+
+    if exp <= 0:
+        raise RuntimeError(
+            "PURVIEW_ACCESS_TOKEN could not be validated for expiry. "
+            "Regenerate it: az account get-access-token --resource https://purview.azure.net --query accessToken -o tsv"
+        )
+
+    now_epoch = int(__import__("time").time())
+    if exp <= now_epoch + 60:
+        raise RuntimeError(
+            "PURVIEW_ACCESS_TOKEN is expired or will expire in under 60 seconds. "
+            "Regenerate it with: az account get-access-token --resource https://purview.azure.net --query accessToken -o tsv"
         )
 
     print("[AUTH] Using captured PURVIEW_ACCESS_TOKEN only.")
