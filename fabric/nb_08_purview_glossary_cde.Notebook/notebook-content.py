@@ -460,7 +460,7 @@ else:
     print(f"Resolved glossary guid: {resolved_glossary_guid}")
 
     typedef_status, typedef_body = _request("POST", "/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
-    if typedef_status not in (200, 201) and "already exists" not in typedef_body.lower():
+    if typedef_status not in (200, 201, 409) and "already exists" not in typedef_body.lower():
         raise RuntimeError(f"TypeDef publish failed: HTTP {typedef_status} | {typedef_body[:500]}")
     print(f"TypeDefs publish result: HTTP {typedef_status}")
 
@@ -470,15 +470,38 @@ else:
     print(f"CDE entity publish result: HTTP {entity_status}")
 
     created_terms = 0
-    for term in term_payloads:
+    existing_terms = 0
+    failed_terms = []
+    total_terms = len(term_payloads)
+    print(f"Starting glossary term publish for {total_terms} terms...")
+    for index, term in enumerate(term_payloads, start=1):
+        print(f"Publishing term {index}/{total_terms}: {term['term_code']}")
         payload = dict(term["payload"])
         payload["anchor"] = {"glossaryGuid": resolved_glossary_guid}
         term_status, term_body = _request("POST", "/catalog/api/atlas/v2/glossary/term", token, payload)
         if term_status in (200, 201):
             created_terms += 1
-        elif "already exists" not in term_body.lower():
-            raise RuntimeError(f"Glossary term publish failed for {term['term_code']}: HTTP {term_status} | {term_body[:500]}")
-    print(f"Glossary terms created or updated: {created_terms}")
+        elif term_status == 409 or "already exists" in term_body.lower():
+            existing_terms += 1
+        else:
+            failed_terms.append((term["term_code"], term_status, term_body[:300]))
+        if index % 5 == 0 or index == total_terms:
+            print(
+                f"Progress: {index}/{total_terms} | "
+                f"created={created_terms} existing={existing_terms} failed={len(failed_terms)}"
+            )
+
+    if failed_terms:
+        sample = failed_terms[0]
+        raise RuntimeError(
+            "Glossary term publish completed with failures. "
+            f"failed={len(failed_terms)} first_failure=({sample[0]}, HTTP {sample[1]}, {sample[2]})"
+        )
+
+    print(
+        "Glossary term publish complete. "
+        f"created={created_terms} existing={existing_terms} failed=0"
+    )
 
 
 # METADATA ********************
