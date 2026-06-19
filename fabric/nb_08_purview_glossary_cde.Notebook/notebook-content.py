@@ -25,6 +25,7 @@
 # Cell 1: Imports and config
 
 import json
+import os
 import uuid
 import requests
 from pyspark.sql import SparkSession
@@ -34,12 +35,17 @@ spark = SparkSession.builder.getOrCreate()
 
 METADATA_LAKEHOUSE = "lh_metadata"
 METADATA_SCHEMA = "metadata"
-PURVIEW_ACCOUNT_NAME = "Purview-West3"
-PURVIEW_BASE_URL = f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
+PURVIEW_ACCOUNT_NAME = os.getenv("PURVIEW_ACCOUNT_NAME", "Purview-West3")
+PURVIEW_API_BASE_URL = os.getenv("PURVIEW_API_BASE_URL", "").strip()
+PURVIEW_BASE_URL = (
+    PURVIEW_API_BASE_URL.rstrip("/")
+    if PURVIEW_API_BASE_URL
+    else f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
+)
 PURVIEW_GLOSSARY_GUID = ""  # Required only when APPLY_CHANGES=True for glossary term creation.
-SQL_MIRROR_ONLY_DEPLOYMENT = True
-PURVIEW_PUBLISH_OVERRIDE = False
-APPLY_CHANGES = False
+SQL_MIRROR_ONLY_DEPLOYMENT = os.getenv("SQL_MIRROR_ONLY_DEPLOYMENT", "true").lower() == "true"
+PURVIEW_PUBLISH_OVERRIDE = os.getenv("PURVIEW_PUBLISH_OVERRIDE", "false").lower() == "true"
+APPLY_CHANGES = os.getenv("PURVIEW_APPLY_CHANGES", "false").lower() == "true"
 OUTPUT_ROOT = "/lakehouse/default/Files/purview_publish/phase_04_05_glossary_cde"
 
 REQUIRED_TABLES = {
@@ -48,7 +54,10 @@ REQUIRED_TABLES = {
 }
 
 print(f"Purview account: {PURVIEW_ACCOUNT_NAME}")
+print(f"Purview API base URL: {PURVIEW_BASE_URL}")
 print(f"Apply changes: {APPLY_CHANGES}")
+print(f"Publish override: {PURVIEW_PUBLISH_OVERRIDE}")
+print(f"SQL mirror guard: {SQL_MIRROR_ONLY_DEPLOYMENT}")
 print(f"Output root: {OUTPUT_ROOT}")
 
 
@@ -301,6 +310,14 @@ else:
         raise RuntimeError("PURVIEW_GLOSSARY_GUID must be set before live glossary term creation.")
 
     token = mssparkutils.credentials.getToken("https://purview.azure.net")
+
+    # Quick endpoint probe to fail fast when account/base URL is misconfigured.
+    probe_status, probe_body = _request("GET", "/catalog/api/atlas/v2/types/typedefs", token)
+    if probe_status not in (200, 401):
+        raise RuntimeError(
+            f"Purview endpoint probe failed: HTTP {probe_status}. "
+            f"Check PURVIEW_ACCOUNT_NAME/PURVIEW_API_BASE_URL. Body: {probe_body[:500]}"
+        )
 
     typedef_status, typedef_body = _request("POST", "/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
     if typedef_status not in (200, 201) and "already exists" not in typedef_body.lower():
