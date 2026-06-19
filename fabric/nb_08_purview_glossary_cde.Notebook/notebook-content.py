@@ -155,6 +155,16 @@ def _safe_text(value):
     return str(value).strip()
 
 
+def _safe_external_url(value):
+    text = _safe_text(value)
+    if not text:
+        return ""
+    lower = text.lower()
+    if lower.startswith("http://") or lower.startswith("https://"):
+        return text
+    return ""
+
+
 def _guid():
     return f"-{uuid.uuid4().int % 1000000000}"
 
@@ -221,13 +231,14 @@ for row in glossary_df.collect():
     term_code = _safe_text(getattr(row, "term_code", None) or term_name)
     if not term_name:
         continue
+    resource_url = _safe_external_url(getattr(row, "resources", None))
     body = {
         "name": term_name,
         "shortDescription": term_code,
         "longDescription": _safe_text(getattr(row, "definition", None)),
         "status": _safe_text(getattr(row, "status", None)) or "Draft",
         "abbreviation": _safe_text(getattr(row, "acronyms", None)),
-        "resources": [{"displayName": term_code, "url": _safe_text(getattr(row, "resources", None))}] if _safe_text(getattr(row, "resources", None)) else [],
+        "resources": [{"displayName": term_code, "url": resource_url}] if resource_url else [],
     }
     if PURVIEW_GLOSSARY_GUID:
         body["anchor"] = {"glossaryGuid": PURVIEW_GLOSSARY_GUID}
