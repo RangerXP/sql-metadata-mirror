@@ -12,7 +12,7 @@
   "elements": [
     {
       "id": "2f851d4d-2ff5-4c8d-aea1-d924793cfffa",
-      "is_selected": false,
+      "is_selected": true,
       "display_name": "_Measures",
       "type": "semantic_model.table",
       "description": null,
