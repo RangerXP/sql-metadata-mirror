@@ -612,6 +612,11 @@ def _score_asset_candidate(entity, parsed_token):
     return score
 
 
+def _is_glossary_term_entity(entity) -> bool:
+    entity_type = _safe_text(entity.get("entityType", "") or entity.get("typeName", "")).lower()
+    return "glossaryterm" in entity_type or "atlasglossaryterm" in entity_type
+
+
 def _compact_token(value: str) -> str:
     return "".join(ch for ch in _safe_text(value).lower() if ch.isalnum())
 
@@ -625,6 +630,8 @@ def _resolve_asset_guid_for_token(token: str, auth_token: str, term_name: str = 
     explicit_hints = ASSET_TOKEN_SEARCH_HINTS.get(token_key, [])
     for keywords in explicit_hints:
         for entity in _search_purview_assets(auth_token, keywords, limit=50):
+            if _is_glossary_term_entity(entity):
+                continue
             guid = _safe_text(entity.get("id", "") or entity.get("guid", ""))
             if not guid:
                 continue
@@ -637,6 +644,8 @@ def _resolve_asset_guid_for_token(token: str, auth_token: str, term_name: str = 
 
     for keywords in _asset_query_candidates(parsed):
         for entity in _search_purview_assets(auth_token, keywords, limit=50):
+            if _is_glossary_term_entity(entity):
+                continue
             guid = _safe_text(entity.get("id", "") or entity.get("guid", ""))
             if not guid:
                 continue
@@ -658,6 +667,8 @@ def _resolve_asset_guid_for_token(token: str, auth_token: str, term_name: str = 
 
         for keywords in fallback_queries:
             for entity in _search_purview_assets(auth_token, keywords, limit=50):
+                if _is_glossary_term_entity(entity):
+                    continue
                 guid = _safe_text(entity.get("id", "") or entity.get("guid", ""))
                 if not guid:
                     continue
