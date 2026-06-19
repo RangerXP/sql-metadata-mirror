@@ -595,7 +595,11 @@ def _score_asset_candidate(entity, parsed_token):
     return score
 
 
-def _resolve_asset_guid_for_token(token: str, auth_token: str):
+def _compact_token(value: str) -> str:
+    return "".join(ch for ch in _safe_text(value).lower() if ch.isalnum())
+
+
+def _resolve_asset_guid_for_token(token: str, auth_token: str, term_name: str = ""):
     parsed = _parse_bound_asset_token(token)
     best = None
     best_score = 0
@@ -609,6 +613,35 @@ def _resolve_asset_guid_for_token(token: str, auth_token: str):
             if score > best_score:
                 best_score = score
                 best = guid
+
+    # Fallback for short KPI aliases (example: FCR) that map to longer measure names.
+    if not best and parsed["kind"] == "Measure":
+        alias = _compact_token(parsed["column"])
+        fallback_queries = []
+        if term_name:
+            fallback_queries.append(term_name)
+        if alias:
+            fallback_queries.append(alias)
+
+        for keywords in fallback_queries:
+            for entity in _search_purview_assets(auth_token, keywords, limit=50):
+                guid = _safe_text(entity.get("id", "") or entity.get("guid", ""))
+                if not guid:
+                    continue
+                entity_type = _safe_text(entity.get("entityType", "") or entity.get("typeName", "")).lower()
+                qualified_name = _safe_text(entity.get("qualifiedName", "")).lower()
+                display_name = _safe_text(entity.get("name", "")).lower()
+                display_compact = _compact_token(display_name)
+
+                if "measure" not in entity_type and "semantic" not in qualified_name:
+                    continue
+
+                if alias and alias in _compact_token(qualified_name):
+                    return guid
+                if alias and alias in display_compact:
+                    return guid
+                if term_name and _compact_token(term_name) and _compact_token(term_name) in display_compact:
+                    return guid
 
     return best if best_score > 0 else ""
 
@@ -741,7 +774,7 @@ else:
         entity_guids = []
         seen_guids = set()
         for asset_token in bound_tokens:
-            entity_guid = _resolve_asset_guid_for_token(asset_token, token)
+            entity_guid = _resolve_asset_guid_for_token(asset_token, token, term_name=term_name)
             if entity_guid:
                 if entity_guid not in seen_guids:
                     entity_guids.append(entity_guid)
