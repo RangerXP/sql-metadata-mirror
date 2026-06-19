@@ -79,6 +79,11 @@ ASSET_TOKEN_SEARCH_HINTS = {
     ],
 }
 
+# Deterministic fallback: KPI measure tokens map to canonical governed assets when a measure entity is not discoverable.
+KPI_MEASURE_FALLBACK_ASSET_TOKENS = {
+    "brookfieldenercare/_measures/fcr": "dbo.service_requests",
+}
+
 REQUIRED_TABLES = {
     "glossary_terms": ["term_code", "term_name", "definition", "status", "bound_assets"],
     "cdes": ["cde_name", "expected_data_type", "status", "bound_columns"],
@@ -709,6 +714,27 @@ def _resolve_asset_guid_for_token(token: str, auth_token: str, term_name: str = 
                     return guid
                 if term_name and _compact_token(term_name) and _compact_token(term_name) in display_compact:
                     return guid
+
+    # Final deterministic KPI fallback to canonical assets.
+    if not best:
+        fallback_token = KPI_MEASURE_FALLBACK_ASSET_TOKENS.get(token_key, "")
+        if fallback_token and _safe_text(fallback_token).lower() != token_key:
+            fallback_parsed = _parse_bound_asset_token(fallback_token)
+            fallback_best = None
+            fallback_score = 0
+            for keywords in _asset_query_candidates(fallback_parsed):
+                for entity in _search_purview_assets(auth_token, keywords, limit=50):
+                    if _is_glossary_term_entity(entity):
+                        continue
+                    guid = _safe_text(entity.get("id", "") or entity.get("guid", ""))
+                    if not guid:
+                        continue
+                    score = _score_asset_candidate(entity, fallback_parsed)
+                    if score > fallback_score:
+                        fallback_score = score
+                        fallback_best = guid
+            if fallback_best and fallback_score > 0:
+                return fallback_best
 
     return best if best_score > 0 else ""
 
