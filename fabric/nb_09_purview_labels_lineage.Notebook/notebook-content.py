@@ -161,7 +161,10 @@ def _label_to_type_name(label_name: str) -> str:
     return f"EnercareSensitivity{cleaned or 'Unspecified'}"
 
 
+CDE_CLASSIFICATION_NAME = "EnercareCDE"
+
 labels = set()
+label_policy_by_name = {}
 cde_has_sensitivity_label = "sensitivity_label" in cde_df.columns
 if cde_has_sensitivity_label:
     for row in cde_df.select("sensitivity_label").distinct().collect():
@@ -169,10 +172,14 @@ if cde_has_sensitivity_label:
         if label:
             labels.add(label)
 if labels_df is not None and "label_name" in labels_df.columns:
-    for row in labels_df.select("label_name").distinct().collect():
+    for row in labels_df.collect():
         label = _safe_text(getattr(row, "label_name", None))
         if label:
             labels.add(label)
+            label_policy_by_name[label.lower()] = {
+                "sensitivity_tier": _safe_text(getattr(row, "sensitivity_tier", None)) or label,
+                "protection_policy": _safe_text(getattr(row, "protection_policy", None)),
+            }
 
 if not labels:
     labels.add("Internal")
@@ -183,54 +190,99 @@ for label in sorted(labels):
         {
             "category": "CLASSIFICATION",
             "name": _label_to_type_name(label),
-            "description": f"Enercare governance sensitivity label: {label}",
+            "description": f"Sensitivity:{label}",
             "attributeDefs": [
                 {"name": "label_name", "typeName": "string", "isOptional": True},
+                {"name": "sensitivity_tier", "typeName": "string", "isOptional": True},
+                {"name": "protection_policy", "typeName": "string", "isOptional": True},
                 {"name": "assignment_source", "typeName": "string", "isOptional": True},
                 {"name": "rule", "typeName": "string", "isOptional": True},
             ],
         }
     )
 
+classification_defs.append(
+    {
+        "category": "CLASSIFICATION",
+        "name": CDE_CLASSIFICATION_NAME,
+        "description": "CDE",
+        "attributeDefs": [
+            {"name": "cde_id", "typeName": "string", "isOptional": True},
+            {"name": "cde_name", "typeName": "string", "isOptional": True},
+            {"name": "assignment_source", "typeName": "string", "isOptional": True},
+        ],
+    }
+)
+
 typedef_payload = {"classificationDefs": classification_defs}
 
-classification_manifest = []
+sensitivity_classification_manifest = []
+cde_classification_manifest = []
 if cde_has_sensitivity_label:
     for row in cde_df.collect():
         label = _safe_text(getattr(row, "sensitivity_label", None))
-        if not label:
-            continue
         cde_id = _safe_text(getattr(row, "cde_id", None) or getattr(row, "cde_code", None) or getattr(row, "cde_name", None))
+        cde_name = _safe_text(getattr(row, "cde_name", None) or cde_id)
+
+        policy = label_policy_by_name.get(label.lower(), {}) if label else {}
+        sensitivity_tier = _safe_text(policy.get("sensitivity_tier", "")) or label
+        protection_policy = _safe_text(policy.get("protection_policy", ""))
+
         for token in _split_tokens(getattr(row, "bound_columns", None)):
-            classification_manifest.append(
+            if label:
+                sensitivity_classification_manifest.append(
+                    {
+                        "asset_ref": token,
+                        "classification": _label_to_type_name(label),
+                        "label_name": label,
+                        "sensitivity_tier": sensitivity_tier,
+                        "protection_policy": protection_policy,
+                        "assignment_source": "CDE-Sensitivity",
+                        "rule": cde_id,
+                    }
+                )
+
+            cde_classification_manifest.append(
                 {
                     "asset_ref": token,
-                    "classification": _label_to_type_name(label),
-                    "label_name": label,
+                    "classification": CDE_CLASSIFICATION_NAME,
+                    "label_name": "",
+                    "sensitivity_tier": "",
+                    "protection_policy": "",
                     "assignment_source": "CDE",
                     "rule": cde_id,
+                    "cde_id": cde_id,
+                    "cde_name": cde_name,
                 }
             )
 else:
-    print("[Cell 3] cdes.sensitivity_label not found; using label_assignments as classification source.")
+    print("[Cell 3] cdes.sensitivity_label not found; using label_assignments as sensitivity source.")
 
 if labels_df is not None:
     for row in labels_df.collect():
         label = _safe_text(getattr(row, "label_name", None))
         assets = _safe_text(getattr(row, "applies_to_asset_ids", None) or getattr(row, "enforcement_target", None))
         rule = _safe_text(getattr(row, "assignment_rule", None))
+        sensitivity_tier = _safe_text(getattr(row, "sensitivity_tier", None)) or label
+        protection_policy = _safe_text(getattr(row, "protection_policy", None))
         for token in _split_tokens(assets):
-            classification_manifest.append(
+            sensitivity_classification_manifest.append(
                 {
                     "asset_ref": token,
                     "classification": _label_to_type_name(label),
                     "label_name": label,
+                    "sensitivity_tier": sensitivity_tier,
+                    "protection_policy": protection_policy,
                     "assignment_source": "LabelPolicy",
                     "rule": rule,
                 }
             )
 
+classification_manifest = sensitivity_classification_manifest + cde_classification_manifest
+
 print(f"Classification defs prepared: {len(classification_defs)}")
+print(f"Sensitivity manifest rows prepared: {len(sensitivity_classification_manifest)}")
+print(f"CDE manifest rows prepared: {len(cde_classification_manifest)}")
 print(f"Classification manifest rows prepared: {len(classification_manifest)}")
 
 # Cell 3 complete: Classification typedefs and manifests built
@@ -533,15 +585,38 @@ def _resolve_asset_for_classification(token: str, asset_ref: str):
     return best
 
 
-def _apply_classification(token: str, entity_guid: str, classification_name: str, label_name: str, assignment_source: str, rule: str):
+def _apply_classification(
+    token: str,
+    entity_guid: str,
+    classification_name: str,
+    label_name: str,
+    assignment_source: str,
+    rule: str,
+    sensitivity_tier: str = "",
+    protection_policy: str = "",
+    cde_id: str = "",
+    cde_name: str = "",
+):
+    attributes = {}
+    if _safe_text(label_name):
+        attributes["label_name"] = label_name
+    if _safe_text(sensitivity_tier):
+        attributes["sensitivity_tier"] = sensitivity_tier
+    if _safe_text(protection_policy):
+        attributes["protection_policy"] = protection_policy
+    if _safe_text(assignment_source):
+        attributes["assignment_source"] = assignment_source
+    if _safe_text(rule):
+        attributes["rule"] = rule
+    if _safe_text(cde_id):
+        attributes["cde_id"] = cde_id
+    if _safe_text(cde_name):
+        attributes["cde_name"] = cde_name
+
     payload = [
         {
             "typeName": classification_name,
-            "attributes": {
-                "label_name": label_name,
-                "assignment_source": assignment_source,
-                "rule": rule,
-            },
+            "attributes": attributes,
         }
     ]
 
@@ -984,17 +1059,56 @@ else:
         classification_unresolved = []
 
         dedupe = set()
+        classification_rows = []
         for row in classification_manifest:
             asset_ref = _safe_text(row.get("asset_ref", ""))
             classification_name = _safe_text(row.get("classification", ""))
             label_name = _safe_text(row.get("label_name", ""))
+            sensitivity_tier = _safe_text(row.get("sensitivity_tier", ""))
+            protection_policy = _safe_text(row.get("protection_policy", ""))
             assignment_source = _safe_text(row.get("assignment_source", ""))
             rule = _safe_text(row.get("rule", ""))
+            cde_id = _safe_text(row.get("cde_id", ""))
+            cde_name = _safe_text(row.get("cde_name", ""))
 
             key = (asset_ref.lower(), classification_name.lower(), label_name.lower())
             if not asset_ref or not classification_name or key in dedupe:
                 continue
             dedupe.add(key)
+
+            classification_rows.append(
+                {
+                    "asset_ref": asset_ref,
+                    "classification_name": classification_name,
+                    "label_name": label_name,
+                    "sensitivity_tier": sensitivity_tier,
+                    "protection_policy": protection_policy,
+                    "assignment_source": assignment_source,
+                    "rule": rule,
+                    "cde_id": cde_id,
+                    "cde_name": cde_name,
+                }
+            )
+
+        total_classification_rows = len(classification_rows)
+        print(f"[Cell 6] Classification rows to process: {total_classification_rows}")
+        for index, row in enumerate(classification_rows, start=1):
+            asset_ref = row["asset_ref"]
+            classification_name = row["classification_name"]
+            label_name = row["label_name"]
+            sensitivity_tier = row["sensitivity_tier"]
+            protection_policy = row["protection_policy"]
+            assignment_source = row["assignment_source"]
+            rule = row["rule"]
+            cde_id = row["cde_id"]
+            cde_name = row["cde_name"]
+
+            if index == 1 or index % 10 == 0 or index == total_classification_rows:
+                print(
+                    f"[Cell 6] Classification progress: {index}/{total_classification_rows} | "
+                    f"assigned={classification_assigned} existing={classification_existing} "
+                    f"unresolved={len(classification_unresolved)} failed={len(classification_failed)}"
+                )
 
             resolved = _resolve_asset_for_classification(token, asset_ref)
             if not resolved:
@@ -1009,6 +1123,10 @@ else:
                 label_name,
                 assignment_source,
                 rule,
+                sensitivity_tier=sensitivity_tier,
+                protection_policy=protection_policy,
+                cde_id=cde_id,
+                cde_name=cde_name,
             )
 
             if outcome == "assigned":
