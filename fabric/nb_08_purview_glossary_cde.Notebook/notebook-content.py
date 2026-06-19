@@ -68,6 +68,16 @@ MEASURE_TOKEN_ALIASES = {
     "csat": ["CSAT", "Customer Satisfaction"],
 }
 
+# Token-specific search hints for hard-to-resolve bindings.
+ASSET_TOKEN_SEARCH_HINTS = {
+    "brookfieldenercare/_measures/fcr": [
+        "FCR Rate",
+        "First Contact Resolution",
+        "dbo.service_requests",
+        "service_requests",
+    ],
+}
+
 REQUIRED_TABLES = {
     "glossary_terms": ["term_code", "term_name", "definition", "status", "bound_assets"],
     "cdes": ["cde_name", "expected_data_type", "status", "bound_columns"],
@@ -610,6 +620,20 @@ def _resolve_asset_guid_for_token(token: str, auth_token: str, term_name: str = 
     parsed = _parse_bound_asset_token(token)
     best = None
     best_score = 0
+
+    token_key = _safe_text(token).lower()
+    explicit_hints = ASSET_TOKEN_SEARCH_HINTS.get(token_key, [])
+    for keywords in explicit_hints:
+        for entity in _search_purview_assets(auth_token, keywords, limit=50):
+            guid = _safe_text(entity.get("id", "") or entity.get("guid", ""))
+            if not guid:
+                continue
+            score = _score_asset_candidate(entity, parsed)
+            # Lift score floor for explicit token hints.
+            score = max(score, 3)
+            if score > best_score:
+                best_score = score
+                best = guid
 
     for keywords in _asset_query_candidates(parsed):
         for entity in _search_purview_assets(auth_token, keywords, limit=50):
