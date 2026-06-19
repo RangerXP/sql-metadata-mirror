@@ -59,7 +59,7 @@ TOKEN_RESOURCE_CANDIDATES = ["https://purview.azure.net"]
 TOKEN_OUTER_RETRY_ATTEMPTS = 1
 DISABLE_LIVE_PURVIEW_PUBLISH = False
 TOKEN_ACQUISITION_MODE = "manual"  # auto | manual | azcli | tokenlibrary
-MANUAL_PURVIEW_BEARER_TOKEN = "eyJ0eXAiOiJKV1QiLCJub25jZSI6IncwVTdlcWw2VFVPM2k1Qm4zbDVfTDNYekRnM3NfZHhHanVCTzI5ckx0b1EiLCJhbGciOiJSUzI1NiIsIng1dCI6IndoMDZzRWt6TEhKNXNOTmFVeVJZMl82TzhLMCIsImtpZCI6IndoMDZzRWt6TEhKNXNOTmFVeVJZMl82TzhLMCJ9.eyJhdWQiOiJodHRwczovL3B1cnZpZXcuYXp1cmUubmV0IiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvYjdlNDc2OTEtOTcyNi00ZjY3LWEzMDItZTU2NzgxNWYzNTIyLyIsImlhdCI6MTc4MTgyMjEwMiwibmJmIjoxNzgxODIyMTAyLCJleHAiOjE3ODE4MjczMjYsImFjciI6IjEiLCJhaW8iOiJBWVFBZS84Y0FBQUFWNjJhR0N1alRFZm56VWVRYkF0ZTNvaG1tSUxSbUtyTWNrOEdGZGpReUJKNldzSENuZndvcDNYNDhoK21MeGZTU3M5WlZZK1Fmb3dBRUJ5ajQ2cDhxdjhyZnIwVGxXQ2NQVk43MERHTzJ3TndWdDRRY002R281eXZzUlRWaUZBa3N4WkVFOXNUUUJ5SUs0OU9OZmxaclA4OWxjbUpmME13T0dPK01sbk1ZQjg9IiwiYW1yIjpbInB3ZCIsIm1mYSJdLCJhcHBpZCI6IjA0YjA3Nzk1LThkZGItNDYxYS1iYmVlLTAyZjllMWJmN2I0NiIsImFwcGlkYWNyIjoiMCIsImlkdHlwIjoidXNlciIsImlwYWRkciI6IjQwLjg2LjE4My4xNzMiLCJuYW1lIjoiU2VhbiBLZWxsZXkiLCJvaWQiOiI0N2ExNDdhNS1jZTI3LTQ2ZTktYmU4Yy1jY2I5ZjBkNGY5ZmYiLCJwdWlkIjoiMTAwMzIwMDU3QkY4ODkzNyIsInJoIjoiMS5BY29Ba1hia3R5YVhaMC1qQXVWbmdWODFJcDZVd25NdDJucEZsZ2Y4eG1VWmlXY2FBTnZLQUEuIiwic2NwIjoidXNlcl9pbXBlcnNvbmF0aW9uIiwic2lkIjoiMDAyMjBlZGEtZDNjNS0wZmE1LTk2NGMtNTJiYTg4OThlOTQxIiwic3ViIjoiSVZYcmhpeHYyWno0b2RqY05ZTXJENk83YTg5U2x3N3plRnZyakFQdFpzZyIsInRpZCI6ImI3ZTQ3NjkxLTk3MjYtNGY2Ny1hMzAyLWU1Njc4MTVmMzUyMiIsInVuaXF1ZV9uYW1lIjoic2VhbmtlbGxleUBNbmdFbnZNQ0FQNjYwNDQ0Lm9ubWljcm9zb2Z0LmNvbSIsInVwbiI6InNlYW5rZWxsZXlATW5nRW52TUNBUDY2MDQ0NC5vbm1pY3Jvc29mdC5jb20iLCJ1dGkiOiJNNHkyN0dYU3IwMkNpdjFiRE9zSkFBIiwidmVyIjoiMS4wIiwid2lkcyI6WyJmMmVmOTkyYy0zYWZiLTQ2YjktYjdjZi1hMTI2ZWU3NGM0NTEiLCJhOWVhODk5Ni0xMjJmLTRjNzQtOTUyMC04ZWRjZDE5MjgyNmMiLCJiNzlmYmY0ZC0zZWY5LTQ2ODktODE0My03NmIxOTRlODU1MDkiXSwieG1zX2FjdF9mY3QiOiIzIDUiLCJ4bXNfZnRkIjoiSXNVYmJzV0pob0dTbVlteWV1WUhDMlR6Vmw5blppQkZiMHprb2JxUGhLMEJkWE4zWlhOME15MWtjMjF6IiwieG1zX2lkcmVsIjoiMSAyNiIsInhtc19zdWJfZmN0IjoiMiAzIn0.DzZ-Yv1FsUOJ7w5EwE87ItSc0eO9FfY9jbXXDRdrt4RdqufGW6ZfqTIlm6F6RVzC-2Fp-vfHV6hnB2wSpFfz29nXS49lvzMI_8m_I7wEtPJSGDrh_Aw6vj0sp-1Dmh7po129orp5bYeibN8wQe7nSReZLLzFrX2wR4JAIF7pmhdnXmrswHhDITuxkDlLNf14UMHVsVMznzhtymOzRSijoQpaHtJKjL6mn8ArgGz5SihRE8UfYwWgeSCMVcGbFYVc3J1CgZHC2Vr0q9vokkBErbVNqFwZINgPFUmuIo-OkL1LUn35Epez1fE_8NT1gEt6tAqFjK_D90ZUJng4lt-U8A"
+MANUAL_PURVIEW_BEARER_TOKEN = "eyJ0eXAiOiJKV1QiLCJub25jZSI6IkNuTzN6RDU2dVZrczVjQUQ0U3RsOUtIek92WklWVjYta3c0MFhsX256V0EiLCJhbGciOiJSUzI1NiIsIng1dCI6IndoMDZzRWt6TEhKNXNOTmFVeVJZMl82TzhLMCIsImtpZCI6IndoMDZzRWt6TEhKNXNOTmFVeVJZMl82TzhLMCJ9.eyJhdWQiOiJodHRwczovL3B1cnZpZXcuYXp1cmUubmV0IiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvYjdlNDc2OTEtOTcyNi00ZjY3LWEzMDItZTU2NzgxNWYzNTIyLyIsImlhdCI6MTc4MTgyNzM1MCwibmJmIjoxNzgxODI3MzUwLCJleHAiOjE3ODE4MzEzMzAsImFjciI6IjEiLCJhaW8iOiJBWVFBZS84Y0FBQUFjYlVrNTJFUmhsZ3MxT3N6bE9UZ2hlYWlJZnRUM01iUGYrUm91aGduQzRDbVhRd2VmSTVVa1NLcVIxUVZRbDRkYTFjcTRXbUNCbGtRL1JvNHlTREZuK0M5OFNiT3FCcmRsNG1TaTd0NzhMcGR6RlE2bVZQamlQYzJhczg1NFdxNjVEVVAzMUxxZUZyK0ZtUFZPdlp5UXZSTFpFOWt4VWJTb3VpWit3bnpFZzg9IiwiYW1yIjpbInB3ZCIsIm1mYSJdLCJhcHBpZCI6IjA0YjA3Nzk1LThkZGItNDYxYS1iYmVlLTAyZjllMWJmN2I0NiIsImFwcGlkYWNyIjoiMCIsImlkdHlwIjoidXNlciIsImlwYWRkciI6IjQwLjg2LjE4My4xNzMiLCJuYW1lIjoiU2VhbiBLZWxsZXkiLCJvaWQiOiI0N2ExNDdhNS1jZTI3LTQ2ZTktYmU4Yy1jY2I5ZjBkNGY5ZmYiLCJwdWlkIjoiMTAwMzIwMDU3QkY4ODkzNyIsInJoIjoiMS5BY29Ba1hia3R5YVhaMC1qQXVWbmdWODFJcDZVd25NdDJucEZsZ2Y4eG1VWmlXY2FBTnZLQUEuIiwic2NwIjoidXNlcl9pbXBlcnNvbmF0aW9uIiwic2lkIjoiMDAyMjBlZGEtZDNjNS0wZmE1LTk2NGMtNTJiYTg4OThlOTQxIiwic3ViIjoiSVZYcmhpeHYyWno0b2RqY05ZTXJENk83YTg5U2x3N3plRnZyakFQdFpzZyIsInRpZCI6ImI3ZTQ3NjkxLTk3MjYtNGY2Ny1hMzAyLWU1Njc4MTVmMzUyMiIsInVuaXF1ZV9uYW1lIjoic2VhbmtlbGxleUBNbmdFbnZNQ0FQNjYwNDQ0Lm9ubWljcm9zb2Z0LmNvbSIsInVwbiI6InNlYW5rZWxsZXlATW5nRW52TUNBUDY2MDQ0NC5vbm1pY3Jvc29mdC5jb20iLCJ1dGkiOiIzWWhER2pRVnNFeWNCTXI0MGhBUkFBIiwidmVyIjoiMS4wIiwid2lkcyI6WyJmMmVmOTkyYy0zYWZiLTQ2YjktYjdjZi1hMTI2ZWU3NGM0NTEiLCJhOWVhODk5Ni0xMjJmLTRjNzQtOTUyMC04ZWRjZDE5MjgyNmMiLCJiNzlmYmY0ZC0zZWY5LTQ2ODktODE0My03NmIxOTRlODU1MDkiXSwieG1zX2FjdF9mY3QiOiI1IDMiLCJ4bXNfZnRkIjoiemxHYktVbmFmaUNKOUs2SnVsWkk5LUhGU3FZdzZPcGhVbVdmSjRzTEtBc0JkWE4zWlhOME15MWtjMjF6IiwieG1zX2lkcmVsIjoiMSAxNiIsInhtc19zdWJfZmN0IjoiMyAxMiJ9.hfdq5GW3EWeQC4ZaBrF7ci6cjmjEBSREcDqzgunOKOr2KyYmDEtZUWSS_NCNGDR6LGUWOl0qtMS7cDvEyBT5v5WLfstkWI_9UBJ3QSFr7SYfMJtKCBfNTeSc6RAzE0isDLqwhOqDXYT-1OUlLPjpFnxATdu74fvy-u7QygWhXHsRL-KKW3wA5h07E5WVMNOD9w10XsWETIHMJ-fKUiu2OIqifsjmjzHqkzN6T-HwQtjbtuQ8_n0uXrwhvuM4RIOCiK5NkLml_XbSiGzw82WLEwpGzMjD7EUApzhWT0X1jaZcVAea2BSqV7kUN-GRZsyeEak5PVh39gW9ScYzVX3W_g"
 AZ_CLI_TIMEOUT_SECONDS = 15
 
 WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
@@ -542,35 +542,13 @@ def _get_purview_token_with_retry() -> str:
 
 
 def _find_entity_by_qualified_name(token: str, qualified_name: str):
-    # Atlas DSL query returns discovered assets with guid/typeName when the qualifiedName matches.
-    query = f"from * where qualifiedName = '{qualified_name}'"
-    status, body = _request("GET", "/catalog/api/atlas/v2/search/dsl", token, params={"query": query, "limit": 1})
-    if status != 200:
-        return None
-
-    try:
-        payload = json.loads(body)
-    except Exception:
-        return None
-
-    entities = payload.get("entities") or []
-    if not entities:
-        return None
-
-    entity = entities[0]
-    return {
-        "guid": entity.get("guid"),
-        "typeName": entity.get("typeName"),
-        "qualifiedName": qualified_name,
-    }
-
-
-def _find_entity_by_basic_search(token: str, query_text: str, role: str):
+    # Datamap search is the stable endpoint for finding ingested assets by qualifiedName.
     status, body = _request(
-        "GET",
-        "/catalog/api/atlas/v2/search/basic",
+        "POST",
+        "/datamap/api/search/query",
         token,
-        params={"query": query_text, "limit": 20},
+        body={"keywords": qualified_name, "limit": 25},
+        params={"api-version": "2023-09-01"},
     )
     if status != 200:
         return None
@@ -580,7 +558,42 @@ def _find_entity_by_basic_search(token: str, query_text: str, role: str):
     except Exception:
         return None
 
-    entities = payload.get("entities") or []
+    entities = payload.get("value") or []
+    if not entities:
+        return None
+
+    entity = None
+    for candidate in entities:
+        if _safe_text(candidate.get("qualifiedName")) == qualified_name:
+            entity = candidate
+            break
+    if entity is None:
+        return None
+
+    return {
+        "guid": entity.get("id") or entity.get("guid"),
+        "typeName": entity.get("entityType") or entity.get("typeName"),
+        "qualifiedName": qualified_name,
+    }
+
+
+def _find_entity_by_basic_search(token: str, query_text: str, role: str):
+    status, body = _request(
+        "POST",
+        "/datamap/api/search/query",
+        token,
+        body={"keywords": query_text, "limit": 50},
+        params={"api-version": "2023-09-01"},
+    )
+    if status != 200:
+        return None
+
+    try:
+        payload = json.loads(body)
+    except Exception:
+        return None
+
+    entities = payload.get("value") or []
     if not entities:
         return None
 
@@ -594,11 +607,19 @@ def _find_entity_by_basic_search(token: str, query_text: str, role: str):
             continue
         if role == "source" and "mssql://" not in qn_lower:
             continue
-        if role == "target" and not any(marker in qn_lower for marker in ("fabric://", "powerbi://")):
+        if role == "target" and not any(
+            marker in qn_lower
+            for marker in (
+                "fabric://",
+                "powerbi://",
+                "https://app.fabric.microsoft.com/",
+                "https://app.powerbi.com/",
+            )
+        ):
             continue
         return {
-            "guid": entity.get("guid"),
-            "typeName": entity.get("typeName"),
+            "guid": entity.get("id") or entity.get("guid"),
+            "typeName": entity.get("entityType") or entity.get("typeName"),
             "qualifiedName": qualified_name,
         }
 
