@@ -290,9 +290,30 @@ validation_rows = [
     ("glossary_target_configured", int(bool(PURVIEW_GLOSSARY_GUID) or bool(PURVIEW_GLOSSARY_NAME)), "INFO"),
 ]
 validation_df = spark.createDataFrame(validation_rows, ["check_name", "check_value", "status"])
-validation_df.write.mode("overwrite").format("delta").saveAsTable(f"{METADATA_SCHEMA}.purview_phase_04_05_validation")
+
+validation_table_candidates = []
+if METADATA_SCHEMA:
+    validation_table_candidates.append(f"{METADATA_SCHEMA}.purview_phase_04_05_validation")
+validation_table_candidates.append("purview_phase_04_05_validation")
+
+validation_table_written = None
+last_validation_error = None
+for table_name in validation_table_candidates:
+    try:
+        validation_df.write.mode("overwrite").format("delta").saveAsTable(table_name)
+        validation_table_written = table_name
+        break
+    except Exception as ex:
+        last_validation_error = ex
+
+if not validation_table_written:
+    raise RuntimeError(
+        "Could not write validation table. "
+        f"Tried: {validation_table_candidates}. Last error: {last_validation_error}"
+    )
 
 print(f"Payloads written to: {OUTPUT_ROOT}")
+print(f"Validation table written to: {validation_table_written}")
 display(validation_df.orderBy("check_name"))
 
 
