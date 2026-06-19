@@ -26,7 +26,6 @@
 
 import json
 import os
-import time
 import uuid
 import requests
 from pyspark.sql import SparkSession
@@ -47,9 +46,6 @@ METADATA_SCHEMA = "metadata"
 PURVIEW_ACCOUNT_NAME = os.getenv("PURVIEW_ACCOUNT_NAME", "Purview-West3")
 PURVIEW_API_BASE_URL = os.getenv("PURVIEW_API_BASE_URL", "").strip()
 PURVIEW_ACCESS_TOKEN = os.getenv("PURVIEW_ACCESS_TOKEN", "").strip()
-AZURE_TENANT_ID = os.getenv("AZURE_TENANT_ID", "").strip()
-PURVIEW_CLIENT_ID = os.getenv("PURVIEW_CLIENT_ID", "").strip()
-PURVIEW_CLIENT_SECRET = os.getenv("PURVIEW_CLIENT_SECRET", "").strip()
 PURVIEW_BASE_URL = (
     PURVIEW_API_BASE_URL.rstrip("/")
     if PURVIEW_API_BASE_URL
@@ -73,7 +69,6 @@ REQUIRED_TABLES = {
 print(f"Purview account: {PURVIEW_ACCOUNT_NAME}")
 print(f"Purview API base URL: {PURVIEW_BASE_URL}")
 print(f"Purview access token provided via env: {bool(PURVIEW_ACCESS_TOKEN)}")
-print(f"Purview client credential fallback configured: {bool(AZURE_TENANT_ID and PURVIEW_CLIENT_ID and PURVIEW_CLIENT_SECRET)}")
 print(f"Purview glossary name: {PURVIEW_GLOSSARY_NAME}")
 print(f"Purview glossary guid provided: {bool(PURVIEW_GLOSSARY_GUID)}")
 print(f"Apply changes: {APPLY_CHANGES}")
@@ -346,52 +341,20 @@ def _request(method: str, path: str, token: str, body=None):
     return response.status_code, response.text
 
 
-def _get_purview_token_with_retry(max_attempts: int = 5, initial_delay_seconds: int = 3) -> str:
-    if PURVIEW_ACCESS_TOKEN:
-        print("[AUTH] Using PURVIEW_ACCESS_TOKEN from environment variable.")
-        return PURVIEW_ACCESS_TOKEN
+def _capture_purview_access_token(raw_token: str) -> str:
+    token = (raw_token or "").strip()
+    if token.lower().startswith("bearer "):
+        token = token[7:].strip()
 
-    if AZURE_TENANT_ID and PURVIEW_CLIENT_ID and PURVIEW_CLIENT_SECRET:
-        print("[AUTH] Using Entra client credential fallback from environment variables.")
-        token_url = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}/oauth2/v2.0/token"
-        token_form = {
-            "client_id": PURVIEW_CLIENT_ID,
-            "client_secret": PURVIEW_CLIENT_SECRET,
-            "scope": "https://purview.azure.net/.default",
-            "grant_type": "client_credentials",
-        }
-        token_response = requests.post(token_url, data=token_form, timeout=30)
-        if token_response.status_code != 200:
-            raise RuntimeError(
-                "Client credential token request failed. "
-                f"HTTP {token_response.status_code} | {token_response.text[:500]}"
-            )
-        access_token = token_response.json().get("access_token", "")
-        if not access_token:
-            raise RuntimeError("Client credential token response did not include access_token.")
-        return access_token
+    # Basic JWT shape check to fail fast on copy/paste mistakes.
+    if token.count(".") != 2:
+        raise RuntimeError(
+            "PURVIEW_ACCESS_TOKEN is missing or malformed. "
+            "Capture a token with: az account get-access-token --resource https://purview.azure.net --query accessToken -o tsv"
+        )
 
-    last_error = None
-    delay = initial_delay_seconds
-    for attempt in range(1, max_attempts + 1):
-        try:
-            return mssparkutils.credentials.getToken("https://purview.azure.net")
-        except Exception as ex:
-            last_error = ex
-            if attempt == max_attempts:
-                break
-            print(
-                f"[RETRY] Token acquisition failed (attempt {attempt}/{max_attempts}). "
-                f"Retrying in {delay}s..."
-            )
-            time.sleep(delay)
-            delay = min(delay * 2, 20)
-
-    raise RuntimeError(
-        "Unable to acquire Purview token from mssparkutils after retries. "
-        "This is usually a transient Fabric token service issue. "
-        f"Last error: {last_error}"
-    )
+    print("[AUTH] Using captured PURVIEW_ACCESS_TOKEN only.")
+    return token
 
 
 def _resolve_glossary_guid(token: str) -> str:
@@ -432,7 +395,7 @@ if publish_guard_active:
 elif not APPLY_CHANGES:
     print("[DRY RUN] APPLY_CHANGES=False. Skipping Purview API calls.")
 else:
-    token = _get_purview_token_with_retry()
+    token = _capture_purview_access_token(PURVIEW_ACCESS_TOKEN)
 
     # Quick endpoint probe to fail fast when account/base URL is misconfigured.
     probe_status, probe_body = _request("GET", "/catalog/api/atlas/v2/types/typedefs", token)
