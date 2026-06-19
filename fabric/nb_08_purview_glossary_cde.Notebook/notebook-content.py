@@ -61,6 +61,13 @@ PURVIEW_PUBLISH_OVERRIDE = _env_bool("PURVIEW_PUBLISH_OVERRIDE", DEFAULT_LIVE_PU
 APPLY_CHANGES = _env_bool("PURVIEW_APPLY_CHANGES", DEFAULT_LIVE_PUBLISH)
 OUTPUT_ROOT = "Files/purview_publish/phase_04_05_glossary_cde"
 
+# Explicit aliases for shorthand semantic measure bindings used in source metadata.
+MEASURE_TOKEN_ALIASES = {
+    "fcr": ["FCR Rate", "First Contact Resolution", "FCR"],
+    "nps": ["NPS", "Net Promoter Score"],
+    "csat": ["CSAT", "Customer Satisfaction"],
+}
+
 REQUIRED_TABLES = {
     "glossary_terms": ["term_code", "term_name", "definition", "status", "bound_assets"],
     "cdes": ["cde_name", "expected_data_type", "status", "bound_columns"],
@@ -622,6 +629,8 @@ def _resolve_asset_guid_for_token(token: str, auth_token: str, term_name: str = 
             fallback_queries.append(term_name)
         if alias:
             fallback_queries.append(alias)
+            alias_targets = MEASURE_TOKEN_ALIASES.get(alias, [])
+            fallback_queries.extend(alias_targets)
 
         for keywords in fallback_queries:
             for entity in _search_purview_assets(auth_token, keywords, limit=50):
