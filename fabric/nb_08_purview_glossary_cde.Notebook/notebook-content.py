@@ -47,6 +47,9 @@ METADATA_SCHEMA = "metadata"
 PURVIEW_ACCOUNT_NAME = os.getenv("PURVIEW_ACCOUNT_NAME", "Purview-West3")
 PURVIEW_API_BASE_URL = os.getenv("PURVIEW_API_BASE_URL", "").strip()
 PURVIEW_ACCESS_TOKEN = os.getenv("PURVIEW_ACCESS_TOKEN", "").strip()
+AZURE_TENANT_ID = os.getenv("AZURE_TENANT_ID", "").strip()
+PURVIEW_CLIENT_ID = os.getenv("PURVIEW_CLIENT_ID", "").strip()
+PURVIEW_CLIENT_SECRET = os.getenv("PURVIEW_CLIENT_SECRET", "").strip()
 PURVIEW_BASE_URL = (
     PURVIEW_API_BASE_URL.rstrip("/")
     if PURVIEW_API_BASE_URL
@@ -70,6 +73,7 @@ REQUIRED_TABLES = {
 print(f"Purview account: {PURVIEW_ACCOUNT_NAME}")
 print(f"Purview API base URL: {PURVIEW_BASE_URL}")
 print(f"Purview access token provided via env: {bool(PURVIEW_ACCESS_TOKEN)}")
+print(f"Purview client credential fallback configured: {bool(AZURE_TENANT_ID and PURVIEW_CLIENT_ID and PURVIEW_CLIENT_SECRET)}")
 print(f"Purview glossary name: {PURVIEW_GLOSSARY_NAME}")
 print(f"Purview glossary guid provided: {bool(PURVIEW_GLOSSARY_GUID)}")
 print(f"Apply changes: {APPLY_CHANGES}")
@@ -346,6 +350,26 @@ def _get_purview_token_with_retry(max_attempts: int = 5, initial_delay_seconds: 
     if PURVIEW_ACCESS_TOKEN:
         print("[AUTH] Using PURVIEW_ACCESS_TOKEN from environment variable.")
         return PURVIEW_ACCESS_TOKEN
+
+    if AZURE_TENANT_ID and PURVIEW_CLIENT_ID and PURVIEW_CLIENT_SECRET:
+        print("[AUTH] Using Entra client credential fallback from environment variables.")
+        token_url = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}/oauth2/v2.0/token"
+        token_form = {
+            "client_id": PURVIEW_CLIENT_ID,
+            "client_secret": PURVIEW_CLIENT_SECRET,
+            "scope": "https://purview.azure.net/.default",
+            "grant_type": "client_credentials",
+        }
+        token_response = requests.post(token_url, data=token_form, timeout=30)
+        if token_response.status_code != 200:
+            raise RuntimeError(
+                "Client credential token request failed. "
+                f"HTTP {token_response.status_code} | {token_response.text[:500]}"
+            )
+        access_token = token_response.json().get("access_token", "")
+        if not access_token:
+            raise RuntimeError("Client credential token response did not include access_token.")
+        return access_token
 
     last_error = None
     delay = initial_delay_seconds
