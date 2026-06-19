@@ -678,7 +678,13 @@ def _resolve_entity(token: str, qualified_name: str, role: str):
         table_name = _safe_text(qualified_name.split("/")[-1]).split("#")[0]
         search_terms.append(table_name)
     else:
-        search_terms.append(_safe_text(qualified_name.split("/")[-1]))
+        base_name = _safe_text(qualified_name.split("/")[-1])
+        search_terms.append(base_name)
+        # Add singular/plural variants for Fabric targets
+        if base_name.endswith("s"):
+            search_terms.append(base_name[:-1])  # Try singular (remove trailing 's')
+        else:
+            search_terms.append(base_name + "s")  # Try plural (add 's')
 
     for term in search_terms:
         if not term:
