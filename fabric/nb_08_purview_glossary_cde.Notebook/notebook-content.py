@@ -33,6 +33,14 @@ from pyspark.sql import functions as F
 
 spark = SparkSession.builder.getOrCreate()
 
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    value = raw.strip().lower()
+    return value in ("1", "true", "yes", "y", "on")
+
 METADATA_LAKEHOUSE = "lh_metadata"
 METADATA_SCHEMA = "metadata"
 PURVIEW_ACCOUNT_NAME = os.getenv("PURVIEW_ACCOUNT_NAME", "Purview-West3")
@@ -42,23 +50,34 @@ PURVIEW_BASE_URL = (
     if PURVIEW_API_BASE_URL
     else f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
 )
-PURVIEW_GLOSSARY_GUID = ""  # Required only when APPLY_CHANGES=True for glossary term creation.
-SQL_MIRROR_ONLY_DEPLOYMENT = os.getenv("SQL_MIRROR_ONLY_DEPLOYMENT", "true").lower() == "true"
-PURVIEW_PUBLISH_OVERRIDE = os.getenv("PURVIEW_PUBLISH_OVERRIDE", "false").lower() == "true"
-APPLY_CHANGES = os.getenv("PURVIEW_APPLY_CHANGES", "false").lower() == "true"
+
+# Default this notebook to live publish unless explicitly disabled.
+DEFAULT_LIVE_PUBLISH = _env_bool("PURVIEW_DEFAULT_LIVE_PUBLISH", True)
+PURVIEW_GLOSSARY_GUID = os.getenv("PURVIEW_GLOSSARY_GUID", "").strip()
+PURVIEW_GLOSSARY_NAME = os.getenv("PURVIEW_GLOSSARY_NAME", "Enercare Glossary").strip()
+SQL_MIRROR_ONLY_DEPLOYMENT = _env_bool("SQL_MIRROR_ONLY_DEPLOYMENT", not DEFAULT_LIVE_PUBLISH)
+PURVIEW_PUBLISH_OVERRIDE = _env_bool("PURVIEW_PUBLISH_OVERRIDE", DEFAULT_LIVE_PUBLISH)
+APPLY_CHANGES = _env_bool("PURVIEW_APPLY_CHANGES", DEFAULT_LIVE_PUBLISH)
 OUTPUT_ROOT = "/lakehouse/default/Files/purview_publish/phase_04_05_glossary_cde"
 
 REQUIRED_TABLES = {
     "glossary_terms": ["term_code", "term_name", "definition", "status", "bound_assets"],
-    "cdes": ["cde_name", "expected_data_type", "sensitivity_label", "status", "bound_columns"],
+    "cdes": ["cde_name", "expected_data_type", "status", "bound_columns"],
 }
 
 print(f"Purview account: {PURVIEW_ACCOUNT_NAME}")
 print(f"Purview API base URL: {PURVIEW_BASE_URL}")
+print(f"Purview glossary name: {PURVIEW_GLOSSARY_NAME}")
+print(f"Purview glossary guid provided: {bool(PURVIEW_GLOSSARY_GUID)}")
 print(f"Apply changes: {APPLY_CHANGES}")
 print(f"Publish override: {PURVIEW_PUBLISH_OVERRIDE}")
 print(f"SQL mirror guard: {SQL_MIRROR_ONLY_DEPLOYMENT}")
 print(f"Output root: {OUTPUT_ROOT}")
+
+if APPLY_CHANGES and SQL_MIRROR_ONLY_DEPLOYMENT and not PURVIEW_PUBLISH_OVERRIDE:
+    # Explicit live runs should not silently stay in guard mode.
+    PURVIEW_PUBLISH_OVERRIDE = True
+    print("[LIVE RUN] APPLY_CHANGES=True detected. Auto-enabling PURVIEW_PUBLISH_OVERRIDE.")
 
 
 # METADATA ********************
@@ -268,7 +287,7 @@ validation_rows = [
     ("cdes_source_rows", cde_count, "PASS" if cde_count > 0 else "FAIL"),
     ("glossary_payloads_prepared", len(term_payloads), "PASS" if term_payloads else "FAIL"),
     ("cde_entities_prepared", len(cde_entities), "PASS" if cde_entities else "FAIL"),
-    ("glossary_guid_configured", int(bool(PURVIEW_GLOSSARY_GUID)), "INFO"),
+    ("glossary_target_configured", int(bool(PURVIEW_GLOSSARY_GUID) or bool(PURVIEW_GLOSSARY_NAME)), "INFO"),
 ]
 validation_df = spark.createDataFrame(validation_rows, ["check_name", "check_value", "status"])
 validation_df.write.mode("overwrite").format("delta").saveAsTable(f"{METADATA_SCHEMA}.purview_phase_04_05_validation")
@@ -299,6 +318,37 @@ def _request(method: str, path: str, token: str, body=None):
     return response.status_code, response.text
 
 
+def _resolve_glossary_guid(token: str) -> str:
+    if PURVIEW_GLOSSARY_GUID:
+        return PURVIEW_GLOSSARY_GUID
+
+    status, body = _request("GET", "/catalog/api/atlas/v2/glossary", token)
+    if status != 200:
+        raise RuntimeError(f"Could not list glossaries for GUID resolution: HTTP {status} | {body[:500]}")
+
+    try:
+        glossaries = json.loads(body)
+    except Exception as ex:
+        raise RuntimeError(f"Could not parse glossary list response. {ex}")
+
+    if not isinstance(glossaries, list) or not glossaries:
+        raise RuntimeError("No glossaries found in Purview. Create a glossary or set PURVIEW_GLOSSARY_GUID.")
+
+    if PURVIEW_GLOSSARY_NAME:
+        for glossary in glossaries:
+            if _safe_text(glossary.get("name", "")).lower() == PURVIEW_GLOSSARY_NAME.lower():
+                return _safe_text(glossary.get("guid", ""))
+
+    if len(glossaries) == 1:
+        return _safe_text(glossaries[0].get("guid", ""))
+
+    names = [_safe_text(g.get("name", "")) for g in glossaries]
+    raise RuntimeError(
+        "Multiple glossaries found and no match for PURVIEW_GLOSSARY_NAME. "
+        f"Available glossaries: {names}. Set PURVIEW_GLOSSARY_NAME or PURVIEW_GLOSSARY_GUID."
+    )
+
+
 publish_guard_active = SQL_MIRROR_ONLY_DEPLOYMENT and not PURVIEW_PUBLISH_OVERRIDE
 
 if publish_guard_active:
@@ -306,9 +356,6 @@ if publish_guard_active:
 elif not APPLY_CHANGES:
     print("[DRY RUN] APPLY_CHANGES=False. Skipping Purview API calls.")
 else:
-    if not PURVIEW_GLOSSARY_GUID:
-        raise RuntimeError("PURVIEW_GLOSSARY_GUID must be set before live glossary term creation.")
-
     token = mssparkutils.credentials.getToken("https://purview.azure.net")
 
     # Quick endpoint probe to fail fast when account/base URL is misconfigured.
@@ -318,6 +365,11 @@ else:
             f"Purview endpoint probe failed: HTTP {probe_status}. "
             f"Check PURVIEW_ACCOUNT_NAME/PURVIEW_API_BASE_URL. Body: {probe_body[:500]}"
         )
+
+    resolved_glossary_guid = _resolve_glossary_guid(token)
+    if not resolved_glossary_guid:
+        raise RuntimeError("Could not resolve glossary GUID. Set PURVIEW_GLOSSARY_GUID or PURVIEW_GLOSSARY_NAME.")
+    print(f"Resolved glossary guid: {resolved_glossary_guid}")
 
     typedef_status, typedef_body = _request("POST", "/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
     if typedef_status not in (200, 201) and "already exists" not in typedef_body.lower():
@@ -331,7 +383,9 @@ else:
 
     created_terms = 0
     for term in term_payloads:
-        term_status, term_body = _request("POST", "/catalog/api/atlas/v2/glossary/term", token, term["payload"])
+        payload = dict(term["payload"])
+        payload["anchor"] = {"glossaryGuid": resolved_glossary_guid}
+        term_status, term_body = _request("POST", "/catalog/api/atlas/v2/glossary/term", token, payload)
         if term_status in (200, 201):
             created_terms += 1
         elif "already exists" not in term_body.lower():
