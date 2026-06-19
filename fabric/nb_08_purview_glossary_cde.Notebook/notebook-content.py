@@ -58,7 +58,7 @@ PURVIEW_GLOSSARY_NAME = os.getenv("PURVIEW_GLOSSARY_NAME", "Enercare Glossary").
 SQL_MIRROR_ONLY_DEPLOYMENT = _env_bool("SQL_MIRROR_ONLY_DEPLOYMENT", not DEFAULT_LIVE_PUBLISH)
 PURVIEW_PUBLISH_OVERRIDE = _env_bool("PURVIEW_PUBLISH_OVERRIDE", DEFAULT_LIVE_PUBLISH)
 APPLY_CHANGES = _env_bool("PURVIEW_APPLY_CHANGES", DEFAULT_LIVE_PUBLISH)
-OUTPUT_ROOT = "/lakehouse/default/Files/purview_publish/phase_04_05_glossary_cde"
+OUTPUT_ROOT = "Files/purview_publish/phase_04_05_glossary_cde"
 
 REQUIRED_TABLES = {
     "glossary_terms": ["term_code", "term_name", "definition", "status", "bound_assets"],
