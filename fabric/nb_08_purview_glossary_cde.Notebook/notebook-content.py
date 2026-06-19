@@ -26,6 +26,7 @@
 
 import json
 import os
+import time
 import uuid
 import requests
 from pyspark.sql import SparkSession
@@ -339,6 +340,30 @@ def _request(method: str, path: str, token: str, body=None):
     return response.status_code, response.text
 
 
+def _get_purview_token_with_retry(max_attempts: int = 5, initial_delay_seconds: int = 3) -> str:
+    last_error = None
+    delay = initial_delay_seconds
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return mssparkutils.credentials.getToken("https://purview.azure.net")
+        except Exception as ex:
+            last_error = ex
+            if attempt == max_attempts:
+                break
+            print(
+                f"[RETRY] Token acquisition failed (attempt {attempt}/{max_attempts}). "
+                f"Retrying in {delay}s..."
+            )
+            time.sleep(delay)
+            delay = min(delay * 2, 20)
+
+    raise RuntimeError(
+        "Unable to acquire Purview token from mssparkutils after retries. "
+        "This is usually a transient Fabric token service issue. "
+        f"Last error: {last_error}"
+    )
+
+
 def _resolve_glossary_guid(token: str) -> str:
     if PURVIEW_GLOSSARY_GUID:
         return PURVIEW_GLOSSARY_GUID
@@ -377,7 +402,7 @@ if publish_guard_active:
 elif not APPLY_CHANGES:
     print("[DRY RUN] APPLY_CHANGES=False. Skipping Purview API calls.")
 else:
-    token = mssparkutils.credentials.getToken("https://purview.azure.net")
+    token = _get_purview_token_with_retry()
 
     # Quick endpoint probe to fail fast when account/base URL is misconfigured.
     probe_status, probe_body = _request("GET", "/catalog/api/atlas/v2/types/typedefs", token)
