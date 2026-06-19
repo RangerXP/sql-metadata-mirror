@@ -432,6 +432,127 @@ def _post_json(path: str, token: str, body: dict):
     return _request("POST", path, token, body=body)
 
 
+def _is_invalid_classification_target(entity) -> bool:
+    entity_type = _safe_text(entity.get("entityType", "") or entity.get("typeName", "")).lower()
+    return (
+        "glossaryterm" in entity_type
+        or "atlasglossaryterm" in entity_type
+        or "atlasglossary" in entity_type
+        or "classification" in entity_type
+    )
+
+
+def _classification_query_candidates(asset_ref: str):
+    raw = _safe_text(asset_ref)
+    candidates = []
+    if not raw:
+        return candidates
+
+    candidates.append(raw)
+
+    lower = raw.lower()
+    if lower.startswith("dbo."):
+        parts = raw.split(".")
+        if len(parts) >= 3:
+            table = parts[1]
+            column = ".".join(parts[2:])
+            candidates.extend([f"{table}.{column}", f"{table} {column}", table])
+        elif len(parts) == 2:
+            table = parts[1]
+            candidates.extend([table, f"dbo {table}"])
+    elif "/" in raw:
+        pieces = [p.strip() for p in raw.split("/") if p.strip()]
+        if pieces:
+            candidates.append(pieces[-1])
+        if len(pieces) >= 2:
+            candidates.append(f"{pieces[-2]} {pieces[-1]}")
+
+    seen = set()
+    unique = []
+    for candidate in candidates:
+        text = _safe_text(candidate)
+        if text and text not in seen:
+            unique.append(text)
+            seen.add(text)
+    return unique
+
+
+def _resolve_asset_for_classification(token: str, asset_ref: str):
+    best = None
+    best_score = 0
+
+    for keywords in _classification_query_candidates(asset_ref):
+        status, body = _request(
+            "POST",
+            "/datamap/api/search/query",
+            token,
+            body={"keywords": keywords, "limit": 50},
+            params={"api-version": "2023-09-01"},
+        )
+        if status != 200:
+            continue
+
+        try:
+            payload = json.loads(body)
+        except Exception:
+            continue
+
+        for entity in payload.get("value") or []:
+            if _is_invalid_classification_target(entity):
+                continue
+
+            guid = _safe_text(entity.get("id", "") or entity.get("guid", ""))
+            if not guid:
+                continue
+
+            qn = _safe_text(entity.get("qualifiedName", "")).lower()
+            name = _safe_text(entity.get("name", "")).lower()
+            entity_type = _safe_text(entity.get("entityType", "") or entity.get("typeName", "")).lower()
+
+            score = 0
+            asset_lower = _safe_text(asset_ref).lower()
+            if asset_lower and asset_lower in qn:
+                score += 5
+            if _safe_text(keywords).lower() in qn:
+                score += 3
+            if _safe_text(keywords).lower() == name:
+                score += 2
+            if "column" in entity_type:
+                score += 1
+            if "table" in entity_type:
+                score += 1
+
+            if score > best_score:
+                best_score = score
+                best = {
+                    "guid": guid,
+                    "entityType": entity_type,
+                    "qualifiedName": _safe_text(entity.get("qualifiedName", "")),
+                }
+
+    return best
+
+
+def _apply_classification(token: str, entity_guid: str, classification_name: str, label_name: str, assignment_source: str, rule: str):
+    payload = [
+        {
+            "typeName": classification_name,
+            "attributes": {
+                "label_name": label_name,
+                "assignment_source": assignment_source,
+                "rule": rule,
+            },
+        }
+    ]
+
+    status, body = _request("POST", f"/catalog/api/atlas/v2/entity/guid/{entity_guid}/classifications", token, body=payload)
+    if status in (200, 201, 204):
+        return "assigned", ""
+    if status == 409 or "already exists" in body.lower() or "ATLAS-409" in body:
+        return "existing", ""
+    return "failed", f"HTTP {status} | {body[:300]}"
+
+
 def _get_purview_token_from_manual() -> str:
     token = _safe_text(globals().get("MANUAL_PURVIEW_BEARER_TOKEN", ""))
     if not token:
@@ -856,6 +977,57 @@ else:
             raise RuntimeError(f"Classification typedef publish failed: HTTP {typedef_status} | {typedef_body[:500]}")
         print(f"Classification typedef publish result: HTTP {typedef_status}")
 
+        print("[Cell 6] Applying asset classifications from manifest...")
+        classification_assigned = 0
+        classification_existing = 0
+        classification_failed = []
+        classification_unresolved = []
+
+        dedupe = set()
+        for row in classification_manifest:
+            asset_ref = _safe_text(row.get("asset_ref", ""))
+            classification_name = _safe_text(row.get("classification", ""))
+            label_name = _safe_text(row.get("label_name", ""))
+            assignment_source = _safe_text(row.get("assignment_source", ""))
+            rule = _safe_text(row.get("rule", ""))
+
+            key = (asset_ref.lower(), classification_name.lower(), label_name.lower())
+            if not asset_ref or not classification_name or key in dedupe:
+                continue
+            dedupe.add(key)
+
+            resolved = _resolve_asset_for_classification(token, asset_ref)
+            if not resolved:
+                if len(classification_unresolved) < 25:
+                    classification_unresolved.append(asset_ref)
+                continue
+
+            outcome, details = _apply_classification(
+                token,
+                resolved["guid"],
+                classification_name,
+                label_name,
+                assignment_source,
+                rule,
+            )
+
+            if outcome == "assigned":
+                classification_assigned += 1
+            elif outcome == "existing":
+                classification_existing += 1
+            else:
+                classification_failed.append((asset_ref, classification_name, details))
+
+        print(
+            "[Cell 6] Classification attachment summary: "
+            f"assigned={classification_assigned} existing={classification_existing} "
+            f"unresolved={len(classification_unresolved)} failed={len(classification_failed)}"
+        )
+        if classification_unresolved:
+            print(f"[Cell 6][WARN] Unresolved classification asset samples: {classification_unresolved[:10]}")
+        if classification_failed:
+            print(f"[Cell 6][WARN] First classification failure: {classification_failed[0]}")
+
         process_entities, unresolved_edges = _build_lineage_process_entities(token)
         if not process_entities:
             print("[WARN] No lineage process entities were built. Verify qualifiedName patterns and scan freshness.")
@@ -879,8 +1051,6 @@ else:
             print(f"[WARN] Unresolved lineage edges: {len(unresolved_edges)}")
             print("[WARN] First unresolved edge sample:")
             print(json.dumps(unresolved_edges[0], indent=2))
-
-        print("[INFO] Asset classification attachment remains manifest-driven. Resolve asset GUIDs from scan results before applying live classifications.")
 
 # Cell 6 complete: Classification typedefs and lineage processes published (or dry-run executed)
 # G9-1 closure: Purview lineage graph modeling now has live Atlas publish step (no longer manifest-only)
