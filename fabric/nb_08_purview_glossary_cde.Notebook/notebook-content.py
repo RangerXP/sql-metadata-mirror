@@ -724,6 +724,23 @@ def _resolve_glossary_term_guid(term_name: str, term_code: str, term_guid_index)
 
 
 def _assign_term_to_entity(term_guid: str, entity_guid: str, auth_token: str):
+    if _safe_text(term_guid) == _safe_text(entity_guid):
+        return "skipped", "term_guid equals entity_guid"
+
+    # Guardrail: skip invalid targets that are themselves glossary terms.
+    meta_status, meta_body = _request("GET", f"/catalog/api/atlas/v2/entity/guid/{entity_guid}", auth_token)
+    if meta_status == 200:
+        try:
+            meta = json.loads(meta_body)
+            target_type = _safe_text(
+                (meta.get("entity") or {}).get("typeName", "")
+                or (meta.get("entity") or {}).get("type", "")
+            ).lower()
+            if "glossaryterm" in target_type or "atlasglossaryterm" in target_type:
+                return "skipped", f"invalid target type: {target_type}"
+        except Exception:
+            pass
+
     status, body = _request(
         "POST",
         f"/catalog/api/atlas/v2/glossary/terms/{term_guid}/assignedEntities",
@@ -817,6 +834,7 @@ else:
     association_attempts = 0
     association_assigned = 0
     association_existing = 0
+    association_skipped = 0
     unresolved_term_count = 0
     unresolved_asset_tokens = []
     failed_associations = []
@@ -857,13 +875,15 @@ else:
                 association_assigned += 1
             elif outcome == "existing":
                 association_existing += 1
+            elif outcome == "skipped":
+                association_skipped += 1
             else:
                 failed_associations.append((term_code, entity_guid, details))
 
     print(
         "Glossary association summary: "
         f"attempted={association_attempts} assigned={association_assigned} "
-        f"existing={association_existing} unresolved_terms={unresolved_term_count} "
+        f"existing={association_existing} skipped={association_skipped} unresolved_terms={unresolved_term_count} "
         f"unresolved_tokens={len(unresolved_asset_tokens)} failed={len(failed_associations)}"
     )
     if unresolved_asset_tokens:
