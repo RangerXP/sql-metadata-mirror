@@ -357,6 +357,35 @@ def _capture_purview_access_token(raw_token: str) -> str:
     return token
 
 
+def _extract_glossary_guid(glossary_obj) -> str:
+    if not isinstance(glossary_obj, dict):
+        return ""
+    return _safe_text(glossary_obj.get("guid", "") or glossary_obj.get("id", ""))
+
+
+def _create_glossary(token: str, glossary_name: str) -> str:
+    create_body = {
+        "name": glossary_name,
+        "shortDescription": "Auto-created by nb_08_purview_glossary_cde for glossary term publish",
+    }
+    create_status, create_response = _request("POST", "/catalog/api/atlas/v2/glossary", token, create_body)
+    if create_status not in (200, 201):
+        raise RuntimeError(
+            f"Could not create glossary '{glossary_name}': HTTP {create_status} | {create_response[:500]}"
+        )
+
+    try:
+        created = json.loads(create_response)
+    except Exception as ex:
+        raise RuntimeError(f"Glossary create response parse failed. {ex}")
+
+    guid = _extract_glossary_guid(created)
+    if not guid:
+        raise RuntimeError(f"Glossary created but guid was missing in response: {create_response[:500]}")
+    print(f"[GLOSSARY] Created glossary '{glossary_name}' with guid {guid}")
+    return guid
+
+
 def _resolve_glossary_guid(token: str) -> str:
     if PURVIEW_GLOSSARY_GUID:
         return PURVIEW_GLOSSARY_GUID
@@ -370,16 +399,25 @@ def _resolve_glossary_guid(token: str) -> str:
     except Exception as ex:
         raise RuntimeError(f"Could not parse glossary list response. {ex}")
 
-    if not isinstance(glossaries, list) or not glossaries:
-        raise RuntimeError("No glossaries found in Purview. Create a glossary or set PURVIEW_GLOSSARY_GUID.")
+    if not isinstance(glossaries, list):
+        raise RuntimeError(f"Unexpected glossary list response shape: {type(glossaries)}")
+
+    if not glossaries:
+        if not PURVIEW_GLOSSARY_NAME:
+            raise RuntimeError("No glossaries found and PURVIEW_GLOSSARY_NAME is empty.")
+        return _create_glossary(token, PURVIEW_GLOSSARY_NAME)
 
     if PURVIEW_GLOSSARY_NAME:
         for glossary in glossaries:
             if _safe_text(glossary.get("name", "")).lower() == PURVIEW_GLOSSARY_NAME.lower():
-                return _safe_text(glossary.get("guid", ""))
+                guid = _extract_glossary_guid(glossary)
+                if guid:
+                    return guid
 
     if len(glossaries) == 1:
-        return _safe_text(glossaries[0].get("guid", ""))
+        guid = _extract_glossary_guid(glossaries[0])
+        if guid:
+            return guid
 
     names = [_safe_text(g.get("name", "")) for g in glossaries]
     raise RuntimeError(
