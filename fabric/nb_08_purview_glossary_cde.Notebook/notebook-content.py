@@ -346,9 +346,9 @@ def _headers(token: str):
     return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 
-def _request(method: str, path: str, token: str, body=None):
+def _request(method: str, path: str, token: str, body=None, params=None):
     url = f"{PURVIEW_BASE_URL}{path}"
-    response = requests.request(method, url, headers=_headers(token), json=body, timeout=60)
+    response = requests.request(method, url, headers=_headers(token), json=body, params=params, timeout=60)
     return response.status_code, response.text
 
 
@@ -437,6 +437,183 @@ def _resolve_glossary_guid(token: str) -> str:
     )
 
 
+def _search_purview_assets(token: str, keywords: str, limit: int = 50):
+    status, body = _request(
+        "POST",
+        "/datamap/api/search/query",
+        token,
+        body={"keywords": keywords, "limit": limit},
+        params={"api-version": "2023-09-01"},
+    )
+    if status != 200:
+        return []
+    try:
+        payload = json.loads(body)
+    except Exception:
+        return []
+    entities = payload.get("value") or []
+    return entities if isinstance(entities, list) else []
+
+
+def _parse_bound_asset_token(token_text: str):
+    token = _safe_text(token_text)
+    lower = token.lower()
+
+    if lower.startswith("dbo."):
+        parts = token.split(".")
+        if len(parts) >= 3:
+            return {
+                "kind": "SqlColumn",
+                "table": parts[1].strip().lower(),
+                "column": ".".join(parts[2:]).strip().lower(),
+                "token": token,
+            }
+        if len(parts) == 2:
+            return {
+                "kind": "SqlTable",
+                "table": parts[1].strip().lower(),
+                "column": "",
+                "token": token,
+            }
+
+    if "/_Measures/" in token:
+        pieces = [p.strip() for p in token.split("/") if p.strip()]
+        measure_name = pieces[-1] if pieces else token
+        return {
+            "kind": "Measure",
+            "table": "_measures",
+            "column": measure_name.lower(),
+            "token": token,
+        }
+
+    if "/" in token:
+        pieces = [p.strip() for p in token.split("/") if p.strip()]
+        if len(pieces) >= 3:
+            return {
+                "kind": "ModelColumn",
+                "table": pieces[-2].lower(),
+                "column": pieces[-1].lower(),
+                "token": token,
+            }
+        if len(pieces) == 2:
+            return {
+                "kind": "ModelTable",
+                "table": pieces[-1].lower(),
+                "column": "",
+                "token": token,
+            }
+
+    return {"kind": "Unknown", "table": "", "column": "", "token": token}
+
+
+def _asset_query_candidates(parsed_token):
+    candidates = []
+    kind = parsed_token["kind"]
+    table = parsed_token["table"]
+    column = parsed_token["column"]
+    raw = parsed_token["token"]
+
+    if kind == "SqlColumn":
+        candidates.extend([f"{table} {column}", f"dbo {table} {column}", f"{table}.{column}"])
+    elif kind == "SqlTable":
+        candidates.extend([f"{table}", f"dbo {table}", f"dbo.{table}"])
+    elif kind in ("Measure", "ModelColumn"):
+        candidates.extend([f"{column}", f"{table} {column}", raw])
+    elif kind == "ModelTable":
+        candidates.extend([f"{table}", raw])
+    else:
+        candidates.append(raw)
+
+    seen = set()
+    unique = []
+    for candidate in candidates:
+        text = _safe_text(candidate)
+        if text and text not in seen:
+            unique.append(text)
+            seen.add(text)
+    return unique
+
+
+def _score_asset_candidate(entity, parsed_token):
+    qualified_name = _safe_text(entity.get("qualifiedName", "")).lower()
+    entity_name = _safe_text(entity.get("name", "")).lower()
+    entity_type = _safe_text(entity.get("entityType", "") or entity.get("typeName", "")).lower()
+    table = parsed_token["table"]
+    column = parsed_token["column"]
+    kind = parsed_token["kind"]
+
+    score = 0
+    if kind in ("SqlColumn", "SqlTable") and "mssql://" in qualified_name:
+        score += 3
+    if kind in ("Measure", "ModelColumn", "ModelTable") and (
+        "fabric://" in qualified_name or "powerbi://" in qualified_name or "semantic" in qualified_name
+    ):
+        score += 3
+    if table and table in qualified_name:
+        score += 4
+    if column and column in qualified_name:
+        score += 5
+    if table and table == entity_name:
+        score += 2
+    if column and column == entity_name:
+        score += 2
+    if kind in ("SqlColumn", "ModelColumn") and "column" in entity_type:
+        score += 2
+    if kind in ("SqlTable", "ModelTable") and "table" in entity_type:
+        score += 2
+    if kind == "Measure" and "measure" in entity_type:
+        score += 2
+    return score
+
+
+def _resolve_asset_guid_for_token(token: str, auth_token: str):
+    parsed = _parse_bound_asset_token(token)
+    best = None
+    best_score = 0
+
+    for keywords in _asset_query_candidates(parsed):
+        for entity in _search_purview_assets(auth_token, keywords, limit=50):
+            guid = _safe_text(entity.get("id", "") or entity.get("guid", ""))
+            if not guid:
+                continue
+            score = _score_asset_candidate(entity, parsed)
+            if score > best_score:
+                best_score = score
+                best = guid
+
+    return best if best_score > 0 else ""
+
+
+def _resolve_glossary_term_guid(term_name: str, auth_token: str):
+    entities = _search_purview_assets(auth_token, term_name, limit=30)
+    target_name = _safe_text(term_name).lower()
+    for entity in entities:
+        entity_type = _safe_text(entity.get("entityType", "") or entity.get("typeName", "")).lower()
+        if "glossaryterm" not in entity_type and "atlasglossaryterm" not in entity_type:
+            continue
+        name = _safe_text(entity.get("name", "") or entity.get("displayText", "")).lower()
+        if name and name != target_name:
+            continue
+        guid = _safe_text(entity.get("id", "") or entity.get("guid", ""))
+        if guid:
+            return guid
+    return ""
+
+
+def _assign_term_to_entity(term_guid: str, entity_guid: str, auth_token: str):
+    status, body = _request(
+        "POST",
+        f"/catalog/api/atlas/v2/glossary/terms/{term_guid}/assignedEntities",
+        auth_token,
+        body=[{"guid": entity_guid}],
+    )
+    if status in (200, 201, 204):
+        return "assigned", ""
+    if status == 409 or "already exists" in body.lower():
+        return "existing", ""
+    return "failed", f"HTTP {status} | {body[:300]}"
+
+
 publish_guard_active = SQL_MIRROR_ONLY_DEPLOYMENT and not PURVIEW_PUBLISH_OVERRIDE
 
 if publish_guard_active:
@@ -472,6 +649,7 @@ else:
     created_terms = 0
     existing_terms = 0
     failed_terms = []
+    term_guid_by_code = {}
     total_terms = len(term_payloads)
     print(f"Starting glossary term publish for {total_terms} terms...")
     for index, term in enumerate(term_payloads, start=1):
@@ -481,6 +659,13 @@ else:
         term_status, term_body = _request("POST", "/catalog/api/atlas/v2/glossary/term", token, payload)
         if term_status in (200, 201):
             created_terms += 1
+            try:
+                created_term = json.loads(term_body)
+                guid = _safe_text(created_term.get("guid", "") or created_term.get("id", ""))
+                if guid:
+                    term_guid_by_code[term["term_code"]] = guid
+            except Exception:
+                pass
         elif term_status == 409 or "already exists" in term_body.lower():
             existing_terms += 1
         else:
@@ -502,6 +687,69 @@ else:
         "Glossary term publish complete. "
         f"created={created_terms} existing={existing_terms} failed=0"
     )
+
+    print("Starting glossary-to-asset association...")
+    association_attempts = 0
+    association_assigned = 0
+    association_existing = 0
+    unresolved_term_count = 0
+    unresolved_asset_tokens = []
+    failed_associations = []
+
+    for term in term_payloads:
+        term_code = term["term_code"]
+        term_name = _safe_text(term["payload"].get("name", ""))
+        term_guid = term_guid_by_code.get(term_code, "")
+        if not term_guid:
+            term_guid = _resolve_glossary_term_guid(term_name, token)
+            if term_guid:
+                term_guid_by_code[term_code] = term_guid
+
+        if not term_guid:
+            unresolved_term_count += 1
+            continue
+
+        bound_tokens = term.get("bound_assets", [])
+        if not bound_tokens:
+            continue
+
+        entity_guids = []
+        seen_guids = set()
+        for asset_token in bound_tokens:
+            entity_guid = _resolve_asset_guid_for_token(asset_token, token)
+            if entity_guid:
+                if entity_guid not in seen_guids:
+                    entity_guids.append(entity_guid)
+                    seen_guids.add(entity_guid)
+            else:
+                if len(unresolved_asset_tokens) < 25:
+                    unresolved_asset_tokens.append(f"{term_code}:{asset_token}")
+
+        for entity_guid in entity_guids:
+            association_attempts += 1
+            outcome, details = _assign_term_to_entity(term_guid, entity_guid, token)
+            if outcome == "assigned":
+                association_assigned += 1
+            elif outcome == "existing":
+                association_existing += 1
+            else:
+                failed_associations.append((term_code, entity_guid, details))
+
+    print(
+        "Glossary association summary: "
+        f"attempted={association_attempts} assigned={association_assigned} "
+        f"existing={association_existing} unresolved_terms={unresolved_term_count} "
+        f"unresolved_tokens={len(unresolved_asset_tokens)} failed={len(failed_associations)}"
+    )
+    if unresolved_asset_tokens:
+        print(f"Unresolved asset token samples: {unresolved_asset_tokens[:10]}")
+
+    if failed_associations:
+        sample = failed_associations[0]
+        raise RuntimeError(
+            "Glossary association completed with failures. "
+            f"failed={len(failed_associations)} first_failure=({sample[0]}, {sample[1]}, {sample[2]})"
+        )
 
 
 # METADATA ********************
