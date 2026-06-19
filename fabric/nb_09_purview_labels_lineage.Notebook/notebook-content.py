@@ -623,7 +623,14 @@ def _apply_classification(
     status, body = _request("POST", f"/catalog/api/atlas/v2/entity/guid/{entity_guid}/classifications", token, body=payload)
     if status in (200, 201, 204):
         return "assigned", ""
-    if status == 409 or "already exists" in body.lower() or "ATLAS-409" in body:
+    body_lower = body.lower()
+    if (
+        status == 409
+        or "already exists" in body_lower
+        or "already associated with classification" in body_lower
+        or "ATLAS-409" in body
+        or "ATLAS-400-00-01A" in body
+    ):
         return "existing", ""
     return "failed", f"HTTP {status} | {body[:300]}"
 
