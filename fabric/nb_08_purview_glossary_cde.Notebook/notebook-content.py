@@ -437,6 +437,35 @@ def _resolve_glossary_guid(token: str) -> str:
     )
 
 
+def _list_glossary_terms(glossary_guid: str, auth_token: str):
+    status, body = _request("GET", f"/catalog/api/atlas/v2/glossary/{glossary_guid}/terms", auth_token)
+    if status != 200:
+        return []
+    try:
+        payload = json.loads(body)
+    except Exception:
+        return []
+    return payload if isinstance(payload, list) else []
+
+
+def _build_term_guid_index(glossary_guid: str, auth_token: str):
+    terms = _list_glossary_terms(glossary_guid, auth_token)
+    index = {}
+    for term in terms:
+        guid = _safe_text(term.get("guid", "") or term.get("id", ""))
+        if not guid:
+            continue
+
+        name = _safe_text(term.get("name", "")).lower()
+        short_desc = _safe_text(term.get("shortDescription", "")).lower()
+
+        if name:
+            index.setdefault(("name", name), guid)
+        if short_desc:
+            index.setdefault(("code", short_desc), guid)
+    return index
+
+
 def _search_purview_assets(token: str, keywords: str, limit: int = 50):
     status, body = _request(
         "POST",
@@ -584,19 +613,13 @@ def _resolve_asset_guid_for_token(token: str, auth_token: str):
     return best if best_score > 0 else ""
 
 
-def _resolve_glossary_term_guid(term_name: str, auth_token: str):
-    entities = _search_purview_assets(auth_token, term_name, limit=30)
-    target_name = _safe_text(term_name).lower()
-    for entity in entities:
-        entity_type = _safe_text(entity.get("entityType", "") or entity.get("typeName", "")).lower()
-        if "glossaryterm" not in entity_type and "atlasglossaryterm" not in entity_type:
-            continue
-        name = _safe_text(entity.get("name", "") or entity.get("displayText", "")).lower()
-        if name and name != target_name:
-            continue
-        guid = _safe_text(entity.get("id", "") or entity.get("guid", ""))
-        if guid:
-            return guid
+def _resolve_glossary_term_guid(term_name: str, term_code: str, term_guid_index):
+    by_name = term_guid_index.get(("name", _safe_text(term_name).lower()), "")
+    if by_name:
+        return by_name
+    by_code = term_guid_index.get(("code", _safe_text(term_code).lower()), "")
+    if by_code:
+        return by_code
     return ""
 
 
@@ -689,6 +712,8 @@ else:
     )
 
     print("Starting glossary-to-asset association...")
+    term_guid_index = _build_term_guid_index(resolved_glossary_guid, token)
+    print(f"Glossary term index loaded: {len(term_guid_index)} key(s)")
     association_attempts = 0
     association_assigned = 0
     association_existing = 0
@@ -701,7 +726,7 @@ else:
         term_name = _safe_text(term["payload"].get("name", ""))
         term_guid = term_guid_by_code.get(term_code, "")
         if not term_guid:
-            term_guid = _resolve_glossary_term_guid(term_name, token)
+            term_guid = _resolve_glossary_term_guid(term_name, term_code, term_guid_index)
             if term_guid:
                 term_guid_by_code[term_code] = term_guid
 
