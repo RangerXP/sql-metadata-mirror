@@ -731,32 +731,55 @@ def _apply_classification(
 
 def _apply_sensitivity_label(token: str, entity_guid: str, label_name: str):
     path = f"/catalog/api/atlas/v2/entity/guid/{entity_guid}/labels"
-    payloads = ([label_name], {"labels": [label_name]})
+    compact = "".join(ch for ch in _safe_text(label_name) if ch.isalnum())
+    label_candidates = []
+    for candidate in (_safe_text(label_name), compact):
+        text = _safe_text(candidate)
+        if text and text not in label_candidates:
+            label_candidates.append(text)
+
     methods = ("POST", "PUT")
+    attempts = []
+    for candidate_label in label_candidates:
+        payloads = (
+            [candidate_label],
+            {"labels": [candidate_label]},
+            {"labels": [{"name": candidate_label}]},
+        )
 
-    for method in methods:
-        for payload in payloads:
-            status, body = _request(method, path, token, body=payload)
-            if status in (200, 201, 204):
-                return "assigned", ""
+        for method in methods:
+            for payload in payloads:
+                status, body = _request(method, path, token, body=payload)
+                if status in (200, 201, 204):
+                    return "assigned", ""
 
-            body_lower = body.lower()
-            if (
-                status == 409
-                or "already exists" in body_lower
-                or "already associated" in body_lower
-                or "duplicate" in body_lower
-                or "ATLAS-409" in body
-                or "ATLAS-400-00-01A" in body
-            ):
-                return "existing", ""
+                body_lower = body.lower()
+                if (
+                    status == 409
+                    or "already exists" in body_lower
+                    or "already associated" in body_lower
+                    or "duplicate" in body_lower
+                    or "ATLAS-409" in body
+                    or "ATLAS-400-00-01A" in body
+                ):
+                    return "existing", ""
 
-            if status in (400, 404, 405):
-                continue
+                attempts.append((candidate_label, method, payload, status, body[:220]))
 
-            return "failed", f"HTTP {status} | {body[:300]}"
+                if status in (400, 404, 405):
+                    continue
 
-    return "failed", "Atlas labels endpoint did not accept POST/PUT payload formats for this account."
+                return "failed", f"HTTP {status} | {body[:300]}"
+
+    if attempts:
+        candidate_label, method, payload, status, body = attempts[-1]
+        payload_preview = json.dumps(payload)[:120]
+        return (
+            "failed",
+            f"Label apply not accepted for '{candidate_label}' via {method} payload={payload_preview} | HTTP {status} | {body}",
+        )
+
+    return "failed", "Atlas labels endpoint did not accept available payload formats for this account."
 
 
 def _normalize_bearer_token(raw_token: str) -> str:
