@@ -291,71 +291,83 @@ typedef_payload = {"classificationDefs": classification_defs}
 sensitivity_label_manifest = []
 cde_classification_manifest = []
 glossary_term_manifest = []
-if cde_has_sensitivity_label:
-    for row in cde_rows:
-        label = _normalize_sensitivity_label(getattr(row, "sensitivity_label", None))
-        cde_id = _safe_text(getattr(row, "cde_id", None) or getattr(row, "cde_code", None) or getattr(row, "cde_name", None))
-        cde_name = _safe_text(getattr(row, "cde_name", None) or cde_id)
-        parent_term = _safe_text(getattr(row, "parent_glossary_term", None))
-        owner_role = _safe_text(getattr(row, "owner_role", None))
+asset_description_manifest = []
+for row in cde_rows:
+    label = _normalize_sensitivity_label(getattr(row, "sensitivity_label", None))
+    cde_id = _safe_text(getattr(row, "cde_id", None) or getattr(row, "cde_code", None) or getattr(row, "cde_name", None))
+    cde_name = _safe_text(getattr(row, "cde_name", None) or cde_id)
+    parent_term = _safe_text(getattr(row, "parent_glossary_term", None))
+    owner_role = _safe_text(getattr(row, "owner_role", None))
+    cde_definition = _safe_text(getattr(row, "business_definition", None))
 
-        policy = label_policy_by_name.get(label.lower(), {}) if label else {}
-        sensitivity_tier = _safe_text(policy.get("sensitivity_tier", "")) or label
-        protection_policy = _safe_text(policy.get("protection_policy", "")) or CANONICAL_LABEL_POLICY.get(label, "")
+    policy = label_policy_by_name.get(label.lower(), {}) if label else {}
+    sensitivity_tier = _safe_text(policy.get("sensitivity_tier", "")) or label
+    protection_policy = _safe_text(policy.get("protection_policy", "")) or CANONICAL_LABEL_POLICY.get(label, "")
 
-        for token in _split_tokens(getattr(row, "bound_columns", None)):
-            if label:
-                sensitivity_label_manifest.append(
-                    {
-                        "asset_ref": token,
-                        "label_name": label,
-                        "sensitivity_tier": sensitivity_tier,
-                        "protection_policy": protection_policy,
-                        "assignment_source": "CDE",
-                        "rule": cde_id,
-                    }
-                )
+    for token in _split_tokens(getattr(row, "bound_columns", None)):
+        if cde_has_sensitivity_label and label:
+            sensitivity_label_manifest.append(
+                {
+                    "asset_ref": token,
+                    "label_name": label,
+                    "sensitivity_tier": sensitivity_tier,
+                    "protection_policy": protection_policy,
+                    "assignment_source": "CDE",
+                    "rule": cde_id,
+                }
+            )
 
-            glossary_term = parent_term or cde_name
-            if _safe_text(glossary_term):
-                glossary_term_manifest.append(
-                    {
-                        "asset_ref": token,
-                        "term_name": _safe_text(glossary_term),
-                        "assignment_source": "CDE",
-                        "rule": cde_id,
-                    }
-                )
+        glossary_term = parent_term or cde_name
+        if _safe_text(glossary_term):
+            glossary_term_manifest.append(
+                {
+                    "asset_ref": token,
+                    "term_name": _safe_text(glossary_term),
+                    "assignment_source": "CDE",
+                    "rule": cde_id,
+                }
+            )
 
+        if cde_definition:
+            asset_description_manifest.append(
+                {
+                    "asset_ref": token,
+                    "description": cde_definition,
+                    "assignment_source": "CDE",
+                    "rule": cde_id,
+                }
+            )
+
+        cde_classification_manifest.append(
+            {
+                "asset_ref": token,
+                "classification": CDE_CLASSIFICATION_NAME,
+                "label_name": "",
+                "sensitivity_tier": "",
+                "protection_policy": "",
+                "assignment_source": "CDE",
+                "rule": cde_id,
+                "cde_id": cde_id,
+                "cde_name": cde_name,
+            }
+        )
+
+        for northstar_class in _derive_northstar_classes(token, cde_id, cde_name, parent_term, owner_role):
             cde_classification_manifest.append(
                 {
                     "asset_ref": token,
-                    "classification": CDE_CLASSIFICATION_NAME,
+                    "classification": northstar_class,
                     "label_name": "",
                     "sensitivity_tier": "",
                     "protection_policy": "",
-                    "assignment_source": "CDE",
-                    "rule": cde_id,
+                    "assignment_source": "NorthStar",
+                    "rule": f"{cde_id}:{northstar_class}",
                     "cde_id": cde_id,
                     "cde_name": cde_name,
                 }
             )
 
-            for northstar_class in _derive_northstar_classes(token, cde_id, cde_name, parent_term, owner_role):
-                cde_classification_manifest.append(
-                    {
-                        "asset_ref": token,
-                        "classification": northstar_class,
-                        "label_name": "",
-                        "sensitivity_tier": "",
-                        "protection_policy": "",
-                        "assignment_source": "NorthStar",
-                        "rule": f"{cde_id}:{northstar_class}",
-                        "cde_id": cde_id,
-                        "cde_name": cde_name,
-                    }
-                )
-else:
+if not cde_has_sensitivity_label:
     print("[Cell 3] cdes.sensitivity_label not found; using label_assignments as sensitivity source.")
 
 if labels_df is not None:
@@ -410,6 +422,7 @@ if not glossary_term_manifest and glossary_df is not None:
         for row in glossary_df.collect():
             term_name = _safe_text(getattr(row, glossary_term_name_col, None))
             rule = _safe_text(getattr(row, "term_code", None) or term_name)
+            definition = _safe_text(getattr(row, "definition", None))
             for token in _split_tokens(getattr(row, glossary_bound_assets_col, None)):
                 if term_name and token:
                     glossary_term_manifest.append(
@@ -420,6 +433,15 @@ if not glossary_term_manifest and glossary_df is not None:
                             "rule": rule,
                         }
                     )
+                    if definition:
+                        asset_description_manifest.append(
+                            {
+                                "asset_ref": token,
+                                "description": definition,
+                                "assignment_source": "GlossaryTable",
+                                "rule": rule,
+                            }
+                        )
 
         if glossary_term_manifest:
             print(
@@ -442,6 +464,7 @@ print(f"Sensitivity label rows prepared: {len(sensitivity_label_manifest)}")
 print(f"CDE manifest rows prepared: {len(cde_classification_manifest)}")
 print(f"Classification manifest rows prepared: {len(classification_manifest)}")
 print(f"Glossary term rows prepared: {len(glossary_term_manifest)}")
+print(f"Asset description rows prepared: {len(asset_description_manifest)}")
 print("Classification names prepared:")
 for item in sorted({d.get("name", "") for d in classification_defs if d.get("name", "")}):
     print(f" - {item}")
@@ -747,10 +770,39 @@ def _asset_ref_to_column_qualified_name(asset_ref: str):
     return ""
 
 
+def _asset_ref_to_table_qualified_name(asset_ref: str):
+    raw = _safe_text(asset_ref)
+    if not raw:
+        return ""
+
+    lower = raw.lower()
+    if lower.startswith("mssql://") and "#" not in raw:
+        return raw
+
+    if lower.startswith("dbo."):
+        parts = raw.split(".")
+        if len(parts) >= 2:
+            table_name = _safe_text(parts[1])
+            if table_name:
+                return f"mssql://{SQL_SERVER_FQDN}/sqldemo/dbo/{table_name}"
+
+    return ""
+
+
 def _resolve_asset_for_classification(token: str, asset_ref: str):
     explicit_column_qn = _asset_ref_to_column_qualified_name(asset_ref)
     if explicit_column_qn:
         exact = _find_entity_by_qualified_name(token, explicit_column_qn)
+        if exact:
+            return {
+                "guid": _safe_text(exact.get("guid", "")),
+                "entityType": _safe_text(exact.get("typeName", "")).lower(),
+                "qualifiedName": _safe_text(exact.get("qualifiedName", "")),
+            }
+
+    explicit_table_qn = _asset_ref_to_table_qualified_name(asset_ref)
+    if explicit_table_qn:
+        exact = _find_entity_by_qualified_name(token, explicit_table_qn)
         if exact:
             return {
                 "guid": _safe_text(exact.get("guid", "")),
@@ -984,6 +1036,48 @@ def _apply_sensitivity_label(token: str, entity_guid: str, label_name: str):
         )
 
     return "failed", "Atlas labels endpoint did not accept available payload formats for this account."
+
+
+def _apply_asset_description(token: str, entity_guid: str, description: str):
+    text = _safe_text(description)
+    if not text:
+        return "skipped", ""
+
+    status, body = _request("GET", f"/catalog/api/atlas/v2/entity/guid/{entity_guid}", token)
+    if status != 200:
+        return "failed", f"Failed to read entity before description update: HTTP {status} | {body[:220]}"
+
+    try:
+        payload = json.loads(body)
+    except Exception:
+        return "failed", "Entity read payload was not valid JSON."
+
+    entity = payload.get("entity") if isinstance(payload, dict) else None
+    if not isinstance(entity, dict):
+        return "failed", "Entity read payload missing 'entity' object."
+
+    attributes = entity.get("attributes") if isinstance(entity.get("attributes"), dict) else {}
+    current_description = _safe_text(attributes.get("description", ""))
+    if current_description == text:
+        return "existing", ""
+
+    update_payload = {
+        "entity": {
+            "typeName": _safe_text(entity.get("typeName", "")),
+            "guid": _safe_text(entity.get("guid", entity_guid)) or entity_guid,
+            "attributes": {
+                "qualifiedName": _safe_text(attributes.get("qualifiedName", "")),
+                "name": _safe_text(attributes.get("name", "")),
+                "description": text,
+            },
+        }
+    }
+
+    put_status, put_body = _request("PUT", "/catalog/api/atlas/v2/entity", token, body=update_payload)
+    if put_status in (200, 201, 204):
+        return "assigned", ""
+
+    return "failed", f"HTTP {put_status} | {put_body[:300]}"
 
 
 def _purge_classification(token: str, entity_guid: str, classification_name: str):
@@ -1871,6 +1965,67 @@ else:
             print(f"[Cell 6][WARN] Unresolved glossary term samples: {glossary_unresolved_terms[:10]}")
         if glossary_failed:
             print(f"[Cell 6][WARN] First glossary assignment failure: {glossary_failed[0]}")
+
+        print("[Cell 6] Applying asset descriptions from manifest...")
+        description_assigned = 0
+        description_existing = 0
+        description_failed = []
+        description_unresolved = []
+
+        description_rows = []
+        description_dedupe = set()
+        for row in asset_description_manifest:
+            asset_ref = _safe_text(row.get("asset_ref", ""))
+            description = _safe_text(row.get("description", ""))
+            key = asset_ref.lower()
+            if not asset_ref or not description or key in description_dedupe:
+                continue
+            description_dedupe.add(key)
+            description_rows.append(
+                {
+                    "asset_ref": asset_ref,
+                    "description": description,
+                }
+            )
+
+        total_description_rows = len(description_rows)
+        print(f"[Cell 6] Asset description rows to process: {total_description_rows}")
+        for index, row in enumerate(description_rows, start=1):
+            asset_ref = row["asset_ref"]
+            description = row["description"]
+
+            if index == 1 or index % 10 == 0 or index == total_description_rows:
+                print(
+                    f"[Cell 6] Asset description progress: {index}/{total_description_rows} | "
+                    f"assigned={description_assigned} existing={description_existing} "
+                    f"unresolved={len(description_unresolved)} failed={len(description_failed)}"
+                )
+
+            resolved = _resolve_asset_for_classification(token, asset_ref)
+            if not resolved:
+                if len(description_unresolved) < 25:
+                    description_unresolved.append(asset_ref)
+                continue
+
+            outcome, details = _apply_asset_description(token, resolved["guid"], description)
+            if outcome == "assigned":
+                description_assigned += 1
+            elif outcome == "existing":
+                description_existing += 1
+            elif outcome == "skipped":
+                continue
+            else:
+                description_failed.append((asset_ref, details))
+
+        print(
+            "[Cell 6] Asset description summary: "
+            f"assigned={description_assigned} existing={description_existing} "
+            f"unresolved={len(description_unresolved)} failed={len(description_failed)}"
+        )
+        if description_unresolved:
+            print(f"[Cell 6][WARN] Unresolved asset description samples: {description_unresolved[:10]}")
+        if description_failed:
+            print(f"[Cell 6][WARN] First asset description failure: {description_failed[0]}")
 
         process_entities, unresolved_edges = _build_lineage_process_entities(token)
         if not process_entities:
