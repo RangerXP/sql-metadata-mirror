@@ -1701,6 +1701,16 @@ else:
 
     if token:
 
+        asset_resolution_cache = {}
+
+        def _resolve_asset_cached(asset_ref: str):
+            key = _safe_text(asset_ref).lower()
+            if not key:
+                return None
+            if key not in asset_resolution_cache:
+                asset_resolution_cache[key] = _resolve_asset_for_classification(token, asset_ref)
+            return asset_resolution_cache[key]
+
         print("[Cell 6] Applying sensitivity labels from manifest...")
         label_assigned = 0
         label_existing = 0
@@ -1743,7 +1753,7 @@ else:
             for row in label_rows:
                 asset_ref = row["asset_ref"]
                 label_name = row["label_name"]
-                resolved = _resolve_asset_for_classification(token, asset_ref)
+                resolved = _resolve_asset_cached(asset_ref)
                 if not resolved:
                     continue
 
@@ -1774,7 +1784,7 @@ else:
                     f"unresolved={len(label_unresolved)} failed={len(label_failed)}"
                 )
 
-            resolved = _resolve_asset_for_classification(token, asset_ref)
+            resolved = _resolve_asset_cached(asset_ref)
             if not resolved:
                 if len(label_unresolved) < 25:
                     label_unresolved.append(asset_ref)
@@ -1865,7 +1875,7 @@ else:
             for row in classification_rows:
                 asset_ref = row["asset_ref"]
                 classification_name = row["classification_name"]
-                resolved = _resolve_asset_for_classification(token, asset_ref)
+                resolved = _resolve_asset_cached(asset_ref)
                 if not resolved:
                     continue
 
@@ -1900,7 +1910,7 @@ else:
                     f"unresolved={len(classification_unresolved)} failed={len(classification_failed)}"
                 )
 
-            resolved = _resolve_asset_for_classification(token, asset_ref)
+            resolved = _resolve_asset_cached(asset_ref)
             if not resolved:
                 if len(classification_unresolved) < 25:
                     classification_unresolved.append(asset_ref)
@@ -1976,7 +1986,7 @@ else:
                     f"unresolved_terms={len(glossary_unresolved_terms)} failed={len(glossary_failed)}"
                 )
 
-            resolved = _resolve_asset_for_classification(token, asset_ref)
+            resolved = _resolve_asset_cached(asset_ref)
             if not resolved:
                 if len(glossary_unresolved_assets) < 25:
                     glossary_unresolved_assets.append(asset_ref)
@@ -2055,7 +2065,7 @@ else:
                     f"unresolved={len(description_unresolved)} failed={len(description_failed)}"
                 )
 
-            resolved = _resolve_asset_for_classification(token, asset_ref)
+            resolved = _resolve_asset_cached(asset_ref)
             if not resolved:
                 if len(description_unresolved) < 25:
                     description_unresolved.append(asset_ref)
