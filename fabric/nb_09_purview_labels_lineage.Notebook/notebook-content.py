@@ -1477,6 +1477,15 @@ def _resolve_entity(token: str, qualified_name: str, role: str):
             entity["matched_value"] = term
             return entity, candidates
 
+    # Last-chance fallback: use the broader asset resolver logic used by classification/label/glossary flows.
+    fallback = _resolve_asset_for_classification(token, qualified_name)
+    if fallback:
+        fallback["matched_by"] = "classification_resolver_fallback"
+        fallback["matched_value"] = qualified_name
+        if fallback.get("typeName") is None and fallback.get("entityType") is not None:
+            fallback["typeName"] = fallback.get("entityType")
+        return fallback, candidates
+
     return None, candidates
 
 
@@ -1992,13 +2001,14 @@ else:
         for row in asset_description_manifest:
             asset_ref = _safe_text(row.get("asset_ref", ""))
             description = _safe_text(row.get("description", ""))
-            key = asset_ref.lower()
-            if not asset_ref or not description or key in description_dedupe:
+            normalized_asset_ref = _asset_ref_to_table_qualified_name(asset_ref) or asset_ref
+            key = normalized_asset_ref.lower()
+            if not normalized_asset_ref or not description or key in description_dedupe:
                 continue
             description_dedupe.add(key)
             description_rows.append(
                 {
-                    "asset_ref": asset_ref,
+                    "asset_ref": normalized_asset_ref,
                     "description": description,
                 }
             )
