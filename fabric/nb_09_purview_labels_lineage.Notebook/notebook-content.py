@@ -129,9 +129,9 @@ print(f"data_products rows: {data_products_df.count()} (source={data_products_so
 
 # CELL ********************
 
-# Cell 3: Build Classification TypeDefs and Manifests
-# Purpose: Create Purview classification typedefs for sensitivity labels and build asset classification manifest.
-# Outputs: typedef_payload (classification definitions), classification_manifest (asset-label mappings).
+# Cell 3: Build Sensitivity Label and CDE Classification Manifests
+# Purpose: Derive sensitivity labels separately from CDE classifications.
+# Outputs: typedef_payload (CDE classification definitions), sensitivity_label_manifest, cde_classification_manifest.
 
 
 def _safe_text(value):
@@ -154,11 +154,6 @@ def _split_tokens(raw_value):
         if item:
             tokens.append(item)
     return tokens
-
-
-def _label_to_type_name(label_name: str) -> str:
-    cleaned = "".join(ch for ch in _safe_text(label_name).title() if ch.isalnum())
-    return f"EnercareSensitivity{cleaned or 'Unspecified'}"
 
 
 CDE_CLASSIFICATION_NAME = "EnercareCDE"
@@ -184,24 +179,7 @@ if labels_df is not None and "label_name" in labels_df.columns:
 if not labels:
     labels.add("Internal")
 
-classification_defs = []
-for label in sorted(labels):
-    classification_defs.append(
-        {
-            "category": "CLASSIFICATION",
-            "name": _label_to_type_name(label),
-            "description": f"Sensitivity:{label}",
-            "attributeDefs": [
-                {"name": "label_name", "typeName": "string", "isOptional": True},
-                {"name": "sensitivity_tier", "typeName": "string", "isOptional": True},
-                {"name": "protection_policy", "typeName": "string", "isOptional": True},
-                {"name": "assignment_source", "typeName": "string", "isOptional": True},
-                {"name": "rule", "typeName": "string", "isOptional": True},
-            ],
-        }
-    )
-
-classification_defs.append(
+classification_defs = [
     {
         "category": "CLASSIFICATION",
         "name": CDE_CLASSIFICATION_NAME,
@@ -212,11 +190,11 @@ classification_defs.append(
             {"name": "assignment_source", "typeName": "string", "isOptional": True},
         ],
     }
-)
+]
 
 typedef_payload = {"classificationDefs": classification_defs}
 
-sensitivity_classification_manifest = []
+sensitivity_label_manifest = []
 cde_classification_manifest = []
 if cde_has_sensitivity_label:
     for row in cde_df.collect():
@@ -230,14 +208,13 @@ if cde_has_sensitivity_label:
 
         for token in _split_tokens(getattr(row, "bound_columns", None)):
             if label:
-                sensitivity_classification_manifest.append(
+                sensitivity_label_manifest.append(
                     {
                         "asset_ref": token,
-                        "classification": _label_to_type_name(label),
                         "label_name": label,
                         "sensitivity_tier": sensitivity_tier,
                         "protection_policy": protection_policy,
-                        "assignment_source": "CDE-Sensitivity",
+                        "assignment_source": "CDE",
                         "rule": cde_id,
                     }
                 )
@@ -266,10 +243,9 @@ if labels_df is not None:
         sensitivity_tier = _safe_text(getattr(row, "sensitivity_tier", None)) or label
         protection_policy = _safe_text(getattr(row, "protection_policy", None))
         for token in _split_tokens(assets):
-            sensitivity_classification_manifest.append(
+            sensitivity_label_manifest.append(
                 {
                     "asset_ref": token,
-                    "classification": _label_to_type_name(label),
                     "label_name": label,
                     "sensitivity_tier": sensitivity_tier,
                     "protection_policy": protection_policy,
@@ -278,14 +254,14 @@ if labels_df is not None:
                 }
             )
 
-classification_manifest = sensitivity_classification_manifest + cde_classification_manifest
+classification_manifest = cde_classification_manifest
 
 print(f"Classification defs prepared: {len(classification_defs)}")
-print(f"Sensitivity manifest rows prepared: {len(sensitivity_classification_manifest)}")
+print(f"Sensitivity label rows prepared: {len(sensitivity_label_manifest)}")
 print(f"CDE manifest rows prepared: {len(cde_classification_manifest)}")
 print(f"Classification manifest rows prepared: {len(classification_manifest)}")
 
-# Cell 3 complete: Classification typedefs and manifests built
+# Cell 3 complete: Sensitivity labels and CDE classification manifests built
 
 
 # METADATA ********************
@@ -378,7 +354,7 @@ print(f"Lineage edge rows prepared: {len(lineage_edges)}")
 # CELL ********************
 
 # Cell 5: Write Payloads and Validation Summary
-# Purpose: Export classification typedefs, manifest, and lineage edges to Azure Data Lake.
+# Purpose: Export sensitivity labels, CDE classifications, and lineage payloads to Azure Data Lake.
 #          Create validation table tracking readiness of all artifacts (G9 checklist).
 # Outputs: JSON files in OUTPUT_ROOT; metadata.purview_phase_06_07_validation table.
 
@@ -408,11 +384,13 @@ output_root = _normalize_output_root(OUTPUT_ROOT)
 
 mssparkutils.fs.mkdirs(output_root)
 mssparkutils.fs.put(f"{output_root}/classification_typedefs.json", json.dumps(typedef_payload, indent=2), True)
+mssparkutils.fs.put(f"{output_root}/sensitivity_label_manifest.json", json.dumps(sensitivity_label_manifest, indent=2), True)
 mssparkutils.fs.put(f"{output_root}/classification_manifest.json", json.dumps(classification_manifest, indent=2), True)
 mssparkutils.fs.put(f"{output_root}/lineage_edges.json", json.dumps(lineage_edges, indent=2), True)
 
 validation_rows = [
     ("classification_defs_prepared", len(classification_defs), "PASS" if classification_defs else "FAIL"),
+    ("sensitivity_label_rows", len(sensitivity_label_manifest), "PASS" if sensitivity_label_manifest else "WARN"),
     ("classification_manifest_rows", len(classification_manifest), "PASS" if classification_manifest else "FAIL"),
     ("lineage_edges_prepared", len(lineage_edges), "PASS" if lineage_edges else "WARN"),
     ("sql_source_name_configured", int(bool(SQL_SOURCE_NAME)), "PASS"),
@@ -633,6 +611,36 @@ def _apply_classification(
     ):
         return "existing", ""
     return "failed", f"HTTP {status} | {body[:300]}"
+
+
+def _apply_sensitivity_label(token: str, entity_guid: str, label_name: str):
+    path = f"/catalog/api/atlas/v2/entity/guid/{entity_guid}/labels"
+    payloads = ([label_name], {"labels": [label_name]})
+    methods = ("POST", "PUT")
+
+    for method in methods:
+        for payload in payloads:
+            status, body = _request(method, path, token, body=payload)
+            if status in (200, 201, 204):
+                return "assigned", ""
+
+            body_lower = body.lower()
+            if (
+                status == 409
+                or "already exists" in body_lower
+                or "already associated" in body_lower
+                or "duplicate" in body_lower
+                or "ATLAS-409" in body
+                or "ATLAS-400-00-01A" in body
+            ):
+                return "existing", ""
+
+            if status in (400, 404, 405):
+                continue
+
+            return "failed", f"HTTP {status} | {body[:300]}"
+
+    return "failed", "Atlas labels endpoint did not accept POST/PUT payload formats for this account."
 
 
 def _get_purview_token_from_manual() -> str:
@@ -1053,13 +1061,83 @@ else:
             pass
 
     if token:
-        print("[Cell 6] Publishing classification typedefs...")
+        print("[Cell 6] Applying sensitivity labels from manifest...")
+        label_assigned = 0
+        label_existing = 0
+        label_failed = []
+        label_unresolved = []
+
+        label_dedupe = set()
+        label_rows = []
+        for row in sensitivity_label_manifest:
+            asset_ref = _safe_text(row.get("asset_ref", ""))
+            label_name = _safe_text(row.get("label_name", ""))
+            sensitivity_tier = _safe_text(row.get("sensitivity_tier", ""))
+            protection_policy = _safe_text(row.get("protection_policy", ""))
+            assignment_source = _safe_text(row.get("assignment_source", ""))
+            rule = _safe_text(row.get("rule", ""))
+
+            key = (asset_ref.lower(), label_name.lower())
+            if not asset_ref or not label_name or key in label_dedupe:
+                continue
+            label_dedupe.add(key)
+
+            label_rows.append(
+                {
+                    "asset_ref": asset_ref,
+                    "label_name": label_name,
+                    "sensitivity_tier": sensitivity_tier,
+                    "protection_policy": protection_policy,
+                    "assignment_source": assignment_source,
+                    "rule": rule,
+                }
+            )
+
+        total_label_rows = len(label_rows)
+        print(f"[Cell 6] Sensitivity label rows to process: {total_label_rows}")
+        for index, row in enumerate(label_rows, start=1):
+            asset_ref = row["asset_ref"]
+            label_name = row["label_name"]
+
+            if index == 1 or index % 10 == 0 or index == total_label_rows:
+                print(
+                    f"[Cell 6] Sensitivity label progress: {index}/{total_label_rows} | "
+                    f"assigned={label_assigned} existing={label_existing} "
+                    f"unresolved={len(label_unresolved)} failed={len(label_failed)}"
+                )
+
+            resolved = _resolve_asset_for_classification(token, asset_ref)
+            if not resolved:
+                if len(label_unresolved) < 25:
+                    label_unresolved.append(asset_ref)
+                continue
+
+            outcome, details = _apply_sensitivity_label(token, resolved["guid"], label_name)
+
+            if outcome == "assigned":
+                label_assigned += 1
+            elif outcome == "existing":
+                label_existing += 1
+            else:
+                label_failed.append((asset_ref, label_name, details))
+
+        print(
+            "[Cell 6] Sensitivity label summary: "
+            f"assigned={label_assigned} existing={label_existing} "
+            f"unresolved={len(label_unresolved)} failed={len(label_failed)}"
+        )
+        if label_unresolved:
+            print(f"[Cell 6][WARN] Unresolved sensitivity label asset samples: {label_unresolved[:10]}")
+        if label_failed:
+            print(f"[Cell 6][WARN] First sensitivity label failure: {label_failed[0]}")
+
+        print("[Cell 6] Publishing CDE classification typedefs...")
         typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
         if typedef_status not in (200, 201) and "already exists" not in typedef_body.lower():
             raise RuntimeError(f"Classification typedef publish failed: HTTP {typedef_status} | {typedef_body[:500]}")
         print(f"Classification typedef publish result: HTTP {typedef_status}")
 
-        print("[Cell 6] Applying asset classifications from manifest...")
+        print("[Cell 6] Applying CDE classifications from manifest...")
         classification_assigned = 0
         classification_existing = 0
         classification_failed = []
@@ -1070,15 +1148,12 @@ else:
         for row in classification_manifest:
             asset_ref = _safe_text(row.get("asset_ref", ""))
             classification_name = _safe_text(row.get("classification", ""))
-            label_name = _safe_text(row.get("label_name", ""))
-            sensitivity_tier = _safe_text(row.get("sensitivity_tier", ""))
-            protection_policy = _safe_text(row.get("protection_policy", ""))
             assignment_source = _safe_text(row.get("assignment_source", ""))
             rule = _safe_text(row.get("rule", ""))
             cde_id = _safe_text(row.get("cde_id", ""))
             cde_name = _safe_text(row.get("cde_name", ""))
 
-            key = (asset_ref.lower(), classification_name.lower(), label_name.lower())
+            key = (asset_ref.lower(), classification_name.lower(), cde_id.lower())
             if not asset_ref or not classification_name or key in dedupe:
                 continue
             dedupe.add(key)
@@ -1087,9 +1162,6 @@ else:
                 {
                     "asset_ref": asset_ref,
                     "classification_name": classification_name,
-                    "label_name": label_name,
-                    "sensitivity_tier": sensitivity_tier,
-                    "protection_policy": protection_policy,
                     "assignment_source": assignment_source,
                     "rule": rule,
                     "cde_id": cde_id,
@@ -1098,13 +1170,10 @@ else:
             )
 
         total_classification_rows = len(classification_rows)
-        print(f"[Cell 6] Classification rows to process: {total_classification_rows}")
+        print(f"[Cell 6] CDE classification rows to process: {total_classification_rows}")
         for index, row in enumerate(classification_rows, start=1):
             asset_ref = row["asset_ref"]
             classification_name = row["classification_name"]
-            label_name = row["label_name"]
-            sensitivity_tier = row["sensitivity_tier"]
-            protection_policy = row["protection_policy"]
             assignment_source = row["assignment_source"]
             rule = row["rule"]
             cde_id = row["cde_id"]
@@ -1112,7 +1181,7 @@ else:
 
             if index == 1 or index % 10 == 0 or index == total_classification_rows:
                 print(
-                    f"[Cell 6] Classification progress: {index}/{total_classification_rows} | "
+                    f"[Cell 6] CDE classification progress: {index}/{total_classification_rows} | "
                     f"assigned={classification_assigned} existing={classification_existing} "
                     f"unresolved={len(classification_unresolved)} failed={len(classification_failed)}"
                 )
@@ -1127,11 +1196,9 @@ else:
                 token,
                 resolved["guid"],
                 classification_name,
-                label_name,
+                "",
                 assignment_source,
                 rule,
-                sensitivity_tier=sensitivity_tier,
-                protection_policy=protection_policy,
                 cde_id=cde_id,
                 cde_name=cde_name,
             )
@@ -1144,14 +1211,14 @@ else:
                 classification_failed.append((asset_ref, classification_name, details))
 
         print(
-            "[Cell 6] Classification attachment summary: "
+            "[Cell 6] CDE classification summary: "
             f"assigned={classification_assigned} existing={classification_existing} "
             f"unresolved={len(classification_unresolved)} failed={len(classification_failed)}"
         )
         if classification_unresolved:
-            print(f"[Cell 6][WARN] Unresolved classification asset samples: {classification_unresolved[:10]}")
+            print(f"[Cell 6][WARN] Unresolved CDE classification asset samples: {classification_unresolved[:10]}")
         if classification_failed:
-            print(f"[Cell 6][WARN] First classification failure: {classification_failed[0]}")
+            print(f"[Cell 6][WARN] First CDE classification failure: {classification_failed[0]}")
 
         process_entities, unresolved_edges = _build_lineage_process_entities(token)
         if not process_entities:
