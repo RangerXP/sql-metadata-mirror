@@ -14,7 +14,7 @@ Note: The cases below require live execution through the Data Agent runtime. Thi
 
 | Case ID | Scenario | Result | What Worked | Gaps | Remediation | Owner | Retest Date |
 |---|---|---|---|---|---|---|---|
-| 01 | Core Maria incident | Pending |  |  |  |  |  |
+| 01 | Core Maria incident | Fail | Returned a deterministic lookup outcome and explicitly stated no qualifying incident found in current model rows. | No urgent customer-impact handling; no dispute hold path; no conditional fee-review workflow; no actionable owner/ETA; defaulted to deflection asking for more identifiers instead of safe operational fallback. | Add fallback policy behavior when incident evidence is incomplete: acknowledge outage harm, open provisional billing dispute hold, trigger priority dispatch review, and escalate to supervisor queue with decision SLA. Add test assertion that responses must include ownership and next-step timeline even on no-match outcomes. | Sean Kelley / Copilot | 2026-06-20 |
 | 02 | Paid already, wants refund | Pending |  |  |  |  |  |
 | 03 | Vulnerable household urgency | Pending |  |  |  |  |  |
 | 04 | Duplicate accounts at address | Pending |  |  |  |  |  |
@@ -27,5 +27,5 @@ Note: The cases below require live execution through the Data Agent runtime. Thi
 
 ## Current Summary
 - Pack submission: Complete
-- Case execution: Not yet run in Data Agent
-- Captured case outcomes: 0/10
+- Case execution: In progress (live runtime unstable; Case 01 captured)
+- Captured case outcomes: 1/10
