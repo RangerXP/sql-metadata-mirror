@@ -600,6 +600,18 @@ def _classification_query_candidates(asset_ref: str):
         if len(pieces) >= 2:
             candidates.append(f"{pieces[-2]} {pieces[-1]}")
 
+    if "." in raw:
+        dot_parts = [p.strip() for p in raw.split(".") if p.strip()]
+        if dot_parts:
+            candidates.append(dot_parts[-1])
+        if len(dot_parts) >= 2:
+            candidates.append(" ".join(dot_parts[-2:]))
+
+    if "semanticmodel" in lower:
+        candidates.extend(["semantic model", SEMANTIC_MODEL_NAME])
+    if "report" in lower:
+        candidates.extend(["report", "brookfieldenercare report", SEMANTIC_MODEL_NAME])
+
     seen = set()
     unique = []
     for candidate in candidates:
@@ -849,6 +861,45 @@ def _get_purview_token_with_retry() -> str:
     except Exception as az_ex:
         print(f"[Cell 6][WARN] Azure CLI token path failed; falling back to TokenLibrary. Error: {az_ex}")
         return _get_purview_token_via_tokenlibrary()
+
+
+def _probe_token(token: str):
+    return _request(
+        "POST",
+        "/datamap/api/search/query",
+        token,
+        body={"keywords": "dbo", "limit": 1},
+        params={"api-version": "2023-09-01"},
+    )
+
+
+def _ensure_valid_token(token: str) -> str:
+    status, body = _probe_token(token)
+    if status == 200:
+        return token
+
+    body_lower = _safe_text(body).lower()
+    if status != 401 and "invalid token" not in body_lower and "unauthenticated" not in body_lower:
+        print(f"[Cell 6][WARN] Token probe returned HTTP {status}; continuing with current token.")
+        return token
+
+    print("[Cell 6][WARN] Supplied token appears invalid or expired; attempting fallback token acquisition.")
+    fallback_errors = []
+    for fn in (_get_purview_token_via_az_cli, _get_purview_token_via_tokenlibrary):
+        try:
+            candidate = fn()
+            probe_status, _ = _probe_token(candidate)
+            if probe_status == 200:
+                print(f"[Cell 6] Switched to fallback token provider: {fn.__name__}")
+                return candidate
+            fallback_errors.append(f"{fn.__name__}: probe HTTP {probe_status}")
+        except Exception as ex:
+            fallback_errors.append(f"{fn.__name__}: {ex}")
+
+    raise RuntimeError(
+        "Purview token is invalid/expired and fallback acquisition failed. "
+        f"Details: {' | '.join(fallback_errors)}"
+    )
 
 
 def _find_entity_by_qualified_name(token: str, qualified_name: str):
@@ -1164,6 +1215,8 @@ else:
             pass
 
     if token:
+        token = _ensure_valid_token(token)
+
         print("[Cell 6] Applying sensitivity labels from manifest...")
         label_assigned = 0
         label_existing = 0
@@ -1236,6 +1289,10 @@ else:
 
         print("[Cell 6] Publishing CDE classification typedefs...")
         typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
+        if typedef_status == 401:
+            print("[Cell 6][WARN] Typedef publish returned 401; refreshing token and retrying once.")
+            token = _ensure_valid_token(token)
+            typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
         if typedef_status not in (200, 201) and "already exists" not in typedef_body.lower():
             raise RuntimeError(f"Classification typedef publish failed: HTTP {typedef_status} | {typedef_body[:500]}")
         print(f"Classification typedef publish result: HTTP {typedef_status}")
