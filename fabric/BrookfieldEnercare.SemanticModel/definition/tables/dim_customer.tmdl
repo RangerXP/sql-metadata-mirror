@@ -24,12 +24,6 @@ table dim_customer
 
 		annotation SummarizationSetBy = Automatic
 
-	/// Base account key used to normalize optional "-SVC" suffix variants.
-	column NormalizedAccountKey = UPPER(SUBSTITUTE([AccountNumber], "-SVC", ""))
-		dataType: string
-		lineageTag: d7ea5038-6886-4463-ab4b-f7d70e781a13
-		summarizeBy: none
-
 	column FirstName
 		dataType: string
 		lineageTag: 10f20a3a-2369-4a5b-9d59-aa1625addd26
