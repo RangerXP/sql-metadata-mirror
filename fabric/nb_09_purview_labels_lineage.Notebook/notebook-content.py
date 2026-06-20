@@ -168,6 +168,18 @@ NORTHSTAR_CLASSIFICATIONS = {
     "EnercareKPIAnalyst": "KPIAnalyst",
 }
 
+DISALLOWED_CLASSIFICATION_TYPEDEFS = {
+    "EnercareSensitivityConfidential",
+    "EnercareSensitivityExecutiveKpi",
+    "EnercareSensitivityGeneral",
+    "EnercareSensitivityGovernanceAdmin",
+    "EnercareSensitivityHighlyConfidential",
+    "EnercareSensitivityInternal",
+    "EnercareSensitivityOperationsSensitive",
+    "EnercareSensitivityPciRestricted",
+    "EnercareSensitivityPrivacyRestricted",
+}
+
 SENSITIVITY_LABEL_CANONICAL = {
     "general": "Internal",
     "internal": "Internal",
@@ -261,6 +273,10 @@ cde_rows = cde_df.collect()
 classification_defs = [_classification_def(CDE_CLASSIFICATION_NAME, "CDE")]
 for class_name, class_desc in NORTHSTAR_CLASSIFICATIONS.items():
     classification_defs.append(_classification_def(class_name, class_desc))
+
+classification_defs = [
+    d for d in classification_defs if _safe_text(d.get("name", "")) not in DISALLOWED_CLASSIFICATION_TYPEDEFS
+]
 
 typedef_payload = {"classificationDefs": classification_defs}
 
@@ -358,6 +374,11 @@ if labels_df is not None:
                 )
 
 classification_manifest = cde_classification_manifest
+classification_manifest = [
+    row
+    for row in classification_manifest
+    if _safe_text(row.get("classification", "")) not in DISALLOWED_CLASSIFICATION_TYPEDEFS
+]
 
 print(f"Classification defs prepared: {len(classification_defs)}")
 print(f"Sensitivity label rows prepared: {len(sensitivity_label_manifest)}")
