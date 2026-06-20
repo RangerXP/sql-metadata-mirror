@@ -97,10 +97,10 @@ Gold handoff template:
 - Deadline/owner
 
 Example handoff:
-Customer: Maria North, Account ECxxxx
-Issue: Water heater outage, missed appointment, disputed posted service charge
+Customer: Maria Castellanos, Account EC18374622
+Issue: Furnace outage, missed appointment, disputed posted service charge
 Impact: Essential service interruption, repeat trust risk
-Verified: Identity confirmed; SR-xxxx open; charge code CHG-xxxx posted on yyyy-mm-dd
+Verified: Identity confirmed; furnace service request open/in progress; INV-MARIA-202606 posted (with related credit memo CR-MARIA-SLA-202606)
 Conflict: Appointment state differs across systems
 Actions taken: Dispute opened; collections hold on disputed line; urgent dispatch escalation submitted
 Decision requested: Additional goodwill credit above frontline authority and dispatch override approval

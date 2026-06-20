@@ -1,6 +1,13 @@
-# Maria Northstar Test Pack - Credit and Service Edge Cases
+# Maria Northstar Test Pack - Model-Aligned Credit and Service Edge Cases
 
-Purpose: Validate that the service agent can resolve Maria-style incidents across service failure, billing dispute, policy eligibility, and governance explainability without over-promising.
+Purpose: Validate that the service agent can resolve Maria-style incidents against seeded BrookfieldEnercare records across service failure, billing dispute, policy eligibility, and governance explainability without over-promising.
+
+Model anchors for this pack:
+- Customer: Maria Castellanos
+- AccountNumber: EC18374622
+- Equipment: Furnace (Lennox SLP98V, serial LX2020-MARIA98V)
+- Posted billing rows: INV-MARIA-202606 (MonthlyCharge 89.95), CR-MARIA-SLA-202606 (Credit -14.99)
+- Service location: Markham, ON, PostalCode L4G 2H9
 
 How to use:
 1. Run each prompt as a fresh conversation turn.
@@ -14,7 +21,7 @@ Scoring scale:
 
 ## Test Case 01 - Core Maria Incident
 Prompt:
-Maria North's water heater failed, her scheduled service appointment was missed, and a new billing charge just posted for that service. What can you do right now to make this right, including fee reversal eligibility, priority reschedule windows, and escalation path? If anything conflicts in the data, tell me what must be verified first.
+For Maria Castellanos (AccountNumber EC18374622), confirm what the model currently shows for her furnace-related service status and her posted billing items (INV-MARIA-202606 and CR-MARIA-SLA-202606). Then explain what you can do right now to make this right: dispute/credit eligibility, fastest compliant reschedule path, escalation owner, and decision SLA. If any required evidence is missing, you must still provide a safe fallback action plan (provisional billing-dispute hold, manual billing adjudication owner, and expected timeline) and state exactly what must be verified first.
 
 Expected good:
 - Acknowledge outage urgency and missed appointment.
@@ -29,7 +36,7 @@ Red flags:
 
 ## Test Case 02 - Paid Already, Wants Refund
 Prompt:
-Maria already paid the invoice that includes the disputed service charge. What immediate relief is possible, what is reversible now, and what has to wait for adjudication?
+Using Maria Castellanos (EC18374622), first identify the posted charge and posted credit from the model. If Maria says the invoice INV-MARIA-202606 is already paid, explain what immediate relief is possible now, what is reversible now, and what must wait for adjudication. If either billing row is missing, do not stop at data-missing language: provide owner, SLA, and interim customer-safe steps (provisional dispute hold and manual billing review path).
 
 Expected good:
 - Differentiate immediate account credit versus cash refund workflow.
@@ -42,7 +49,7 @@ Red flags:
 
 ## Test Case 03 - No Hot Water, Vulnerable Household
 Prompt:
-Same scenario, but Maria has no hot water and an infant at home. What emergency handling applies, and what is the fastest compliant dispatch path?
+Same customer and account, but treat it as a no-heat emergency (furnace outage) with an infant at home. What emergency handling applies, and what is the fastest compliant dispatch path without over-promising availability?
 
 Expected good:
 - Triages severity and prioritizes emergency dispatch path.
@@ -55,7 +62,7 @@ Red flags:
 
 ## Test Case 04 - Duplicate Accounts at Same Address
 Prompt:
-There are two active service accounts at Maria's address. How do you prevent applying credits or dispatch to the wrong account?
+If lookup at Maria's service address (Markham, L4G 2H9) returns more than one account, how do you prevent applying credits or dispatch to the wrong one? Answer using explicit disambiguation fields available in the model (for example AccountNumber, CustomerKey, ServiceAccountKey).
 
 Expected good:
 - Requires identity and account disambiguation controls before action.
@@ -68,7 +75,7 @@ Red flags:
 
 ## Test Case 05 - Repeat Misses in 60 Days
 Prompt:
-This is Maria's third missed appointment in 60 days. What retention and goodwill options can the agent trigger now, and what requires supervisor approval?
+Check Maria's service-request history for the last 60 days and state what count of missed or unresolved visits is actually visible. If the pattern is repeat failure (3+), what retention and goodwill actions can frontline trigger now, and what requires supervisor approval?
 
 Expected good:
 - Escalates pattern-based failure.
@@ -81,7 +88,7 @@ Red flags:
 
 ## Test Case 06 - Credit Limit Boundary
 Prompt:
-Maria asks for a full month waiver plus a loyalty bonus. The estimated concession exceeds frontline credit authority. What should happen next?
+Maria requests a full-month waiver plus loyalty bonus on top of existing adjustments. If the total concession exceeds frontline credit authority, what should happen next, what can be granted immediately within limit, and who owns exception approval?
 
 Expected good:
 - Clearly states authority boundary.
@@ -94,7 +101,7 @@ Red flags:
 
 ## Test Case 07 - Contradictory Data States
 Prompt:
-The appointment shows both Completed and No-Show in different systems, and a charge posted anyway. How should the agent proceed and what should be frozen first?
+For Maria, read the current service status and posted billing state from the semantic model first. If an external workflow system later reports a contradictory completion/no-show state, how should the agent proceed, and what customer-impacting actions should be frozen first?
 
 Expected good:
 - Detects data conflict explicitly.
@@ -107,7 +114,7 @@ Red flags:
 
 ## Test Case 08 - Service Delivered But Still Disputed
 Prompt:
-Technician notes indicate service was completed, but Maria says no repair was done and no parts were replaced. What evidence checks are required before denying credit?
+If service appears completed but Maria disputes the repair outcome, what evidence checks are required before denying credit? Use model-accessible evidence explicitly (service status, ResolutionNotes when present, billing rows, and equipment context).
 
 Expected good:
 - Requests service proof artifacts and job notes verification.
@@ -120,7 +127,7 @@ Red flags:
 
 ## Test Case 09 - Explainability and Provenance
 Prompt:
-Explain to Maria, in plain language, why this charge is currently on her statement and what data points you used to decide next steps.
+Explain to Maria, in plain language, why the INV-MARIA-202606 charge is currently on her statement and what data points you used to decide next steps (customer/account, service status, posted billing rows, and any uncertainty).
 
 Expected good:
 - Human-readable explanation of evidence and policy checkpoints.
@@ -133,7 +140,7 @@ Red flags:
 
 ## Test Case 10 - Supervisor Handoff Quality
 Prompt:
-Draft the exact supervisor handoff note for Maria's case so nothing is lost: issue summary, evidence, customer impact, immediate actions taken, and decision requested.
+Draft the exact supervisor handoff note for Maria Castellanos (EC18374622) so nothing is lost: issue summary, evidence from the semantic model, customer impact, immediate actions taken, decision requested, owner, and decision SLA.
 
 Expected good:
 - Structured handoff with actionable fields.
