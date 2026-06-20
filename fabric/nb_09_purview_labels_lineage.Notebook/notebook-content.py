@@ -1294,6 +1294,91 @@ def _resolve_asset_for_classification(token: str, asset_ref: str):
     return best
 
 
+def _resolve_semantic_model_field_targets(token: str, asset_ref: str, limit: int = 5):
+    asset_text = _safe_text(asset_ref)
+    if not asset_text:
+        return []
+
+    parsed_column_name = ""
+    parsed_table_name = ""
+    parts = asset_text.split(".")
+    if asset_text.lower().startswith("dbo.") and len(parts) >= 3:
+        parsed_table_name = _safe_text(parts[1])
+        parsed_column_name = _safe_text(".".join(parts[2:]))
+
+    query_candidates = []
+    if parsed_column_name:
+        query_candidates.extend(
+            [
+                f"{SEMANTIC_MODEL_NAME} {parsed_column_name}",
+                parsed_column_name,
+                f"{parsed_table_name} {parsed_column_name}" if parsed_table_name else "",
+            ]
+        )
+    else:
+        query_candidates.extend([f"{SEMANTIC_MODEL_NAME} {asset_text}", asset_text])
+
+    seen_queries = set()
+    targets = []
+    seen_guids = set()
+    for query in query_candidates:
+        q = _safe_text(query)
+        if not q or q.lower() in seen_queries:
+            continue
+        seen_queries.add(q.lower())
+
+        status, body = _request(
+            "POST",
+            "/datamap/api/search/query",
+            token,
+            body={"keywords": q, "limit": 50},
+            params={"api-version": "2023-09-01"},
+        )
+        if status != 200:
+            continue
+
+        try:
+            payload = json.loads(body)
+        except Exception:
+            continue
+
+        for entity in payload.get("value") or []:
+            if _is_invalid_classification_target(entity):
+                continue
+
+            guid = _safe_text(entity.get("id", "") or entity.get("guid", ""))
+            if not guid or guid in seen_guids:
+                continue
+
+            entity_type = _safe_text(entity.get("entityType", "") or entity.get("typeName", "")).lower()
+            qn = _safe_text(entity.get("qualifiedName", ""))
+            name = _safe_text(entity.get("name", ""))
+            qn_lower = qn.lower()
+
+            # Only keep entities that belong to this semantic model path.
+            if "semanticmodels" not in qn_lower or SEMANTIC_MODEL_NAME.lower() not in qn_lower:
+                continue
+
+            # Focus on field-level entities where schema grid renders metadata.
+            if "column" not in entity_type and parsed_column_name:
+                if name.lower() != parsed_column_name.lower():
+                    continue
+
+            seen_guids.add(guid)
+            targets.append(
+                {
+                    "guid": guid,
+                    "entityType": entity_type,
+                    "qualifiedName": qn,
+                }
+            )
+
+            if len(targets) >= limit:
+                return targets
+
+    return targets
+
+
 def _resolve_glossary_term_guid(token: str, term_name: str):
     term_text = _safe_text(term_name)
     if not term_text:
@@ -2159,6 +2244,9 @@ else:
         label_dedupe = set()
         label_rows = []
         anchor_label_dedupe = set()
+        semantic_field_label_assigned = 0
+        semantic_field_label_existing = 0
+        semantic_field_label_failed = []
         for row in sensitivity_label_manifest:
             asset_ref = _safe_text(row.get("asset_ref", ""))
             label_name = _safe_text(row.get("label_name", ""))
@@ -2226,23 +2314,43 @@ else:
                 )
 
             resolved = _resolve_asset_cached(asset_ref)
-            target = resolved
-            if not target and semantic_anchor:
-                target = semantic_anchor
+            semantic_field_targets = _resolve_semantic_model_field_targets(token, asset_ref)
+            target_entities = []
+            seen_target_guids = set()
+            if resolved:
+                target_entities.append(resolved)
+                seen_target_guids.add(_safe_text(resolved.get("guid", "")))
+            for semantic_target in semantic_field_targets:
+                semantic_guid = _safe_text(semantic_target.get("guid", ""))
+                if semantic_guid and semantic_guid not in seen_target_guids:
+                    target_entities.append(semantic_target)
+                    seen_target_guids.add(semantic_guid)
+            if not target_entities and semantic_anchor:
+                target_entities.append(semantic_anchor)
 
-            if not target:
+            if not target_entities:
                 if len(label_unresolved) < 25:
                     label_unresolved.append(asset_ref)
                 continue
 
-            outcome, details = _apply_sensitivity_label(token, target["guid"], label_name)
-
-            if outcome == "assigned":
-                label_assigned += 1
-            elif outcome == "existing":
-                label_existing += 1
-            else:
-                label_failed.append((asset_ref, label_name, details))
+            primary_guid = _safe_text(target_entities[0].get("guid", ""))
+            for target in target_entities:
+                outcome, details = _apply_sensitivity_label(token, target["guid"], label_name)
+                target_guid = _safe_text(target.get("guid", ""))
+                if target_guid == primary_guid:
+                    if outcome == "assigned":
+                        label_assigned += 1
+                    elif outcome == "existing":
+                        label_existing += 1
+                    else:
+                        label_failed.append((asset_ref, label_name, details))
+                else:
+                    if outcome == "assigned":
+                        semantic_field_label_assigned += 1
+                    elif outcome == "existing":
+                        semantic_field_label_existing += 1
+                    else:
+                        semantic_field_label_failed.append((asset_ref, label_name, details))
 
         if semantic_anchor:
             for label_name_lower in sorted(anchor_label_dedupe):
@@ -2259,7 +2367,10 @@ else:
             f"assigned={label_assigned} existing={label_existing} "
             f"unresolved={len(label_unresolved)} failed={len(label_failed)} "
             f"anchor_assigned={anchor_label_assigned} anchor_existing={anchor_label_existing} "
-            f"anchor_failed={len(anchor_label_failed)}"
+            f"anchor_failed={len(anchor_label_failed)} "
+            f"semantic_field_assigned={semantic_field_label_assigned} "
+            f"semantic_field_existing={semantic_field_label_existing} "
+            f"semantic_field_failed={len(semantic_field_label_failed)}"
         )
         if label_unresolved:
             print(f"[Cell 6][WARN] Unresolved sensitivity label asset samples: {label_unresolved[:10]}")
@@ -2302,6 +2413,9 @@ else:
         dedupe = set()
         classification_rows = []
         anchor_classification_dedupe = set()
+        semantic_field_class_assigned = 0
+        semantic_field_class_existing = 0
+        semantic_field_class_failed = []
         for row in classification_manifest:
             asset_ref = _safe_text(row.get("asset_ref", ""))
             classification_name = _safe_text(row.get("classification", ""))
@@ -2374,31 +2488,52 @@ else:
                 )
 
             resolved = _resolve_asset_cached(asset_ref)
-            target = resolved
-            if not target and semantic_anchor:
-                target = semantic_anchor
-            if not target:
+            semantic_field_targets = _resolve_semantic_model_field_targets(token, asset_ref)
+            target_entities = []
+            seen_target_guids = set()
+            if resolved:
+                target_entities.append(resolved)
+                seen_target_guids.add(_safe_text(resolved.get("guid", "")))
+            for semantic_target in semantic_field_targets:
+                semantic_guid = _safe_text(semantic_target.get("guid", ""))
+                if semantic_guid and semantic_guid not in seen_target_guids:
+                    target_entities.append(semantic_target)
+                    seen_target_guids.add(semantic_guid)
+            if not target_entities and semantic_anchor:
+                target_entities.append(semantic_anchor)
+            if not target_entities:
                 if len(classification_unresolved) < 25:
                     classification_unresolved.append(asset_ref)
                 continue
 
-            outcome, details = _apply_classification(
-                token,
-                target["guid"],
-                classification_name,
-                "",
-                assignment_source,
-                rule,
-                cde_id=cde_id,
-                cde_name=cde_name,
-            )
+            primary_guid = _safe_text(target_entities[0].get("guid", ""))
+            for target in target_entities:
+                outcome, details = _apply_classification(
+                    token,
+                    target["guid"],
+                    classification_name,
+                    "",
+                    assignment_source,
+                    rule,
+                    cde_id=cde_id,
+                    cde_name=cde_name,
+                )
 
-            if outcome == "assigned":
-                classification_assigned += 1
-            elif outcome == "existing":
-                classification_existing += 1
-            else:
-                classification_failed.append((asset_ref, classification_name, details))
+                target_guid = _safe_text(target.get("guid", ""))
+                if target_guid == primary_guid:
+                    if outcome == "assigned":
+                        classification_assigned += 1
+                    elif outcome == "existing":
+                        classification_existing += 1
+                    else:
+                        classification_failed.append((asset_ref, classification_name, details))
+                else:
+                    if outcome == "assigned":
+                        semantic_field_class_assigned += 1
+                    elif outcome == "existing":
+                        semantic_field_class_existing += 1
+                    else:
+                        semantic_field_class_failed.append((asset_ref, classification_name, details))
 
         if semantic_anchor:
             for class_key in sorted(anchor_classification_dedupe):
@@ -2430,7 +2565,10 @@ else:
             f"unresolved={len(classification_unresolved)} failed={len(classification_failed)} "
             f"anchor_assigned={anchor_classification_assigned} "
             f"anchor_existing={anchor_classification_existing} "
-            f"anchor_failed={len(anchor_classification_failed)}"
+            f"anchor_failed={len(anchor_classification_failed)} "
+            f"semantic_field_assigned={semantic_field_class_assigned} "
+            f"semantic_field_existing={semantic_field_class_existing} "
+            f"semantic_field_failed={len(semantic_field_class_failed)}"
         )
         if classification_unresolved:
             print(f"[Cell 6][WARN] Unresolved CDE classification asset samples: {classification_unresolved[:10]}")
@@ -2447,6 +2585,9 @@ else:
         glossary_rows = []
         glossary_dedupe = set()
         anchor_glossary_dedupe = set()
+        semantic_field_glossary_assigned = 0
+        semantic_field_glossary_existing = 0
+        semantic_field_glossary_failed = []
         for row in glossary_term_manifest:
             asset_ref = _safe_text(row.get("asset_ref", ""))
             term_name = _safe_text(row.get("term_name", ""))
@@ -2482,10 +2623,20 @@ else:
                 )
 
             resolved = _resolve_asset_cached(asset_ref)
-            target = resolved
-            if not target and semantic_anchor:
-                target = semantic_anchor
-            if not target:
+            semantic_field_targets = _resolve_semantic_model_field_targets(token, asset_ref)
+            target_entities = []
+            seen_target_guids = set()
+            if resolved:
+                target_entities.append(resolved)
+                seen_target_guids.add(_safe_text(resolved.get("guid", "")))
+            for semantic_target in semantic_field_targets:
+                semantic_guid = _safe_text(semantic_target.get("guid", ""))
+                if semantic_guid and semantic_guid not in seen_target_guids:
+                    target_entities.append(semantic_target)
+                    seen_target_guids.add(semantic_guid)
+            if not target_entities and semantic_anchor:
+                target_entities.append(semantic_anchor)
+            if not target_entities:
                 if len(glossary_unresolved_assets) < 25:
                     glossary_unresolved_assets.append(asset_ref)
                 continue
@@ -2501,18 +2652,29 @@ else:
                     glossary_unresolved_terms.append(term_name)
                 continue
 
-            outcome, details = _apply_glossary_term(
-                token,
-                target["guid"],
-                term_guid,
-                target.get("entityType", ""),
-            )
-            if outcome == "assigned":
-                glossary_assigned += 1
-            elif outcome == "existing":
-                glossary_existing += 1
-            else:
-                glossary_failed.append((asset_ref, term_name, details))
+            primary_guid = _safe_text(target_entities[0].get("guid", ""))
+            for target in target_entities:
+                outcome, details = _apply_glossary_term(
+                    token,
+                    target["guid"],
+                    term_guid,
+                    target.get("entityType", ""),
+                )
+                target_guid = _safe_text(target.get("guid", ""))
+                if target_guid == primary_guid:
+                    if outcome == "assigned":
+                        glossary_assigned += 1
+                    elif outcome == "existing":
+                        glossary_existing += 1
+                    else:
+                        glossary_failed.append((asset_ref, term_name, details))
+                else:
+                    if outcome == "assigned":
+                        semantic_field_glossary_assigned += 1
+                    elif outcome == "existing":
+                        semantic_field_glossary_existing += 1
+                    else:
+                        semantic_field_glossary_failed.append((asset_ref, term_name, details))
 
         anchor_glossary_assigned = 0
         anchor_glossary_existing = 0
@@ -2546,7 +2708,10 @@ else:
             f"unresolved_terms={len(glossary_unresolved_terms)} failed={len(glossary_failed)} "
             f"anchor_assigned={anchor_glossary_assigned} "
             f"anchor_existing={anchor_glossary_existing} "
-            f"anchor_failed={len(anchor_glossary_failed)}"
+            f"anchor_failed={len(anchor_glossary_failed)} "
+            f"semantic_field_assigned={semantic_field_glossary_assigned} "
+            f"semantic_field_existing={semantic_field_glossary_existing} "
+            f"semantic_field_failed={len(semantic_field_glossary_failed)}"
         )
         if glossary_unresolved_assets:
             print(f"[Cell 6][WARN] Unresolved glossary asset samples: {glossary_unresolved_assets[:10]}")
