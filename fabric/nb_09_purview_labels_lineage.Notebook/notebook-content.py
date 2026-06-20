@@ -2314,7 +2314,8 @@ else:
             if not asset_ref or not classification_name or key in dedupe:
                 continue
             dedupe.add(key)
-            anchor_classification_dedupe.add((classification_name.lower(), cde_id.lower(), cde_name, assignment_source, rule))
+            # Keep canonical classification casing for Atlas typeName matching.
+            anchor_classification_dedupe.add((classification_name, cde_id, cde_name, assignment_source, rule))
 
             classification_rows.append(
                 {
