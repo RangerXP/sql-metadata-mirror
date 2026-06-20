@@ -70,6 +70,13 @@ SEMANTIC_MODEL_NAME = "BrookfieldEnercare"
 SEMANTIC_MODEL_LOGICAL_ID = "d19d7f14-ae22-9fde-462b-dafb983dfb0a"
 SQL_SERVER_FQDN = "sqlserver-sk2wus3.database.windows.net"
 MEASURE_ENTITY_TYPENAME = "EnercareSemanticMeasure"
+EXPECTED_MEASURE_ASSET_REFS = [
+    "BrookfieldEnercare/_Measures/FCR",
+    "BrookfieldEnercare/_Measures/NPS",
+    "BrookfieldEnercare/_Measures/CSAT",
+    "BrookfieldEnercare/_Measures/AvgHandleTime",
+    "BrookfieldEnercare/_Measures/RepeatComplaintRate",
+]
 
 print(f"Purview account: {PURVIEW_ACCOUNT_NAME}")
 print(f"Apply changes: {APPLY_CHANGES}")
@@ -639,6 +646,24 @@ for manifest_row in sensitivity_label_manifest + classification_manifest + gloss
         }
     )
 
+for asset_ref in EXPECTED_MEASURE_ASSET_REFS:
+    qn = _measure_entity_qn(asset_ref)
+    if not qn:
+        continue
+    key = qn.lower()
+    if key in measure_seen:
+        continue
+    measure_seen.add(key)
+    measure_entity_manifest.append(
+        {
+            "asset_ref": asset_ref,
+            "measure_name": _safe_text(asset_ref.split("/")[-1]),
+            "qualified_name": qn,
+            "semantic_model_name": SEMANTIC_MODEL_NAME,
+            "assignment_source": "ExpectedCoreMeasures",
+        }
+    )
+
 print(f"Classification defs prepared: {len(classification_defs)}")
 print(f"Sensitivity label rows prepared: {len(sensitivity_label_manifest)}")
 print(f"CDE manifest rows prepared: {len(cde_classification_manifest)}")
@@ -1005,6 +1030,7 @@ def _build_measure_entity_type_def():
         "superTypes": ["Referenceable"],
         "attributeDefs": [
             {"name": "semanticModelName", "typeName": "string", "isOptional": False},
+            {"name": "semanticModelGuid", "typeName": "string", "isOptional": True},
             {"name": "sourceAssetRef", "typeName": "string", "isOptional": True},
             {"name": "datasetQualifiedName", "typeName": "string", "isOptional": True},
         ],
@@ -1048,6 +1074,13 @@ def _publish_measure_entities(token: str, measure_rows):
         return stats, resolution_map
 
     dataset_qn = _resolve_semantic_dataset_qualified_name(token)
+    dataset_guid = ""
+    dataset_type = ""
+    if dataset_qn:
+        dataset_entity = _find_entity_by_qualified_name(token, dataset_qn)
+        if dataset_entity:
+            dataset_guid = _safe_text(dataset_entity.get("guid", ""))
+            dataset_type = _safe_text(dataset_entity.get("typeName", ""))
     if dataset_qn:
         print(f"[Cell 6] Semantic dataset anchor resolved: {dataset_qn}")
     else:
@@ -1067,6 +1100,9 @@ def _publish_measure_entities(token: str, measure_rows):
                 "guid": _safe_text(existing.get("guid", "")),
                 "entityType": _safe_text(existing.get("typeName", "") or MEASURE_ENTITY_TYPENAME).lower(),
                 "qualifiedName": qn,
+                "semanticModelGuid": dataset_guid,
+                "semanticModelType": _safe_text(dataset_type).lower(),
+                "semanticModelQualifiedName": dataset_qn,
             }
             continue
 
@@ -1078,6 +1114,7 @@ def _publish_measure_entities(token: str, measure_rows):
                         "qualifiedName": qn,
                         "name": measure_name,
                         "semanticModelName": SEMANTIC_MODEL_NAME,
+                        "semanticModelGuid": dataset_guid,
                         "sourceAssetRef": asset_ref,
                         "datasetQualifiedName": dataset_qn,
                         "description": f"Semantic measure governance entity for {SEMANTIC_MODEL_NAME}/{measure_name}",
@@ -1099,6 +1136,9 @@ def _publish_measure_entities(token: str, measure_rows):
                 "guid": _safe_text(refreshed.get("guid", "")),
                 "entityType": _safe_text(refreshed.get("typeName", "") or MEASURE_ENTITY_TYPENAME).lower(),
                 "qualifiedName": qn,
+                "semanticModelGuid": dataset_guid,
+                "semanticModelType": _safe_text(dataset_type).lower(),
+                "semanticModelQualifiedName": dataset_qn,
             }
         else:
             stats["failed"] += 1
