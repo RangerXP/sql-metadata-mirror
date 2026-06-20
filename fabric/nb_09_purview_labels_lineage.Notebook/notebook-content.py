@@ -287,6 +287,7 @@ typedef_payload = {"classificationDefs": classification_defs}
 
 sensitivity_label_manifest = []
 cde_classification_manifest = []
+glossary_term_manifest = []
 if cde_has_sensitivity_label:
     for row in cde_rows:
         label = _normalize_sensitivity_label(getattr(row, "sensitivity_label", None))
@@ -307,6 +308,17 @@ if cde_has_sensitivity_label:
                         "label_name": label,
                         "sensitivity_tier": sensitivity_tier,
                         "protection_policy": protection_policy,
+                        "assignment_source": "CDE",
+                        "rule": cde_id,
+                    }
+                )
+
+            glossary_term = parent_term or cde_name
+            if _safe_text(glossary_term):
+                glossary_term_manifest.append(
+                    {
+                        "asset_ref": token,
+                        "term_name": _safe_text(glossary_term),
                         "assignment_source": "CDE",
                         "rule": cde_id,
                     }
@@ -385,10 +397,14 @@ classification_manifest = [
     if _safe_text(row.get("classification", "")) not in DISALLOWED_CLASSIFICATION_TYPEDEFS
 ]
 
+if not glossary_term_manifest:
+    print("[Cell 3][WARN] No glossary term rows prepared from CDE metadata.")
+
 print(f"Classification defs prepared: {len(classification_defs)}")
 print(f"Sensitivity label rows prepared: {len(sensitivity_label_manifest)}")
 print(f"CDE manifest rows prepared: {len(cde_classification_manifest)}")
 print(f"Classification manifest rows prepared: {len(classification_manifest)}")
+print(f"Glossary term rows prepared: {len(glossary_term_manifest)}")
 print("Classification names prepared:")
 for item in sorted({d.get("name", "") for d in classification_defs if d.get("name", "")}):
     print(f" - {item}")
@@ -518,6 +534,7 @@ mssparkutils.fs.mkdirs(output_root)
 mssparkutils.fs.put(f"{output_root}/classification_typedefs.json", json.dumps(typedef_payload, indent=2), True)
 mssparkutils.fs.put(f"{output_root}/sensitivity_label_manifest.json", json.dumps(sensitivity_label_manifest, indent=2), True)
 mssparkutils.fs.put(f"{output_root}/classification_manifest.json", json.dumps(classification_manifest, indent=2), True)
+mssparkutils.fs.put(f"{output_root}/glossary_term_manifest.json", json.dumps(glossary_term_manifest, indent=2), True)
 mssparkutils.fs.put(f"{output_root}/lineage_edges.json", json.dumps(lineage_edges, indent=2), True)
 
 legacy_typedef_count = sum(
@@ -538,6 +555,7 @@ validation_rows = [
     ("classification_defs_prepared", len(classification_defs), "PASS" if classification_defs else "FAIL"),
     ("sensitivity_label_rows", len(sensitivity_label_manifest), "PASS" if sensitivity_label_manifest else "WARN"),
     ("classification_manifest_rows", len(classification_manifest), "PASS" if classification_manifest else "FAIL"),
+    ("glossary_term_rows", len(glossary_term_manifest), "PASS" if glossary_term_manifest else "WARN"),
     ("lineage_edges_prepared", len(lineage_edges), "PASS" if lineage_edges else "WARN"),
     ("legacy_sensitivity_typedefs_in_payload", legacy_typedef_count, "PASS" if legacy_typedef_count == 0 else "FAIL"),
     ("legacy_sensitivity_classifications_in_manifest", legacy_manifest_count, "PASS" if legacy_manifest_count == 0 else "FAIL"),
@@ -672,7 +690,37 @@ def _classification_query_candidates(asset_ref: str):
     return unique
 
 
+def _asset_ref_to_column_qualified_name(asset_ref: str):
+    raw = _safe_text(asset_ref)
+    if not raw:
+        return ""
+
+    lower = raw.lower()
+    if lower.startswith("mssql://") and "#" in raw:
+        return raw
+
+    if lower.startswith("dbo."):
+        parts = raw.split(".")
+        if len(parts) >= 3:
+            table_name = _safe_text(parts[1])
+            column_name = _safe_text(".".join(parts[2:]))
+            if table_name and column_name:
+                return f"mssql://{SQL_SERVER_FQDN}/sqldemo/dbo/{table_name}#{column_name}"
+
+    return ""
+
+
 def _resolve_asset_for_classification(token: str, asset_ref: str):
+    explicit_column_qn = _asset_ref_to_column_qualified_name(asset_ref)
+    if explicit_column_qn:
+        exact = _find_entity_by_qualified_name(token, explicit_column_qn)
+        if exact:
+            return {
+                "guid": _safe_text(exact.get("guid", "")),
+                "entityType": _safe_text(exact.get("typeName", "")).lower(),
+                "qualifiedName": _safe_text(exact.get("qualifiedName", "")),
+            }
+
     best = None
     best_score = 0
 
@@ -708,14 +756,18 @@ def _resolve_asset_for_classification(token: str, asset_ref: str):
             asset_lower = _safe_text(asset_ref).lower()
             if asset_lower and asset_lower in qn:
                 score += 5
+            if explicit_column_qn and qn == explicit_column_qn.lower():
+                score += 10
             if _safe_text(keywords).lower() in qn:
                 score += 3
             if _safe_text(keywords).lower() == name:
                 score += 2
             if "column" in entity_type:
-                score += 1
+                score += 3
             if "table" in entity_type:
                 score += 1
+            if explicit_column_qn and "table" in entity_type:
+                score -= 2
 
             if score > best_score:
                 best_score = score
@@ -726,6 +778,72 @@ def _resolve_asset_for_classification(token: str, asset_ref: str):
                 }
 
     return best
+
+
+def _resolve_glossary_term_guid(token: str, term_name: str):
+    term_text = _safe_text(term_name)
+    if not term_text:
+        return ""
+
+    status, body = _request(
+        "POST",
+        "/datamap/api/search/query",
+        token,
+        body={"keywords": term_text, "limit": 25},
+        params={"api-version": "2023-09-01"},
+    )
+    if status != 200:
+        return ""
+
+    try:
+        payload = json.loads(body)
+    except Exception:
+        return ""
+
+    target = term_text.lower()
+    for entity in payload.get("value") or []:
+        entity_name = _safe_text(entity.get("name", ""))
+        qn = _safe_text(entity.get("qualifiedName", ""))
+        entity_id = _safe_text(entity.get("id", "") or entity.get("guid", ""))
+        if not entity_id:
+            continue
+        if qn and "@" in qn and entity_name.lower() == target:
+            return entity_id
+
+    return ""
+
+
+def _is_glossary_term_assigned(token: str, term_guid: str, entity_guid: str):
+    status, body = _request("GET", f"/catalog/api/atlas/v2/glossary/terms/{term_guid}/assignedEntities", token)
+    if status != 200:
+        return False
+
+    try:
+        payload = json.loads(body)
+    except Exception:
+        return False
+
+    entities = payload if isinstance(payload, list) else []
+    target_guid = _safe_text(entity_guid)
+    for entity in entities:
+        if _safe_text(entity.get("guid", "")) == target_guid:
+            return True
+    return False
+
+
+def _apply_glossary_term(token: str, entity_guid: str, term_guid: str, entity_type: str = ""):
+    if _is_glossary_term_assigned(token, term_guid, entity_guid):
+        return "existing", ""
+
+    payload = [{"guid": entity_guid, "typeName": _safe_text(entity_type)}]
+    status, body = _request("POST", f"/catalog/api/atlas/v2/glossary/terms/{term_guid}/assignedEntities", token, body=payload)
+    if status in (200, 201, 202, 204):
+        return "assigned", ""
+
+    if _is_glossary_term_assigned(token, term_guid, entity_guid):
+        return "existing", ""
+
+    return "failed", f"HTTP {status} | {body[:300]}"
 
 
 def _apply_classification(
@@ -1631,6 +1749,91 @@ else:
             print(f"[Cell 6][WARN] Unresolved CDE classification asset samples: {classification_unresolved[:10]}")
         if classification_failed:
             print(f"[Cell 6][WARN] First CDE classification failure: {classification_failed[0]}")
+
+        print("[Cell 6] Applying glossary terms from manifest...")
+        glossary_assigned = 0
+        glossary_existing = 0
+        glossary_failed = []
+        glossary_unresolved_assets = []
+        glossary_unresolved_terms = []
+
+        glossary_rows = []
+        glossary_dedupe = set()
+        for row in glossary_term_manifest:
+            asset_ref = _safe_text(row.get("asset_ref", ""))
+            term_name = _safe_text(row.get("term_name", ""))
+            assignment_source = _safe_text(row.get("assignment_source", ""))
+            rule = _safe_text(row.get("rule", ""))
+            key = (asset_ref.lower(), term_name.lower())
+            if not asset_ref or not term_name or key in glossary_dedupe:
+                continue
+            glossary_dedupe.add(key)
+            glossary_rows.append(
+                {
+                    "asset_ref": asset_ref,
+                    "term_name": term_name,
+                    "assignment_source": assignment_source,
+                    "rule": rule,
+                }
+            )
+
+        term_guid_cache = {}
+        total_glossary_rows = len(glossary_rows)
+        print(f"[Cell 6] Glossary term rows to process: {total_glossary_rows}")
+        for index, row in enumerate(glossary_rows, start=1):
+            asset_ref = row["asset_ref"]
+            term_name = row["term_name"]
+
+            if index == 1 or index % 10 == 0 or index == total_glossary_rows:
+                print(
+                    f"[Cell 6] Glossary term progress: {index}/{total_glossary_rows} | "
+                    f"assigned={glossary_assigned} existing={glossary_existing} "
+                    f"unresolved_assets={len(glossary_unresolved_assets)} "
+                    f"unresolved_terms={len(glossary_unresolved_terms)} failed={len(glossary_failed)}"
+                )
+
+            resolved = _resolve_asset_for_classification(token, asset_ref)
+            if not resolved:
+                if len(glossary_unresolved_assets) < 25:
+                    glossary_unresolved_assets.append(asset_ref)
+                continue
+
+            term_key = term_name.lower()
+            term_guid = term_guid_cache.get(term_key, "")
+            if not term_guid:
+                term_guid = _resolve_glossary_term_guid(token, term_name)
+                term_guid_cache[term_key] = term_guid
+
+            if not term_guid:
+                if len(glossary_unresolved_terms) < 25:
+                    glossary_unresolved_terms.append(term_name)
+                continue
+
+            outcome, details = _apply_glossary_term(
+                token,
+                resolved["guid"],
+                term_guid,
+                resolved.get("entityType", ""),
+            )
+            if outcome == "assigned":
+                glossary_assigned += 1
+            elif outcome == "existing":
+                glossary_existing += 1
+            else:
+                glossary_failed.append((asset_ref, term_name, details))
+
+        print(
+            "[Cell 6] Glossary term summary: "
+            f"assigned={glossary_assigned} existing={glossary_existing} "
+            f"unresolved_assets={len(glossary_unresolved_assets)} "
+            f"unresolved_terms={len(glossary_unresolved_terms)} failed={len(glossary_failed)}"
+        )
+        if glossary_unresolved_assets:
+            print(f"[Cell 6][WARN] Unresolved glossary asset samples: {glossary_unresolved_assets[:10]}")
+        if glossary_unresolved_terms:
+            print(f"[Cell 6][WARN] Unresolved glossary term samples: {glossary_unresolved_terms[:10]}")
+        if glossary_failed:
+            print(f"[Cell 6][WARN] First glossary assignment failure: {glossary_failed[0]}")
 
         process_entities, unresolved_edges = _build_lineage_process_entities(token)
         if not process_entities:
