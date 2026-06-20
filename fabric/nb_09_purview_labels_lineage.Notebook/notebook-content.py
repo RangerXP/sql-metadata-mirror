@@ -1318,6 +1318,25 @@ def _resolve_semantic_model_field_targets(token: str, asset_ref: str, limit: int
     else:
         query_candidates.extend([f"{SEMANTIC_MODEL_NAME} {asset_text}", asset_text])
 
+    dataset_qn_cache_key = "_semantic_dataset_anchor_qn_cache"
+    dataset_qn = _safe_text(globals().get(dataset_qn_cache_key, ""))
+    if not dataset_qn:
+        dataset_qn = _safe_text(_resolve_semantic_dataset_qualified_name(token))
+        globals()[dataset_qn_cache_key] = dataset_qn
+
+    dataset_qn_lower = dataset_qn.lower()
+    dataset_id = ""
+    if "/datasets/" in dataset_qn_lower:
+        try:
+            dataset_id = dataset_qn_lower.split("/datasets/", 1)[1].split("/", 1)[0]
+        except Exception:
+            dataset_id = ""
+
+    def _norm_text(value: str):
+        return "".join(ch for ch in _safe_text(value).lower() if ch.isalnum())
+
+    parsed_column_norm = _norm_text(parsed_column_name)
+
     seen_queries = set()
     targets = []
     seen_guids = set()
@@ -1355,13 +1374,16 @@ def _resolve_semantic_model_field_targets(token: str, asset_ref: str, limit: int
             name = _safe_text(entity.get("name", ""))
             qn_lower = qn.lower()
 
-            # Only keep entities that belong to this semantic model path.
-            if "semanticmodels" not in qn_lower or SEMANTIC_MODEL_NAME.lower() not in qn_lower:
+            # Keep entities from either semantic-model qn paths or dataset qn paths.
+            is_semantic_model_path = "semanticmodels" in qn_lower and SEMANTIC_MODEL_NAME.lower() in qn_lower
+            is_dataset_path = bool(dataset_qn_lower and dataset_qn_lower in qn_lower)
+            is_dataset_id_path = bool(dataset_id and f"/datasets/{dataset_id}" in qn_lower)
+            if not (is_semantic_model_path or is_dataset_path or is_dataset_id_path):
                 continue
 
             # Focus on field-level entities where schema grid renders metadata.
             if "column" not in entity_type and parsed_column_name:
-                if name.lower() != parsed_column_name.lower():
+                if _norm_text(name) != parsed_column_norm:
                     continue
 
             seen_guids.add(guid)
