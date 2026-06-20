@@ -61,11 +61,6 @@ PURGE_BEFORE_REWRITE = True
 MANUAL_PURVIEW_BEARER_TOKEN = os.getenv("MANUAL_PURVIEW_BEARER_TOKEN", "").strip()
 AZ_CLI_TIMEOUT_SECONDS = 15
 
-# Optional runtime helper (not persisted unless you save):
-# import os
-# os.environ["MANUAL_PURVIEW_BEARER_TOKEN"] = "PASTE_FRESH_PURVIEW_TOKEN_HERE"
-# MANUAL_PURVIEW_BEARER_TOKEN = os.environ.get("MANUAL_PURVIEW_BEARER_TOKEN", "").strip()
-
 WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
 SQL_SOURCE_NAME = "ENERCARE-SQL-SOURCE"
 FABRIC_SOURCE_NAME = "ENERCARE-FABRIC-SOURCE"
@@ -78,6 +73,26 @@ print(f"Apply changes: {APPLY_CHANGES}")
 print(f"Output root: {OUTPUT_ROOT}")
 
 # Cell 1 complete: Configuration initialized
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Cell 1a: Optional Manual Token Helper (Runtime Only)
+# Purpose: Keep a paste-ready helper block in notebook flow without storing a token in git.
+# Usage: Uncomment these lines, paste a fresh token, run Cell 1a, then run Cell 6.
+
+# import os
+# os.environ["MANUAL_PURVIEW_BEARER_TOKEN"] = "PASTE_FRESH_PURVIEW_TOKEN_HERE"
+# MANUAL_PURVIEW_BEARER_TOKEN = os.environ.get("MANUAL_PURVIEW_BEARER_TOKEN", "").strip()
+
+# Cell 1a complete: Manual token helper available
 
 
 # METADATA ********************
