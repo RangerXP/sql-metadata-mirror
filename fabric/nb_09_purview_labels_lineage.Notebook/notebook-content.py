@@ -1215,7 +1215,31 @@ else:
             pass
 
     if token:
-        token = _ensure_valid_token(token)
+        try:
+            token = _ensure_valid_token(token)
+        except Exception as ex:
+            if fail_on_token_error:
+                raise
+
+            print(f"[WARN] Token validation failed; skipping live publish. Error: {ex}")
+            print("[DRY RUN FALLBACK] Payloads are ready from Cell 5. Retry Cell 6 later or publish outside Fabric runtime.")
+            try:
+                if "output_root" in globals():
+                    marker = {
+                        "event": "purview_token_validation_failed",
+                        "error": str(ex),
+                        "timestamp_utc": int(time.time()),
+                    }
+                    mssparkutils.fs.put(
+                        f"{output_root}/publish_blocked_token_error.json",
+                        json.dumps(marker, indent=2),
+                        True,
+                    )
+            except Exception:
+                pass
+            token = None
+
+    if token:
 
         print("[Cell 6] Applying sensitivity labels from manifest...")
         label_assigned = 0
@@ -1291,10 +1315,24 @@ else:
         typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
         if typedef_status == 401:
             print("[Cell 6][WARN] Typedef publish returned 401; refreshing token and retrying once.")
-            token = _ensure_valid_token(token)
-            typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
+            try:
+                token = _ensure_valid_token(token)
+                typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
+            except Exception as ex:
+                if fail_on_token_error:
+                    raise
+                print(f"[WARN] Token refresh failed during typedef publish; skipping remaining live publish. Error: {ex}")
+                print("[DRY RUN FALLBACK] Payloads are ready from Cell 5. Retry Cell 6 later or publish outside Fabric runtime.")
+                typedef_status = 401
+                typedef_body = f"token refresh failed: {ex}"
         if typedef_status not in (200, 201) and "already exists" not in typedef_body.lower():
-            raise RuntimeError(f"Classification typedef publish failed: HTTP {typedef_status} | {typedef_body[:500]}")
+            if fail_on_token_error:
+                raise RuntimeError(f"Classification typedef publish failed: HTTP {typedef_status} | {typedef_body[:500]}")
+            print(
+                f"[WARN] Classification typedef publish failed (HTTP {typedef_status}); "
+                "skipping CDE classification apply for this run."
+            )
+            classification_manifest = []
         print(f"Classification typedef publish result: HTTP {typedef_status}")
 
         print("[Cell 6] Applying CDE classifications from manifest...")
