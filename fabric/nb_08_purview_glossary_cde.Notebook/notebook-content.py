@@ -44,6 +44,7 @@ def _env_bool(name: str, default: bool) -> bool:
 
 METADATA_LAKEHOUSE = "lh_metadata"
 METADATA_SCHEMA = "metadata"
+SEMANTIC_MODEL_NAME = "BrookfieldEnercare"
 PURVIEW_ACCOUNT_NAME = os.getenv("PURVIEW_ACCOUNT_NAME", "Purview-West3")
 PURVIEW_API_BASE_URL = os.getenv("PURVIEW_API_BASE_URL", "").strip()
 #PURVIEW_ACCESS_TOKEN = os.getenv("PURVIEW_ACCESS_TOKEN", "").strip()
@@ -530,6 +531,88 @@ def _search_purview_assets(token: str, keywords: str, limit: int = 50):
     return entities if isinstance(entities, list) else []
 
 
+def _resolve_semantic_model_anchor(auth_token: str):
+    candidates = _search_purview_assets(auth_token, SEMANTIC_MODEL_NAME, limit=50)
+    best = None
+    best_score = 0
+    for entity in candidates:
+        entity_type = _safe_text(entity.get("entityType", "") or entity.get("typeName", "")).lower()
+        guid = _safe_text(entity.get("id", "") or entity.get("guid", ""))
+        name = _safe_text(entity.get("name", ""))
+        qualified_name = _safe_text(entity.get("qualifiedName", ""))
+        if not guid:
+            continue
+
+        score = 0
+        if name.lower() == SEMANTIC_MODEL_NAME.lower():
+            score += 8
+        if SEMANTIC_MODEL_NAME.lower() in qualified_name.lower():
+            score += 4
+        if entity_type in {"powerbi_dataset", "powerbi_semantic_model", "fabric_semantic_model"}:
+            score += 8
+        elif "semantic" in entity_type or "dataset" in entity_type:
+            score += 4
+
+        if score > best_score:
+            best_score = score
+            best = {
+                "guid": guid,
+                "entityType": entity_type,
+                "name": name,
+                "qualifiedName": qualified_name,
+            }
+
+    return best if best_score > 0 else None
+
+
+def _set_entity_owner(entity_guid: str, owner_upn: str, auth_token: str):
+    owner = _safe_text(owner_upn)
+    if not owner:
+        return "skipped", "owner is empty"
+
+    status, body = _request("GET", f"/catalog/api/atlas/v2/entity/guid/{entity_guid}", auth_token)
+    if status != 200:
+        return "failed", f"HTTP {status} | {body[:220]}"
+
+    try:
+        payload = json.loads(body)
+        entity = payload.get("entity") if isinstance(payload, dict) else {}
+        attributes = entity.get("attributes") if isinstance(entity.get("attributes"), dict) else {}
+    except Exception:
+        return "failed", "entity read payload was not valid JSON"
+
+    current_owner = _safe_text(attributes.get("owner", ""))
+    if current_owner.lower() == owner.lower():
+        return "existing", ""
+
+    update_payload = {
+        "entity": {
+            "typeName": _safe_text(entity.get("typeName", "")),
+            "guid": _safe_text(entity.get("guid", entity_guid)) or entity_guid,
+            "attributes": {
+                "qualifiedName": _safe_text(attributes.get("qualifiedName", "")),
+                "name": _safe_text(attributes.get("name", "")),
+                "owner": owner,
+            },
+        }
+    }
+
+    attempts = [
+        ("PUT", f"/catalog/api/atlas/v2/entity/guid/{entity_guid}"),
+        ("PUT", "/catalog/api/atlas/v2/entity"),
+        ("POST", "/catalog/api/atlas/v2/entity"),
+    ]
+    for method, path in attempts:
+        update_status, update_body = _request(method, path, auth_token, body=update_payload)
+        if update_status in (200, 201, 204):
+            return "assigned", ""
+        if update_status in (400, 404, 405):
+            continue
+        return "failed", f"{method} {path} -> HTTP {update_status} | {update_body[:220]}"
+
+    return "failed", "no compatible endpoint accepted owner update"
+
+
 def _parse_bound_asset_token(token_text: str):
     token = _safe_text(token_text)
     lower = token.lower()
@@ -856,6 +939,40 @@ else:
     )
 
     print("Starting glossary-to-asset association...")
+    semantic_anchor = _resolve_semantic_model_anchor(token)
+    if semantic_anchor:
+        print(
+            "Semantic-model anchor resolved for fallback association: "
+            f"{semantic_anchor['name']} ({semantic_anchor['guid']})"
+        )
+    else:
+        print(
+            "[WARN] Semantic-model anchor not resolved; glossary associations will only target resolved bound assets."
+        )
+
+    # Promote at least one governed owner onto the semantic model asset for first-class contact visibility.
+    if semantic_anchor:
+        owner_candidates = []
+        for term in term_payloads:
+            payload = term.get("payload", {})
+            owner = _safe_text(payload.get("owner_upn", ""))
+            steward = _safe_text(payload.get("steward_upn", ""))
+            if owner:
+                owner_candidates.append(owner)
+            if steward:
+                owner_candidates.append(steward)
+        owner_applied = False
+        for owner in owner_candidates:
+            owner_outcome, owner_details = _set_entity_owner(semantic_anchor["guid"], owner, token)
+            if owner_outcome in ("assigned", "existing"):
+                owner_applied = True
+                print(f"Semantic-model owner update outcome: {owner_outcome} ({owner})")
+                break
+            if owner_details:
+                print(f"[WARN] Semantic-model owner update failed for {owner}: {owner_details}")
+        if not owner_applied and owner_candidates:
+            print("[WARN] Could not apply owner/steward contact onto semantic-model anchor.")
+
     term_guid_index = _build_term_guid_index(resolved_glossary_guid, token)
     print(f"Glossary term index loaded: {len(term_guid_index)} key(s)")
     association_attempts = 0
@@ -865,6 +982,7 @@ else:
     unresolved_term_count = 0
     unresolved_asset_tokens = []
     failed_associations = []
+    fallback_anchor_links = 0
 
     for term in term_payloads:
         term_code = term["term_code"]
@@ -892,7 +1010,13 @@ else:
                     entity_guids.append(entity_guid)
                     seen_guids.add(entity_guid)
             else:
-                if len(unresolved_asset_tokens) < 25:
+                if semantic_anchor and semantic_anchor.get("guid"):
+                    anchor_guid = semantic_anchor["guid"]
+                    if anchor_guid not in seen_guids:
+                        entity_guids.append(anchor_guid)
+                        seen_guids.add(anchor_guid)
+                        fallback_anchor_links += 1
+                elif len(unresolved_asset_tokens) < 25:
                     unresolved_asset_tokens.append(f"{term_code}:{asset_token}")
 
         for entity_guid in entity_guids:
@@ -911,7 +1035,8 @@ else:
         "Glossary association summary: "
         f"attempted={association_attempts} assigned={association_assigned} "
         f"existing={association_existing} skipped={association_skipped} unresolved_terms={unresolved_term_count} "
-        f"unresolved_tokens={len(unresolved_asset_tokens)} failed={len(failed_associations)}"
+        f"unresolved_tokens={len(unresolved_asset_tokens)} anchor_fallback_links={fallback_anchor_links} "
+        f"failed={len(failed_associations)}"
     )
     if unresolved_asset_tokens:
         print(f"Unresolved asset token samples: {unresolved_asset_tokens[:10]}")

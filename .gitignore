@@ -19,6 +19,7 @@ credentials.json
 Thumbs.db
 .vscode/mcp.json
 .vscode/settings.json
+.local/
 
 # Fabric / notebook outputs
 .ipynb_checkpoints/

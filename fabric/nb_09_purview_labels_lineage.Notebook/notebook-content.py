@@ -1067,6 +1067,64 @@ def _resolve_semantic_dataset_qualified_name(token: str):
     return ""
 
 
+def _resolve_semantic_model_anchor(token: str):
+    dataset_qn = _resolve_semantic_dataset_qualified_name(token)
+    if dataset_qn:
+        entity = _find_entity_by_qualified_name(token, dataset_qn)
+        if entity:
+            return {
+                "guid": _safe_text(entity.get("guid", "")),
+                "entityType": _safe_text(entity.get("typeName", "") or entity.get("entityType", "")).lower(),
+                "qualifiedName": _safe_text(entity.get("qualifiedName", "") or dataset_qn),
+            }
+
+    status, body = _request(
+        "POST",
+        "/datamap/api/search/query",
+        token,
+        body={"keywords": SEMANTIC_MODEL_NAME, "limit": 25},
+        params={"api-version": "2023-09-01"},
+    )
+    if status != 200:
+        return None
+
+    try:
+        payload = json.loads(body)
+    except Exception:
+        return None
+
+    best = None
+    best_score = 0
+    for entity in payload.get("value") or []:
+        guid = _safe_text(entity.get("id", "") or entity.get("guid", ""))
+        if not guid:
+            continue
+
+        name = _safe_text(entity.get("name", ""))
+        qn = _safe_text(entity.get("qualifiedName", ""))
+        entity_type = _safe_text(entity.get("entityType", "") or entity.get("typeName", "")).lower()
+
+        score = 0
+        if name.lower() == SEMANTIC_MODEL_NAME.lower():
+            score += 8
+        if SEMANTIC_MODEL_NAME.lower() in qn.lower():
+            score += 4
+        if entity_type in {"powerbi_dataset", "fabric_semantic_model", "powerbi_semantic_model"}:
+            score += 8
+        elif "semantic" in entity_type or "dataset" in entity_type:
+            score += 4
+
+        if score > best_score:
+            best_score = score
+            best = {
+                "guid": guid,
+                "entityType": entity_type,
+                "qualifiedName": qn,
+            }
+
+    return best if best_score > 0 else None
+
+
 def _publish_measure_entities(token: str, measure_rows):
     stats = {"created": 0, "existing": 0, "failed": 0}
     resolution_map = {}
@@ -2039,6 +2097,14 @@ else:
     if token:
 
         measure_resolution_map = {}
+        semantic_anchor = _resolve_semantic_model_anchor(token)
+        if semantic_anchor:
+            print(
+                "[Cell 6] Semantic-model anchor resolved for first-class metadata attachment: "
+                f"{semantic_anchor.get('qualifiedName', '')} ({semantic_anchor.get('guid', '')})"
+            )
+        else:
+            print("[Cell 6][WARN] Semantic-model anchor not resolved; metadata will only attach to resolved source assets.")
 
         if measure_entity_manifest:
             print(f"[Cell 6] Publishing semantic measure typedef ({MEASURE_ENTITY_TYPENAME})...")
@@ -2086,9 +2152,13 @@ else:
         label_existing = 0
         label_failed = []
         label_unresolved = []
+        anchor_label_assigned = 0
+        anchor_label_existing = 0
+        anchor_label_failed = []
 
         label_dedupe = set()
         label_rows = []
+        anchor_label_dedupe = set()
         for row in sensitivity_label_manifest:
             asset_ref = _safe_text(row.get("asset_ref", ""))
             label_name = _safe_text(row.get("label_name", ""))
@@ -2101,6 +2171,7 @@ else:
             if not asset_ref or not label_name or key in label_dedupe:
                 continue
             label_dedupe.add(key)
+            anchor_label_dedupe.add(label_name.lower())
 
             label_rows.append(
                 {
@@ -2155,12 +2226,16 @@ else:
                 )
 
             resolved = _resolve_asset_cached(asset_ref)
-            if not resolved:
+            target = resolved
+            if not target and semantic_anchor:
+                target = semantic_anchor
+
+            if not target:
                 if len(label_unresolved) < 25:
                     label_unresolved.append(asset_ref)
                 continue
 
-            outcome, details = _apply_sensitivity_label(token, resolved["guid"], label_name)
+            outcome, details = _apply_sensitivity_label(token, target["guid"], label_name)
 
             if outcome == "assigned":
                 label_assigned += 1
@@ -2169,10 +2244,22 @@ else:
             else:
                 label_failed.append((asset_ref, label_name, details))
 
+        if semantic_anchor:
+            for label_name_lower in sorted(anchor_label_dedupe):
+                outcome, details = _apply_sensitivity_label(token, semantic_anchor["guid"], label_name_lower)
+                if outcome == "assigned":
+                    anchor_label_assigned += 1
+                elif outcome == "existing":
+                    anchor_label_existing += 1
+                else:
+                    anchor_label_failed.append((label_name_lower, details))
+
         print(
             "[Cell 6] Sensitivity label summary: "
             f"assigned={label_assigned} existing={label_existing} "
-            f"unresolved={len(label_unresolved)} failed={len(label_failed)}"
+            f"unresolved={len(label_unresolved)} failed={len(label_failed)} "
+            f"anchor_assigned={anchor_label_assigned} anchor_existing={anchor_label_existing} "
+            f"anchor_failed={len(anchor_label_failed)}"
         )
         if label_unresolved:
             print(f"[Cell 6][WARN] Unresolved sensitivity label asset samples: {label_unresolved[:10]}")
@@ -2208,9 +2295,13 @@ else:
         classification_existing = 0
         classification_failed = []
         classification_unresolved = []
+        anchor_classification_assigned = 0
+        anchor_classification_existing = 0
+        anchor_classification_failed = []
 
         dedupe = set()
         classification_rows = []
+        anchor_classification_dedupe = set()
         for row in classification_manifest:
             asset_ref = _safe_text(row.get("asset_ref", ""))
             classification_name = _safe_text(row.get("classification", ""))
@@ -2223,6 +2314,7 @@ else:
             if not asset_ref or not classification_name or key in dedupe:
                 continue
             dedupe.add(key)
+            anchor_classification_dedupe.add((classification_name.lower(), cde_id.lower(), cde_name, assignment_source, rule))
 
             classification_rows.append(
                 {
@@ -2281,14 +2373,17 @@ else:
                 )
 
             resolved = _resolve_asset_cached(asset_ref)
-            if not resolved:
+            target = resolved
+            if not target and semantic_anchor:
+                target = semantic_anchor
+            if not target:
                 if len(classification_unresolved) < 25:
                     classification_unresolved.append(asset_ref)
                 continue
 
             outcome, details = _apply_classification(
                 token,
-                resolved["guid"],
+                target["guid"],
                 classification_name,
                 "",
                 assignment_source,
@@ -2304,10 +2399,37 @@ else:
             else:
                 classification_failed.append((asset_ref, classification_name, details))
 
+        if semantic_anchor:
+            for class_key in sorted(anchor_classification_dedupe):
+                class_name = class_key[0]
+                class_cde_id = class_key[1]
+                class_cde_name = class_key[2]
+                class_assignment_source = class_key[3]
+                class_rule = class_key[4]
+                outcome, details = _apply_classification(
+                    token,
+                    semantic_anchor["guid"],
+                    class_name,
+                    "",
+                    class_assignment_source,
+                    class_rule,
+                    cde_id=class_cde_id,
+                    cde_name=class_cde_name,
+                )
+                if outcome == "assigned":
+                    anchor_classification_assigned += 1
+                elif outcome == "existing":
+                    anchor_classification_existing += 1
+                else:
+                    anchor_classification_failed.append((class_name, details))
+
         print(
             "[Cell 6] CDE classification summary: "
             f"assigned={classification_assigned} existing={classification_existing} "
-            f"unresolved={len(classification_unresolved)} failed={len(classification_failed)}"
+            f"unresolved={len(classification_unresolved)} failed={len(classification_failed)} "
+            f"anchor_assigned={anchor_classification_assigned} "
+            f"anchor_existing={anchor_classification_existing} "
+            f"anchor_failed={len(anchor_classification_failed)}"
         )
         if classification_unresolved:
             print(f"[Cell 6][WARN] Unresolved CDE classification asset samples: {classification_unresolved[:10]}")
@@ -2323,6 +2445,7 @@ else:
 
         glossary_rows = []
         glossary_dedupe = set()
+        anchor_glossary_dedupe = set()
         for row in glossary_term_manifest:
             asset_ref = _safe_text(row.get("asset_ref", ""))
             term_name = _safe_text(row.get("term_name", ""))
@@ -2332,6 +2455,7 @@ else:
             if not asset_ref or not term_name or key in glossary_dedupe:
                 continue
             glossary_dedupe.add(key)
+            anchor_glossary_dedupe.add(term_name.lower())
             glossary_rows.append(
                 {
                     "asset_ref": asset_ref,
@@ -2357,7 +2481,10 @@ else:
                 )
 
             resolved = _resolve_asset_cached(asset_ref)
-            if not resolved:
+            target = resolved
+            if not target and semantic_anchor:
+                target = semantic_anchor
+            if not target:
                 if len(glossary_unresolved_assets) < 25:
                     glossary_unresolved_assets.append(asset_ref)
                 continue
@@ -2375,9 +2502,9 @@ else:
 
             outcome, details = _apply_glossary_term(
                 token,
-                resolved["guid"],
+                target["guid"],
                 term_guid,
-                resolved.get("entityType", ""),
+                target.get("entityType", ""),
             )
             if outcome == "assigned":
                 glossary_assigned += 1
@@ -2386,11 +2513,39 @@ else:
             else:
                 glossary_failed.append((asset_ref, term_name, details))
 
+        anchor_glossary_assigned = 0
+        anchor_glossary_existing = 0
+        anchor_glossary_failed = []
+        if semantic_anchor:
+            for term_name_lower in sorted(anchor_glossary_dedupe):
+                term_guid = term_guid_cache.get(term_name_lower, "")
+                if not term_guid:
+                    term_guid = _resolve_glossary_term_guid(token, term_name_lower)
+                    term_guid_cache[term_name_lower] = term_guid
+                if not term_guid:
+                    continue
+
+                outcome, details = _apply_glossary_term(
+                    token,
+                    semantic_anchor["guid"],
+                    term_guid,
+                    semantic_anchor.get("entityType", ""),
+                )
+                if outcome == "assigned":
+                    anchor_glossary_assigned += 1
+                elif outcome == "existing":
+                    anchor_glossary_existing += 1
+                else:
+                    anchor_glossary_failed.append((term_name_lower, details))
+
         print(
             "[Cell 6] Glossary term summary: "
             f"assigned={glossary_assigned} existing={glossary_existing} "
             f"unresolved_assets={len(glossary_unresolved_assets)} "
-            f"unresolved_terms={len(glossary_unresolved_terms)} failed={len(glossary_failed)}"
+            f"unresolved_terms={len(glossary_unresolved_terms)} failed={len(glossary_failed)} "
+            f"anchor_assigned={anchor_glossary_assigned} "
+            f"anchor_existing={anchor_glossary_existing} "
+            f"anchor_failed={len(anchor_glossary_failed)}"
         )
         if glossary_unresolved_assets:
             print(f"[Cell 6][WARN] Unresolved glossary asset samples: {glossary_unresolved_assets[:10]}")

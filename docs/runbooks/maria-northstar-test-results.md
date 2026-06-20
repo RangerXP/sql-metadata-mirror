@@ -29,3 +29,11 @@ Note: The cases below require live execution through the Data Agent runtime. Thi
 - Pack submission: Complete
 - Case execution: In progress (live runtime unstable; Cases 01-02 captured)
 - Captured case outcomes: 2/10 (Case 01 retested with model-anchored prompt; now Pass)
+
+## Case 01 Evidence Snapshot (Latest Retest)
+- Runtime completion: 4 steps completed
+- Customer view surfaced: Maria Castellanos, EC18374622, Markham, L4G 2H9, Active
+- Service view surfaced: Request 2026051142 (Emergency, InProgress), SLA breached, pending-tech dispatch note
+- Billing view surfaced: INV-MARIA-202606 (MonthlyCharge 89.95, Posted) and CR-MARIA-SLA-202606 (Credit -14.99, Posted)
+- Sentiment view surfaced: no recent sentiment/intent/escalation rows found in current model slice (flagged as missing evidence)
+- Decision surfaced: credit-first remedy, not refund-first, with owners (GTA North dispatch supervisor and Billing Support) and 24-hour callback SLA
