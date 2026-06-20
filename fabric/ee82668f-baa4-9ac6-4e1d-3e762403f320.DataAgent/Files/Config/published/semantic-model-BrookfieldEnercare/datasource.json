@@ -1,6 +1,6 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/dataSource/1.0.0/schema.json",
-  "artifactId": "d19d7f14-ae22-9fde-462b-dafb983dfb0a",
+  "artifactId": "8cb6f6a6-6a9c-4560-9f28-17a1dc4a921c",
   "workspaceId": "b976cac2-7754-4061-88c2-61c0ac016a99",
   "dataSourceInstructions": null,
   "displayName": "BrookfieldEnercare",
