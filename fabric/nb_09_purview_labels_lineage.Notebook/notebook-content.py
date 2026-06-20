@@ -157,54 +157,123 @@ def _split_tokens(raw_value):
 
 
 CDE_CLASSIFICATION_NAME = "EnercareCDE"
+NORTHSTAR_CLASSIFICATIONS = {
+    "EnercareBilling": "Billing",
+    "EnercareExecutive": "Executive",
+    "EnercareCustomer": "Customer",
+    "EnercareServiceEncounter": "ServiceEncounter",
+    "EnercareKPIAnalyst": "KPIAnalyst",
+}
+
+SENSITIVITY_LABEL_CANONICAL = {
+    "general": "Internal",
+    "internal": "Internal",
+    "executive kpi": "Internal",
+    "confidential": "Confidential",
+    "operations sensitive": "Confidential",
+    "governance admin": "Confidential",
+    "highly confidential": "Highly Confidential",
+    "pci restricted": "Highly Confidential",
+    "privacy restricted": "Highly Confidential",
+}
+
+CANONICAL_LABEL_POLICY = {
+    "Internal": "Internal business use; broad collaboration allowed.",
+    "Confidential": "Restricted to approved internal teams; governance controls required.",
+    "Highly Confidential": "Strictly restricted regulated data; explicit approval and enhanced controls required.",
+}
+
+
+def _normalize_sensitivity_label(raw_label: str) -> str:
+    text = _safe_text(raw_label)
+    if not text:
+        return ""
+    return SENSITIVITY_LABEL_CANONICAL.get(text.lower(), text)
+
+
+def _classification_def(name: str, description: str):
+    return {
+        "category": "CLASSIFICATION",
+        "name": name,
+        "description": description,
+        "attributeDefs": [
+            {"name": "cde_id", "typeName": "string", "isOptional": True},
+            {"name": "cde_name", "typeName": "string", "isOptional": True},
+            {"name": "assignment_source", "typeName": "string", "isOptional": True},
+            {"name": "rule", "typeName": "string", "isOptional": True},
+        ],
+    }
+
+
+def _derive_northstar_classes(asset_ref: str, cde_id: str, cde_name: str, parent_term: str, owner_role: str):
+    text = " ".join(
+        [
+            _safe_text(asset_ref).lower(),
+            _safe_text(cde_id).lower(),
+            _safe_text(cde_name).lower(),
+            _safe_text(parent_term).lower(),
+            _safe_text(owner_role).lower(),
+        ]
+    )
+
+    classes = set()
+    if any(x in text for x in ["billing", "contract", "pan", "bank", "payment", "finance"]):
+        classes.add("EnercareBilling")
+    if any(x in text for x in ["customer", "consent", "complaint", "sin", "dob", "pii"]):
+        classes.add("EnercareCustomer")
+    if any(x in text for x in ["service_request", "service_requests", "service_account", "service_accounts", "service_zone", "service_zones", "svc", "encounter", "interaction", "work order"]):
+        classes.add("EnercareServiceEncounter")
+    if any(x in text for x in ["_measures", "/measures/", "kpi", "fcr", "csat", "nps", "aht", "sla", "renewal"]):
+        classes.add("EnercareKPIAnalyst")
+    if any(x in text for x in ["leadership", "executive", "report", "semanticmodel", "brookfieldenercare.report"]):
+        classes.add("EnercareExecutive")
+
+    return sorted(classes)
 
 labels = set()
 label_policy_by_name = {}
 cde_has_sensitivity_label = "sensitivity_label" in cde_df.columns
 if cde_has_sensitivity_label:
     for row in cde_df.select("sensitivity_label").distinct().collect():
-        label = _safe_text(getattr(row, "sensitivity_label", None))
+        label = _normalize_sensitivity_label(getattr(row, "sensitivity_label", None))
         if label:
             labels.add(label)
 if labels_df is not None and "label_name" in labels_df.columns:
     for row in labels_df.collect():
-        label = _safe_text(getattr(row, "label_name", None))
+        raw_label = _safe_text(getattr(row, "label_name", None))
+        label = _normalize_sensitivity_label(raw_label)
         if label:
             labels.add(label)
+            source_policy = _safe_text(getattr(row, "protection_policy", None))
             label_policy_by_name[label.lower()] = {
-                "sensitivity_tier": _safe_text(getattr(row, "sensitivity_tier", None)) or label,
-                "protection_policy": _safe_text(getattr(row, "protection_policy", None)),
+                "sensitivity_tier": _normalize_sensitivity_label(getattr(row, "sensitivity_tier", None)) or label,
+                "protection_policy": source_policy or CANONICAL_LABEL_POLICY.get(label, ""),
             }
 
 if not labels:
     labels.add("Internal")
 
-classification_defs = [
-    {
-        "category": "CLASSIFICATION",
-        "name": CDE_CLASSIFICATION_NAME,
-        "description": "CDE",
-        "attributeDefs": [
-            {"name": "cde_id", "typeName": "string", "isOptional": True},
-            {"name": "cde_name", "typeName": "string", "isOptional": True},
-            {"name": "assignment_source", "typeName": "string", "isOptional": True},
-        ],
-    }
-]
+cde_rows = cde_df.collect()
+
+classification_defs = [_classification_def(CDE_CLASSIFICATION_NAME, "CDE")]
+for class_name, class_desc in NORTHSTAR_CLASSIFICATIONS.items():
+    classification_defs.append(_classification_def(class_name, class_desc))
 
 typedef_payload = {"classificationDefs": classification_defs}
 
 sensitivity_label_manifest = []
 cde_classification_manifest = []
 if cde_has_sensitivity_label:
-    for row in cde_df.collect():
-        label = _safe_text(getattr(row, "sensitivity_label", None))
+    for row in cde_rows:
+        label = _normalize_sensitivity_label(getattr(row, "sensitivity_label", None))
         cde_id = _safe_text(getattr(row, "cde_id", None) or getattr(row, "cde_code", None) or getattr(row, "cde_name", None))
         cde_name = _safe_text(getattr(row, "cde_name", None) or cde_id)
+        parent_term = _safe_text(getattr(row, "parent_glossary_term", None))
+        owner_role = _safe_text(getattr(row, "owner_role", None))
 
         policy = label_policy_by_name.get(label.lower(), {}) if label else {}
         sensitivity_tier = _safe_text(policy.get("sensitivity_tier", "")) or label
-        protection_policy = _safe_text(policy.get("protection_policy", ""))
+        protection_policy = _safe_text(policy.get("protection_policy", "")) or CANONICAL_LABEL_POLICY.get(label, "")
 
         for token in _split_tokens(getattr(row, "bound_columns", None)):
             if label:
@@ -232,16 +301,32 @@ if cde_has_sensitivity_label:
                     "cde_name": cde_name,
                 }
             )
+
+            for northstar_class in _derive_northstar_classes(token, cde_id, cde_name, parent_term, owner_role):
+                cde_classification_manifest.append(
+                    {
+                        "asset_ref": token,
+                        "classification": northstar_class,
+                        "label_name": "",
+                        "sensitivity_tier": "",
+                        "protection_policy": "",
+                        "assignment_source": "NorthStar",
+                        "rule": f"{cde_id}:{northstar_class}",
+                        "cde_id": cde_id,
+                        "cde_name": cde_name,
+                    }
+                )
 else:
     print("[Cell 3] cdes.sensitivity_label not found; using label_assignments as sensitivity source.")
 
 if labels_df is not None:
     for row in labels_df.collect():
-        label = _safe_text(getattr(row, "label_name", None))
+        raw_label = _safe_text(getattr(row, "label_name", None))
+        label = _normalize_sensitivity_label(raw_label)
         assets = _safe_text(getattr(row, "applies_to_asset_ids", None) or getattr(row, "enforcement_target", None))
-        rule = _safe_text(getattr(row, "assignment_rule", None))
-        sensitivity_tier = _safe_text(getattr(row, "sensitivity_tier", None)) or label
-        protection_policy = _safe_text(getattr(row, "protection_policy", None))
+        rule = _safe_text(getattr(row, "assignment_rule", None) or getattr(row, "label_id", None) or raw_label)
+        sensitivity_tier = _normalize_sensitivity_label(getattr(row, "sensitivity_tier", None)) or label
+        protection_policy = _safe_text(getattr(row, "protection_policy", None)) or CANONICAL_LABEL_POLICY.get(label, "")
         for token in _split_tokens(assets):
             sensitivity_label_manifest.append(
                 {
@@ -254,12 +339,30 @@ if labels_df is not None:
                 }
             )
 
+            for northstar_class in _derive_northstar_classes(token, rule, label, "", ""):
+                cde_classification_manifest.append(
+                    {
+                        "asset_ref": token,
+                        "classification": northstar_class,
+                        "label_name": "",
+                        "sensitivity_tier": "",
+                        "protection_policy": "",
+                        "assignment_source": "LabelPolicy-NorthStar",
+                        "rule": rule,
+                        "cde_id": "",
+                        "cde_name": label,
+                    }
+                )
+
 classification_manifest = cde_classification_manifest
 
 print(f"Classification defs prepared: {len(classification_defs)}")
 print(f"Sensitivity label rows prepared: {len(sensitivity_label_manifest)}")
 print(f"CDE manifest rows prepared: {len(cde_classification_manifest)}")
 print(f"Classification manifest rows prepared: {len(classification_manifest)}")
+print("Classification names prepared:")
+for item in sorted({d.get("name", "") for d in classification_defs if d.get("name", "")}):
+    print(f" - {item}")
 
 # Cell 3 complete: Sensitivity labels and CDE classification manifests built
 
