@@ -293,6 +293,18 @@ if not labels:
 
 cde_rows = cde_df.collect()
 
+glossary_term_code_to_name = {}
+if glossary_df is not None:
+    glossary_cols = {c.lower(): c for c in glossary_df.columns}
+    code_col = glossary_cols.get("term_code")
+    name_col = glossary_cols.get("term_name") or glossary_cols.get("name")
+    if code_col and name_col:
+        for row in glossary_df.collect():
+            code = _safe_text(getattr(row, code_col, None)).upper()
+            name = _safe_text(getattr(row, name_col, None))
+            if code and name:
+                glossary_term_code_to_name[code] = name
+
 classification_defs = [_classification_def(CDE_CLASSIFICATION_NAME, "CDE")]
 for class_name, class_desc in NORTHSTAR_CLASSIFICATIONS.items():
     classification_defs.append(_classification_def(class_name, class_desc))
@@ -333,6 +345,7 @@ for row in cde_rows:
             )
 
         glossary_term = parent_term or cde_name
+        glossary_term = glossary_term_code_to_name.get(_safe_text(glossary_term).upper(), glossary_term)
         if _safe_text(glossary_term):
             glossary_term_manifest.append(
                 {
@@ -889,6 +902,8 @@ def _resolve_glossary_term_guid(token: str, term_name: str):
     if not term_text:
         return ""
 
+    term_text = glossary_term_code_to_name.get(term_text.upper(), term_text)
+
     status, body = _request(
         "POST",
         "/datamap/api/search/query",
@@ -911,7 +926,7 @@ def _resolve_glossary_term_guid(token: str, term_name: str):
         entity_id = _safe_text(entity.get("id", "") or entity.get("guid", ""))
         if not entity_id:
             continue
-        if qn and "@" in qn and entity_name.lower() == target:
+        if qn and "@" in qn and (entity_name.lower() == target or target in entity_name.lower()):
             return entity_id
 
     return ""
@@ -1088,11 +1103,23 @@ def _apply_asset_description(token: str, entity_guid: str, description: str):
         }
     }
 
-    put_status, put_body = _request("PUT", "/catalog/api/atlas/v2/entity", token, body=update_payload)
-    if put_status in (200, 201, 204):
-        return "assigned", ""
+    attempts = [
+        ("PUT", f"/catalog/api/atlas/v2/entity/guid/{entity_guid}", update_payload),
+        ("PUT", "/catalog/api/atlas/v2/entity", update_payload),
+        ("POST", "/catalog/api/atlas/v2/entity", update_payload),
+    ]
 
-    return "failed", f"HTTP {put_status} | {put_body[:300]}"
+    last_error = ""
+    for method, path, payload in attempts:
+        status, body = _request(method, path, token, body=payload)
+        if status in (200, 201, 204):
+            return "assigned", ""
+        if status in (400, 404, 405):
+            last_error = f"{method} {path} -> HTTP {status} | {body[:220]}"
+            continue
+        return "failed", f"{method} {path} -> HTTP {status} | {body[:300]}"
+
+    return "failed", last_error or "No compatible endpoint accepted asset description update."
 
 
 def _purge_classification(token: str, entity_guid: str, classification_name: str):
