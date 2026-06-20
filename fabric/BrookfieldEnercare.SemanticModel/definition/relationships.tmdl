@@ -68,3 +68,8 @@ relationship fct_cc_transcript_turns_interaction_id_fct_cc_interactions_interact
 	fromColumn: fct_cc_transcript_turns.interaction_id
 	toColumn: fct_cc_interactions.interaction_id
 
+relationship fct_service_request_NormalizedAccountKey_dim_customer_NormalizedAccountKey
+	isActive: false
+	fromColumn: fct_service_request.NormalizedAccountKey
+	toColumn: dim_customer.NormalizedAccountKey
+

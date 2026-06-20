@@ -34,6 +34,12 @@ table fct_service_request
 
 		annotation SummarizationSetBy = Automatic
 
+	/// Base account key used to match customer records even when service account keys include "-SVC".
+	column NormalizedAccountKey = UPPER(SUBSTITUTE(RELATED(dim_service_account[AccountNumber]), "-SVC", ""))
+		dataType: string
+		lineageTag: e7dc0838-ad7e-4f77-a0e7-344db58c13f7
+		summarizeBy: none
+
 	column EquipmentKey
 		dataType: int64
 		formatString: 0
