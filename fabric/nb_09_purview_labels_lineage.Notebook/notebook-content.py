@@ -68,6 +68,10 @@ SQL_SOURCE_NAME = "ENERCARE-SQL-SOURCE"
 FABRIC_SOURCE_NAME = "ENERCARE-FABRIC-SOURCE"
 SEMANTIC_MODEL_NAME = "BrookfieldEnercare"
 SEMANTIC_MODEL_LOGICAL_ID = "d19d7f14-ae22-9fde-462b-dafb983dfb0a"
+SEMANTIC_DATASET_QUALIFIED_NAME = (
+    "https://app.powerbi.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/"
+    "datasets/8cb6f6a6-6a9c-4560-9f28-17a1dc4a921c"
+)
 SQL_SERVER_FQDN = "sqlserver-sk2wus3.database.windows.net"
 MEASURE_ENTITY_TYPENAME = "EnercareSemanticMeasure"
 EXPECTED_MEASURE_ASSET_REFS = [
@@ -1038,6 +1042,10 @@ def _build_measure_entity_type_def():
 
 
 def _resolve_semantic_dataset_qualified_name(token: str):
+    explicit_qn = _safe_text(SEMANTIC_DATASET_QUALIFIED_NAME)
+    if explicit_qn:
+        return explicit_qn
+
     status, body = _request(
         "POST",
         "/datamap/api/search/query",
@@ -1332,6 +1340,14 @@ def _resolve_semantic_model_field_targets(token: str, asset_ref: str, limit: int
         except Exception:
             dataset_id = ""
 
+    if dataset_id and parsed_column_name:
+        query_candidates.extend(
+            [
+                f"{dataset_id} {parsed_column_name}",
+                f"datasets/{dataset_id} {parsed_column_name}",
+            ]
+        )
+
     def _norm_text(value: str):
         return "".join(ch for ch in _safe_text(value).lower() if ch.isalnum())
 
@@ -1384,6 +1400,10 @@ def _resolve_semantic_model_field_targets(token: str, asset_ref: str, limit: int
             # Focus on field-level entities where schema grid renders metadata.
             if "column" not in entity_type and parsed_column_name:
                 if _norm_text(name) != parsed_column_norm:
+                    continue
+
+            if parsed_column_name and _norm_text(name) != parsed_column_norm:
+                if parsed_column_norm not in _norm_text(qn):
                     continue
 
             seen_guids.add(guid)
