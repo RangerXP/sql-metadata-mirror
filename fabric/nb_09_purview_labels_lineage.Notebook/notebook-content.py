@@ -115,6 +115,7 @@ def _read_table(table_name: str, required=True):
 
 cde_df, cde_source = _read_table("cdes")
 labels_df, labels_source = _read_table("label_assignments", required=False)
+glossary_df, glossary_source = _read_table("glossary_terms", required=False)
 data_products_df, data_products_source = _read_table("data_products")
 
 if labels_df is None:
@@ -123,6 +124,8 @@ if labels_df is None:
 print(f"cdes rows: {cde_df.count()} (source={cde_source})")
 if labels_df is not None:
     print(f"label_assignments rows: {labels_df.count()} (source={labels_source})")
+if glossary_df is not None:
+    print(f"glossary_terms rows: {glossary_df.count()} (source={glossary_source})")
 print(f"data_products rows: {data_products_df.count()} (source={data_products_source})")
 
 # Cell 2 complete: Metadata tables loaded
@@ -389,6 +392,40 @@ if labels_df is not None:
                         "cde_name": label,
                     }
                 )
+
+if not glossary_term_manifest and glossary_df is not None:
+    glossary_term_name_col = None
+    for candidate in ("term_name", "name"):
+        if candidate in glossary_df.columns:
+            glossary_term_name_col = candidate
+            break
+
+    glossary_bound_assets_col = None
+    for candidate in ("bound_assets", "applies_to_asset_ids"):
+        if candidate in glossary_df.columns:
+            glossary_bound_assets_col = candidate
+            break
+
+    if glossary_term_name_col and glossary_bound_assets_col:
+        for row in glossary_df.collect():
+            term_name = _safe_text(getattr(row, glossary_term_name_col, None))
+            rule = _safe_text(getattr(row, "term_code", None) or term_name)
+            for token in _split_tokens(getattr(row, glossary_bound_assets_col, None)):
+                if term_name and token:
+                    glossary_term_manifest.append(
+                        {
+                            "asset_ref": token,
+                            "term_name": term_name,
+                            "assignment_source": "GlossaryTable",
+                            "rule": rule,
+                        }
+                    )
+
+        if glossary_term_manifest:
+            print(
+                f"[Cell 3] Glossary fallback populated {len(glossary_term_manifest)} rows "
+                "from glossary_terms.bound_assets."
+            )
 
 classification_manifest = cde_classification_manifest
 classification_manifest = [
