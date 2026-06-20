@@ -69,6 +69,7 @@ FABRIC_SOURCE_NAME = "ENERCARE-FABRIC-SOURCE"
 SEMANTIC_MODEL_NAME = "BrookfieldEnercare"
 SEMANTIC_MODEL_LOGICAL_ID = "d19d7f14-ae22-9fde-462b-dafb983dfb0a"
 SQL_SERVER_FQDN = "sqlserver-sk2wus3.database.windows.net"
+MEASURE_ENTITY_TYPENAME = "EnercareSemanticMeasure"
 
 print(f"Purview account: {PURVIEW_ACCOUNT_NAME}")
 print(f"Apply changes: {APPLY_CHANGES}")
@@ -380,12 +381,7 @@ def _normalize_asset_token(token: str):
         return default_semantic_asset, "fabric_item_to_anchor"
 
     if raw.startswith("BrookfieldEnercare/_Measures/"):
-        measure_name = raw.split("/")[-1].lower()
-        if "repeat" in measure_name and "complaint" in measure_name:
-            return "dbo.customer_complaints", "measure_to_sql_anchor"
-        if any(key in measure_name for key in ["nps", "csat", "handle", "fcr"]):
-            return "dbo.service_requests", "measure_to_sql_anchor"
-        return "dbo.service_requests", "measure_to_sql_anchor"
+        return raw, "semantic_measure_ref"
 
     if lower.startswith("lh_metadata."):
         return "dbo.data_owners_directory", "metadata_lakehouse_to_sql_anchor"
@@ -596,12 +592,60 @@ classification_manifest = [
 if not glossary_term_manifest:
     print("[Cell 3][WARN] No glossary term rows prepared from CDE metadata.")
 
+
+def _measure_slug(name: str):
+    text = _safe_text(name)
+    if not text:
+        return ""
+    lowered = text.lower()
+    clean_chars = [ch if ch.isalnum() else "_" for ch in lowered]
+    slug = "".join(clean_chars)
+    while "__" in slug:
+        slug = slug.replace("__", "_")
+    return slug.strip("_")
+
+
+def _measure_entity_qn(asset_ref: str):
+    text = _safe_text(asset_ref)
+    if not text.startswith(f"{SEMANTIC_MODEL_NAME}/_Measures/"):
+        return ""
+    measure_name = _safe_text(text.split("/")[-1])
+    slug = _measure_slug(measure_name)
+    if not slug:
+        return ""
+    return f"enercare://semantic/{SEMANTIC_MODEL_NAME.lower()}/measure/{slug}"
+
+
+measure_entity_manifest = []
+measure_seen = set()
+for manifest_row in sensitivity_label_manifest + classification_manifest + glossary_term_manifest + asset_description_manifest:
+    asset_ref = _safe_text(manifest_row.get("asset_ref", ""))
+    qn = _measure_entity_qn(asset_ref)
+    if not qn:
+        continue
+
+    key = qn.lower()
+    if key in measure_seen:
+        continue
+    measure_seen.add(key)
+
+    measure_name = _safe_text(asset_ref.split("/")[-1])
+    measure_entity_manifest.append(
+        {
+            "asset_ref": asset_ref,
+            "measure_name": measure_name,
+            "qualified_name": qn,
+            "semantic_model_name": SEMANTIC_MODEL_NAME,
+        }
+    )
+
 print(f"Classification defs prepared: {len(classification_defs)}")
 print(f"Sensitivity label rows prepared: {len(sensitivity_label_manifest)}")
 print(f"CDE manifest rows prepared: {len(cde_classification_manifest)}")
 print(f"Classification manifest rows prepared: {len(classification_manifest)}")
 print(f"Glossary term rows prepared: {len(glossary_term_manifest)}")
 print(f"Asset description rows prepared: {len(asset_description_manifest)}")
+print(f"Measure entity rows prepared: {len(measure_entity_manifest)}")
 if token_normalization_counts:
     print("Token normalization summary:")
     for reason in sorted(token_normalization_counts.keys()):
@@ -736,6 +780,7 @@ mssparkutils.fs.put(f"{output_root}/classification_typedefs.json", json.dumps(ty
 mssparkutils.fs.put(f"{output_root}/sensitivity_label_manifest.json", json.dumps(sensitivity_label_manifest, indent=2), True)
 mssparkutils.fs.put(f"{output_root}/classification_manifest.json", json.dumps(classification_manifest, indent=2), True)
 mssparkutils.fs.put(f"{output_root}/glossary_term_manifest.json", json.dumps(glossary_term_manifest, indent=2), True)
+mssparkutils.fs.put(f"{output_root}/measure_entity_manifest.json", json.dumps(measure_entity_manifest, indent=2), True)
 mssparkutils.fs.put(f"{output_root}/lineage_edges.json", json.dumps(lineage_edges, indent=2), True)
 
 legacy_typedef_count = sum(
@@ -757,6 +802,7 @@ validation_rows = [
     ("sensitivity_label_rows", len(sensitivity_label_manifest), "PASS" if sensitivity_label_manifest else "WARN"),
     ("classification_manifest_rows", len(classification_manifest), "PASS" if classification_manifest else "FAIL"),
     ("glossary_term_rows", len(glossary_term_manifest), "PASS" if glossary_term_manifest else "WARN"),
+    ("measure_entity_rows", len(measure_entity_manifest), "PASS" if measure_entity_manifest else "WARN"),
     ("lineage_edges_prepared", len(lineage_edges), "PASS" if lineage_edges else "WARN"),
     ("legacy_sensitivity_typedefs_in_payload", legacy_typedef_count, "PASS" if legacy_typedef_count == 0 else "FAIL"),
     ("legacy_sensitivity_classifications_in_manifest", legacy_manifest_count, "PASS" if legacy_manifest_count == 0 else "FAIL"),
@@ -930,7 +976,147 @@ def _asset_ref_to_table_qualified_name(asset_ref: str):
     return ""
 
 
+def _is_measure_asset_ref(asset_ref: str):
+    text = _safe_text(asset_ref)
+    return text.startswith(f"{SEMANTIC_MODEL_NAME}/_Measures/")
+
+
+def _measure_asset_name(asset_ref: str):
+    if not _is_measure_asset_ref(asset_ref):
+        return ""
+    return _safe_text(asset_ref.split("/")[-1])
+
+
+def _measure_entity_qualified_name(asset_ref: str):
+    if not _is_measure_asset_ref(asset_ref):
+        return ""
+    measure_name = _measure_asset_name(asset_ref)
+    slug = _measure_slug(measure_name)
+    if not slug:
+        return ""
+    return f"enercare://semantic/{SEMANTIC_MODEL_NAME.lower()}/measure/{slug}"
+
+
+def _build_measure_entity_type_def():
+    return {
+        "category": "ENTITY",
+        "name": MEASURE_ENTITY_TYPENAME,
+        "description": "Semantic model measure used for governance linkage in Purview.",
+        "superTypes": ["Referenceable"],
+        "attributeDefs": [
+            {"name": "semanticModelName", "typeName": "string", "isOptional": False},
+            {"name": "sourceAssetRef", "typeName": "string", "isOptional": True},
+            {"name": "datasetQualifiedName", "typeName": "string", "isOptional": True},
+        ],
+    }
+
+
+def _resolve_semantic_dataset_qualified_name(token: str):
+    status, body = _request(
+        "POST",
+        "/datamap/api/search/query",
+        token,
+        body={"keywords": SEMANTIC_MODEL_NAME, "limit": 25},
+        params={"api-version": "2023-09-01"},
+    )
+    if status != 200:
+        return ""
+
+    try:
+        payload = json.loads(body)
+    except Exception:
+        return ""
+
+    for entity in payload.get("value") or []:
+        entity_type = _safe_text(entity.get("entityType", "") or entity.get("typeName", "")).lower()
+        qn = _safe_text(entity.get("qualifiedName", ""))
+        name = _safe_text(entity.get("name", ""))
+        if (
+            qn
+            and name.lower() == SEMANTIC_MODEL_NAME.lower()
+            and entity_type in {"powerbi_dataset", "fabric_semantic_model", "powerbi_semantic_model"}
+        ):
+            return qn
+
+    return ""
+
+
+def _publish_measure_entities(token: str, measure_rows):
+    stats = {"created": 0, "existing": 0, "failed": 0}
+    resolution_map = {}
+    if not measure_rows:
+        return stats, resolution_map
+
+    dataset_qn = _resolve_semantic_dataset_qualified_name(token)
+    if dataset_qn:
+        print(f"[Cell 6] Semantic dataset anchor resolved: {dataset_qn}")
+    else:
+        print("[Cell 6][WARN] Semantic dataset anchor not found; publishing measure entities without datasetQualifiedName.")
+
+    for row in measure_rows:
+        asset_ref = _safe_text(row.get("asset_ref", ""))
+        measure_name = _safe_text(row.get("measure_name", ""))
+        qn = _safe_text(row.get("qualified_name", "")) or _measure_entity_qualified_name(asset_ref)
+        if not asset_ref or not measure_name or not qn:
+            continue
+
+        existing = _find_entity_by_qualified_name(token, qn)
+        if existing:
+            stats["existing"] += 1
+            resolution_map[asset_ref.lower()] = {
+                "guid": _safe_text(existing.get("guid", "")),
+                "entityType": _safe_text(existing.get("typeName", "") or MEASURE_ENTITY_TYPENAME).lower(),
+                "qualifiedName": qn,
+            }
+            continue
+
+        payload = {
+            "entities": [
+                {
+                    "typeName": MEASURE_ENTITY_TYPENAME,
+                    "attributes": {
+                        "qualifiedName": qn,
+                        "name": measure_name,
+                        "semanticModelName": SEMANTIC_MODEL_NAME,
+                        "sourceAssetRef": asset_ref,
+                        "datasetQualifiedName": dataset_qn,
+                        "description": f"Semantic measure governance entity for {SEMANTIC_MODEL_NAME}/{measure_name}",
+                    },
+                }
+            ]
+        }
+        status, body = _post_json("/catalog/api/atlas/v2/entity/bulk", token, payload)
+        if status not in (200, 201):
+            body_lower = _safe_text(body).lower()
+            if "already exists" not in body_lower and "atlas-409" not in body_lower:
+                stats["failed"] += 1
+                continue
+
+        refreshed = _find_entity_by_qualified_name(token, qn)
+        if refreshed:
+            stats["created"] += 1
+            resolution_map[asset_ref.lower()] = {
+                "guid": _safe_text(refreshed.get("guid", "")),
+                "entityType": _safe_text(refreshed.get("typeName", "") or MEASURE_ENTITY_TYPENAME).lower(),
+                "qualifiedName": qn,
+            }
+        else:
+            stats["failed"] += 1
+
+    return stats, resolution_map
+
+
 def _resolve_asset_for_classification(token: str, asset_ref: str):
+    measure_qn = _measure_entity_qualified_name(asset_ref)
+    if measure_qn:
+        exact = _find_entity_by_qualified_name(token, measure_qn)
+        if exact:
+            return {
+                "guid": _safe_text(exact.get("guid", "")),
+                "entityType": _safe_text(exact.get("typeName", "") or MEASURE_ENTITY_TYPENAME).lower(),
+                "qualifiedName": _safe_text(exact.get("qualifiedName", "") or measure_qn),
+            }
+
     explicit_column_qn = _asset_ref_to_column_qualified_name(asset_ref)
     if explicit_column_qn:
         exact = _find_entity_by_qualified_name(token, explicit_column_qn)
@@ -1812,12 +1998,45 @@ else:
 
     if token:
 
+        measure_resolution_map = {}
+
+        if measure_entity_manifest:
+            print(f"[Cell 6] Publishing semantic measure typedef ({MEASURE_ENTITY_TYPENAME})...")
+            measure_typedef_payload = {"entityDefs": [_build_measure_entity_type_def()]}
+            measure_type_status, measure_type_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, measure_typedef_payload)
+            if measure_type_status not in (200, 201):
+                body_lower = _safe_text(measure_type_body).lower()
+                if (
+                    "already exists" in body_lower
+                    or "atlas-409" in body_lower
+                    or measure_type_status == 409
+                ):
+                    print(f"[Cell 6] Measure typedef already exists (HTTP {measure_type_status}).")
+                else:
+                    print(
+                        f"[Cell 6][WARN] Measure typedef publish failed: HTTP {measure_type_status} | "
+                        f"{_safe_text(measure_type_body)[:220]}"
+                    )
+            else:
+                print(f"[Cell 6] Measure typedef publish result: HTTP {measure_type_status}")
+
+            print(f"[Cell 6] Publishing semantic measure entities from manifest ({len(measure_entity_manifest)} rows)...")
+            measure_stats, measure_resolution_map = _publish_measure_entities(token, measure_entity_manifest)
+            print(
+                "[Cell 6] Semantic measure entity summary: "
+                f"created={measure_stats['created']} existing={measure_stats['existing']} failed={measure_stats['failed']}"
+            )
+        else:
+            print("[Cell 6] No semantic measure entities to publish from manifest.")
+
         asset_resolution_cache = {}
 
         def _resolve_asset_cached(asset_ref: str):
             key = _safe_text(asset_ref).lower()
             if not key:
                 return None
+            if key in measure_resolution_map:
+                return measure_resolution_map[key]
             if key not in asset_resolution_cache:
                 asset_resolution_cache[key] = _resolve_asset_for_classification(token, asset_ref)
             return asset_resolution_cache[key]
