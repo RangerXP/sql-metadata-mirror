@@ -520,11 +520,28 @@ mssparkutils.fs.put(f"{output_root}/sensitivity_label_manifest.json", json.dumps
 mssparkutils.fs.put(f"{output_root}/classification_manifest.json", json.dumps(classification_manifest, indent=2), True)
 mssparkutils.fs.put(f"{output_root}/lineage_edges.json", json.dumps(lineage_edges, indent=2), True)
 
+legacy_typedef_count = sum(
+    1
+    for item in classification_defs
+    if _safe_text(item.get("name", "")) in DISALLOWED_CLASSIFICATION_TYPEDEFS
+)
+legacy_manifest_count = sum(
+    1
+    for item in classification_manifest
+    if _safe_text(item.get("classification", "")) in DISALLOWED_CLASSIFICATION_TYPEDEFS
+)
+service_encounter_present = int(
+    any(_safe_text(item.get("name", "")) == "EnercareServiceEncounter" for item in classification_defs)
+)
+
 validation_rows = [
     ("classification_defs_prepared", len(classification_defs), "PASS" if classification_defs else "FAIL"),
     ("sensitivity_label_rows", len(sensitivity_label_manifest), "PASS" if sensitivity_label_manifest else "WARN"),
     ("classification_manifest_rows", len(classification_manifest), "PASS" if classification_manifest else "FAIL"),
     ("lineage_edges_prepared", len(lineage_edges), "PASS" if lineage_edges else "WARN"),
+    ("legacy_sensitivity_typedefs_in_payload", legacy_typedef_count, "PASS" if legacy_typedef_count == 0 else "FAIL"),
+    ("legacy_sensitivity_classifications_in_manifest", legacy_manifest_count, "PASS" if legacy_manifest_count == 0 else "FAIL"),
+    ("service_encounter_typedef_present", service_encounter_present, "PASS" if service_encounter_present == 1 else "FAIL"),
     ("sql_source_name_configured", int(bool(SQL_SOURCE_NAME)), "PASS"),
     ("fabric_source_name_configured", int(bool(FABRIC_SOURCE_NAME)), "PASS"),
 ]
