@@ -29,6 +29,7 @@
 import hashlib
 import json
 import os
+import base64
 import shutil
 import subprocess
 import time
@@ -758,14 +759,56 @@ def _apply_sensitivity_label(token: str, entity_guid: str, label_name: str):
     return "failed", "Atlas labels endpoint did not accept POST/PUT payload formats for this account."
 
 
+def _normalize_bearer_token(raw_token: str) -> str:
+    token = _safe_text(raw_token).strip().strip("\"").strip("'")
+    if token.lower().startswith("bearer "):
+        token = token[7:].strip()
+    return token
+
+
+def _jwt_diagnostics(token: str):
+    parts = _safe_text(token).split(".")
+    if len(parts) < 2:
+        return None
+
+    try:
+        payload_segment = parts[1]
+        padded = payload_segment + "=" * (-len(payload_segment) % 4)
+        payload_json = base64.urlsafe_b64decode(padded.encode("utf-8")).decode("utf-8")
+        payload = json.loads(payload_json)
+    except Exception:
+        return None
+
+    exp = payload.get("exp")
+    aud = _safe_text(payload.get("aud", ""))
+    tid = _safe_text(payload.get("tid", ""))
+    now_utc = int(time.time())
+    expires_in_sec = int(exp) - now_utc if exp is not None else None
+    return {
+        "aud": aud,
+        "tid": tid,
+        "exp": exp,
+        "expires_in_sec": expires_in_sec,
+    }
+
+
 def _get_purview_token_from_manual() -> str:
     token = _safe_text(globals().get("MANUAL_PURVIEW_BEARER_TOKEN", ""))
     if not token:
         token = _safe_text(os.environ.get("PURVIEW_BEARER_TOKEN", ""))
+    token = _normalize_bearer_token(token)
     if not token:
         raise RuntimeError(
             "No manual token provided. Set MANUAL_PURVIEW_BEARER_TOKEN in Cell 1 "
             "or environment variable PURVIEW_BEARER_TOKEN."
+        )
+
+    diag = _jwt_diagnostics(token)
+    if diag:
+        print(
+            "[Cell 6] Manual token diagnostics: "
+            f"aud={diag['aud'] or '<none>'} tid={diag['tid'] or '<none>'} "
+            f"expires_in_sec={diag['expires_in_sec']}"
         )
 
     print("[Cell 6] Using manually supplied Purview bearer token.")
