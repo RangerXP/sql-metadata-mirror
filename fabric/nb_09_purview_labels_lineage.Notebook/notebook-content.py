@@ -184,6 +184,21 @@ def _split_tokens(raw_value):
     return tokens
 
 
+def _is_probable_asset_ref(token: str) -> bool:
+    text = _safe_text(token)
+    if not text:
+        return False
+
+    lower = text.lower()
+    if lower.startswith(("dbo.", "mssql://", "lh_", "fabric://")):
+        return True
+    if text.startswith("BrookfieldEnercare/") or text.startswith("BrookfieldEnercare."):
+        return True
+    if lower.startswith("dp-") and ":overview" in lower:
+        return True
+    return False
+
+
 CDE_CLASSIFICATION_NAME = "EnercareCDE"
 NORTHSTAR_CLASSIFICATIONS = {
     "EnercareBilling": "Billing",
@@ -321,6 +336,92 @@ sensitivity_label_manifest = []
 cde_classification_manifest = []
 glossary_term_manifest = []
 asset_description_manifest = []
+
+data_product_anchor_asset = {}
+semantic_asset_candidates = []
+for row in data_products_df.collect():
+    dp_id = _safe_text(getattr(row, "data_product_id", None) or getattr(row, "product_id", None)).upper()
+    attached_assets = _split_tokens(getattr(row, "attached_assets", None))
+
+    anchor = ""
+    for token in attached_assets:
+        if _safe_text(token).lower().startswith(("dbo.", "mssql://")):
+            anchor = _safe_text(token)
+            break
+    if not anchor and attached_assets:
+        anchor = _safe_text(attached_assets[0])
+
+    if dp_id and anchor:
+        data_product_anchor_asset[dp_id] = anchor
+
+    for token in attached_assets:
+        t = _safe_text(token)
+        if t.startswith("BrookfieldEnercare/"):
+            semantic_asset_candidates.append(t)
+
+default_semantic_asset = semantic_asset_candidates[0] if semantic_asset_candidates else "dbo.customers"
+
+
+def _normalize_asset_token(token: str):
+    raw = _safe_text(token)
+    if not raw:
+        return "", "empty"
+
+    lower = raw.lower()
+
+    if lower.startswith("dp-") and ":overview" in lower:
+        dp_id = raw.split(":", 1)[0].strip().upper()
+        mapped = _safe_text(data_product_anchor_asset.get(dp_id, ""))
+        if mapped:
+            return mapped, "dp_overview_to_anchor"
+        return "", "dp_overview_unmapped"
+
+    if raw in {"BrookfieldEnercare.Report", "BrookfieldEnercare.SemanticModel"}:
+        return default_semantic_asset, "fabric_item_to_anchor"
+
+    if raw.startswith("BrookfieldEnercare/_Measures/"):
+        measure_name = raw.split("/")[-1].lower()
+        if "repeat" in measure_name and "complaint" in measure_name:
+            return "dbo.customer_complaints", "measure_to_sql_anchor"
+        if any(key in measure_name for key in ["nps", "csat", "handle", "fcr"]):
+            return "dbo.service_requests", "measure_to_sql_anchor"
+        return "dbo.service_requests", "measure_to_sql_anchor"
+
+    if lower.startswith("lh_metadata."):
+        return "dbo.data_owners_directory", "metadata_lakehouse_to_sql_anchor"
+
+    if not _is_probable_asset_ref(raw):
+        return "", "non_asset_metadata"
+
+    return raw, "as_is"
+
+
+def _normalize_asset_tokens(raw_value):
+    normalized = []
+    reasons = []
+    for token in _split_tokens(raw_value):
+        mapped, reason = _normalize_asset_token(token)
+        reasons.append(reason)
+        if mapped:
+            normalized.append(mapped)
+    deduped = []
+    seen = set()
+    for token in normalized:
+        key = token.lower()
+        if key not in seen:
+            deduped.append(token)
+            seen.add(key)
+    return deduped, reasons
+
+
+token_normalization_counts = {}
+
+
+def _track_token_reasons(reasons):
+    for reason in reasons:
+        token_normalization_counts[reason] = token_normalization_counts.get(reason, 0) + 1
+
+
 for row in cde_rows:
     label = _normalize_sensitivity_label(getattr(row, "sensitivity_label", None))
     cde_id = _safe_text(getattr(row, "cde_id", None) or getattr(row, "cde_code", None) or getattr(row, "cde_name", None))
@@ -333,7 +434,9 @@ for row in cde_rows:
     sensitivity_tier = _safe_text(policy.get("sensitivity_tier", "")) or label
     protection_policy = _safe_text(policy.get("protection_policy", "")) or CANONICAL_LABEL_POLICY.get(label, "")
 
-    for token in _split_tokens(getattr(row, "bound_columns", None)):
+    tokens, reasons = _normalize_asset_tokens(getattr(row, "bound_columns", None))
+    _track_token_reasons(reasons)
+    for token in tokens:
         if cde_has_sensitivity_label and label:
             sensitivity_label_manifest.append(
                 {
@@ -408,7 +511,9 @@ if labels_df is not None:
         rule = _safe_text(getattr(row, "assignment_rule", None) or getattr(row, "label_id", None) or raw_label)
         sensitivity_tier = _normalize_sensitivity_label(getattr(row, "sensitivity_tier", None)) or label
         protection_policy = _safe_text(getattr(row, "protection_policy", None)) or CANONICAL_LABEL_POLICY.get(label, "")
-        for token in _split_tokens(assets):
+        tokens, reasons = _normalize_asset_tokens(assets)
+        _track_token_reasons(reasons)
+        for token in tokens:
             sensitivity_label_manifest.append(
                 {
                     "asset_ref": token,
@@ -453,7 +558,9 @@ if not glossary_term_manifest and glossary_df is not None:
             term_name = _safe_text(getattr(row, glossary_term_name_col, None))
             rule = _safe_text(getattr(row, "term_code", None) or term_name)
             definition = _safe_text(getattr(row, "definition", None))
-            for token in _split_tokens(getattr(row, glossary_bound_assets_col, None)):
+            tokens, reasons = _normalize_asset_tokens(getattr(row, glossary_bound_assets_col, None))
+            _track_token_reasons(reasons)
+            for token in tokens:
                 if term_name and token:
                     glossary_term_manifest.append(
                         {
@@ -495,6 +602,10 @@ print(f"CDE manifest rows prepared: {len(cde_classification_manifest)}")
 print(f"Classification manifest rows prepared: {len(classification_manifest)}")
 print(f"Glossary term rows prepared: {len(glossary_term_manifest)}")
 print(f"Asset description rows prepared: {len(asset_description_manifest)}")
+if token_normalization_counts:
+    print("Token normalization summary:")
+    for reason in sorted(token_normalization_counts.keys()):
+        print(f" - {reason}: {token_normalization_counts[reason]}")
 print("Classification names prepared:")
 for item in sorted({d.get("name", "") for d in classification_defs if d.get("name", "")}):
     print(f" - {item}")
