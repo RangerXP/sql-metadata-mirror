@@ -57,7 +57,9 @@ TOKEN_RESOURCE_CANDIDATES = ["https://purview.azure.net"]
 TOKEN_OUTER_RETRY_ATTEMPTS = 1
 DISABLE_LIVE_PURVIEW_PUBLISH = False
 TOKEN_ACQUISITION_MODE = "manual"  # auto | manual | azcli | tokenlibrary
-PURGE_BEFORE_REWRITE = True
+# Keep purge off for normal runs to reduce API round-trips and runtime.
+# Enable only when you explicitly want a cleanup cycle.
+PURGE_BEFORE_REWRITE = False
 MANUAL_PURVIEW_BEARER_TOKEN = os.getenv("MANUAL_PURVIEW_BEARER_TOKEN", "").strip()
 AZ_CLI_TIMEOUT_SECONDS = 15
 
