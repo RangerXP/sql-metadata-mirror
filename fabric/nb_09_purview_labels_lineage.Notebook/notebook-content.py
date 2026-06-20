@@ -34,6 +34,7 @@ import shutil
 import subprocess
 import time
 import uuid
+from urllib.parse import quote
 import requests
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
@@ -56,6 +57,7 @@ TOKEN_RESOURCE_CANDIDATES = ["https://purview.azure.net"]
 TOKEN_OUTER_RETRY_ATTEMPTS = 1
 DISABLE_LIVE_PURVIEW_PUBLISH = False
 TOKEN_ACQUISITION_MODE = "manual"  # auto | manual | azcli | tokenlibrary
+PURGE_BEFORE_REWRITE = True
 MANUAL_PURVIEW_BEARER_TOKEN = "eyJ0eXAiOiJKV1QiLCJub25jZSI6IkNuTzN6RDU2dVZrczVjQUQ0U3RsOUtIek92WklWVjYta3c0MFhsX256V0EiLCJhbGciOiJSUzI1NiIsIng1dCI6IndoMDZzRWt6TEhKNXNOTmFVeVJZMl82TzhLMCIsImtpZCI6IndoMDZzRWt6TEhKNXNOTmFVeVJZMl82TzhLMCJ9.eyJhdWQiOiJodHRwczovL3B1cnZpZXcuYXp1cmUubmV0IiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvYjdlNDc2OTEtOTcyNi00ZjY3LWEzMDItZTU2NzgxNWYzNTIyLyIsImlhdCI6MTc4MTgyNzM1MCwibmJmIjoxNzgxODI3MzUwLCJleHAiOjE3ODE4MzEzMzAsImFjciI6IjEiLCJhaW8iOiJBWVFBZS84Y0FBQUFjYlVrNTJFUmhsZ3MxT3N6bE9UZ2hlYWlJZnRUM01iUGYrUm91aGduQzRDbVhRd2VmSTVVa1NLcVIxUVZRbDRkYTFjcTRXbUNCbGtRL1JvNHlTREZuK0M5OFNiT3FCcmRsNG1TaTd0NzhMcGR6RlE2bVZQamlQYzJhczg1NFdxNjVEVVAzMUxxZUZyK0ZtUFZPdlp5UXZSTFpFOWt4VWJTb3VpWit3bnpFZzg9IiwiYW1yIjpbInB3ZCIsIm1mYSJdLCJhcHBpZCI6IjA0YjA3Nzk1LThkZGItNDYxYS1iYmVlLTAyZjllMWJmN2I0NiIsImFwcGlkYWNyIjoiMCIsImlkdHlwIjoidXNlciIsImlwYWRkciI6IjQwLjg2LjE4My4xNzMiLCJuYW1lIjoiU2VhbiBLZWxsZXkiLCJvaWQiOiI0N2ExNDdhNS1jZTI3LTQ2ZTktYmU4Yy1jY2I5ZjBkNGY5ZmYiLCJwdWlkIjoiMTAwMzIwMDU3QkY4ODkzNyIsInJoIjoiMS5BY29Ba1hia3R5YVhaMC1qQXVWbmdWODFJcDZVd25NdDJucEZsZ2Y4eG1VWmlXY2FBTnZLQUEuIiwic2NwIjoidXNlcl9pbXBlcnNvbmF0aW9uIiwic2lkIjoiMDAyMjBlZGEtZDNjNS0wZmE1LTk2NGMtNTJiYTg4OThlOTQxIiwic3ViIjoiSVZYcmhpeHYyWno0b2RqY05ZTXJENk83YTg5U2x3N3plRnZyakFQdFpzZyIsInRpZCI6ImI3ZTQ3NjkxLTk3MjYtNGY2Ny1hMzAyLWU1Njc4MTVmMzUyMiIsInVuaXF1ZV9uYW1lIjoic2VhbmtlbGxleUBNbmdFbnZNQ0FQNjYwNDQ0Lm9ubWljcm9zb2Z0LmNvbSIsInVwbiI6InNlYW5rZWxsZXlATW5nRW52TUNBUDY2MDQ0NC5vbm1pY3Jvc29mdC5jb20iLCJ1dGkiOiIzWWhER2pRVnNFeWNCTXI0MGhBUkFBIiwidmVyIjoiMS4wIiwid2lkcyI6WyJmMmVmOTkyYy0zYWZiLTQ2YjktYjdjZi1hMTI2ZWU3NGM0NTEiLCJhOWVhODk5Ni0xMjJmLTRjNzQtOTUyMC04ZWRjZDE5MjgyNmMiLCJiNzlmYmY0ZC0zZWY5LTQ2ODktODE0My03NmIxOTRlODU1MDkiXSwieG1zX2FjdF9mY3QiOiI1IDMiLCJ4bXNfZnRkIjoiemxHYktVbmFmaUNKOUs2SnVsWkk5LUhGU3FZdzZPcGhVbVdmSjRzTEtBc0JkWE4zWlhOME15MWtjMjF6IiwieG1zX2lkcmVsIjoiMSAxNiIsInhtc19zdWJfZmN0IjoiMyAxMiJ9.hfdq5GW3EWeQC4ZaBrF7ci6cjmjEBSREcDqzgunOKOr2KyYmDEtZUWSS_NCNGDR6LGUWOl0qtMS7cDvEyBT5v5WLfstkWI_9UBJ3QSFr7SYfMJtKCBfNTeSc6RAzE0isDLqwhOqDXYT-1OUlLPjpFnxATdu74fvy-u7QygWhXHsRL-KKW3wA5h07E5WVMNOD9w10XsWETIHMJ-fKUiu2OIqifsjmjzHqkzN6T-HwQtjbtuQ8_n0uXrwhvuM4RIOCiK5NkLml_XbSiGzw82WLEwpGzMjD7EUApzhWT0X1jaZcVAea2BSqV7kUN-GRZsyeEak5PVh39gW9ScYzVX3W_g"
 AZ_CLI_TIMEOUT_SECONDS = 15
 
@@ -566,6 +568,10 @@ def _post_json(path: str, token: str, body: dict):
     return _request("POST", path, token, body=body)
 
 
+def _path_quote(value: str) -> str:
+    return quote(_safe_text(value), safe="")
+
+
 def _is_invalid_classification_target(entity) -> bool:
     entity_type = _safe_text(entity.get("entityType", "") or entity.get("typeName", "")).lower()
     return (
@@ -780,6 +786,48 @@ def _apply_sensitivity_label(token: str, entity_guid: str, label_name: str):
         )
 
     return "failed", "Atlas labels endpoint did not accept available payload formats for this account."
+
+
+def _purge_classification(token: str, entity_guid: str, classification_name: str):
+    path = (
+        f"/catalog/api/atlas/v2/entity/guid/{entity_guid}"
+        f"/classification/{_path_quote(classification_name)}"
+    )
+    status, body = _request("DELETE", path, token)
+    if status in (200, 202, 204):
+        return "purged", ""
+
+    body_lower = _safe_text(body).lower()
+    if status in (400, 404) or "not found" in body_lower:
+        return "absent", ""
+
+    return "failed", f"HTTP {status} | {body[:300]}"
+
+
+def _purge_sensitivity_label(token: str, entity_guid: str, label_name: str):
+    compact = "".join(ch for ch in _safe_text(label_name) if ch.isalnum())
+    label_candidates = []
+    for candidate in (_safe_text(label_name), compact):
+        text = _safe_text(candidate)
+        if text and text not in label_candidates:
+            label_candidates.append(text)
+
+    last_error = ""
+    for candidate in label_candidates:
+        path = f"/catalog/api/atlas/v2/entity/guid/{entity_guid}/labels/{_path_quote(candidate)}"
+        status, body = _request("DELETE", path, token)
+        if status in (200, 202, 204):
+            return "purged", ""
+
+        body_lower = _safe_text(body).lower()
+        if status in (400, 404) or "not found" in body_lower:
+            continue
+
+        last_error = f"HTTP {status} | {body[:220]}"
+
+    if last_error:
+        return "failed", last_error
+    return "absent", ""
 
 
 def _normalize_bearer_token(raw_token: str) -> str:
@@ -1242,6 +1290,7 @@ print(
     f"APPLY_CHANGES={APPLY_CHANGES}, "
     f"SQL_MIRROR_ONLY_DEPLOYMENT={SQL_MIRROR_ONLY_DEPLOYMENT}, "
     f"PURVIEW_PUBLISH_OVERRIDE={PURVIEW_PUBLISH_OVERRIDE}, "
+    f"purge_before_rewrite={PURGE_BEFORE_REWRITE}, "
     f"fail_on_token_error={fail_on_token_error}, "
     f"disable_live_publish={DISABLE_LIVE_PURVIEW_PUBLISH}, "
     f"token_mode={TOKEN_ACQUISITION_MODE}, "
@@ -1340,6 +1389,34 @@ else:
             )
 
         total_label_rows = len(label_rows)
+
+        if PURGE_BEFORE_REWRITE:
+            print("[Cell 6] Purging managed sensitivity labels before rewrite...")
+            label_purged = 0
+            label_already_absent = 0
+            label_purge_failed = []
+            for row in label_rows:
+                asset_ref = row["asset_ref"]
+                label_name = row["label_name"]
+                resolved = _resolve_asset_for_classification(token, asset_ref)
+                if not resolved:
+                    continue
+
+                purge_outcome, purge_details = _purge_sensitivity_label(token, resolved["guid"], label_name)
+                if purge_outcome == "purged":
+                    label_purged += 1
+                elif purge_outcome == "absent":
+                    label_already_absent += 1
+                else:
+                    label_purge_failed.append((asset_ref, label_name, purge_details))
+
+            print(
+                "[Cell 6] Sensitivity label purge summary: "
+                f"purged={label_purged} absent={label_already_absent} failed={len(label_purge_failed)}"
+            )
+            if label_purge_failed:
+                print(f"[Cell 6][WARN] First sensitivity label purge failure: {label_purge_failed[0]}")
+
         print(f"[Cell 6] Sensitivity label rows to process: {total_label_rows}")
         for index, row in enumerate(label_rows, start=1):
             asset_ref = row["asset_ref"]
@@ -1434,6 +1511,34 @@ else:
             )
 
         total_classification_rows = len(classification_rows)
+
+        if PURGE_BEFORE_REWRITE:
+            print("[Cell 6] Purging managed classifications before rewrite...")
+            class_purged = 0
+            class_already_absent = 0
+            class_purge_failed = []
+            for row in classification_rows:
+                asset_ref = row["asset_ref"]
+                classification_name = row["classification_name"]
+                resolved = _resolve_asset_for_classification(token, asset_ref)
+                if not resolved:
+                    continue
+
+                purge_outcome, purge_details = _purge_classification(token, resolved["guid"], classification_name)
+                if purge_outcome == "purged":
+                    class_purged += 1
+                elif purge_outcome == "absent":
+                    class_already_absent += 1
+                else:
+                    class_purge_failed.append((asset_ref, classification_name, purge_details))
+
+            print(
+                "[Cell 6] Classification purge summary: "
+                f"purged={class_purged} absent={class_already_absent} failed={len(class_purge_failed)}"
+            )
+            if class_purge_failed:
+                print(f"[Cell 6][WARN] First classification purge failure: {class_purge_failed[0]}")
+
         print(f"[Cell 6] CDE classification rows to process: {total_classification_rows}")
         for index, row in enumerate(classification_rows, start=1):
             asset_ref = row["asset_ref"]
