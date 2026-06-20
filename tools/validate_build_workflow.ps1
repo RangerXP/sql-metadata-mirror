@@ -105,6 +105,10 @@ foreach ($relativePath in $requiredConfigFiles) {
 }
 
 # Data Agent datasource binding checks
+# Fabric Source Control may canonicalize Data Agent semantic bindings to:
+# - workspaceId = 00000000-0000-0000-0000-000000000000
+# - artifactId  = semantic model logicalId
+# Treat that pair as a warning by default to avoid sync-repair loops.
 $placeholderWorkspaceId = "00000000-0000-0000-0000-000000000000"
 $placeholderArtifactId = "d19d7f14-ae22-9fde-462b-dafb983dfb0a"
 
@@ -133,11 +137,13 @@ foreach ($relativePath in $requiredDatasourceFiles) {
         continue
     }
 
-    if ($json.workspaceId -eq $placeholderWorkspaceId) {
-        Add-Issue "Placeholder workspaceId found in datasource file: fabric/$canonicalAgentName/$relativePath"
-    }
-    if ($json.artifactId -eq $placeholderArtifactId) {
-        Add-Issue "Placeholder artifactId found in datasource file: fabric/$canonicalAgentName/$relativePath"
+    $isPlaceholderWorkspace = ($json.workspaceId -eq $placeholderWorkspaceId)
+    $isPlaceholderArtifact = ($json.artifactId -eq $placeholderArtifactId)
+
+    if ($isPlaceholderWorkspace -and $isPlaceholderArtifact) {
+        Add-Warning "Canonicalized Fabric datasource IDs detected (logicalId/0000): fabric/$canonicalAgentName/$relativePath"
+    } elseif ($isPlaceholderWorkspace -or $isPlaceholderArtifact) {
+        Add-Issue "Mixed datasource ID state (one placeholder, one non-placeholder): fabric/$canonicalAgentName/$relativePath"
     }
 }
 
