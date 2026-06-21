@@ -1005,6 +1005,22 @@ def _asset_ref_to_table_qualified_name(asset_ref: str):
     return ""
 
 
+def _is_column_asset_ref(asset_ref: str) -> bool:
+    raw = _safe_text(asset_ref)
+    if not raw:
+        return False
+
+    lower = raw.lower()
+    if lower.startswith("mssql://") and "#" in raw:
+        return True
+
+    if lower.startswith("dbo."):
+        parts = raw.split(".")
+        return len(parts) >= 3
+
+    return False
+
+
 def _is_measure_asset_ref(asset_ref: str):
     text = _safe_text(asset_ref)
     return text.startswith(f"{SEMANTIC_MODEL_NAME}/_Measures/")
@@ -1234,7 +1250,7 @@ def _resolve_asset_for_classification(token: str, asset_ref: str):
             }
 
     explicit_table_qn = _asset_ref_to_table_qualified_name(asset_ref)
-    if explicit_table_qn:
+    if explicit_table_qn and not explicit_column_qn:
         exact = _find_entity_by_qualified_name(token, explicit_table_qn)
         if exact:
             return {
@@ -1284,6 +1300,11 @@ def _resolve_asset_for_classification(token: str, asset_ref: str):
                 score += 3
             if _safe_text(keywords).lower() == name:
                 score += 2
+
+            if explicit_column_qn and "column" not in entity_type and "#" not in qn:
+                # For column asset refs, avoid resolving to table-level entities unless no column-like candidate exists.
+                continue
+
             if "column" in entity_type:
                 score += 3
             if "table" in entity_type:
@@ -2521,6 +2542,7 @@ else:
             rule = row["rule"]
             cde_id = row["cde_id"]
             cde_name = row["cde_name"]
+            column_asset_ref = _is_column_asset_ref(asset_ref)
 
             if index == 1 or index % 10 == 0 or index == total_classification_rows:
                 print(
@@ -2533,14 +2555,25 @@ else:
             semantic_field_targets = _resolve_semantic_model_field_targets(token, asset_ref)
             target_entities = []
             seen_target_guids = set()
-            if resolved:
-                target_entities.append(resolved)
-                seen_target_guids.add(_safe_text(resolved.get("guid", "")))
+
+            # For column-like refs, prioritize semantic field entities so schema grid fields are updated first.
             for semantic_target in semantic_field_targets:
                 semantic_guid = _safe_text(semantic_target.get("guid", ""))
                 if semantic_guid and semantic_guid not in seen_target_guids:
                     target_entities.append(semantic_target)
                     seen_target_guids.add(semantic_guid)
+
+            if resolved:
+                resolved_guid = _safe_text(resolved.get("guid", ""))
+                resolved_type = _safe_text(resolved.get("entityType", "")).lower()
+                include_resolved = True
+                if column_asset_ref and "column" not in resolved_type and semantic_field_targets:
+                    # Avoid counting table-level binds as success when a field target was found.
+                    include_resolved = False
+                if include_resolved and resolved_guid and resolved_guid not in seen_target_guids:
+                    target_entities.append(resolved)
+                    seen_target_guids.add(resolved_guid)
+
             if not target_entities and semantic_anchor:
                 target_entities.append(semantic_anchor)
             if not target_entities:
