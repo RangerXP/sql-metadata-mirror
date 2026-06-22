@@ -658,17 +658,22 @@ ai_instructions = [
           "Do not ask a follow-up question just to establish the default KPI time window. "
      "When returning a KPI value, include: Calculation Window, Numerator, Denominator, and Applied Filters. "
      "Do not return KPI percentages without those context fields."),
-    ("Operational Routing", "data agent routing for request keys",
-     "This semantic model is for KPI analytics, governed business context, and high-level customer story "
-     "explanations. For operational request-detail prompts containing concrete request identifiers, work order "
-     "numbers, ticket IDs, or service dispatch questions, direct the user to the Enercare Data Agent rather "
-     "than answering from this semantic model."),
+    ("Operational Routing", "copilot operational lookup mode",
+     "For operational request-detail prompts, Copilot should answer directly from this semantic model instead of "
+     "deferring by default. For prompts containing numeric request IDs, service account IDs, account numbers, "
+     "or ticket/work-order IDs, execute deterministic lookup before fallback: (1) exact request_id/RequestKey "
+     "match first, (2) exact service_account_id match, (3) account variants match (base account, -SVC form, "
+     "numeric-only), (4) customer match via resolved account context. Then join customer, service account, "
+     "equipment, contract, billing, and support-history surfaces from the matched context."),
     ("Request Detail Output Rules", "service request detail response rules",
-     "When user intent includes a concrete service request identifier, such as a numeric RequestKey or an "
-     "SR-formatted request code, do not treat this semantic model as the primary operational answer surface. "
-     "Defer those request-detail prompts to the Enercare Data Agent. If a response is still produced here, keep "
-     "it text-first with explicit field labels, avoid visual/table formatting artifacts, and state missing fields "
-     "as 'not available in the current model rows' without inferring values."),
+     "For request/service-account operational prompts, return a text-first structured response with these labeled "
+     "fields in order: Customer, Service Account, Incident / Request ID, Account Status, Equipment, Service "
+     "History, Dispatch / Technician status, Contract Type / Terms, Billing Status, Support Call History, "
+     "Dispute / Credit Eligibility, Fastest Compliant Reschedule Path, Escalation Owner, Decision SLA, "
+     "Recommended Next Actions, Notes. Use deterministic fallback for Support Call History in this order: "
+     "interaction history, complaint/escalation history, then service request resolution notes. Do not infer or "
+     "fabricate unresolved values. If a field is unresolved after lookup, keep the label and use 'not available "
+     "in the current model rows' for only that field."),
 ]
 
 rows_instr = [
