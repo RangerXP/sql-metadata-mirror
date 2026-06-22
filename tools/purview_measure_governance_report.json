@@ -1,0 +1,127 @@
+{
+  "counts": {
+    "measure_refs": 5,
+    "expected_measure_refs": 5
+  },
+  "glossary": {
+    "selected_glossary_guid": "f62711a4-0d1b-4159-8a4c-1ae5046002d7",
+    "selected_glossary_name": "Enercare Glossary",
+    "terms_created": 0
+  },
+  "labels": {
+    "assigned": 5,
+    "existing": 0,
+    "failed": 0
+  },
+  "meanings": {
+    "assigned": 0,
+    "existing": 5,
+    "failed": 0
+  },
+  "resolution": {
+    "resolved": 5,
+    "unresolved": 0
+  },
+  "per_measure": [
+    {
+      "asset_ref": "BrookfieldEnercare/_Measures/AvgHandleTime",
+      "resolved": true,
+      "target_guid": "a1d0dd3a-c24c-40e3-93aa-942caea17506",
+      "target_entityType": "EnercareSemanticMeasure",
+      "labels": [
+        {
+          "label": "Executive KPI",
+          "state": "assigned",
+          "detail": ""
+        }
+      ],
+      "meanings": [
+        {
+          "term": "Average Handle Time",
+          "state": "existing",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "asset_ref": "BrookfieldEnercare/_Measures/CSAT",
+      "resolved": true,
+      "target_guid": "e59f858d-dfff-492c-a19a-ecb5e19e919d",
+      "target_entityType": "EnercareSemanticMeasure",
+      "labels": [
+        {
+          "label": "Executive KPI",
+          "state": "assigned",
+          "detail": ""
+        }
+      ],
+      "meanings": [
+        {
+          "term": "Customer Satisfaction",
+          "state": "existing",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "asset_ref": "BrookfieldEnercare/_Measures/FCR",
+      "resolved": true,
+      "target_guid": "d61ecd89-dc45-4248-be2a-29a453034b2e",
+      "target_entityType": "EnercareSemanticMeasure",
+      "labels": [
+        {
+          "label": "Executive KPI",
+          "state": "assigned",
+          "detail": ""
+        }
+      ],
+      "meanings": [
+        {
+          "term": "First Contact Resolution",
+          "state": "existing",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "asset_ref": "BrookfieldEnercare/_Measures/NPS",
+      "resolved": true,
+      "target_guid": "0351d25d-b807-4d98-bd23-1fc9a819a086",
+      "target_entityType": "EnercareSemanticMeasure",
+      "labels": [
+        {
+          "label": "Executive KPI",
+          "state": "assigned",
+          "detail": ""
+        }
+      ],
+      "meanings": [
+        {
+          "term": "Net Promoter Score",
+          "state": "existing",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "asset_ref": "BrookfieldEnercare/_Measures/RepeatComplaintRate",
+      "resolved": true,
+      "target_guid": "45699943-7f34-4a79-85c5-4e6a776b3ef7",
+      "target_entityType": "EnercareSemanticMeasure",
+      "labels": [
+        {
+          "label": "Executive KPI",
+          "state": "assigned",
+          "detail": ""
+        }
+      ],
+      "meanings": [
+        {
+          "term": "Repeat Complaint Rate",
+          "state": "existing",
+          "detail": ""
+        }
+      ]
+    }
+  ]
+}
