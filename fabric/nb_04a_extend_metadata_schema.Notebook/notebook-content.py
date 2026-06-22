@@ -522,6 +522,24 @@ verified_answers = [
     ("PP_RNW_RATE", "contract renewal",
      "Contract renewal performance is tracked by PP_RNW_RATE. Renewal window: "
      "30 days before to 15 days after the contract end date."),
+    ("SLA_BRCH_RATE", "what's the SLA for a no-heat call?",
+     "For this demo, a NoHeat call is treated as an emergency service request with a 24-hour SLA window. "
+     "An SLA breach occurs when service completion is later than 24 hours from request creation. "
+     "Use SLA_BRCH_RATE for aggregate tracking; target breach rate is 5%."),
+    ("SLA_BRCH_RATE", "what is the SLA for a no-heat call?",
+     "For this demo, a NoHeat call is treated as an emergency service request with a 24-hour SLA window. "
+     "An SLA breach occurs when service completion is later than 24 hours from request creation. "
+     "Use SLA_BRCH_RATE for aggregate tracking; target breach rate is 5%."),
+    ("SLA_BRCH_RATE", "what's the sla for a no heat call",
+     "For this demo, a NoHeat call is treated as an emergency service request with a 24-hour SLA window. "
+     "An SLA breach occurs when service completion is later than 24 hours from request creation. "
+     "Use SLA_BRCH_RATE for aggregate tracking; target breach rate is 5%."),
+    ("SLA_BRCH_RATE", "no-heat sla",
+     "NoHeat emergency requests use a 24-hour SLA window in this demo. "
+     "Track aggregate performance with SLA_BRCH_RATE (target breach rate: 5%)."),
+    ("SLA_BRCH_RATE", "no heat sla",
+     "NoHeat emergency requests use a 24-hour SLA window in this demo. "
+     "Track aggregate performance with SLA_BRCH_RATE (target breach rate: 5%)."),
     ("CSAT", "what should the auditor see for Maria",
      "The auditor should see one governed chain: DP-CUST360 for Maria's identity and consent, DP-SVCPERF "
      "for the NoHeat furnace request, DP-BILLHEALTH for the 89.95 monthly charge, and dbo.audit_data_access "
