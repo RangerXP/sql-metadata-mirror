@@ -480,10 +480,27 @@ verified_answers = [
         "Use the Avg CSAT measure from the semantic model. Default calculation window is rolling 12 months ending "
         "on the latest available model date unless the user specifies another range. A NULL csat_score means the "
         "customer did not respond — do not treat it as a low score."),
+    ("CSAT", "what is our CSAT?",
+        "Use the Avg CSAT measure from the semantic model. Default calculation window is rolling 12 months ending "
+        "on the latest available model date unless the user specifies another range. A NULL csat_score means the "
+        "customer did not respond — do not treat it as a low score."),
+    ("CSAT", "what is our csat",
+        "Use the Avg CSAT measure from the semantic model. Default calculation window is rolling 12 months ending "
+        "on the latest available model date unless the user specifies another range. A NULL csat_score means the "
+        "customer did not respond — do not treat it as a low score."),
     ("CSAT", "customer satisfaction",
      "Customer satisfaction is measured via post-call IVR survey on a 1–5 scale. "
      "CSAT below 3.5 on a queue indicates a systemic issue, not individual agent performance."),
     ("CSAT", "how happy are customers",
+     "Use the CSAT measure, which averages post-call survey responses. "
+     "Only ~22% of customers respond — filter for non-null csat_score for accurate averages."),
+    ("CSAT", "how happy are customers?",
+     "Use the CSAT measure, which averages post-call survey responses. "
+     "Only ~22% of customers respond — filter for non-null csat_score for accurate averages."),
+    ("CSAT", "how happy are our customers",
+     "Use the CSAT measure, which averages post-call survey responses. "
+     "Only ~22% of customers respond — filter for non-null csat_score for accurate averages."),
+    ("CSAT", "CSAT | Trigger: how happy are customers",
      "Use the CSAT measure, which averages post-call survey responses. "
      "Only ~22% of customers respond — filter for non-null csat_score for accurate averages."),
     ("CSAT", "satisfaction score",
@@ -539,12 +556,13 @@ if DEMO_MODE:
     print(f"[DEMO_MODE] Verified answers — {len(rows_va)} certified KPI and Maria source-story rows:\n")
     df_va.select("RecordID", "LinkedKPICode", "TriggerText").show(truncate=60)
 else:
-    seed_va_triggers = ", ".join(_sql_string(r.TriggerText) for r in rows_va)
+    # Deterministic refresh: clear current certified verified answers for this model,
+    # then reinsert canonical seed rows to avoid stale/duplicate trigger drift.
     spark.sql(
         f"DELETE FROM {METADATA_LAKEHOUSE}.ai_metadata "
         f"WHERE ModelName = {_sql_string(MODEL_NAME)} "
         f"AND RecordType = 'verified_answer' "
-        f"AND TriggerText IN ({seed_va_triggers})"
+        f"AND IsDraft = 0"
     )
     df_va.write.format("delta").mode("append").option("mergeSchema", "true") \
          .saveAsTable(f"{METADATA_LAKEHOUSE}.ai_metadata")
@@ -603,6 +621,8 @@ ai_instructions = [
         "Apply this contract only to verified KPI analytics answers (metric/percentage/calculation outputs). "
         "Do not apply this contract to operational customer service issues, request/ticket status details, "
         "dispatch updates, or case-level troubleshooting responses. "
+        "When a user question matches a verified trigger after lowercasing and trimming terminal punctuation "
+        "(such as ?, !, .), return the verified answer directly without asking clarifying questions. "
           "For all verified KPI answers, always include an explicit calculation window. Default window is rolling "
       "12 months ending on the latest available model date, unless the user specifies a different date range. "
           "Do not ask a follow-up question just to establish the default KPI time window. "
@@ -636,12 +656,13 @@ if DEMO_MODE:
     print(f"[DEMO_MODE] AI instruction rows — {len(rows_instr)} rows:\n")
     df_instr.select("RecordID", "RecordType", "TriggerText").show(truncate=60)
 else:
-    seed_instruction_triggers = ", ".join(_sql_string(r.TriggerText) for r in rows_instr)
+    # Deterministic refresh: clear current certified AI instruction rows for this model,
+    # then reinsert canonical rows to prevent duplicate/legacy instruction accumulation.
     spark.sql(
         f"DELETE FROM {METADATA_LAKEHOUSE}.ai_metadata "
         f"WHERE ModelName = {_sql_string(MODEL_NAME)} "
         f"AND RecordType = 'ai_instruction' "
-        f"AND TriggerText IN ({seed_instruction_triggers})"
+        f"AND IsDraft = 0"
     )
     df_instr.write.format("delta").mode("append").option("mergeSchema", "true") \
             .saveAsTable(f"{METADATA_LAKEHOUSE}.ai_metadata")
