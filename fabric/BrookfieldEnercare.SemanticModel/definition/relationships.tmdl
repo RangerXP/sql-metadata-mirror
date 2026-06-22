@@ -27,11 +27,6 @@ relationship fct_service_request_EquipmentKey_dim_equipment_EquipmentKey
 	fromColumn: fct_service_request.EquipmentKey
 	toColumn: dim_equipment.EquipmentKey
 
-relationship dim_equipment_ServiceAccountKey_dim_service_account_ServiceAccountKey
-	isActive: false
-	fromColumn: dim_equipment.ServiceAccountKey
-	toColumn: dim_service_account.ServiceAccountKey
-
 relationship fct_contract_month_BillingMonthDateKey_dim_date_DateKey
 	fromColumn: fct_contract_month.BillingMonthDateKey
 	toColumn: dim_date.DateKey
@@ -67,4 +62,9 @@ relationship fct_cc_interactions_billing_adj_category_dim_cc_billing_adj_categor
 relationship fct_cc_transcript_turns_interaction_id_fct_cc_interactions_interaction_id
 	fromColumn: fct_cc_transcript_turns.interaction_id
 	toColumn: fct_cc_interactions.interaction_id
+
+relationship dim_equipment_ServiceAccountKey_dim_service_account_ServiceAccountKey
+	isActive: false
+	fromColumn: dim_equipment.ServiceAccountKey
+	toColumn: dim_service_account.ServiceAccountKey
 
