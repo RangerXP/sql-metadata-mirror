@@ -526,6 +526,14 @@ verified_answers = [
      "For this demo, a NoHeat call is treated as an emergency service request with a 24-hour SLA window. "
      "An SLA breach occurs when service completion is later than 24 hours from request creation. "
      "Use SLA_BRCH_RATE for aggregate tracking; target breach rate is 5%."),
+    ("SLA_BRCH_RATE", "what’s the SLA for a no-heat call?",
+     "For this demo, a NoHeat call is treated as an emergency service request with a 24-hour SLA window. "
+     "An SLA breach occurs when service completion is later than 24 hours from request creation. "
+     "Use SLA_BRCH_RATE for aggregate tracking; target breach rate is 5%."),
+    ("SLA_BRCH_RATE", "What’s the SLA for a no-heat call?",
+     "For this demo, a NoHeat call is treated as an emergency service request with a 24-hour SLA window. "
+     "An SLA breach occurs when service completion is later than 24 hours from request creation. "
+     "Use SLA_BRCH_RATE for aggregate tracking; target breach rate is 5%."),
     ("SLA_BRCH_RATE", "what is the SLA for a no-heat call?",
      "For this demo, a NoHeat call is treated as an emergency service request with a 24-hour SLA window. "
      "An SLA breach occurs when service completion is later than 24 hours from request creation. "
@@ -540,6 +548,10 @@ verified_answers = [
     ("SLA_BRCH_RATE", "no heat sla",
      "NoHeat emergency requests use a 24-hour SLA window in this demo. "
      "Track aggregate performance with SLA_BRCH_RATE (target breach rate: 5%)."),
+    ("SLA_BRCH_RATE", "whats the sla for a no heat call",
+     "For this demo, a NoHeat call is treated as an emergency service request with a 24-hour SLA window. "
+     "An SLA breach occurs when service completion is later than 24 hours from request creation. "
+     "Use SLA_BRCH_RATE for aggregate tracking; target breach rate is 5%."),
     ("CSAT", "what should the auditor see for Maria",
      "The auditor should see one governed chain: DP-CUST360 for Maria's identity and consent, DP-SVCPERF "
      "for the NoHeat furnace request, DP-BILLHEALTH for the 89.95 monthly charge, and dbo.audit_data_access "
