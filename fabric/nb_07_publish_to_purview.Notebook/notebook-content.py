@@ -146,6 +146,8 @@ typedef_payload = {
                 {"name": "access_policy", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
                 {"name": "audience", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
                 {"name": "business_use_case", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+                {"name": "parent_domain_id", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+                {"name": "parent_domain_qualified_name", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
             ],
         },
     ]
@@ -161,10 +163,13 @@ def _resolve_product_id(row):
 
 
 domain_entities = []
+domain_id_set = set()
 for row in domains_df.collect():
     domain_id = _resolve_domain_id(row)
     if not domain_id:
         continue
+
+    domain_id_set.add(domain_id)
 
     domain_entities.append(
         {
@@ -185,10 +190,22 @@ for row in domains_df.collect():
     )
 
 product_entities = []
+products_total = 0
+products_with_parent_domain = 0
+products_unresolved_parent_domain = 0
 for row in data_products_df.collect():
     product_id = _resolve_product_id(row)
     if not product_id:
         continue
+
+    products_total += 1
+    parent_domain_id = _safe_text(getattr(row, "parent_domain_id", None))
+    parent_domain_qn = _domain_qualified_name(parent_domain_id) if parent_domain_id else ""
+
+    if parent_domain_id:
+        products_with_parent_domain += 1
+        if parent_domain_id not in domain_id_set:
+            products_unresolved_parent_domain += 1
 
     product_entities.append(
         {
@@ -205,6 +222,8 @@ for row in data_products_df.collect():
                 "access_policy": _safe_text(getattr(row, "access_policy", None)),
                 "audience": _safe_text(getattr(row, "audience", None)),
                 "business_use_case": _safe_text(getattr(row, "business_use_case", None)),
+                "parent_domain_id": parent_domain_id,
+                "parent_domain_qualified_name": parent_domain_qn,
             },
         }
     )
@@ -214,6 +233,8 @@ payload = {"entities": domain_entities + product_entities}
 print(f"Domain entities prepared: {len(domain_entities)}")
 print(f"Data product entities prepared: {len(product_entities)}")
 print(f"Total entities prepared: {len(payload['entities'])}")
+print(f"Products with parent_domain_id: {products_with_parent_domain} / {products_total}")
+print(f"Products with unresolved parent_domain_id: {products_unresolved_parent_domain}")
 
 
 # METADATA ********************
@@ -306,6 +327,8 @@ live_publish_enabled = APPLY_CHANGES and not publish_guard_active
 summary_rows = [
     ("domains_prepared", len(domain_entities)),
     ("data_products_prepared", len(product_entities)),
+    ("products_with_parent_domain", products_with_parent_domain),
+    ("products_unresolved_parent_domain", products_unresolved_parent_domain),
     ("roles_available", role_assignments_df.count()),
     ("publish_guard_active", int(publish_guard_active)),
     ("live_publish_enabled", int(live_publish_enabled)),
