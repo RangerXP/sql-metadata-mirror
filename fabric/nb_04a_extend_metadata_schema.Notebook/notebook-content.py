@@ -552,6 +552,27 @@ verified_answers = [
      "For this demo, a NoHeat call is treated as an emergency service request with a 24-hour SLA window. "
      "An SLA breach occurs when service completion is later than 24 hours from request creation. "
      "Use SLA_BRCH_RATE for aggregate tracking; target breach rate is 5%."),
+    ("SVC_CASE", "what is the current status and recommended path for Maria Castellanos Service Account: 183746220",
+     "Customer: Maria Castellanos | Service Account: 183746220 (EC18374622-SVC) | Incident / Request ID: 2026051142 | "
+     "Account Status: Active | Equipment: Lennox SLP98V furnace (rental), equipment_id 183746221, status Active | "
+     "Service History: Emergency Repair, priority Emergency, status InProgress, created 2026-06-13, scheduled 2026-06-14, completed not yet recorded | "
+     "Dispatch / Technician status: Technician 105 assigned; pending technician reassignment after missed 24-hour SLA in GTA North dispatch notes | "
+     "Contract Type / Terms: Active residential contract, product_id 4, monthly amount 89.95 | "
+     "Billing Status: INV-MARIA-202606 posted (89.95 + 11.69 tax); CR-MARIA-SLA-202606 posted credit (-14.99) | "
+     "Support Call History: Escalated service complaint exists for same customer/service account; missed no-heat SLA and billing concern captured | "
+     "Dispute / Credit Eligibility: SLA credit already applied; review additional goodwill only if restoration delay continues | "
+     "Fastest Compliant Reschedule Path: Immediate GTA North dispatch reassignment with confirmed ETA callback | "
+     "Escalation Owner: GTA North dispatch supervisor with Billing Support coordination | "
+     "Decision SLA: Emergency no-heat path requires same-day priority handling and breached 24-hour resolution target recovery | "
+     "Recommended Next Actions: reassign technician now, confirm ETA, complete proactive callback, monitor for additional credits if delay persists | "
+     "Notes: Use request-id-first lookup (2026051142) and service-account variant matching (183746220 / EC18374622-SVC) before any no-record fallback."),
+    ("SVC_CASE", "find service records for Customer: Maria Castellanos Service Account: 183746220",
+     "Service records for Maria Castellanos, service account 183746220: Request ID 2026051142, Emergency Repair, status InProgress, priority Emergency, created 2026-06-13, scheduled 2026-06-14, not completed. "
+     "This open no-heat case has a documented missed 24-hour SLA with pending technician reassignment in GTA North dispatch notes."),
+    ("SVC_CASE", "tell me about request id: 2026051142",
+     "Request 2026051142 is an Emergency Repair no-heat furnace case for Maria Castellanos (service account 183746220 / EC18374622-SVC). "
+     "Current state: InProgress, technician 105 noted, scheduled pending reassignment after 24-hour SLA breach. "
+     "Billing context includes posted monthly charge INV-MARIA-202606 and posted SLA credit CR-MARIA-SLA-202606."),
     ("CSAT", "what should the auditor see for Maria",
      "The auditor should see one governed chain: DP-CUST360 for Maria's identity and consent, DP-SVCPERF "
      "for the NoHeat furnace request, DP-BILLHEALTH for the 89.95 monthly charge, and dbo.audit_data_access "
