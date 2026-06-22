@@ -1,0 +1,72 @@
+{
+  "baseline": {
+    "descriptions": {
+      "assigned": 3,
+      "existing": 10,
+      "failed": 37,
+      "unresolved": 0
+    },
+    "contacts": {
+      "assigned": 0,
+      "existing": 0,
+      "failed": 7,
+      "unresolved": 0
+    }
+  },
+  "final": {
+    "descriptions": {
+      "assigned": 38,
+      "existing": 6,
+      "failed_raw": 0,
+      "not_supported": 5,
+      "failed_effective": 0,
+      "unresolved": 0
+    },
+    "contacts": {
+      "assigned": 0,
+      "existing": 7,
+      "failed": 0,
+      "unresolved": 0
+    }
+  },
+  "delta": {
+    "descriptions": {
+      "assigned_delta": 35,
+      "existing_delta": -4,
+      "failed_raw_delta": -37,
+      "failed_effective_delta": -37,
+      "unresolved_delta": 0
+    },
+    "contacts": {
+      "assigned_delta": 0,
+      "existing_delta": 7,
+      "failed_delta": -7,
+      "unresolved_delta": 0
+    }
+  },
+  "notes": {
+    "measure_description_path": "EnercareSemanticMeasure has no description/userDescription attribute in Purview typedef; counted as not_supported.",
+    "measure_governance": {
+      "resolution": {
+        "resolved": 5,
+        "unresolved": 0
+      },
+      "labels": {
+        "assigned": 5,
+        "existing": 0,
+        "failed": 0
+      },
+      "meanings": {
+        "assigned": 0,
+        "existing": 5,
+        "failed": 0
+      }
+    },
+    "source_reports": [
+      "tools/purview_intent_metadata_write_report.json",
+      "tools/purview_descriptions_contacts_remediation_report.json",
+      "tools/purview_measure_description_remediation_report.json",
+      "tools/purview_measure_governance_report.json"
+    ]
+  }
+}

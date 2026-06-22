@@ -1,0 +1,540 @@
+{
+  "scope": "lh_metadata-wide metadata enrichment audit",
+  "counts": {
+    "seed_domains": 3,
+    "seed_data_products": 3,
+    "seed_role_assignments_seeded": 48,
+    "seed_role_assignments_base_set": 12,
+    "seed_glossary_terms": 27,
+    "seed_cdes": 12,
+    "seed_label_assignments": 9
+  },
+  "publication_checks": {
+    "domains": {
+      "resolved": 0,
+      "unresolved": 3,
+      "items": [
+        {
+          "domain_id": "DOM-CUSTOPS",
+          "domain_name": "Customer Operations",
+          "resolved": false,
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": ""
+        },
+        {
+          "domain_id": "DOM-SVCDEL",
+          "domain_name": "Service Delivery",
+          "resolved": false,
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": ""
+        },
+        {
+          "domain_id": "DOM-REVCON",
+          "domain_name": "Revenue and Contracts",
+          "resolved": false,
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": ""
+        }
+      ]
+    },
+    "data_products": {
+      "resolved": 0,
+      "unresolved": 3,
+      "items": [
+        {
+          "data_product_id": "DP-CUST360",
+          "data_product_name": "Customer 360",
+          "resolved": false,
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": "",
+          "attached_assets_total": 3,
+          "attached_assets_resolved": 3,
+          "attached_assets_unresolved": 0
+        },
+        {
+          "data_product_id": "DP-SVCPERF",
+          "data_product_name": "Service Performance",
+          "resolved": false,
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": "",
+          "attached_assets_total": 4,
+          "attached_assets_resolved": 4,
+          "attached_assets_unresolved": 0
+        },
+        {
+          "data_product_id": "DP-BILLHEALTH",
+          "data_product_name": "Billing Health",
+          "resolved": false,
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": "",
+          "attached_assets_total": 4,
+          "attached_assets_resolved": 4,
+          "attached_assets_unresolved": 0
+        }
+      ]
+    },
+    "roles": {
+      "resolved_scope": 2,
+      "unresolved_scope": 10,
+      "items": [
+        {
+          "role_id": "R001",
+          "principal_email": "Ci.Zhu@enercare.ca",
+          "role_type": "Data Governance Administrator",
+          "scope_target": "Tenant",
+          "scope_target_type": "Tenant",
+          "scope_status": "tenant_scope",
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": ""
+        },
+        {
+          "role_id": "R002",
+          "principal_email": "Alison.Pouw@microsoft.com",
+          "role_type": "Governance Domain Creator",
+          "scope_target": "Tenant",
+          "scope_target_type": "Tenant",
+          "scope_status": "tenant_scope",
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": ""
+        },
+        {
+          "role_id": "R003",
+          "principal_email": "Victoria.Tan@enercare.ca",
+          "role_type": "Governance Domain Owner",
+          "scope_target": "DOM-CUSTOPS",
+          "scope_target_type": "Domain",
+          "scope_status": "unresolved",
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": ""
+        },
+        {
+          "role_id": "R004",
+          "principal_email": "Ci.Zhu@enercare.ca",
+          "role_type": "Governance Domain Owner",
+          "scope_target": "DOM-CUSTOPS",
+          "scope_target_type": "Domain",
+          "scope_status": "unresolved",
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": ""
+        },
+        {
+          "role_id": "R005",
+          "principal_email": "ranbir.singh@enercare.ca",
+          "role_type": "Governance Domain Owner",
+          "scope_target": "DOM-SVCDEL",
+          "scope_target_type": "Domain",
+          "scope_status": "unresolved",
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": ""
+        },
+        {
+          "role_id": "R006",
+          "principal_email": "Ci.Zhu@enercare.ca",
+          "role_type": "Governance Domain Owner",
+          "scope_target": "DOM-SVCDEL",
+          "scope_target_type": "Domain",
+          "scope_status": "unresolved",
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": ""
+        },
+        {
+          "role_id": "R007",
+          "principal_email": "Ci.Zhu@enercare.ca",
+          "role_type": "Governance Domain Owner",
+          "scope_target": "DOM-REVCON",
+          "scope_target_type": "Domain",
+          "scope_status": "unresolved",
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": ""
+        },
+        {
+          "role_id": "R008",
+          "principal_email": "ranbir.singh@enercare.ca",
+          "role_type": "Governance Domain Owner",
+          "scope_target": "DOM-REVCON",
+          "scope_target_type": "Domain",
+          "scope_status": "unresolved",
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": ""
+        },
+        {
+          "role_id": "R009",
+          "principal_email": "Victoria.Tan@enercare.ca",
+          "role_type": "Data Product Owner",
+          "scope_target": "DP-CUST360",
+          "scope_target_type": "DataProduct",
+          "scope_status": "unresolved",
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": ""
+        },
+        {
+          "role_id": "R010",
+          "principal_email": "ranbir.singh@enercare.ca",
+          "role_type": "Data Product Owner",
+          "scope_target": "DP-SVCPERF",
+          "scope_target_type": "DataProduct",
+          "scope_status": "unresolved",
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": ""
+        },
+        {
+          "role_id": "R011",
+          "principal_email": "Ci.Zhu@enercare.ca",
+          "role_type": "Data Product Owner",
+          "scope_target": "DP-BILLHEALTH",
+          "scope_target_type": "DataProduct",
+          "scope_status": "unresolved",
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": ""
+        },
+        {
+          "role_id": "R012",
+          "principal_email": "Rupal.Solanki@enercare.ca",
+          "role_type": "Data Steward",
+          "scope_target": "DOM-CUSTOPS",
+          "scope_target_type": "Domain",
+          "scope_status": "unresolved",
+          "target_guid": "",
+          "target_entityType": "",
+          "target_name": ""
+        }
+      ]
+    }
+  },
+  "column_fidelity": {
+    "exceptions": 21,
+    "items": [
+      {
+        "asset_ref": "dbo.audit_data_access.purpose_of_use",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "4d87cd56-023a-497f-936a-67f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/audit_data_access"
+      },
+      {
+        "asset_ref": "dbo.billing_transactions.bank_routing_last_4",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions"
+      },
+      {
+        "asset_ref": "dbo.billing_transactions.card_pan_last_4",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions"
+      },
+      {
+        "asset_ref": "dbo.billing_transactions.contract_id",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions"
+      },
+      {
+        "asset_ref": "dbo.contracts.contract_id",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "be322fc3-0253-40ed-9971-eff6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/contracts"
+      },
+      {
+        "asset_ref": "dbo.contracts.customer_id",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "be322fc3-0253-40ed-9971-eff6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/contracts"
+      },
+      {
+        "asset_ref": "dbo.customer_consents.consent_status",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "373391cc-3717-4673-9cc3-47f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customer_consents"
+      },
+      {
+        "asset_ref": "dbo.customers.customer_id",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers"
+      },
+      {
+        "asset_ref": "dbo.customers.date_of_birth",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers"
+      },
+      {
+        "asset_ref": "dbo.customers.email",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers"
+      },
+      {
+        "asset_ref": "dbo.customers.sin_last_4",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers"
+      },
+      {
+        "asset_ref": "dbo.data_owners_directory.data_owner_upn",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "00733fce-e14d-426b-80ac-e0f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/data_owners_directory"
+      },
+      {
+        "asset_ref": "dbo.data_owners_directory.data_steward_upn",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "00733fce-e14d-426b-80ac-e0f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/data_owners_directory"
+      },
+      {
+        "asset_ref": "dbo.employees.sin_full",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "586c7f88-7d91-48da-a7a7-62f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/employees"
+      },
+      {
+        "asset_ref": "dbo.service_accounts.customer_id",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts"
+      },
+      {
+        "asset_ref": "dbo.service_accounts.equipment_type",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts"
+      },
+      {
+        "asset_ref": "dbo.service_accounts.latitude",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts"
+      },
+      {
+        "asset_ref": "dbo.service_accounts.longitude",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts"
+      },
+      {
+        "asset_ref": "dbo.service_accounts.service_account_id",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts"
+      },
+      {
+        "asset_ref": "dbo.service_requests.request_id",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "171ca864-6c27-4847-9ff9-41f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_requests"
+      },
+      {
+        "asset_ref": "dbo.service_requests.service_account_id",
+        "issue": "column_ref_resolved_to_non_column_entity",
+        "target_guid": "171ca864-6c27-4847-9ff9-41f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "target_qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_requests"
+      }
+    ]
+  },
+  "lineage_checks": {
+    "targets_checked": 13,
+    "resolved_targets": 13,
+    "targets_with_lineage": 13,
+    "targets_without_lineage": 0,
+    "unresolved_targets": 0,
+    "items": [
+      {
+        "asset_ref": "BrookfieldEnercare.Report",
+        "resolved": true,
+        "target_guid": "42561931-aa73-4cbd-9fe3-141b0796ecc6",
+        "target_entityType": "powerbi_report",
+        "lineage_exists": true,
+        "lineage_relation_count": 2,
+        "lineage_http_status": 200
+      },
+      {
+        "asset_ref": "BrookfieldEnercare.SemanticModel",
+        "resolved": true,
+        "target_guid": "a0df6b58-9fcd-4aee-8235-d1a035677215",
+        "target_entityType": "powerbi_dataset",
+        "lineage_exists": true,
+        "lineage_relation_count": 2,
+        "lineage_http_status": 200
+      },
+      {
+        "asset_ref": "BrookfieldEnercare/dim_customer",
+        "resolved": true,
+        "target_guid": "a0df6b58-9fcd-4aee-8235-d1a035677215",
+        "target_entityType": "powerbi_dataset",
+        "lineage_exists": true,
+        "lineage_relation_count": 2,
+        "lineage_http_status": 200
+      },
+      {
+        "asset_ref": "BrookfieldEnercare/fct_billing",
+        "resolved": true,
+        "target_guid": "a0df6b58-9fcd-4aee-8235-d1a035677215",
+        "target_entityType": "powerbi_dataset",
+        "lineage_exists": true,
+        "lineage_relation_count": 2,
+        "lineage_http_status": 200
+      },
+      {
+        "asset_ref": "BrookfieldEnercare/fct_service_requests",
+        "resolved": true,
+        "target_guid": "a0df6b58-9fcd-4aee-8235-d1a035677215",
+        "target_entityType": "powerbi_dataset",
+        "lineage_exists": true,
+        "lineage_relation_count": 2,
+        "lineage_http_status": 200
+      },
+      {
+        "asset_ref": "dbo.billing_transactions",
+        "resolved": true,
+        "target_guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "lineage_exists": true,
+        "lineage_relation_count": 2,
+        "lineage_http_status": 200
+      },
+      {
+        "asset_ref": "dbo.contracts",
+        "resolved": true,
+        "target_guid": "be322fc3-0253-40ed-9971-eff6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "lineage_exists": true,
+        "lineage_relation_count": 2,
+        "lineage_http_status": 200
+      },
+      {
+        "asset_ref": "dbo.customer_complaints",
+        "resolved": true,
+        "target_guid": "27c71348-e53d-468b-b33e-59f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "lineage_exists": true,
+        "lineage_relation_count": 2,
+        "lineage_http_status": 200
+      },
+      {
+        "asset_ref": "dbo.customer_consents",
+        "resolved": true,
+        "target_guid": "373391cc-3717-4673-9cc3-47f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "lineage_exists": true,
+        "lineage_relation_count": 2,
+        "lineage_http_status": 200
+      },
+      {
+        "asset_ref": "dbo.customers",
+        "resolved": true,
+        "target_guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "lineage_exists": true,
+        "lineage_relation_count": 2,
+        "lineage_http_status": 200
+      },
+      {
+        "asset_ref": "dbo.service_accounts",
+        "resolved": true,
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "lineage_exists": true,
+        "lineage_relation_count": 2,
+        "lineage_http_status": 200
+      },
+      {
+        "asset_ref": "dbo.service_requests",
+        "resolved": true,
+        "target_guid": "171ca864-6c27-4847-9ff9-41f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "lineage_exists": true,
+        "lineage_relation_count": 2,
+        "lineage_http_status": 200
+      },
+      {
+        "asset_ref": "dbo.service_zones",
+        "resolved": true,
+        "target_guid": "ab42e293-e636-42d2-ae34-41f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "lineage_exists": true,
+        "lineage_relation_count": 2,
+        "lineage_http_status": 200
+      }
+    ]
+  },
+  "refreshed_consolidated_delta": {
+    "file": "tools/purview_consolidated_final_delta_report.json",
+    "delta": {
+      "descriptions": {
+        "assigned_delta": 35,
+        "existing_delta": -4,
+        "failed_raw_delta": -37,
+        "failed_effective_delta": -37,
+        "unresolved_delta": 0
+      },
+      "contacts": {
+        "assigned_delta": 0,
+        "existing_delta": 7,
+        "failed_delta": -7,
+        "unresolved_delta": 0
+      }
+    },
+    "final": {
+      "descriptions": {
+        "assigned": 38,
+        "existing": 6,
+        "failed_raw": 0,
+        "not_supported": 5,
+        "failed_effective": 0,
+        "unresolved": 0
+      },
+      "contacts": {
+        "assigned": 0,
+        "existing": 7,
+        "failed": 0,
+        "unresolved": 0
+      }
+    }
+  },
+  "source_files": [
+    "sql/07_seed_purview_metadata.sql",
+    "tools/purview_intent_metadata_write_report.json",
+    "tools/purview_descriptions_contacts_remediation_report.json",
+    "tools/purview_measure_description_remediation_report.json",
+    "tools/purview_measure_governance_report.json"
+  ]
+}
