@@ -451,6 +451,8 @@ IF COL_LENGTH('dbo.service_accounts', 'longitude') IS NULL ALTER TABLE dbo.servi
 GO
 IF COL_LENGTH('dbo.service_accounts', 'service_zone_code') IS NULL ALTER TABLE dbo.service_accounts ADD service_zone_code VARCHAR(16) NULL;
 GO
+IF COL_LENGTH('dbo.service_requests', 'no_show_reason_code') IS NULL ALTER TABLE dbo.service_requests ADD no_show_reason_code VARCHAR(64) NULL;
+GO
 IF COL_LENGTH('dbo.billing_transactions', 'bank_routing_last_4') IS NULL ALTER TABLE dbo.billing_transactions ADD bank_routing_last_4 CHAR(4) NULL;
 GO
 IF COL_LENGTH('dbo.billing_transactions', 'card_pan_last_4') IS NULL ALTER TABLE dbo.billing_transactions ADD card_pan_last_4 CHAR(4) NULL;
@@ -572,6 +574,9 @@ GO
 
 PURVIEW_DEMO_SEED_SQL = r"""
 SET NOCOUNT ON;
+GO
+IF COL_LENGTH('dbo.service_requests', 'no_show_reason_code') IS NULL
+    ALTER TABLE dbo.service_requests ADD no_show_reason_code VARCHAR(64) NULL;
 GO
 DELETE FROM dbo.customer_complaints;
 DELETE FROM dbo.customer_consents;
