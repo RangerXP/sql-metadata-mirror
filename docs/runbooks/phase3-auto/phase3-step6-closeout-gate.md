@@ -4,16 +4,16 @@
 
 - P3-1: COMPLETE (conditional)
 - P3-2: AUTO-PREPARED (requires steward certification sign-off)
-- P3-3: AUTO-PREPARED smoke prompt pack
-- P3-4: ORDERING CHECK GENERATED
-- P3-5: BACKFIT LOG GENERATED
-- P3-6: READY FOR SIGN-OFF REVIEW
+- P3-3: COMPLETE (runtime smoke PASS captured)
+- P3-4: COMPLETE (ordering check PASS)
+- P3-5: IN PROGRESS (backfit plan required)
+- P3-6: CONDITIONAL CLOSEOUT READY
 
 ## Gate summary
 
 - File Gate: PASS
 - Behavior Gate: PASS
-- Publish Gate: PENDING_MANUAL_FABRIC_SYNC
+- Publish Gate: PASS (Fabric sync confirmed)
 
 ## Intent status
 
@@ -23,9 +23,8 @@
 ## Manual pull-in points
 
 1. Domain owner + steward certify P3-2 KPI rows marked CERTIFIED_FOR_AGENT_USE.
-2. Run P3-3 smoke prompts in Fabric runtime and paste outputs for proof.
-3. Confirm draft/published Data Agent sync is complete in Fabric Source Control.
-4. Approve defer/implement decisions for all P3-5 backfit rows.
+2. Approve defer/implement decisions and target dates for all P3-5 backfit rows.
+3. Capture Domain Owner + Data Steward + Demo Owner sign-off for conditional closeout.
 
 ## Generated artifacts
 
