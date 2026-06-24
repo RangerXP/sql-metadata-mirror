@@ -133,6 +133,7 @@ CREATE TABLE dbo.service_requests (
     scheduled_date       DATE           NULL,
     completed_date       DATE           NULL,
     technician_id        INT            NULL,
+    no_show_reason_code  VARCHAR(64)    NULL,
     resolution_notes     NVARCHAR(500)  NULL,
     CONSTRAINT PK_service_requests PRIMARY KEY CLUSTERED (request_id),
     CONSTRAINT FK_service_requests_service_accounts FOREIGN KEY (service_account_id)

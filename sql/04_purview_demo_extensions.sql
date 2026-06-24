@@ -64,6 +64,14 @@ IF COL_LENGTH('dbo.service_accounts', 'service_zone_code') IS NULL
 GO
 
 /* ------------------------------------------------------------------------------
+   2b. Service request no-show causality (WP-1 backfit for P3I-003)
+------------------------------------------------------------------------------ */
+
+IF COL_LENGTH('dbo.service_requests', 'no_show_reason_code') IS NULL
+    ALTER TABLE dbo.service_requests ADD no_show_reason_code VARCHAR(64) NULL;
+GO
+
+/* ------------------------------------------------------------------------------
    3. Billing PCI / financial partials (Highly Confidential)
 ------------------------------------------------------------------------------ */
 

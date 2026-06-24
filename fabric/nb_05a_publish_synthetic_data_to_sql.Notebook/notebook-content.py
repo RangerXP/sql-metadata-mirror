@@ -622,8 +622,8 @@ GO
 INSERT INTO dbo.contracts (contract_id, service_account_id, product_id, contract_status, start_date, end_date, monthly_amount, auto_renew, cancellation_date, cancellation_reason) VALUES
 (183746222, 183746220, 4, 'Active', '2020-10-17', NULL, 89.95, 1, NULL, NULL);
 GO
-INSERT INTO dbo.service_requests (request_id, service_account_id, equipment_id, request_type, priority, status, description, created_date, scheduled_date, completed_date, technician_id, resolution_notes) VALUES
-(2026051142, 183746220, 183746221, 'Emergency Repair', 'Emergency', 'InProgress', 'NoHeat furnace case opened through portal; scheduled pending tech after missed 24-hour SLA.', '2026-06-13', '2026-06-14', NULL, 105, 'Scheduled - Pending Tech; GTA North dispatch did not reassign after the SLA breach.');
+INSERT INTO dbo.service_requests (request_id, service_account_id, equipment_id, request_type, priority, status, description, created_date, scheduled_date, completed_date, technician_id, no_show_reason_code, resolution_notes) VALUES
+(2026051142, 183746220, 183746221, 'Emergency Repair', 'Emergency', 'InProgress', 'NoHeat furnace case opened through portal; scheduled pending tech after missed 24-hour SLA.', '2026-06-13', '2026-06-14', NULL, 105, 'DISPATCH_NO_REASSIGN', 'Scheduled - Pending Tech; GTA North dispatch did not reassign after the SLA breach.');
 GO
 INSERT INTO dbo.billing_transactions (transaction_id, contract_id, service_account_id, transaction_type, transaction_date, due_date, amount, tax_amount, payment_method, status, invoice_number, bank_routing_last_4, card_pan_last_4) VALUES
 (183746223, 183746222, 183746220, 'MonthlyCharge', '2026-06-15', '2026-06-30', 89.95, 11.69, 'CreditCard', 'Posted', 'INV-MARIA-202606', '1837', '4622'),
@@ -632,6 +632,18 @@ GO
 UPDATE dbo.customers SET date_of_birth = COALESCE(date_of_birth, DATEADD(DAY, -((ABS(CHECKSUM(NEWID())) % 14600) + 7300), CAST(GETDATE() AS DATE))), owner_email = COALESCE(owner_email, CASE customer_id % 3 WHEN 0 THEN 'Rupal.Solanki@enercare.ca' WHEN 1 THEN 'Shruthi.Srinivas@enercare.ca' ELSE 'Ci.Zhu@enercare.ca' END), marketing_consent = COALESCE(marketing_consent, CASE WHEN customer_id % 4 = 0 THEN 0 ELSE 1 END);
 GO
 UPDATE dbo.service_accounts SET latitude = COALESCE(latitude, 43.4 + (ABS(CHECKSUM(NEWID())) % 700) / 1000.0), longitude = COALESCE(longitude, -79.8 + (ABS(CHECKSUM(NEWID())) % 900) / 1000.0), service_zone_code = COALESCE(service_zone_code, CASE ABS(CHECKSUM(NEWID())) % 6 WHEN 0 THEN 'CA-ON-GTA-N' WHEN 1 THEN 'CA-ON-GTA-S' WHEN 2 THEN 'CA-ON-GTA-E' WHEN 3 THEN 'CA-ON-GTA-W' WHEN 4 THEN 'CA-ON-OTT' ELSE 'CA-ON-SWO' END);
+GO
+UPDATE dbo.service_requests
+SET no_show_reason_code = COALESCE(no_show_reason_code,
+    CASE
+        WHEN completed_date IS NOT NULL OR status IN ('Completed', 'Closed', 'Resolved', 'Cancelled') THEN 'NOT_APPLICABLE'
+        WHEN UPPER(COALESCE(resolution_notes, '')) LIKE '%DISPATCH%REASSIGN%' OR UPPER(COALESCE(resolution_notes, '')) LIKE '%DID NOT REASSIGN%' THEN 'DISPATCH_NO_REASSIGN'
+        WHEN UPPER(COALESCE(resolution_notes, '')) LIKE '%CUSTOMER NOT HOME%' OR UPPER(COALESCE(resolution_notes, '')) LIKE '%NO ANSWER AT DOOR%' THEN 'CUSTOMER_NOT_HOME'
+        WHEN UPPER(COALESCE(resolution_notes, '')) LIKE '%NO TECH%' OR UPPER(COALESCE(resolution_notes, '')) LIKE '%TECH UNAVAILABLE%' OR UPPER(COALESCE(resolution_notes, '')) LIKE '%CAPACITY%' THEN 'TECH_CAPACITY_CONSTRAINT'
+        WHEN UPPER(COALESCE(resolution_notes, '')) LIKE '%WEATHER%' OR UPPER(COALESCE(resolution_notes, '')) LIKE '%STORM%' THEN 'WEATHER_DELAY'
+        WHEN scheduled_date IS NOT NULL AND completed_date IS NULL THEN 'CAUSE_UNSPECIFIED'
+        ELSE 'NOT_APPLICABLE'
+    END);
 GO
 UPDATE dbo.billing_transactions SET bank_routing_last_4 = COALESCE(bank_routing_last_4, RIGHT('0000' + CAST(ABS(CHECKSUM(NEWID())) % 10000 AS VARCHAR(4)), 4)), card_pan_last_4 = COALESCE(card_pan_last_4, RIGHT('0000' + CAST(ABS(CHECKSUM(NEWID())) % 10000 AS VARCHAR(4)), 4));
 GO

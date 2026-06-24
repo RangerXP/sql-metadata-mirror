@@ -1,4 +1,4 @@
 "intent_id","intent_name","owner","gap_notes","next_action","target_date","status","risk"
-"P3I-003","Missed appointment and no-show reasoning","Service Ops Steward","No explicit no_show_reason_code or dispatch-failure taxonomy for deterministic explanation","Add no_show_reason_code and backfill recent requests","TBD","OPEN","MEDIUM"
+"P3I-003","Missed appointment and no-show reasoning","Service Ops Steward","Backfill implemented: service_requests.no_show_reason_code with deterministic taxonomy and seeded DISPATCH_NO_REASSIGN example","Rerun P3-3 missed-appointment runtime prompt and attach evidence excerpt","2026-06-24","IMPLEMENTED_PENDING_VALIDATION","LOW"
 "P3I-005","Repeat complaint risk","Customer Ops Steward","Repeat-complaint lookback and threshold policy not encoded in semantic/governance metadata","Define recurrence policy and add derived repeat_complaint_flag","TBD","OPEN","MEDIUM"
 "P3I-006","Credit recommendation eligibility","Domain Owner","Composite recommendation rule is narrative-only and not persisted as auditable governed logic","Implement governed credit_eligibility_rule table/view and bind to AI instruction priority","TBD","OPEN","MEDIUM"

@@ -129,11 +129,11 @@ GO
 
 INSERT INTO dbo.service_requests
     (request_id, service_account_id, equipment_id, request_type, priority, status, description,
-     created_date, scheduled_date, completed_date, technician_id, resolution_notes)
+     created_date, scheduled_date, completed_date, technician_id, no_show_reason_code, resolution_notes)
 VALUES
 (2026051142, 183746220, 183746221, 'Emergency Repair', 'Emergency', 'InProgress',
  'NoHeat furnace case opened through portal; scheduled pending tech after missed 24-hour SLA.',
- '2026-06-13', '2026-06-14', NULL, 105,
+ '2026-06-13', '2026-06-14', NULL, 105, 'DISPATCH_NO_REASSIGN',
  'Scheduled - Pending Tech; GTA North dispatch did not reassign after the SLA breach.');
 GO
 
@@ -190,7 +190,38 @@ WHERE latitude IS NULL;
 GO
 
 /* ------------------------------------------------------------------------------
-   5. Backfill dbo.billing_transactions — payment partials
+   5. Backfill dbo.service_requests — no-show causality taxonomy
+   Taxonomy: DISPATCH_NO_REASSIGN, CUSTOMER_NOT_HOME, TECH_CAPACITY_CONSTRAINT,
+             WEATHER_DELAY, CAUSE_UNSPECIFIED, NOT_APPLICABLE
+------------------------------------------------------------------------------ */
+
+UPDATE dbo.service_requests
+SET no_show_reason_code =
+    CASE
+        WHEN completed_date IS NOT NULL OR status IN ('Completed', 'Closed', 'Resolved', 'Cancelled')
+            THEN 'NOT_APPLICABLE'
+        WHEN UPPER(COALESCE(resolution_notes, '')) LIKE '%DISPATCH%REASSIGN%'
+             OR UPPER(COALESCE(resolution_notes, '')) LIKE '%DID NOT REASSIGN%'
+            THEN 'DISPATCH_NO_REASSIGN'
+        WHEN UPPER(COALESCE(resolution_notes, '')) LIKE '%CUSTOMER NOT HOME%'
+             OR UPPER(COALESCE(resolution_notes, '')) LIKE '%NO ANSWER AT DOOR%'
+            THEN 'CUSTOMER_NOT_HOME'
+        WHEN UPPER(COALESCE(resolution_notes, '')) LIKE '%NO TECH%'
+             OR UPPER(COALESCE(resolution_notes, '')) LIKE '%TECH UNAVAILABLE%'
+             OR UPPER(COALESCE(resolution_notes, '')) LIKE '%CAPACITY%'
+            THEN 'TECH_CAPACITY_CONSTRAINT'
+        WHEN UPPER(COALESCE(resolution_notes, '')) LIKE '%WEATHER%'
+             OR UPPER(COALESCE(resolution_notes, '')) LIKE '%STORM%'
+            THEN 'WEATHER_DELAY'
+        WHEN scheduled_date IS NOT NULL AND completed_date IS NULL
+            THEN 'CAUSE_UNSPECIFIED'
+        ELSE 'NOT_APPLICABLE'
+    END
+WHERE no_show_reason_code IS NULL;
+GO
+
+/* ------------------------------------------------------------------------------
+   6. Backfill dbo.billing_transactions — payment partials
 ------------------------------------------------------------------------------ */
 
 UPDATE dbo.billing_transactions
@@ -202,7 +233,7 @@ WHERE bank_routing_last_4 IS NULL
 GO
 
 /* ------------------------------------------------------------------------------
-   6. customer_consents — ~120 rows (mix of consent types)
+    7. customer_consents — ~120 rows (mix of consent types)
    Picks 30 customers, 4 consent types each, mixing granted/withdrawn.
 ------------------------------------------------------------------------------ */
 
