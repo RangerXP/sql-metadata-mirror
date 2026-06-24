@@ -302,6 +302,140 @@ All Purview notebooks are dry-run first. Live API calls require `APPLY_CHANGES=T
 
 ---
 
+## 5C. Phase 3 — AI Enrichment Design Pattern (Call Center North Star)
+
+### Phase framing
+
+- **Phase 1 (completed):** Infrastructure and architecture.
+- **Phase 2 (completed):** Semantic modeling and baseline metadata surfaces.
+- **Phase 3 (new):** AI enrichment for call-center outcomes, using Maria Castellanos as the northstar business case.
+
+The objective of Phase 3 is to move from generic annotation coverage to **use-case-valid annotation quality**: KPIs, Verified Answers, and AI Instructions that are explicitly ordered and authored for Tom-style in-call decisions.
+
+### North-star business contract (Maria)
+
+The runtime behavior for this phase is anchored to this minimum scenario:
+
+1. Agent can profile customer state quickly: identity, account, consent, equipment, active service request, contract, billing, and complaint history.
+2. Agent can detect and explain SLA breach context for no-heat and missed dispatch.
+3. Agent can apply business-rule recommendations in order: immediate operational recovery first, then financial remediation.
+4. Agent can issue recommendation for credit where rules are satisfied (for example, SLA breach + active billing during no-heat + not a repeat complainer).
+5. Copilot/Data Agent responses remain deterministic by priority ordering and certified metadata state.
+
+### Phase 3 milestones and closure proofs
+
+#### Milestone P3-1 — Source-readiness and coverage review
+
+**Goal:** verify each source domain has enough row-level evidence to support the intended AI annotations.
+
+**Required review scope:**
+- Fact tables, dimensions, and production measures in the `BrookfieldEnercare` model.
+- Core scenario slices: Customer, Financials (billing/contracts/revenue), Service Records, Equipment, Call History.
+
+**Execution pattern:**
+1. Read each row cohort relevant to Maria and adjacent cohorts (non-Maria controls).
+2. Map each candidate KPI/VA/AI Instruction to its source columns and measure lineage.
+3. Flag unsupported annotation intents as `BACKFIT_REQUIRED`.
+
+**Approval proof to close P3-1:**
+- A traceability matrix exists with one row per annotation intent and columns for source support, gaps, and backfit owner.
+- No high-priority call-center intent remains unclassified (`SUPPORTED` or `BACKFIT_REQUIRED`).
+
+#### Milestone P3-2 — Industry-lexicon KPI design
+
+**Goal:** define KPI semantics in call-center and home-service industry language.
+
+**Design rules:**
+1. KPI names and descriptions must be conversant for call-center users (not only technical model terms).
+2. KPI definitions must resolve to a single semantic-model measure path.
+3. KPI business language must align to glossary terms used in the Maria scenario.
+
+**Approval proof to close P3-2:**
+- KPI set is reviewed with domain owner/steward and tagged as `CERTIFIED_FOR_AGENT_USE` in the curation workflow.
+- Every KPI used by AI Instructions has a bound measure and glossary linkage.
+
+#### Milestone P3-3 — Verified Answers pack for call-agent prompts
+
+**Goal:** produce verified answers from actual data states that match high-frequency support intents.
+
+**Priority intents baseline:**
+1. `no-heat`
+2. `missed appointment` / `no-show`
+3. `billing while unresolved outage`
+4. `credit eligibility`
+5. `repeat complaint risk`
+
+**Design rules:**
+1. Verified answers must be derived from data, not only template prose.
+2. Each answer must contain explicit condition logic and recommended action path.
+3. Sort order must support in-call triage: current customer state before generalized policy text.
+
+**Approval proof to close P3-3:**
+- Verified-answer payload is generated and versioned from current metadata tables.
+- Smoke prompts in notebook/test harness return expected answer class for all baseline intents.
+
+#### Milestone P3-4 — AI Instructions ordering and recommendation policy
+
+**Goal:** enforce deterministic instruction order for call-agent screen needs and recommendation logic.
+
+**Ordering policy (top to bottom):**
+1. Identity and customer state snapshot
+2. Service urgency and SLA condition
+3. Financial exposure (billing/contracts/revenue context)
+4. Complaint history and repeat-risk status
+5. Recommendation block (actions, credits, escalation)
+
+**Maria decision rule baseline:**
+- If active `no-heat` + SLA breach + billing is active during unresolved service window + no repeat-complaint pattern, recommend credit and dispatch escalation.
+
+**Approval proof to close P3-4:**
+- Annotation ordering is validated in both draft and published Data Agent surfaces.
+- Manual test run for Maria returns policy-aligned recommendation in expected order.
+
+#### Milestone P3-5 — Backfit sprint for annotation-data gaps
+
+**Goal:** close data gaps discovered in P3-1 so AI annotations are fully evidence-backed.
+
+**Backfit scope examples:**
+- Missing service-call attributes needed to determine no-show causality.
+- Missing complaint recurrence markers for repeat-complaint logic.
+- Missing billing-state attributes tied to unresolved outage intervals.
+
+**Approval proof to close P3-5:**
+- All `BACKFIT_REQUIRED` items are either implemented or explicitly deferred with owner/date/risk.
+- No high-severity annotation remains without data support.
+
+#### Milestone P3-6 — Phase 3 closeout gate
+
+**Goal:** certify that the call-center AI enrichment pattern is demo-ready and governance-ready.
+
+**Closure checks:**
+1. Maria northstar run passes end-to-end for customer profile, service state, financial context, and recommendation output.
+2. KPI, Verified Answers, and AI Instructions are traceable to source data and semantic measures.
+3. Annotation sort order is stable and deterministic in runtime surfaces.
+4. Outstanding gap log contains no unresolved blocking item.
+
+**Approval proof to close P3-6:**
+- A short sign-off record is captured with Domain Owner + Data Steward + Demo Owner approval.
+- Phase status marked `CLOSED` and promoted as the operating pattern for subsequent scenarios.
+
+### Delivery cadence for fast execution
+
+Use short cycles with explicit go/no-go gates:
+
+1. **Cycle 1:** P3-1 and P3-2
+2. **Cycle 2:** P3-3 and P3-4
+3. **Cycle 3:** P3-5 and P3-6
+
+Each cycle ends with:
+- A file gate (only expected assets changed).
+- A behavior gate (northstar scenario assertions pass).
+- A publish gate (draft/published surfaces synchronized).
+
+This keeps Phase 3 fast while preserving proof-based governance closure.
+
+---
+
 ## 6. Layer Responsibilities (Mental Model)
 
 | Layer | Role | Tool |
