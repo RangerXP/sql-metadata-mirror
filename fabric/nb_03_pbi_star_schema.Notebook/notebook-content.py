@@ -68,6 +68,14 @@ def mirror_table_sql(table_name: str) -> str:
         return f"delta.`{mirror_table_path(table_name)}`"
 
 
+def source_has_column(table_name: str, column_name: str) -> bool:
+    if USE_DEMO_FALLBACK:
+        cols = spark.table(mirror_table_sql(table_name)).columns
+    else:
+        cols = spark.read.format("delta").load(mirror_table_path(table_name)).columns
+    return column_name in cols
+
+
 print(f"Source lakehouse          : {DEMO_LAKEHOUSE}")
 print(f"Use fallback to demo      : {USE_DEMO_FALLBACK}")
 if not USE_DEMO_FALLBACK:
@@ -282,6 +290,10 @@ print(f"  fct_billing: {spark.table(f'{DEMO_LAKEHOUSE}.fct_billing').count()} ro
 
 # ===== CELL 7 START: Build fct_service_request =====
 
+has_no_show_reason_code = source_has_column("service_requests", "no_show_reason_code")
+no_show_reason_expr = "sr.no_show_reason_code" if has_no_show_reason_code else "CAST(NULL AS STRING)"
+print(f"  service_requests.no_show_reason_code available: {has_no_show_reason_code}")
+
 spark.sql(f"""
 CREATE OR REPLACE TABLE {DEMO_LAKEHOUSE}.fct_service_request USING DELTA AS
 SELECT
@@ -297,7 +309,7 @@ SELECT
     sr.status                                                   AS Status,
     sr.description                                              AS Description,
     sr.technician_id                                            AS TechnicianId,
-    sr.no_show_reason_code                                      AS NoShowReasonCode,
+    {no_show_reason_expr}                                       AS NoShowReasonCode,
     sr.resolution_notes                                         AS ResolutionNotes,
     CASE
         WHEN sr.status = 'Completed' AND sr.priority IN ('High','Emergency')
