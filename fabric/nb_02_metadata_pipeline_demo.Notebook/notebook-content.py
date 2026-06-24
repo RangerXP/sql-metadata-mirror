@@ -818,6 +818,7 @@ print("  4. Provide Purview service principal credentials (Cell 1)")
 print("  5. Schedule this notebook on 15-min trigger (matches README Phase 2)")
 # Sync marker: no functional change; source-control refresh trigger only.
 # Sync marker 2: no functional change; source-control refresh trigger only.
+# Sync marker 3: no functional change; source-control refresh trigger only.
 
 # METADATA ********************
 
