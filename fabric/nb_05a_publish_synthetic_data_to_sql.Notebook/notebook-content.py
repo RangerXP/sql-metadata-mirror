@@ -309,6 +309,88 @@ def clear_base_tables(connection):
         cur.execute(f"DELETE FROM {target_table}")
     connection.commit()
 
+
+def ensure_service_request_employee_fk_ready(connection):
+    cur = connection.cursor()
+
+    cur.execute("SELECT OBJECT_ID(N'dbo.service_requests', N'U')")
+    has_service_requests = cur.fetchone()[0] is not None
+    cur.execute("SELECT OBJECT_ID(N'dbo.employees', N'U')")
+    has_employees = cur.fetchone()[0] is not None
+
+    if not has_service_requests or not has_employees:
+        return
+
+    cur.execute(
+        """
+        SELECT 1
+        FROM sys.foreign_keys
+        WHERE name = 'FK_service_requests_employee'
+          AND parent_object_id = OBJECT_ID(N'dbo.service_requests')
+        """
+    )
+    if cur.fetchone() is None:
+        return
+
+    technician_rows = (
+        spark.table(f"{DEMO_LAKEHOUSE}.service_requests")
+        .select("technician_id")
+        .where(F.col("technician_id").isNotNull())
+        .dropDuplicates()
+        .collect()
+    )
+    technician_ids = sorted({int(row["technician_id"]) for row in technician_rows})
+    if not technician_ids:
+        return
+
+    placeholders = ", ".join(["?"] * len(technician_ids))
+    cur.execute(
+        f"SELECT employee_id FROM dbo.employees WHERE employee_id IN ({placeholders})",
+        technician_ids,
+    )
+    existing_ids = {int(row[0]) for row in cur.fetchall()}
+    missing_ids = [employee_id for employee_id in technician_ids if employee_id not in existing_ids]
+
+    if not missing_ids:
+        print("FK preflight: all technician IDs already exist in dbo.employees.")
+        return
+
+    print(f"FK preflight: inserting {len(missing_ids)} placeholder dbo.employees rows for technician IDs.")
+    employee_rows = [
+        (
+            employee_id,
+            f"tech{employee_id}@enercare.ca",
+            f"Tech{employee_id}",
+            "Placeholder",
+            f"tech{employee_id}@enercare.ca",
+            None,
+            "Service Technician",
+            "Field Ops",
+            None,
+            "2020-01-01",
+            None,
+            None,
+            None,
+            1,
+        )
+        for employee_id in missing_ids
+    ]
+
+    cur.fast_executemany = True
+    cur.executemany(
+        """
+        INSERT INTO dbo.employees (
+            employee_id, upn, first_name, last_name, email, phone, role,
+            department, manager_employee_id, hire_date, sin_full,
+            date_of_birth, home_postal_code, is_active
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        employee_rows,
+    )
+    connection.commit()
+    print("FK preflight: placeholder employee rows committed.")
+
 if DEMO_MODE:
     print("[DRY RUN] No JDBC writes attempted.")
 else:
@@ -325,6 +407,12 @@ else:
                 "Set SQL_AUTH_MODE='tokenlibrary' or change BASE_TABLE_LOAD_MODE to 'append' or 'skip_existing'."
             )
         clear_base_tables(conn)
+
+    if conn is None:
+        conn = get_sql_odbc_connection(sql_access_token)
+        print("pyodbc connection established for FK preflight checks.")
+
+    ensure_service_request_employee_fk_ready(conn)
 
     write_results = []
 
