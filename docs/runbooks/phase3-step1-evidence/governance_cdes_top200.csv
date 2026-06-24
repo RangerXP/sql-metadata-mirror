@@ -1,0 +1,14 @@
+cde_id,cde_name,expected_data_type,business_definition,owner_role,status,parent_glossary_term,bound_columns,sensitivity_label
+------,--------,------------------,-------------------,----------,------,--------------------,-------------,-----------------
+CDE-AUDIT-PURPOSE,Audit Purpose Of Use,text,Declared purpose for data access event.,Data Governance Admin,Published,GT-010,dbo.audit_data_access.purpose_of_use,Internal
+CDE-BANK-LAST4,Bank Routing Last 4,text,Last four digits of bank routing details.,Finance Steward,Published,GT-004,dbo.billing_transactions.bank_routing_last_4,Highly Confidential
+CDE-CONSENT-STATUS,Consent Status,text,Current legal status of customer consent record.,Privacy Officer,Published,GT-003,dbo.customer_consents.consent_status,Confidential
+CDE-CONTRACT-ID,Contract Identifier,number,Unique identifier for customer contracts.,Data Steward,Published,GT-007,dbo.contracts.contract_id,Internal
+CDE-CUST-ID,Customer Identifier,number,Unique enterprise identifier for customer entities.,Data Steward,Published,GT-001,dbo.customers.customer_id,Internal
+CDE-DOB,Date Of Birth,date,Customer date of birth for identity and eligibility checks.,Privacy Officer,Published,GT-001,dbo.customers.date_of_birth,Highly Confidential
+CDE-GEO,Geo Coordinates,text,Service account latitude and longitude values.,Data Steward,Published,GT-001,dbo.service_accounts.latitude;dbo.service_accounts.longitude,Confidential
+CDE-OWNER-UPN,Data Owner UPN,text,UPN of assigned data owner for governed object.,Data Governance Admin,Published,GT-009,dbo.data_owners_directory.data_owner_upn,Internal
+CDE-PAN-LAST4,Card PAN Last 4,text,Last four digits of payment card number.,Finance Steward,Published,GT-004,dbo.billing_transactions.card_pan_last_4,Highly Confidential
+CDE-REQ-ID,Service Request Identifier,number,Unique service request key.,Data Steward,Published,GT-005,dbo.service_requests.request_id,Internal
+CDE-SIN,Social Insurance Number,text,Canadian SIN full or partial representation.,Privacy Officer,Published,GT-002,dbo.employees.sin_full;dbo.customers.sin_last_4,Highly Confidential
+CDE-SVCACCT-ID,Service Account Identifier,number,Unique identifier for service account records.,Data Steward,Published,GT-005,dbo.service_accounts.service_account_id,Internal

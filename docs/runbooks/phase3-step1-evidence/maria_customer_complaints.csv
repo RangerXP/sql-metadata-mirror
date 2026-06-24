@@ -1,0 +1,4 @@
+complaint_id,customer_id,service_account_id,complaint_type,severity,opened_date,closed_date,status,assigned_to_upn,description,regulator_case_ref
+------------,-----------,------------------,--------------,--------,-----------,-----------,------,---------------,-----------,------------------
+18374622,18374622,183746220,Service,High,2026-06-17,NULL,Escalated,tnguyen@enercare.ca,NoHeat furnace request missed the 24-hour SLA in GTA North; customer was still billed monthly rental charge.,NULL
+(1 row affected)

@@ -1,0 +1,33 @@
+request_id,service_account_id,equipment_id,request_type,priority,status,description,created_date,scheduled_date,completed_date,technician_id,resolution_notes
+----------,------------------,------------,------------,--------,------,-----------,------------,--------------,--------------,-------------,----------------
+1,2,1,Maintenance,Low,Completed,Annual flushing and anode rod check,2022-11-15,2022-11-22,2022-11-22,1012,Anode rod 50% depleted, advised replacement within 2 years
+2,8,2,Emergency Repair,Emergency,Completed,No hot water ΓÇö pilot light out,2023-02-08,2023-02-08,2023-02-08,1007,Thermocouple replaced, pilot relit, system tested OK
+3,14,13,Maintenance,Low,Completed,Annual furnace tune-up,2022-09-20,2022-10-05,2022-10-05,1023,Filter replaced, heat exchanger inspected, combustion analysis done
+4,4,5,Emergency Repair,High,Completed,Furnace not starting ΓÇö ignitor fault,2023-01-12,2023-01-13,2023-01-13,1007,Hot surface ignitor cracked and replaced
+5,11,17,Maintenance,Low,Completed,Spring AC startup check,2023-05-02,2023-05-08,2023-05-08,1019,Refrigerant level OK, capacitor tested, coils cleaned
+6,18,18,Emergency Repair,High,Completed,AC not cooling ΓÇö refrigerant leak suspect,2023-07-15,2023-07-15,2023-07-15,1011,Refrigerant leak found at service valve, repaired and recharged
+7,13,8,Maintenance,Low,Completed,Annual furnace inspection,2022-10-10,2022-10-18,2022-10-18,1023,System clean, blower motor lubricated, all safeties tested
+8,22,12,Maintenance,Low,Completed,Annual furnace tune-up,2023-09-25,2023-10-03,2023-10-03,1015,Completed standard inspection, new filter installed
+9,7,6,Maintenance,Low,Completed,Annual furnace inspection,2023-09-28,2023-10-10,2023-10-10,1023,All checks pass, heat exchanger clear
+10,47,34,Maintenance,Medium,Completed,Quarterly commercial WH service,2023-08-01,2023-08-07,2023-08-07,1031,Sediment flush completed, temperature verified at 60C
+11,1,21,Installation,Low,Completed,ecobee thermostat install with app setup,2022-04-04,2022-04-05,2022-04-05,1019,ecobee SmartThermostat Premium installed, integrated with furnace and AC
+12,4,22,Installation,Low,Completed,ecobee enhanced thermostat install,2021-09-10,2021-09-12,2021-09-12,1019,ecobee SmartThermostat Enhanced installed and WiFi configured
+13,21,19,Installation,Medium,Completed,Heat pump install ΓÇö replacing gas furnace,2023-01-30,2023-02-10,2023-02-10,1008,Carrier Infinity 20 installed, old furnace removed, system commissioned
+14,26,13,Emergency Repair,High,Completed,Furnace tripping limit switch repeatedly,2023-12-21,2023-12-21,2023-12-21,1007,Dirty filter caused overheating, filter replaced, limit reset, all OK
+15,35,NULL,Maintenance,Low,Completed,Annual maintenance check,2023-10-05,2023-10-12,2023-10-12,1015,Inspection completed, minor adjustment to gas pressure
+16,24,NULL,Maintenance,Low,InProgress,Annual gas line inspection,2024-04-20,2024-04-28,NULL,1023,NULL
+17,39,NULL,Maintenance,Low,InProgress,Annual furnace tune-up booking,2024-04-18,2024-04-30,NULL,1015,NULL
+18,52,26,Maintenance,Medium,InProgress,Building WH annual service,2024-04-22,2024-04-25,NULL,1031,NULL
+19,3,NULL,Maintenance,Low,Open,Customer-requested annual gas safety check,2024-04-28,NULL,NULL,NULL,NULL
+20,6,NULL,Maintenance,Low,Open,First annual furnace check (new build),2024-04-25,NULL,NULL,NULL,NULL
+21,9,NULL,Inspection,Medium,Open,Gas smell reported ΓÇö investigate,2024-04-30,NULL,NULL,NULL,NULL
+22,16,NULL,Emergency Repair,High,Open,No heat ΓÇö furnace off, house 14C,2024-04-29,NULL,NULL,NULL,NULL
+23,19,NULL,Maintenance,Low,Open,Protection plan annual furnace service,2024-04-27,NULL,NULL,NULL,NULL
+24,23,NULL,Inspection,Low,Open,Carbon monoxide detector triggered,2024-04-26,2024-05-02,NULL,NULL,NULL
+25,25,NULL,Maintenance,Low,Open,Annual furnace check requested by steward,2024-04-23,NULL,NULL,NULL,NULL
+26,27,NULL,Emergency Repair,Emergency,Open,Water heater flooding ΓÇö shut-off needed,2024-04-30,NULL,NULL,NULL,NULL
+27,29,NULL,Maintenance,Low,Open,Pre-winter furnace inspection,2024-04-24,NULL,NULL,NULL,NULL
+28,33,NULL,Installation,Medium,Open,New ecobee install ΓÇö new construction,2024-04-29,2024-05-03,NULL,NULL,NULL
+29,48,NULL,Inspection,High,Open,Smoke detector triggered in HVAC room,2024-04-30,NULL,NULL,NULL,NULL
+30,56,32,Emergency Repair,High,Open,WH leaking ΓÇö multi-unit building floor 3,2024-04-30,NULL,NULL,NULL,NULL
+2026051142,183746220,183746221,Emergency Repair,Emergency,InProgress,NoHeat furnace case opened through portal; scheduled pending tech after missed 24-hour SLA.,2026-06-13,2026-06-14,NULL,105,Scheduled - Pending Tech; GTA North dispatch did not reassign after the SLA breach.

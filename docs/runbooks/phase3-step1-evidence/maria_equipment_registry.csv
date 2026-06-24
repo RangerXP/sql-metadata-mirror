@@ -1,0 +1,4 @@
+equipment_id,service_account_id,equipment_type,make,model,serial_number,ownership_type,fuel_type,install_date,warranty_expiry,status
+------------,------------------,--------------,----,-----,-------------,--------------,---------,------------,---------------,------
+183746221,183746220,Furnace,Lennox,SLP98V,LX2020-MARIA98V,Rental,Natural Gas,2020-10-17,2030-10-17,Active
+(1 row affected)

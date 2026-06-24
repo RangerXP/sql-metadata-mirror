@@ -1,0 +1,4 @@
+request_id,service_account_id,equipment_id,request_type,priority,status,description,created_date,scheduled_date,completed_date,technician_id,resolution_notes
+----------,------------------,------------,------------,--------,------,-----------,------------,--------------,--------------,-------------,----------------
+2026051142,183746220,183746221,Emergency Repair,Emergency,InProgress,NoHeat furnace case opened through portal; scheduled pending tech after missed 24-hour SLA.,2026-06-13,2026-06-14,NULL,105,Scheduled - Pending Tech; GTA North dispatch did not reassign after the SLA breach.
+(1 row affected)

@@ -1,0 +1,6 @@
+"intent_key","intent_id","expected_class","prompt","expected_behavior"
+"no-heat","P3I-002","SUPPORTED","Customer says no heat since yesterday. What is current SLA status and next action?","Return evidence-backed recommendation path."
+"missed appointment","P3I-003","BACKFIT_REQUIRED","Customer missed appointment and asks why technician did not arrive. What deterministic cause can be provided?","Return safe fallback and identify missing governed data attribute."
+"billing while unresolved outage","P3I-004","SUPPORTED","Customer has an unresolved outage and still sees charges. Explain whether billing exposure exists and what remediation applies.","Return evidence-backed recommendation path."
+"credit eligibility","P3I-006","BACKFIT_REQUIRED","Is this customer eligible for credit based on service outage and billing state?","Return safe fallback and identify missing governed data attribute."
+"repeat complaint risk","P3I-005","BACKFIT_REQUIRED","Does complaint history indicate repeat-complaint escalation risk?","Return safe fallback and identify missing governed data attribute."

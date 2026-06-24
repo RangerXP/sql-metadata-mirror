@@ -1,0 +1,4 @@
+transaction_id,contract_id,service_account_id,transaction_type,transaction_date,due_date,amount,tax_amount,payment_method,status,invoice_number,bank_routing_last_4,card_pan_last_4
+--------------,-----------,------------------,----------------,----------------,--------,------,----------,--------------,------,--------------,-------------------,---------------
+183746224,183746222,183746220,Credit,2026-06-17,NULL,-14.99,0.00,CreditCard,Posted,CR-MARIA-SLA-202606,1837,4622
+183746223,183746222,183746220,MonthlyCharge,2026-06-15,2026-06-30,89.95,11.69,CreditCard,Posted,INV-MARIA-202606,1837,4622

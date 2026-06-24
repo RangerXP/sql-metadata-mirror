@@ -1,0 +1,4 @@
+customer_id,account_number,first_name,last_name,email,phone,customer_type,status,city,province,postal_code,created_date,date_of_birth,sin_last_4,owner_email,marketing_consent
+-----------,--------------,----------,---------,-----,-----,-------------,------,----,--------,-----------,------------,-------------,----------,-----------,-----------------
+18374622,EC18374622,Maria,Castellanos,maria.castellanos@example.ca,905-555-4622,Residential,Active,Markham,ON,L4G 2H9,2020-10-17,1983-07-09,8624,Rupal.Solanki@enercare.ca,1
+(1 row affected)

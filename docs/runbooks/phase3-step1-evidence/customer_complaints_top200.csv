@@ -1,0 +1,21 @@
+complaint_id,customer_id,service_account_id,complaint_type,severity,opened_date,closed_date,status,assigned_to_upn,description,regulator_case_ref
+------------,-----------,------------------,--------------,--------,-----------,-----------,------,---------------,-----------,------------------
+1,4,NULL,Billing,Medium,2026-06-17,NULL,Resolved,Rupal.Solanki@enercare.ca,Synthetic complaint 1,NULL
+2,7,NULL,Service,Medium,2026-06-16,NULL,Resolved,Rupal.Solanki@enercare.ca,Synthetic complaint 2,NULL
+3,10,NULL,AutoRenew,RegulatorReportable,2026-06-15,NULL,Escalated,Rupal.Solanki@enercare.ca,Synthetic complaint 3,REG-2026-0003
+4,13,NULL,Privacy,Medium,2026-06-14,NULL,Resolved,Rupal.Solanki@enercare.ca,Synthetic complaint 4,NULL
+5,16,NULL,Billing,Medium,2026-06-13,NULL,Resolved,Rupal.Solanki@enercare.ca,Synthetic complaint 5,NULL
+6,19,NULL,Service,High,2026-06-12,NULL,Escalated,Rupal.Solanki@enercare.ca,Synthetic complaint 6,NULL
+7,22,NULL,AutoRenew,RegulatorReportable,2026-06-11,NULL,Resolved,Rupal.Solanki@enercare.ca,Synthetic complaint 7,REG-2026-0007
+8,25,NULL,Privacy,Medium,2026-06-10,NULL,Resolved,Rupal.Solanki@enercare.ca,Synthetic complaint 8,NULL
+9,28,NULL,Billing,High,2026-06-09,NULL,Escalated,Rupal.Solanki@enercare.ca,Synthetic complaint 9,NULL
+10,31,NULL,Service,Medium,2026-06-08,NULL,Resolved,Rupal.Solanki@enercare.ca,Synthetic complaint 10,NULL
+11,34,NULL,AutoRenew,Medium,2026-06-07,NULL,Resolved,Rupal.Solanki@enercare.ca,Synthetic complaint 11,NULL
+12,37,NULL,Privacy,High,2026-06-06,NULL,Escalated,Rupal.Solanki@enercare.ca,Synthetic complaint 12,NULL
+13,40,NULL,Billing,Medium,2026-06-05,NULL,Resolved,Rupal.Solanki@enercare.ca,Synthetic complaint 13,NULL
+14,43,NULL,Service,Medium,2026-06-04,NULL,Resolved,Rupal.Solanki@enercare.ca,Synthetic complaint 14,NULL
+15,46,NULL,AutoRenew,RegulatorReportable,2026-06-03,NULL,Escalated,Rupal.Solanki@enercare.ca,Synthetic complaint 15,REG-2026-0015
+16,49,NULL,Privacy,Medium,2026-06-02,NULL,Resolved,Rupal.Solanki@enercare.ca,Synthetic complaint 16,NULL
+17,2,NULL,Billing,Medium,2026-06-01,NULL,Resolved,Rupal.Solanki@enercare.ca,Synthetic complaint 17,NULL
+18,5,NULL,Service,High,2026-05-31,NULL,Escalated,Rupal.Solanki@enercare.ca,Synthetic complaint 18,NULL
+18374622,18374622,183746220,Service,High,2026-06-17,NULL,Escalated,tnguyen@enercare.ca,NoHeat furnace request missed the 24-hour SLA in GTA North; customer was still billed monthly rental charge.,NULL

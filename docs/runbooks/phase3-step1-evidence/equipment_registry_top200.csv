@@ -1,0 +1,41 @@
+equipment_id,service_account_id,equipment_type,make,model,serial_number,ownership_type,fuel_type,install_date,warranty_expiry,status
+------------,------------------,--------------,----,-----,-------------,--------------,---------,------------,---------------,------
+1,2,Water Heater,Rheem,Performance Plus 40G,RH2019-041847,Rental,Natural Gas,2019-03-22,2024-03-22,Active
+2,8,Water Heater,Bradford White,RG250H6-1,BW2016-088231,Rental,Natural Gas,2016-09-14,2021-09-14,Active
+3,15,Water Heater,A.O. Smith,ProMax 50G,AO2015-059944,Rental,Natural Gas,2015-05-20,2020-05-20,Active
+4,1,Furnace,Lennox,EL296V,LX2018-112034,Customer-Owned,Natural Gas,2018-11-05,2028-11-05,Active
+5,4,Furnace,Carrier,Performance 96,CR2017-203811,Customer-Owned,Natural Gas,2017-12-10,2027-12-10,Active
+6,7,Furnace,York,TM9V,YK2016-094520,Customer-Owned,Natural Gas,2016-10-03,2026-10-03,Active
+7,10,Furnace,Goodman,GMSS960603BN,GD2019-187623,Customer-Owned,Natural Gas,2019-10-17,2024-10-17,Active
+8,13,Furnace,Lennox,SLP99V,LX2018-208410,Customer-Owned,Natural Gas,2018-02-14,2028-02-14,Active
+9,14,Furnace,Carrier,Infinity 98,CR2015-094017,Customer-Owned,Natural Gas,2015-06-08,2025-06-08,Active
+10,17,Furnace,Lennox,ML296V,LX2017-301755,Customer-Owned,Natural Gas,2017-08-22,2022-08-22,Active
+11,20,Furnace,York,YP9C,YK2016-204319,Customer-Owned,Natural Gas,2016-12-30,2021-12-30,Active
+12,22,Furnace,Goodman,GCVC960604CX,GD2019-394812,Customer-Owned,Natural Gas,2019-09-01,2024-09-01,Active
+13,26,Furnace,Lennox,EL296V,LX2015-105522,Customer-Owned,Natural Gas,2015-10-15,2020-10-15,Active
+14,1,Central AC,Lennox,XC21,LX2018-AC4420,Customer-Owned,Electric,2018-06-01,2028-06-01,Active
+15,5,Central AC,Carrier,Infinity 21,CR2019-AC8811,Customer-Owned,Electric,2019-05-15,2029-05-15,Active
+16,7,Central AC,York,YXV,YK2016-AC3120,Customer-Owned,Electric,2016-05-28,2026-05-28,Active
+17,11,Central AC,Lennox,SCA060H4B,LX2021-AC9920,Customer-Owned,Electric,2021-06-20,2031-06-20,Active
+18,18,Central AC,Goodman,GSX140481,GD2020-AC7741,Customer-Owned,Electric,2020-05-10,2025-05-10,Active
+19,21,Heat Pump,Carrier,Infinity 20 GREENSPEED,CR2023-HP0041,Customer-Owned,Electric,2023-02-10,2033-02-10,Active
+20,46,Heat Pump,Lennox,XP25,LX2022-HP8811,Customer-Owned,Electric,2022-07-18,2032-07-18,Active
+21,1,Smart Thermostat,ecobee,SmartThermostat Premium,EB2022-TH3341,Customer-Owned,NULL,2022-04-05,2027-04-05,Active
+22,4,Smart Thermostat,ecobee,SmartThermostat Enhanced,EB2021-TH1192,Customer-Owned,NULL,2021-09-12,2026-09-12,Active
+23,10,Smart Thermostat,Honeywell Home,T9 Smart Thermostat,HW2020-TH5512,Customer-Owned,NULL,2020-11-03,2025-11-03,Active
+24,13,Smart Thermostat,ecobee,SmartThermostat Premium,EB2023-TH8871,Customer-Owned,NULL,2023-01-28,2028-01-28,Active
+25,17,Smart Thermostat,Honeywell Home,T6 Pro Smart Thermostat,HW2019-TH2219,Customer-Owned,NULL,2019-11-15,2024-11-15,Active
+26,52,Water Heater,Rheem,Marathon 85G Electric,RH2016-MUR001,Rental,Electric,2016-07-15,2021-07-15,Active
+27,52,Furnace,Carrier,Performance 80,CR2016-MUR002,Rental,Natural Gas,2016-07-15,2026-07-15,Active
+28,53,Water Heater,Bradford White,RE280T6-1NCWW,BW2017-MUR001,Rental,Electric,2017-03-10,2022-03-10,Active
+29,53,Furnace,Lennox,ML296V,LX2017-MUR002,Rental,Natural Gas,2017-03-10,2027-03-10,Active
+30,54,Water Heater,A.O. Smith,PROMO 50,AO2018-MUR001,Rental,Natural Gas,2018-08-20,2023-08-20,Active
+31,55,Water Heater,Rheem,Classic 50G,RH2020-MUR001,Rental,Natural Gas,2020-02-05,2025-02-05,Active
+32,56,Water Heater,Bradford White,RG240H6-1,BW2021-MUR001,Rental,Natural Gas,2021-04-01,2026-04-01,Active
+33,56,Central AC,York,YZV,YK2021-MUR002,Rental,Electric,2021-05-12,2031-05-12,Active
+34,47,Water Heater,Rheem,Commercial 100G Gas,RH2015-COM001,Rental,Natural Gas,2015-11-15,2020-11-15,Active
+35,48,Furnace,Carrier,ComfortHeat 48SS,CR2016-COM001,Customer-Owned,Natural Gas,2016-04-01,2026-04-01,Active
+36,49,Water Heater,A.O. Smith,ProLine 80G,AO2017-COM001,Rental,Natural Gas,2017-10-10,2022-10-10,Active
+37,50,Furnace,Lennox,LCH240H4B,LX2018-COM001,Customer-Owned,Natural Gas,2018-06-01,2028-06-01,Active
+38,51,Water Heater,Bradford White,MI50L6-1NCWWL,BW2019-COM001,Rental,Natural Gas,2019-10-20,2024-10-20,Active
+183746221,183746220,Furnace,Lennox,SLP98V,LX2020-MARIA98V,Rental,Natural Gas,2020-10-17,2030-10-17,Active
