@@ -35,3 +35,12 @@
 - SUPPORTED intents passing expected behavior: 2/2
 - BACKFIT_REQUIRED intents returning compliant fallback behavior: 3/3
 - Overall P3-3 runtime smoke status: PASS
+
+## WP-1 revalidation rerun (post backfill)
+
+- Rerun date: 2026-06-24
+- Prompt rerun: `P3I-003 missed appointment`
+- Runtime response time: ~4 sec
+- Observed behavior: agent still returned fallback-only response with missing-attribute disclosure (no deterministic dispatch cause surfaced)
+- Interim outcome: WP-1 SQL/schema backfill is implemented, but runtime grounding has not yet reflected `no_show_reason_code`
+- Required next step: refresh/re-publish Data Agent grounding surfaces and rerun P3I-003 before closing WP-1
