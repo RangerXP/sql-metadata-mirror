@@ -53,3 +53,12 @@
 - Observed behavior: agent now references deterministic no-show code policy and expected values, but still returns fallback for this record because reason code is not surfaced in active grounded rowset
 - Interim outcome: stage rule refresh is effective; remaining gap is record-level availability/binding in runtime semantic grounding
 - Required next step: confirm `no_show_reason_code` is present in mirrored/semantic serving path used by the Data Agent, then rerun P3I-003
+
+## WP-1 revalidation rerun (post token-fix + republish)
+
+- Rerun date: 2026-06-24
+- Prompt rerun: `P3I-003 missed appointment`
+- Runtime response time: ~4 sec
+- Observed behavior: agent now cleanly renders deterministic code policy using `no_show_reason_code` and expected code mappings; for this record it still returns governed fallback because no deterministic code is surfaced in the active service request row
+- Interim outcome: instruction path is healthy; remaining blocker is row-level semantic binding/availability of `no_show_reason_code`
+- Required next step: verify the specific service request row used by Data Agent contains `no_show_reason_code` in mirrored + serving semantic tables, then rerun P3I-003
