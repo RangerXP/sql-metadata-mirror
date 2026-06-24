@@ -670,6 +670,11 @@ DELETE FROM dbo.customer_complaints;
 DELETE FROM dbo.customer_consents;
 DELETE FROM dbo.audit_data_access;
 DELETE FROM dbo.data_owners_directory;
+DELETE FROM dbo.billing_transactions;
+DELETE FROM dbo.service_requests;
+DELETE FROM dbo.contracts;
+DELETE FROM dbo.equipment_registry;
+DELETE FROM dbo.service_accounts;
 DELETE FROM dbo.employees;
 DELETE FROM dbo.service_zones;
 GO
