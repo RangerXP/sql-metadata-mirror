@@ -297,6 +297,7 @@ SELECT
     sr.status                                                   AS Status,
     sr.description                                              AS Description,
     sr.technician_id                                            AS TechnicianId,
+    sr.no_show_reason_code                                      AS NoShowReasonCode,
     sr.resolution_notes                                         AS ResolutionNotes,
     CASE
         WHEN sr.status = 'Completed' AND sr.priority IN ('High','Emergency')

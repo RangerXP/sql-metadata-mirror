@@ -125,6 +125,16 @@ table fct_service_request
 
 		annotation SummarizationSetBy = Automatic
 
+	/// Deterministic missed-appointment causality code from source service request
+	column NoShowReasonCode
+		dataType: string
+		lineageTag: c7f74203-5c7b-4f50-b594-0fffd098510b
+		sourceLineageTag: NoShowReasonCode
+		summarizeBy: none
+		sourceColumn: NoShowReasonCode
+
+		annotation SummarizationSetBy = Automatic
+
 	column ResolutionNotes
 		dataType: string
 		lineageTag: 404d0fdc-82d2-4d0c-97dc-976f1cb30931
