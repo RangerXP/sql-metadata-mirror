@@ -670,36 +670,64 @@ DELETE FROM dbo.customer_complaints;
 DELETE FROM dbo.customer_consents;
 DELETE FROM dbo.audit_data_access;
 DELETE FROM dbo.data_owners_directory;
-DELETE FROM dbo.billing_transactions;
-DELETE FROM dbo.service_requests;
-DELETE FROM dbo.contracts;
-DELETE FROM dbo.equipment_registry;
-DELETE FROM dbo.service_accounts;
-DELETE FROM dbo.employees;
-DELETE FROM dbo.service_zones;
 GO
-INSERT INTO dbo.service_zones (zone_code, zone_name, parent_zone_code, province, zone_manager_upn, sla_target_minutes) VALUES
-('CA-ON','Ontario',NULL,'ON','ranbir.singh@enercare.ca',NULL),
-('CA-ON-GTA','Greater Toronto Area',NULL,'ON','ranbir.singh@enercare.ca',120),
-('CA-ON-GTA-N','GTA North',NULL,'ON','mhuang@enercare.ca',90),
-('CA-ON-GTA-S','GTA South',NULL,'ON','mhuang@enercare.ca',90),
-('CA-ON-GTA-E','GTA East',NULL,'ON','rpatel@enercare.ca',90),
-('CA-ON-GTA-W','GTA West',NULL,'ON','rpatel@enercare.ca',90),
-('CA-ON-OTT','Ottawa Region',NULL,'ON','Rupal.Solanki@enercare.ca',150),
-('CA-ON-SWO','Southwestern Ontario',NULL,'ON','Rupal.Solanki@enercare.ca',180);
+MERGE dbo.service_zones AS tgt
+USING (
+    VALUES
+    ('CA-ON','Ontario',NULL,'ON','ranbir.singh@enercare.ca',NULL),
+    ('CA-ON-GTA','Greater Toronto Area',NULL,'ON','ranbir.singh@enercare.ca',120),
+    ('CA-ON-GTA-N','GTA North',NULL,'ON','mhuang@enercare.ca',90),
+    ('CA-ON-GTA-S','GTA South',NULL,'ON','mhuang@enercare.ca',90),
+    ('CA-ON-GTA-E','GTA East',NULL,'ON','rpatel@enercare.ca',90),
+    ('CA-ON-GTA-W','GTA West',NULL,'ON','rpatel@enercare.ca',90),
+    ('CA-ON-OTT','Ottawa Region',NULL,'ON','Rupal.Solanki@enercare.ca',150),
+    ('CA-ON-SWO','Southwestern Ontario',NULL,'ON','Rupal.Solanki@enercare.ca',180)
+) AS src(zone_code, zone_name, parent_zone_code, province, zone_manager_upn, sla_target_minutes)
+ON tgt.zone_code = src.zone_code
+WHEN MATCHED THEN
+    UPDATE SET
+        tgt.zone_name = src.zone_name,
+        tgt.parent_zone_code = src.parent_zone_code,
+        tgt.province = src.province,
+        tgt.zone_manager_upn = src.zone_manager_upn,
+        tgt.sla_target_minutes = src.sla_target_minutes
+WHEN NOT MATCHED THEN
+    INSERT (zone_code, zone_name, parent_zone_code, province, zone_manager_upn, sla_target_minutes)
+    VALUES (src.zone_code, src.zone_name, src.parent_zone_code, src.province, src.zone_manager_upn, src.sla_target_minutes);
 GO
-INSERT INTO dbo.employees (employee_id, upn, first_name, last_name, email, phone, role, department, manager_employee_id, hire_date, sin_full, date_of_birth, home_postal_code, is_active) VALUES
-(1,'Victoria.Tan@enercare.ca','Victoria','Tan','Victoria.Tan@enercare.ca','+1-416-555-0101','Chief Customer Officer','Executive',NULL,'2016-04-01',NULL,'1976-04-22','M5V',1),
-(2,'ranbir.singh@enercare.ca','Ranbir','Singh','ranbir.singh@enercare.ca','+1-416-555-0102','Enercare Leadership Data Plane','Engineering',1,'2020-02-15',NULL,'1981-03-22','M4Y',1),
-(3,'Ci.Zhu@enercare.ca','Ci','Zhu','Ci.Zhu@enercare.ca','+1-437-860-6862','Senior Manager Data Strategy','Data Office',1,'2021-06-07',NULL,'1985-11-04','L3R',1),
-(4,'Rupal.Solanki@enercare.ca','Rupal','Solanki','Rupal.Solanki@enercare.ca','+1-416-555-0104','Data Steward','Data Office',3,'2020-09-21',NULL,'1979-06-30','M4W',1),
-(5,'Shruthi.Srinivas@enercare.ca','Shruthi','Srinivas','Shruthi.Srinivas@enercare.ca','+1-416-555-0105','Data Steward','Data Office',3,'2018-01-10',NULL,'1971-09-15','L4C',1),
-(101,'tnguyen@enercare.ca','Tom','Nguyen','tnguyen@enercare.ca','+1-416-555-1101','Service Technician','Field Ops',2,'2022-03-14',NULL,'1990-04-12','L6T',1),
-(102,'smehta@enercare.ca','Sneha','Mehta','smehta@enercare.ca','+1-416-555-1102','Service Technician','Field Ops',2,'2021-11-01',NULL,'1988-07-19','L5N',1),
-(103,'bfontaine@enercare.ca','Benoit','Fontaine','bfontaine@enercare.ca','+1-416-555-1103','Service Technician','Field Ops',2,'2020-05-08',NULL,'1985-01-25','K2H',1),
-(104,'kahmed@enercare.ca','Karim','Ahmed','kahmed@enercare.ca','+1-416-555-1104','Service Technician','Field Ops',2,'2023-02-20',NULL,'1992-12-03','L1S',1),
-(105,'mhuang@enercare.ca','Mei','Huang','mhuang@enercare.ca','+1-416-555-1105','Field Supervisor','Field Ops',2,'2019-08-18',NULL,'1983-05-21','L4G',1),
-(106,'rpatel@enercare.ca','Rashmi','Patel','rpatel@enercare.ca','+1-416-555-1106','Field Supervisor','Field Ops',2,'2019-10-04',NULL,'1982-09-08','L8N',1);
+MERGE dbo.employees AS tgt
+USING (
+    VALUES
+    (1,'Victoria.Tan@enercare.ca','Victoria','Tan','Victoria.Tan@enercare.ca','+1-416-555-0101','Chief Customer Officer','Executive',NULL,CAST('2016-04-01' AS DATE),NULL,CAST('1976-04-22' AS DATE),'M5V',1),
+    (2,'ranbir.singh@enercare.ca','Ranbir','Singh','ranbir.singh@enercare.ca','+1-416-555-0102','Enercare Leadership Data Plane','Engineering',1,CAST('2020-02-15' AS DATE),NULL,CAST('1981-03-22' AS DATE),'M4Y',1),
+    (3,'Ci.Zhu@enercare.ca','Ci','Zhu','Ci.Zhu@enercare.ca','+1-437-860-6862','Senior Manager Data Strategy','Data Office',1,CAST('2021-06-07' AS DATE),NULL,CAST('1985-11-04' AS DATE),'L3R',1),
+    (4,'Rupal.Solanki@enercare.ca','Rupal','Solanki','Rupal.Solanki@enercare.ca','+1-416-555-0104','Data Steward','Data Office',3,CAST('2020-09-21' AS DATE),NULL,CAST('1979-06-30' AS DATE),'M4W',1),
+    (5,'Shruthi.Srinivas@enercare.ca','Shruthi','Srinivas','Shruthi.Srinivas@enercare.ca','+1-416-555-0105','Data Steward','Data Office',3,CAST('2018-01-10' AS DATE),NULL,CAST('1971-09-15' AS DATE),'L4C',1),
+    (101,'tnguyen@enercare.ca','Tom','Nguyen','tnguyen@enercare.ca','+1-416-555-1101','Service Technician','Field Ops',2,CAST('2022-03-14' AS DATE),NULL,CAST('1990-04-12' AS DATE),'L6T',1),
+    (102,'smehta@enercare.ca','Sneha','Mehta','smehta@enercare.ca','+1-416-555-1102','Service Technician','Field Ops',2,CAST('2021-11-01' AS DATE),NULL,CAST('1988-07-19' AS DATE),'L5N',1),
+    (103,'bfontaine@enercare.ca','Benoit','Fontaine','bfontaine@enercare.ca','+1-416-555-1103','Service Technician','Field Ops',2,CAST('2020-05-08' AS DATE),NULL,CAST('1985-01-25' AS DATE),'K2H',1),
+    (104,'kahmed@enercare.ca','Karim','Ahmed','kahmed@enercare.ca','+1-416-555-1104','Service Technician','Field Ops',2,CAST('2023-02-20' AS DATE),NULL,CAST('1992-12-03' AS DATE),'L1S',1),
+    (105,'mhuang@enercare.ca','Mei','Huang','mhuang@enercare.ca','+1-416-555-1105','Field Supervisor','Field Ops',2,CAST('2019-08-18' AS DATE),NULL,CAST('1983-05-21' AS DATE),'L4G',1),
+    (106,'rpatel@enercare.ca','Rashmi','Patel','rpatel@enercare.ca','+1-416-555-1106','Field Supervisor','Field Ops',2,CAST('2019-10-04' AS DATE),NULL,CAST('1982-09-08' AS DATE),'L8N',1)
+) AS src(employee_id, upn, first_name, last_name, email, phone, role, department, manager_employee_id, hire_date, sin_full, date_of_birth, home_postal_code, is_active)
+ON tgt.employee_id = src.employee_id
+WHEN MATCHED THEN
+    UPDATE SET
+        tgt.upn = src.upn,
+        tgt.first_name = src.first_name,
+        tgt.last_name = src.last_name,
+        tgt.email = src.email,
+        tgt.phone = src.phone,
+        tgt.role = src.role,
+        tgt.department = src.department,
+        tgt.manager_employee_id = src.manager_employee_id,
+        tgt.hire_date = src.hire_date,
+        tgt.date_of_birth = src.date_of_birth,
+        tgt.home_postal_code = src.home_postal_code,
+        tgt.is_active = src.is_active
+WHEN NOT MATCHED THEN
+    INSERT (employee_id, upn, first_name, last_name, email, phone, role, department, manager_employee_id, hire_date, sin_full, date_of_birth, home_postal_code, is_active)
+    VALUES (src.employee_id, src.upn, src.first_name, src.last_name, src.email, src.phone, src.role, src.department, src.manager_employee_id, src.hire_date, src.sin_full, src.date_of_birth, src.home_postal_code, src.is_active);
 GO
 DELETE FROM dbo.billing_transactions WHERE transaction_id IN (183746223, 183746224);
 DELETE FROM dbo.service_requests WHERE request_id = 2026051142;
