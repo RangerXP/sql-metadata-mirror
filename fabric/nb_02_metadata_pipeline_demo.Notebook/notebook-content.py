@@ -816,6 +816,7 @@ print("  2. Set DEMO_MODE = False")
 print("  3. Provide SQL source credentials if using live SQL metadata extraction (Cell 1)")
 print("  4. Provide Purview service principal credentials (Cell 1)")
 print("  5. Schedule this notebook on 15-min trigger (matches README Phase 2)")
+# Sync marker: no functional change; source-control refresh trigger only.
 
 # METADATA ********************
 
