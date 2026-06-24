@@ -44,3 +44,12 @@
 - Observed behavior: agent still returned fallback-only response with missing-attribute disclosure (no deterministic dispatch cause surfaced)
 - Interim outcome: WP-1 SQL/schema backfill is implemented, but runtime grounding has not yet reflected `no_show_reason_code`
 - Required next step: refresh/re-publish Data Agent grounding surfaces and rerun P3I-003 before closing WP-1
+
+## WP-1 revalidation rerun (post stage-rule update)
+
+- Rerun date: 2026-06-24
+- Prompt rerun: `P3I-003 missed appointment`
+- Runtime response time: ~4 sec
+- Observed behavior: agent now references deterministic no-show code policy and expected values, but still returns fallback for this record because reason code is not surfaced in active grounded rowset
+- Interim outcome: stage rule refresh is effective; remaining gap is record-level availability/binding in runtime semantic grounding
+- Required next step: confirm `no_show_reason_code` is present in mirrored/semantic serving path used by the Data Agent, then rerun P3I-003

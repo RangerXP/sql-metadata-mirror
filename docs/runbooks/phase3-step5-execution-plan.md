@@ -16,8 +16,9 @@
 - Implementation target: add governed field and backfill recent request history
 - Implementation status: IMPLEMENTED on 2026-06-24
 - Implementation notes: added `dbo.service_requests.no_show_reason_code` and deterministic backfill taxonomy (`DISPATCH_NO_REASSIGN`, `CUSTOMER_NOT_HOME`, `TECH_CAPACITY_CONSTRAINT`, `WEATHER_DELAY`, `CAUSE_UNSPECIFIED`, `NOT_APPLICABLE`)
-- Rerun checkpoint (2026-06-24): runtime still returned fallback-only behavior and missing-attribute disclosure for P3I-003
-- Exit proof (pending): refresh Data Agent grounding/publish surfaces, rerun P3-3 missed-appointment prompt, and capture deterministic no-show causality output
+- Rerun checkpoint A (2026-06-24): runtime returned fallback-only behavior and missing-attribute disclosure for P3I-003
+- Rerun checkpoint B (2026-06-24): after stage-rule update, runtime referenced deterministic code policy but still fell back due record-level missing surfaced attribute
+- Exit proof (pending): bind `no_show_reason_code` into active mirrored/semantic serving path for Data Agent, rerun P3-3 missed-appointment prompt, and capture deterministic no-show causality output
 
 ### WP-2: Repeat complaint recurrence indicator
 
