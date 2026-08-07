@@ -375,9 +375,16 @@ def _write_shared_purview_token_cache(token: str, expires_on: float):
         print(f"[Cell 4a][WARN] Could not write shared Purview token cache: {exc}")
 
 
-%pip install --quiet azure-identity
-
-from azure.identity import DeviceCodeCredential
+# Plain subprocess install (not the %pip magic): %pip install restarts the Fabric
+# kernel on every invocation, which wipes Cell 1's globals and re-triggers the
+# guard above on the very next line. Only install if the import genuinely fails.
+try:
+    from azure.identity import DeviceCodeCredential
+except ImportError:
+    import subprocess
+    import sys
+    subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "azure-identity"], check=True)
+    from azure.identity import DeviceCodeCredential
 
 _AZURE_CLI_CLIENT_ID = "04b07795-8ddb-461a-bbee-02f9e1bf7b46"
 
