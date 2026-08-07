@@ -191,15 +191,13 @@ scorecard_df = domain_score.unionByName(product_score).unionByName(cde_score)
 # Steward gate: Domains require steward. DataProducts and CDEs defer to Phase D (G10-2 not started).
 # Owner gate: Domains and DataProducts require owner UPN. CDEs are governed at domain level —
 # owner/steward tracking per-CDE is Phase D (owner_upn not preserved through SQL mirror ingestion).
-scorecard_df = scorecard_df.withColumn("has_steward",
-    (F.col("object_type") == "Domain") |
-    (F.col("object_type") == "DataProduct") |
-    (F.col("object_type") == "CDE") |
-    (F.length(F.coalesce(F.col("steward"), F.lit(""))) > 0)
+scorecard_df = scorecard_df.withColumn(
+    "has_steward",
+    F.length(F.trim(F.coalesce(F.col("steward"), F.lit("")))) > 0
 )
-scorecard_df = scorecard_df.withColumn("has_owner",
-    (F.col("object_type") == "CDE") |
-    (F.length(F.coalesce(F.col("owner"), F.lit(""))) > 0)
+scorecard_df = scorecard_df.withColumn(
+    "has_owner",
+    F.length(F.trim(F.coalesce(F.col("owner"), F.lit("")))) > 0
 )
 scorecard_df = scorecard_df.withColumn("is_certified_or_published", F.col("status").isin(CERTIFICATION_STATUSES))
 scorecard_df = scorecard_df.withColumn(
