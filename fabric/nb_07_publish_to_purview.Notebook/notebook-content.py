@@ -169,19 +169,53 @@ def _resolve_product_id(row):
     return _safe_text(getattr(row, "data_product_id", None) or getattr(row, "product_code", None))
 
 
-def _collect_with_refresh_retry(df, source_name):
-    # Mirrored tables can advance schema between an earlier read and this collect();
-    # retry once after a metadata refresh + re-fetch if that drift is hit.
+def _collect_with_refresh_retry(df, source_name, needed_columns):
+    # Prune the projection to only the columns this notebook actually reads. Some
+    # mirrored-table columns (e.g. domains.parent_domain) are declared in the Delta
+    # schema but not materialized in the physical files, which fails .collect() on
+    # the full row even though .count() succeeds. Selecting only needed columns
+    # keeps the broken column out of the physical scan entirely.
+    def _safe_select(candidate_df):
+        cols = [c for c in needed_columns if c in candidate_df.columns]
+        return candidate_df.select(*cols) if cols else candidate_df
+
     try:
-        return df.collect()
+        return _safe_select(df).collect()
     except Exception:
         spark.sql(f"REFRESH TABLE {source_name}")
-        return spark.table(source_name).collect()
+        return _safe_select(spark.table(source_name)).collect()
 
+
+DOMAIN_NEEDED_COLUMNS = [
+    "domain_id",
+    "domain_code",
+    "domain_name",
+    "domain_type",
+    "status",
+    "governance_domain_owners",
+    "governance_domain_creators",
+    "description",
+]
+
+PRODUCT_NEEDED_COLUMNS = [
+    "data_product_id",
+    "product_code",
+    "data_product_name",
+    "product_name",
+    "product_type",
+    "status",
+    "published_status",
+    "owners",
+    "owner_upn",
+    "access_policy",
+    "audience",
+    "business_use_case",
+    "parent_domain_id",
+]
 
 domain_entities = []
 domain_id_set = set()
-for row in _collect_with_refresh_retry(domains_df, domains_source):
+for row in _collect_with_refresh_retry(domains_df, domains_source, DOMAIN_NEEDED_COLUMNS):
     domain_id = _resolve_domain_id(row)
     if not domain_id:
         continue
@@ -210,7 +244,7 @@ product_entities = []
 products_total = 0
 products_with_parent_domain = 0
 products_unresolved_parent_domain = 0
-for row in _collect_with_refresh_retry(data_products_df, data_products_source):
+for row in _collect_with_refresh_retry(data_products_df, data_products_source, PRODUCT_NEEDED_COLUMNS):
     product_id = _resolve_product_id(row)
     if not product_id:
         continue
