@@ -299,7 +299,7 @@ print(f"Products with unresolved parent_domain_id: {products_unresolved_parent_d
 
 # Cell 4: Save dry-run payload artifacts for review
 
-output_root = "/lakehouse/default/Files/purview_publish"
+output_root = "Files/purview_publish"
 
 mssparkutils.fs.mkdirs(output_root)
 mssparkutils.fs.put(f"{output_root}/typedefs_day2.json", json.dumps(typedef_payload, indent=2), True)
