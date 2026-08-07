@@ -372,6 +372,17 @@ if SQL_MIRROR_ONLY_DEPLOYMENT and not PURVIEW_PUBLISH_OVERRIDE:
 elif not APPLY_CHANGES:
     print("[DRY RUN] APPLY_CHANGES=False. Skipping Purview API calls.")
 else:
+    if PURVIEW_ACCESS_TOKEN:
+        print("[Cell 5] PURVIEW_ACCESS_TOKEN is set; TokenLibrary will be bypassed.")
+    else:
+        print(
+            "[Cell 5][WARN] PURVIEW_ACCESS_TOKEN is not set. Falling back to "
+            "mssparkutils.credentials.getToken, which is known to fail intermittently "
+            "with Spark_System_TM_INTERNAL_ERROR in this workspace. To avoid that, run "
+            "'az account get-access-token --resource https://purview.azure.net "
+            "--query accessToken -o tsv' locally, then in a cell before this one set "
+            "PURVIEW_ACCESS_TOKEN = \"<token>\" (do not run Cell 1 again afterward)."
+        )
     token = _get_purview_token_with_retry("https://purview.azure.net")
 
     typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
