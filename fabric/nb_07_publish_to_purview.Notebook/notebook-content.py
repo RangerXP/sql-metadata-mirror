@@ -38,6 +38,7 @@ METADATA_SCHEMA = "metadata"
 PURVIEW_ACCOUNT_NAME = "Purview-West3"
 PURVIEW_BASE_URL = f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
 PURVIEW_TENANT_ID = "b7e47691-9726-4f67-a302-e567815f3522"
+PURVIEW_TOKEN_CACHE_PATH = "Files/purview_publish/.purview_token_cache.json"
 SQL_MIRROR_ONLY_DEPLOYMENT = True
 PURVIEW_PUBLISH_OVERRIDE = False
 APPLY_CHANGES = False
@@ -326,16 +327,44 @@ print(" - entities_day2.json")
 
 # CELL ********************
 
-# Cell 4a: Acquire a Purview bearer token via interactive device-code sign-in.
-# No terminal or copy-pasting a token needed: running this cell prints a URL and a
-# short one-time code. Open the URL in any browser tab, enter the code, approve the
-# sign-in, and the token is captured straight into PURVIEW_ACCESS_TOKEN below.
+# Cell 4a: Acquire a Purview bearer token, reusing a cached one if another notebook
+# (nb_07/nb_08/nb_09) already signed in recently, otherwise via interactive
+# device-code sign-in. No terminal or copy-pasting a token needed: if a sign-in is
+# required, running this cell prints a URL and a short one-time code. Open the URL
+# in any browser tab, enter the code, approve the sign-in, and the token is captured
+# straight into PURVIEW_ACCESS_TOKEN below and cached for the other notebooks to reuse.
 # Uses the public "Azure CLI" client ID, which users in this tenant are already
 # consented for, so no app registration/admin consent step is required.
 #
 # Fallback (e.g. no outbound internet from this Spark session): comment out this
 # cell's body and instead set PURVIEW_ACCESS_TOKEN directly to a token captured with
 #   az account get-access-token --resource https://purview.azure.net --query accessToken -o tsv
+
+
+def _read_shared_purview_token_cache():
+    try:
+        raw = mssparkutils.fs.head(PURVIEW_TOKEN_CACHE_PATH, 65536)
+        cached = json.loads(raw)
+        cached_token = (cached.get("access_token") or "").strip()
+        expires_on = float(cached.get("expires_on", 0))
+    except Exception:
+        return ""
+    if not cached_token or expires_on <= time.time() + 120:
+        return ""
+    return cached_token
+
+
+def _write_shared_purview_token_cache(token: str, expires_on: float):
+    try:
+        mssparkutils.fs.mkdirs("Files/purview_publish")
+        mssparkutils.fs.put(
+            PURVIEW_TOKEN_CACHE_PATH,
+            json.dumps({"access_token": token, "expires_on": expires_on}),
+            True,
+        )
+    except Exception as exc:
+        print(f"[Cell 4a][WARN] Could not write shared Purview token cache: {exc}")
+
 
 %pip install --quiet azure-identity
 
@@ -348,13 +377,20 @@ def _print_device_code(verification_uri, user_code, expires_on):
     print(f"[Cell 4a] Open {verification_uri} in any browser and enter code: {user_code}")
 
 
-_purview_credential = DeviceCodeCredential(
-    client_id=_AZURE_CLI_CLIENT_ID,
-    tenant_id=PURVIEW_TENANT_ID,
-    prompt_callback=_print_device_code,
-)
-PURVIEW_ACCESS_TOKEN = _purview_credential.get_token("https://purview.azure.net/.default").token
-print("[Cell 4a] Purview token acquired via device-code sign-in.")
+PURVIEW_ACCESS_TOKEN = _read_shared_purview_token_cache()
+if PURVIEW_ACCESS_TOKEN:
+    print("[Cell 4a] Reusing cached Purview token acquired from another notebook/session.")
+else:
+    print("[Cell 4a] No valid cached token found; starting device-code sign-in.")
+    _purview_credential = DeviceCodeCredential(
+        client_id=_AZURE_CLI_CLIENT_ID,
+        tenant_id=PURVIEW_TENANT_ID,
+        prompt_callback=_print_device_code,
+    )
+    _purview_token_result = _purview_credential.get_token("https://purview.azure.net/.default")
+    PURVIEW_ACCESS_TOKEN = _purview_token_result.token
+    _write_shared_purview_token_cache(_purview_token_result.token, _purview_token_result.expires_on)
+    print("[Cell 4a] Purview token acquired via device-code sign-in and cached for other notebooks.")
 
 
 # METADATA ********************

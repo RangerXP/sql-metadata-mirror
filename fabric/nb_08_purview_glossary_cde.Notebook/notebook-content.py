@@ -48,6 +48,8 @@ SEMANTIC_MODEL_NAME = "BrookfieldEnercare"
 PURVIEW_ACCOUNT_NAME = os.getenv("PURVIEW_ACCOUNT_NAME", "Purview-West3")
 PURVIEW_API_BASE_URL = os.getenv("PURVIEW_API_BASE_URL", "").strip()
 PURVIEW_ACCESS_TOKEN = os.getenv("PURVIEW_ACCESS_TOKEN", "").strip()
+PURVIEW_TENANT_ID = "b7e47691-9726-4f67-a302-e567815f3522"
+PURVIEW_TOKEN_CACHE_PATH = "Files/purview_publish/.purview_token_cache.json"
 PURVIEW_BASE_URL = (
     PURVIEW_API_BASE_URL.rstrip("/")
     if PURVIEW_API_BASE_URL
@@ -410,6 +412,69 @@ def _capture_purview_access_token(raw_token: str) -> str:
 
     print("[AUTH] Using captured PURVIEW_ACCESS_TOKEN only.")
     return token
+
+
+def _read_shared_purview_token_cache():
+    # Cache is shared (via lakehouse Files) across nb_07/nb_08/nb_09 sessions so a
+    # sign-in done in one notebook doesn't have to be repeated in the others.
+    try:
+        raw = mssparkutils.fs.head(PURVIEW_TOKEN_CACHE_PATH, 65536)
+        cached = json.loads(raw)
+        token = _safe_text(cached.get("access_token", ""))
+        expires_on = float(cached.get("expires_on", 0))
+    except Exception:
+        return ""
+    if not token or expires_on <= __import__("time").time() + 120:
+        return ""
+    return token
+
+
+def _write_shared_purview_token_cache(token: str, expires_on: float):
+    try:
+        mssparkutils.fs.mkdirs("Files/purview_publish")
+        mssparkutils.fs.put(
+            PURVIEW_TOKEN_CACHE_PATH,
+            json.dumps({"access_token": token, "expires_on": expires_on}),
+            True,
+        )
+    except Exception as exc:
+        print(f"[WARN] Could not write shared Purview token cache: {exc}")
+
+
+def _get_purview_token_via_device_code(tenant_id: str) -> str:
+    try:
+        from azure.identity import DeviceCodeCredential
+    except ImportError:
+        import subprocess
+        import sys
+        subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "azure-identity"], check=True)
+        from azure.identity import DeviceCodeCredential
+
+    def _print_device_code(verification_uri, user_code, expires_on):
+        print(f"[AUTH] Open {verification_uri} in any browser and enter code: {user_code}")
+
+    credential = DeviceCodeCredential(
+        client_id="04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+        tenant_id=tenant_id,
+        prompt_callback=_print_device_code,
+    )
+    result = credential.get_token("https://purview.azure.net/.default")
+    _write_shared_purview_token_cache(result.token, result.expires_on)
+    return result.token
+
+
+def _resolve_purview_token() -> str:
+    if PURVIEW_ACCESS_TOKEN:
+        print("[AUTH] Using PURVIEW_ACCESS_TOKEN supplied for this notebook.")
+        return _capture_purview_access_token(PURVIEW_ACCESS_TOKEN)
+
+    cached_token = _read_shared_purview_token_cache()
+    if cached_token:
+        print("[AUTH] Reusing cached Purview token acquired from another notebook/session.")
+        return cached_token
+
+    print("[AUTH] No token supplied and no valid cached token found; starting device-code sign-in.")
+    return _get_purview_token_via_device_code(PURVIEW_TENANT_ID)
 
 
 def _extract_glossary_guid(glossary_obj) -> str:
@@ -868,7 +933,7 @@ if publish_guard_active:
 elif not APPLY_CHANGES:
     print("[DRY RUN] APPLY_CHANGES=False. Skipping Purview API calls.")
 else:
-    token = _capture_purview_access_token(PURVIEW_ACCESS_TOKEN)
+    token = _resolve_purview_token()
 
     # Quick endpoint probe to fail fast when account/base URL is misconfigured.
     probe_status, probe_body = _request("GET", "/catalog/api/atlas/v2/types/typedefs", token)
