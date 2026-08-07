@@ -37,6 +37,7 @@ METADATA_LAKEHOUSE = "lh_metadata"
 METADATA_SCHEMA = "metadata"
 PURVIEW_ACCOUNT_NAME = "Purview-West3"
 PURVIEW_BASE_URL = f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
+PURVIEW_TENANT_ID = "b7e47691-9726-4f67-a302-e567815f3522"
 SQL_MIRROR_ONLY_DEPLOYMENT = True
 PURVIEW_PUBLISH_OVERRIDE = False
 APPLY_CHANGES = False
@@ -325,12 +326,35 @@ print(" - entities_day2.json")
 
 # CELL ********************
 
-# Cell 4a: Manual Purview bearer token override (used only if Cell 5's TokenLibrary call fails).
-# Regenerate with: az account get-access-token --resource https://purview.azure.net --query accessToken -o tsv
-# Paste the token below, run this cell, then run Cell 5 without re-running Cell 1 afterward.
-# Do not commit a real token here — leave the placeholder in source control.
+# Cell 4a: Acquire a Purview bearer token via interactive device-code sign-in.
+# No terminal or copy-pasting a token needed: running this cell prints a URL and a
+# short one-time code. Open the URL in any browser tab, enter the code, approve the
+# sign-in, and the token is captured straight into PURVIEW_ACCESS_TOKEN below.
+# Uses the public "Azure CLI" client ID, which users in this tenant are already
+# consented for, so no app registration/admin consent step is required.
+#
+# Fallback (e.g. no outbound internet from this Spark session): comment out this
+# cell's body and instead set PURVIEW_ACCESS_TOKEN directly to a token captured with
+#   az account get-access-token --resource https://purview.azure.net --query accessToken -o tsv
 
-PURVIEW_ACCESS_TOKEN = "PASTE_TOKEN_HERE"
+%pip install --quiet azure-identity
+
+from azure.identity import DeviceCodeCredential
+
+_AZURE_CLI_CLIENT_ID = "04b07795-8ddb-461a-bbee-02f9e1bf7b46"
+
+
+def _print_device_code(verification_uri, user_code, expires_on):
+    print(f"[Cell 4a] Open {verification_uri} in any browser and enter code: {user_code}")
+
+
+_purview_credential = DeviceCodeCredential(
+    client_id=_AZURE_CLI_CLIENT_ID,
+    tenant_id=PURVIEW_TENANT_ID,
+    prompt_callback=_print_device_code,
+)
+PURVIEW_ACCESS_TOKEN = _purview_credential.get_token("https://purview.azure.net/.default").token
+print("[Cell 4a] Purview token acquired via device-code sign-in.")
 
 
 # METADATA ********************
