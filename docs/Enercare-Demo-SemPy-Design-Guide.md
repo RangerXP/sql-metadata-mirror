@@ -6,6 +6,35 @@
 
 ---
 
+## 0. Build Verification Summary (2026-08-07)
+
+This summary reflects the current repo and notebook state after the safety preflight corrections. It uses the prompt's evidence ladder and avoids equating notebook validation rows with live Purview deployment evidence.
+
+| Pillar / milestone | Status | Evidence pointer |
+|---|---|---|
+| Pillar 1 — self-adapting metadata repository | DRY_RUN_VALIDATED | `nb_07b_merge_customer_metadata`, `nb_04_sempy_writeback`, and `lh_metadata.metadata.*` reconciliation logic are present and wired to re-converge on metadata changes; live publish/read-back has not been re-executed end to end in this pass |
+| Pillar 2 — SQL source lineage back to mirrored/semantic/report path | GAP | Custom lineage manifests are present in `nb_09_purview_labels_lineage` and `tools/purview_custom_lineage.py`, but the live SQL → OneLake → semantic model → report chain has not been proven through a fresh Purview read-back |
+| Pillar 3 — AI annotations that travel with the model | DEMO_VALIDATED | `nb_04_sempy_writeback` and `nb_05_push_qa_verified_answers` are the active runtime path, and `docs/runbooks/phase3-step3-runtime-smoke-log.md` shows 5/5 prompt executions passing the expected classes |
+| Pillar 4 — Purview governance objects | DRY_RUN_VALIDATED | `purview/*.csv` seed files, `nb_07_publish_to_purview`, and `nb_08_purview_glossary_cde` generate payloads and validation outputs; native Unified Catalog objects are not yet evidenced by a fresh tenant read-back |
+| Pillar 5 — governance-as-functional-model / certification loop | GAP | `nb_10_purview_stewardship_ai` now validates owner/steward values from actual populated fields, but the live approval → governance-state sync → semantic-model certification transition remains unproven |
+| Milestone M1 — platform registration and scans | DRY_RUN_VALIDATED | SQL + Fabric scan setup and validation notebooks are present; no fresh portal scan export/read-back is stored in repo |
+| Milestone M2 — governance foundation and data products | DRY_RUN_VALIDATED | Native Unified Catalog domain/product payloads are prepared from repo sources; supplemental custom Atlas evidence remains separate and is not counted as native deployment |
+| Milestone M3 — glossary and CDEs | DRY_RUN_VALIDATED | `nb_08_purview_glossary_cde` writes dry-run artifacts and validation outputs; live glossary/CDE read-back is still pending |
+| Milestone M4 — classifications/lineage | DRY_RUN_VALIDATED | `nb_09_purview_labels_lineage` emits classification and lineage manifests; native lineage and MIP label read-back remain pending |
+| Milestone M4 — MIP sensitivity labels | GAP | The label policy is prepared in repo, but the pilot semantic model's live label and policy behavior have not been captured from the tenant in this pass |
+| Milestone M5 — stewardship, certification, controls, AI readiness | DRY_RUN_VALIDATED | Notebook outputs and scorecards are generated, but the live approval workflow and certification loop are not yet evidenced from the tenant |
+| Phase 3 milestone P3-3 | DEMO_VALIDATED | `docs/runbooks/phase3-step3-runtime-smoke-log.md` shows 5/5 prompt executions and PASS for the expected response classes |
+| Phase 3 milestone P3-5 | GAP | `P3I-003`, `P3I-005`, and `P3I-006` remain pending live runtime proof and/or governed data binding |
+| Phase 3 milestone P3-6 | GAP | The sign-off package is still conditional until the backfit items and native approval evidence are closed |
+
+### Remaining gaps
+- Native Purview domain/product/read-back evidence remains pending for the approved demo scope.
+- The live lineage chain and MIP sensitivity-label read-back remain pending.
+- The live stewardship approval loop has not yet been exercised and read back from the tenant.
+- `P3I-003`, `P3I-005`, and `P3I-006` still require live runtime proof or a documented risk acceptance and owner sign-off.
+
+---
+
 ## 1. What Alison Is Actually Asking For
 
 Across the thread, Alison is consistently pointing at a **simpler pattern than the one currently scoped in the demo**. Two of her statements are load-bearing:
@@ -254,6 +283,8 @@ The open **Enercare Purview Governance Implementation Guide** is treated as the 
 
 **Validation gate:** SQL assets and Fabric workspace assets are searchable in Data Map / Unified Catalog; scan history has no credential or connectivity failures.
 
+**Build & Deploy Status:** DRY_RUN_VALIDATED — repo notebooks and validation artifacts are present, but the live Purview scan/read-back proof is not yet captured in this pass.
+
 ### Milestone 2 — Governance foundation and data products
 
 **Governance outcome:** Domains, data products, owners, stewards, and initial product descriptions exist.
@@ -265,6 +296,8 @@ The open **Enercare Purview Governance Implementation Guide** is treated as the 
 
 **Validation gate:** `nb_07_publish_to_purview` produces domain/data-product payloads and summary counts; at least three data products are attached to real scanned assets.
 
+**Build & Deploy Status:** DRY_RUN_VALIDATED — repo evidence records the domain/product payload path and the `purview/*.csv` source-of-truth, but native Unified Catalog read-back remains pending. Supplemental custom Atlas evidence remains explicitly separate.
+
 ### Milestone 3 — Glossary and critical data elements
 
 **Governance outcome:** Business glossary terms and CDEs are created, linked to domains, and bound to SQL/Fabric/Semantic assets where supported.
@@ -274,6 +307,8 @@ The open **Enercare Purview Governance Implementation Guide** is treated as the 
 - `nb_08_purview_glossary_cde` validates staged metadata, generates Atlas typedefs, creates CDE entities, and prepares glossary term payloads.
 
 **Validation gate:** `metadata.purview_phase_04_05_validation` shows PASS for source rows, glossary payloads, and CDE entities. Dry-run JSON artifacts exist under `Files/purview_publish/phase_04_05_glossary_cde`.
+
+**Build & Deploy Status:** DRY_RUN_VALIDATED — `metadata.purview_phase_04_05_validation` is the validation-gate proof, with the documented dry-run artifact path under `Files/purview_publish/phase_04_05_glossary_cde`.
 
 ### Milestone 4 — Classification, sensitivity, and lineage
 
@@ -285,6 +320,8 @@ The open **Enercare Purview Governance Implementation Guide** is treated as the 
 
 **Validation gate:** `metadata.purview_phase_06_07_validation` shows PASS for classification definitions and assignment manifests. Lineage rows may be WARN until asset GUID resolution or native Purview lineage is available.
 
+**Build & Deploy Status:** DRY_RUN_VALIDATED — `metadata.purview_phase_06_07_validation` is the validation-gate proof, and the lineage work is recorded as a custom Atlas path in `docs/design-gap-analysis.md` G9 closure evidence. Native Purview lineage and MIP-label read-back remain pending.
+
 ### Milestone 5 — Stewardship, certification, controls, and AI readiness
 
 **Governance outcome:** Products and critical assets have trust indicators, DLP/control decisions, and AI-facing metadata completeness checks.
@@ -295,6 +332,8 @@ The open **Enercare Purview Governance Implementation Guide** is treated as the 
 - `nb_10_purview_stewardship_ai` validates owner/steward/certification status, DLP readiness, and AI-readiness prerequisites.
 
 **Validation gate:** `metadata.purview_phase_08_10_closeout` has zero `ACTION_REQUIRED` rows before the governance demo is marked ready. Any DLP mode must be explicitly selected as alert-only, policy tip, or block before a live run.
+
+**Build & Deploy Status:** DRY_RUN_VALIDATED — the repo now emits scorecard/control/AI-readiness validation from `nb_10`, but the live approval-state read-back and native certification loop remain unproven.
 
 ### Operating rule for live Purview writes
 
@@ -341,6 +380,8 @@ The runtime behavior for this phase is anchored to this minimum scenario:
 - A traceability matrix exists with one row per annotation intent and columns for source support, gaps, and backfit owner.
 - No high-priority call-center intent remains unclassified (`SUPPORTED` or `BACKFIT_REQUIRED`).
 
+**Build & Deploy Status:** DEPLOYED — `docs/runbooks/phase3-step1-traceability-matrix.csv` is the live repository proof for source support, gap owner, and backfit classification.
+
 #### Milestone P3-2 — Industry-lexicon KPI design
 
 **Goal:** define KPI semantics in call-center and home-service industry language.
@@ -353,6 +394,8 @@ The runtime behavior for this phase is anchored to this minimum scenario:
 **Approval proof to close P3-2:**
 - KPI set is reviewed with domain owner/steward and tagged as `CERTIFIED_FOR_AGENT_USE` in the curation workflow.
 - Every KPI used by AI Instructions has a bound measure and glossary linkage.
+
+**Build & Deploy Status:** DEPLOYED — `docs/runbooks/phase3-auto/phase3-step2-kpi-certification.csv` plus the approval summary provide the certification evidence for KPI semantics and stewardship linkage.
 
 #### Milestone P3-3 — Verified Answers pack for call-agent prompts
 
@@ -374,6 +417,8 @@ The runtime behavior for this phase is anchored to this minimum scenario:
 - Verified-answer payload is generated and versioned from current metadata tables.
 - Smoke prompts in notebook/test harness return expected answer class for all baseline intents.
 
+**Build & Deploy Status:** DEMO_VALIDATED — `docs/runbooks/phase3-step3-runtime-smoke-log.md` records 5/5 prompt executions and PASS for all expected behavior classes in the runtime smoke call-out.
+
 #### Milestone P3-4 — AI Instructions ordering and recommendation policy
 
 **Goal:** enforce deterministic instruction order for call-agent screen needs and recommendation logic.
@@ -392,6 +437,8 @@ The runtime behavior for this phase is anchored to this minimum scenario:
 - Annotation ordering is validated in both draft and published Data Agent surfaces.
 - Manual test run for Maria returns policy-aligned recommendation in expected order.
 
+**Build & Deploy Status:** DEPLOYED — `docs/runbooks/phase3-step4-ordering-check.md` and `docs/runbooks/phase3-step4-approval-summary.md` provide the runtime ordering and policy validation proof.
+
 #### Milestone P3-5 — Backfit sprint for annotation-data gaps
 
 **Goal:** close data gaps discovered in P3-1 so AI annotations are fully evidence-backed.
@@ -404,6 +451,8 @@ The runtime behavior for this phase is anchored to this minimum scenario:
 **Approval proof to close P3-5:**
 - All `BACKFIT_REQUIRED` items are either implemented or explicitly deferred with owner/date/risk.
 - No high-severity annotation remains without data support.
+
+**Build & Deploy Status:** GAP — the backfit notebook and runbook evidence show the implementation work is staged, but the live runtime proof is still pending for `P3I-003`, `P3I-005`, and `P3I-006` in `docs/runbooks/phase3-auto/phase3-step5-backfit-log.csv`.
 
 #### Milestone P3-6 — Phase 3 closeout gate
 
@@ -418,6 +467,8 @@ The runtime behavior for this phase is anchored to this minimum scenario:
 **Approval proof to close P3-6:**
 - A short sign-off record is captured with Domain Owner + Data Steward + Demo Owner approval.
 - Phase status marked `CLOSED` and promoted as the operating pattern for subsequent scenarios.
+
+**Build & Deploy Status:** GAP — `docs/runbooks/phase3-step6-signoff-record.md` is in `CONDITIONAL_CLOSEOUT_RECOMMENDED` state, which means the validation package is present but the approval/closure gate remains open pending the backfit item decisions.
 
 ### Delivery cadence for fast execution
 
@@ -450,13 +501,18 @@ This keeps Phase 3 fast while preserving proof-based governance closure.
 
 ## 7. Things to Validate Before Building
 
-A few items Alison left open or implied that are worth confirming before you start coding:
+The active repo validates the following items as resolved or still open:
 
-1. **Which existing Enercare semantic model is the demo target?** SemPy reads from a real model — you'll need either an existing Enercare model or a representative stand-in.
-2. **Purview tenant choice** — Alison flagged the 3-subscription setup ("is there a reason you have 3 subscriptions?"). Consolidate or document why before the Purview scan step.
-3. **AI Data Schema scope** — decide which subset of the model the Data Agent should answer over before configuring Prep for AI.
-4. **Ontology shape** — Alison referenced ontologies generically. For the demo, pick a single, concrete gold data product (e.g., *Customer 360* or *Service Calls*) and build the agent around that.
-5. **Promotion/certification authority** — who in the demo flow marks the model as Certified? This is the human-in-the-loop step that makes the governance story real.
+1. **Target semantic model already fixed** — `BrookfieldEnercare` in the current Fabric workspace is the canonical model target; the repo is aligned to that runtime object and not a stand-in.
+2. **Purview tenant / subscription choice has been resolved in repo guidance** — the design and gap-analysis docs keep the `sub1` / `sub2` / `sub3` split explicit and the Purview scan path anchored to the Fabric semantic-model plane.
+3. **AI Data Schema scope is now bounded to the working semantic model + governed metadata** — the prompt/playbook path answers from the curated Data Agent surface rather than from a separate `.copilot`/skills dependency.
+4. **Ontology shape is concrete and demo-ready** — the gold layer and governance-product mapping are represented through the data-product and glossary/CDE pipeline, not a speculative ontology-only design.
+5. **Promotion / certification authority is defined in the governance loop** — `status=Published` is the intended gate, but the live native approval/read-back transition remains pending evidence.
+
+Open follow-up items still tracked in the repo:
+- Native Purview governance-object read-back remains pending for the approved demo scope.
+- The live lineage chain and MIP sensitivity-label read-back remain pending.
+- `P3I-003`, `P3I-005`, and `P3I-006` remain pending live runtime proof or a documented risk acceptance and owner sign-off.
 
 ---
 

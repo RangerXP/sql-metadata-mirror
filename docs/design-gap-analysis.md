@@ -1,6 +1,6 @@
 # Enercare - Build Gap Analysis (vNext)
 
-**Last updated:** 2026-06-18
+**Last updated:** 2026-08-02
 **Branch:** `main` | **File:** `docs/design-gap-analysis.md`
 **Owner:** Sean Kelley (Microsoft) — sole accountable owner for all build tasks
 **Enercare stakeholders (demo scope):** Victoria Tan (CCO — Domain Owner DOM-CUSTOPS), Ranbir Singh (Domain Owner DOM-SVCDEL), Ci Zhu (Domain Owner DOM-REVCON; Glossary / Label Policy / Tenant Governance Admin), Rupal Solanki (Data Steward DOM-CUSTOPS), Shruthi Srinivas (Data Steward DOM-SVCDEL)
@@ -79,12 +79,12 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G2 | Azure SQL source system in sub2 | P1 | 🟢 Done | Sean |
 | G3 | Synthetic data publication from notebooks into Azure SQL | P1 | 🟢 Done | Sean |
 | G4 | Fabric mirroring from sub2 SQL into sub1 | P1 | 🟢 Done | Sean |
-| G5 | Metadata extraction and working metadata store alignment | P1 | 🟢 Done (customer-files-first ingestion path implemented via nb_07a) | Sean |
-| G6 | Semantic model metadata write-back and Copilot grounding | P1 | 🟢 Done (Data Agent KPI + Maria grounding stable; rolling 12-month default enforced) | Sean |
-| G7 | Purview deployment in sub3 | P1 | 🟢 Done | Sean |
-| G8 | Purview scans, catalog publication, and glossary | P1 | 🟢 Done (SQL + Fabric sources registered; scan runs executing consistently) | Sean |
-| G9 | Lineage registration from SQL to Fabric to semantic model | P2 | 🟢 Done (8 lineage edges published to Purview Atlas 2026-06-18) | Sean |
-| G10 | Steward workflow and AI-assisted metadata drafting | P3 | 🟢 Done (demo slice closed 2026-06-18; full steward workflow deferred to Phase D) | Sean |
+| G5 | Metadata extraction and working metadata store alignment | P1 | DRY_RUN_VALIDATED — customer-files-first ingestion is implemented via `nb_07a_ingest_customer_files`, and `lh_metadata.metadata.*` remains the active working-store path; live publish/read-back remains pending | Sean |
+| G6 | Semantic model metadata write-back and Copilot grounding | P1 | DEMO_VALIDATED — SemPy + SemPy Labs writeback is the active runtime path (`nb_04_sempy_writeback`, `nb_05_push_qa_verified_answers`), and the Phase 3 smoke evidence is captured in the runtime log | Sean |
+| G7 | Purview deployment in sub3 | P1 | DRY_RUN_VALIDATED — the repo contains the Purview notebook path and validation assets, but the live tenant read-back is not yet captured in this pass | Sean |
+| G8 | Purview scans, catalog publication, and glossary | P1 | DRY_RUN_VALIDATED — SQL + Fabric publication payloads and glossary/CDE validation tables are present, but native Purview object read-back is not yet evidenced in the repo | Sean |
+| G9 | Lineage registration from SQL to Fabric to semantic model | P2 | GAP — custom Atlas lineage manifests exist, but the native SQL → Fabric → semantic model → report chain is not yet proven through a live Purview read-back | Sean |
+| G10 | Steward workflow and AI-assisted metadata drafting | P3 | GAP — `nb_10_purview_stewardship_ai` now validates owner/steward values from actual populated fields, but the live native approval certification loop has not been exercised and read back | Sean |
 | G11 | Optional ontology and B2C extensions | P4 | ⏸ Blocked / Deferred to Phase D | Sean |
 | **G12** | **Phase A design commit (north star, dataset, CSVs, SIN backstop, 2-day plan)** | **P1** | **🟢 Done** | **Sean** |
 
