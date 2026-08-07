@@ -490,7 +490,7 @@ else:
     typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
     if typedef_status in (200, 201):
         print("[APPLIED] TypeDefs registered/updated.")
-    elif typedef_status == 400 and "already exists" in typedef_body.lower():
+    elif typedef_status in (400, 409) and "already exists" in typedef_body.lower():
         print("[INFO] TypeDefs already exist. Continuing.")
     else:
         raise RuntimeError(f"TypeDefs registration failed: HTTP {typedef_status} | {typedef_body[:500]}")
