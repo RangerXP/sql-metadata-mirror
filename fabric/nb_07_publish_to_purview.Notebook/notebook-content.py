@@ -25,6 +25,7 @@
 # Cell 1: Imports and config
 
 import json
+import os
 import uuid
 import requests
 import time
@@ -39,6 +40,10 @@ PURVIEW_BASE_URL = f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
 SQL_MIRROR_ONLY_DEPLOYMENT = True
 PURVIEW_PUBLISH_OVERRIDE = False
 APPLY_CHANGES = False
+# Optional manual bearer token fallback for when Fabric's TokenLibrary call to the
+# Purview audience is unavailable. Capture with:
+#   az account get-access-token --resource https://purview.azure.net --query accessToken -o tsv
+PURVIEW_ACCESS_TOKEN = os.getenv("PURVIEW_ACCESS_TOKEN", "").strip()
 
 
 def _table_candidates(table_name: str):
@@ -337,6 +342,10 @@ def _post_json(path: str, token: str, body: dict):
 
 
 def _get_purview_token_with_retry(resource: str, max_attempts: int = 3, backoff_seconds: float = 5.0):
+    if PURVIEW_ACCESS_TOKEN:
+        print("[Cell 5] Using manually supplied PURVIEW_ACCESS_TOKEN (TokenLibrary bypassed).")
+        return PURVIEW_ACCESS_TOKEN
+
     # Fabric's Token Management service occasionally returns a transient 500; retry before failing the cell.
     last_error = None
     for attempt in range(1, max_attempts + 1):
@@ -347,7 +356,11 @@ def _get_purview_token_with_retry(resource: str, max_attempts: int = 3, backoff_
             if attempt < max_attempts:
                 print(f"[WARN] getToken attempt {attempt}/{max_attempts} failed: {exc}. Retrying in {backoff_seconds}s...")
                 time.sleep(backoff_seconds)
-    raise last_error
+    raise RuntimeError(
+        "TokenLibrary getToken failed after retries and no PURVIEW_ACCESS_TOKEN fallback was supplied. "
+        "Set PURVIEW_ACCESS_TOKEN (e.g. via 'az account get-access-token --resource https://purview.azure.net "
+        f"--query accessToken -o tsv') to bypass the failing TokenLibrary call. Last error: {last_error}"
+    )
 
 
 if SQL_MIRROR_ONLY_DEPLOYMENT and not PURVIEW_PUBLISH_OVERRIDE:
