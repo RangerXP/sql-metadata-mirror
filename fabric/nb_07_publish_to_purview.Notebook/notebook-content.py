@@ -342,9 +342,16 @@ def _post_json(path: str, token: str, body: dict):
 
 
 def _get_purview_token_with_retry(resource: str, max_attempts: int = 3, backoff_seconds: float = 5.0):
-    if PURVIEW_ACCESS_TOKEN:
+    manual_token = (PURVIEW_ACCESS_TOKEN or "").strip().strip('"').strip("'")
+    if manual_token:
+        if manual_token.count(".") != 2:
+            print(
+                "[Cell 5][WARN] PURVIEW_ACCESS_TOKEN does not look like a well-formed JWT "
+                "(expected 3 dot-separated segments). Check for stray quotes/whitespace/newlines "
+                "left over from copy-pasting the az CLI output."
+            )
         print("[Cell 5] Using manually supplied PURVIEW_ACCESS_TOKEN (TokenLibrary bypassed).")
-        return PURVIEW_ACCESS_TOKEN
+        return manual_token
 
     # Fabric's Token Management service occasionally returns a transient 500; retry before failing the cell.
     last_error = None
