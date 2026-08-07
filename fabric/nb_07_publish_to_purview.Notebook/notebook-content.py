@@ -52,6 +52,13 @@ def _read_table(table_name: str):
     last_error = None
     for candidate in _table_candidates(table_name):
         try:
+            # Force a metadata refresh so mirrored-table schema drift (stale catalog
+            # cache vs. current Delta log, e.g. mid-replication) doesn't surface as a
+            # column-resolution error later.
+            try:
+                spark.sql(f"REFRESH TABLE {candidate}")
+            except Exception:
+                pass
             return spark.table(candidate), candidate
         except Exception as ex:
             last_error = ex
@@ -162,9 +169,19 @@ def _resolve_product_id(row):
     return _safe_text(getattr(row, "data_product_id", None) or getattr(row, "product_code", None))
 
 
+def _collect_with_refresh_retry(df, source_name):
+    # Mirrored tables can advance schema between an earlier read and this collect();
+    # retry once after a metadata refresh + re-fetch if that drift is hit.
+    try:
+        return df.collect()
+    except Exception:
+        spark.sql(f"REFRESH TABLE {source_name}")
+        return spark.table(source_name).collect()
+
+
 domain_entities = []
 domain_id_set = set()
-for row in domains_df.collect():
+for row in _collect_with_refresh_retry(domains_df, domains_source):
     domain_id = _resolve_domain_id(row)
     if not domain_id:
         continue
@@ -193,7 +210,7 @@ product_entities = []
 products_total = 0
 products_with_parent_domain = 0
 products_unresolved_parent_domain = 0
-for row in data_products_df.collect():
+for row in _collect_with_refresh_retry(data_products_df, data_products_source):
     product_id = _resolve_product_id(row)
     if not product_id:
         continue
