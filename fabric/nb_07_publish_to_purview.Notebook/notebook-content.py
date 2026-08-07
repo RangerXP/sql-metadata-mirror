@@ -325,6 +325,23 @@ print(" - entities_day2.json")
 
 # CELL ********************
 
+# Cell 4a: Manual Purview bearer token override (used only if Cell 5's TokenLibrary call fails).
+# Regenerate with: az account get-access-token --resource https://purview.azure.net --query accessToken -o tsv
+# Paste the token below, run this cell, then run Cell 5 without re-running Cell 1 afterward.
+# Do not commit a real token here — leave the placeholder in source control.
+
+PURVIEW_ACCESS_TOKEN = "PASTE_TOKEN_HERE"
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 # Cell 5: Optional live publish to Purview Atlas
 
 
@@ -343,6 +360,8 @@ def _post_json(path: str, token: str, body: dict):
 
 def _get_purview_token_with_retry(resource: str, max_attempts: int = 3, backoff_seconds: float = 5.0):
     manual_token = (PURVIEW_ACCESS_TOKEN or "").strip().strip('"').strip("'")
+    if manual_token == "PASTE_TOKEN_HERE":
+        manual_token = ""
     if manual_token:
         if manual_token.count(".") != 2:
             print(
@@ -379,7 +398,7 @@ if SQL_MIRROR_ONLY_DEPLOYMENT and not PURVIEW_PUBLISH_OVERRIDE:
 elif not APPLY_CHANGES:
     print("[DRY RUN] APPLY_CHANGES=False. Skipping Purview API calls.")
 else:
-    if PURVIEW_ACCESS_TOKEN:
+    if PURVIEW_ACCESS_TOKEN and PURVIEW_ACCESS_TOKEN != "PASTE_TOKEN_HERE":
         print("[Cell 5] PURVIEW_ACCESS_TOKEN is set; TokenLibrary will be bypassed.")
     else:
         print(
