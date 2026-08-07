@@ -27,6 +27,7 @@
 import json
 import uuid
 import requests
+import time
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.getOrCreate()
@@ -335,6 +336,20 @@ def _post_json(path: str, token: str, body: dict):
     return resp.status_code, resp.text
 
 
+def _get_purview_token_with_retry(resource: str, max_attempts: int = 3, backoff_seconds: float = 5.0):
+    # Fabric's Token Management service occasionally returns a transient 500; retry before failing the cell.
+    last_error = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return mssparkutils.credentials.getToken(resource)
+        except Exception as exc:
+            last_error = exc
+            if attempt < max_attempts:
+                print(f"[WARN] getToken attempt {attempt}/{max_attempts} failed: {exc}. Retrying in {backoff_seconds}s...")
+                time.sleep(backoff_seconds)
+    raise last_error
+
+
 if SQL_MIRROR_ONLY_DEPLOYMENT and not PURVIEW_PUBLISH_OVERRIDE:
     print(
         "[GUARD] SQL-mirror-only deployment is active. "
@@ -344,7 +359,7 @@ if SQL_MIRROR_ONLY_DEPLOYMENT and not PURVIEW_PUBLISH_OVERRIDE:
 elif not APPLY_CHANGES:
     print("[DRY RUN] APPLY_CHANGES=False. Skipping Purview API calls.")
 else:
-    token = mssparkutils.credentials.getToken("https://purview.azure.net")
+    token = _get_purview_token_with_retry("https://purview.azure.net")
 
     typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
     if typedef_status in (200, 201):
