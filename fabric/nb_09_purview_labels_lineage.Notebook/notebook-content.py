@@ -1834,8 +1834,9 @@ def _get_purview_token_via_tokenlibrary() -> str:
 def _get_purview_token_from_shared_cache() -> str:
     # Cache is shared (via lakehouse Files) across nb_07/nb_08/nb_09 sessions so a
     # sign-in done in one notebook doesn't have to be repeated in the others.
+    cache_path = PURVIEW_TOKEN_CACHE_PATH  # NameError here means Cell 1 wasn't run
     try:
-        raw = mssparkutils.fs.head(PURVIEW_TOKEN_CACHE_PATH, 65536)
+        raw = mssparkutils.fs.head(cache_path, 65536)
         cached = json.loads(raw)
         token = _safe_text(cached.get("access_token", ""))
         expires_on = float(cached.get("expires_on", 0))

@@ -340,10 +340,19 @@ print(" - entities_day2.json")
 # cell's body and instead set PURVIEW_ACCESS_TOKEN directly to a token captured with
 #   az account get-access-token --resource https://purview.azure.net --query accessToken -o tsv
 
+if "PURVIEW_TENANT_ID" not in globals() or "PURVIEW_TOKEN_CACHE_PATH" not in globals():
+    raise RuntimeError(
+        "PURVIEW_TENANT_ID/PURVIEW_TOKEN_CACHE_PATH are not defined. Run Cell 1 in this "
+        "kernel session first (they reset on kernel/session restart), then re-run Cell 4a."
+    )
+
 
 def _read_shared_purview_token_cache():
     try:
         raw = mssparkutils.fs.head(PURVIEW_TOKEN_CACHE_PATH, 65536)
+    except Exception:
+        return ""
+    try:
         cached = json.loads(raw)
         cached_token = (cached.get("access_token") or "").strip()
         expires_on = float(cached.get("expires_on", 0))
