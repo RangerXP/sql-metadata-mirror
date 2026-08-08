@@ -1,13 +1,15 @@
 # Enercare - Build Gap Analysis (vNext)
 
-**Last updated:** 2026-08-07
+**Last updated:** 2026-08-08
 **Branch:** `main` | **File:** `docs/design-gap-analysis.md`
 **Owner:** Sean Kelley (Microsoft) — sole accountable owner for all build tasks
 **Enercare stakeholders (demo scope):** Victoria Tan (CCO — Domain Owner DOM-CUSTOPS), Ranbir Singh (Domain Owner DOM-SVCDEL), Ci Zhu (Domain Owner DOM-REVCON; Glossary / Label Policy / Tenant Governance Admin), Rupal Solanki (Data Steward DOM-CUSTOPS), Shruthi Srinivas (Data Steward DOM-SVCDEL)
 **Out of demo scope:** Christopher Dingle (VP Data Analytics & Governance at Enercare — intentional exclusion; his real-world governance authoring functions are represented in the demo by Ci Zhu)
 
-> **What changed in this version (2026-08-07)**
-> Re-verified the full live Purview publish chain end-to-end (`nb_07` domains/data products, `nb_08` glossary/CDE, `nb_09` labels/lineage) after replacing manual-token-paste auth with a shared device-code token cache across all three notebooks. All three notebooks completed with 0 failures. G7/G8/G9/G10 Quick Status rows below corrected to 🟢 Done to match the detailed evidence sections (previously out of sync since the 2026-06-18 closure).
+> **What changed in this version (2026-08-08)**
+> Fixed and live-reverified the G10 steward-data regression (found the same day): root-caused to Spark catalog schema caching in `nb_07a` plus Delta overwrite-mode schema rigidity in both `nb_07a` and `nb_10`'s write helpers. `nb_10`'s rerun now returns `phase_08_stewardship,18,0,PASS` / `phase_09_controls,4,0,PASS` / `phase_10_ai_readiness,4,0,PASS`. G5/G6 Quick Status rows also corrected to 🟢 Done to match their already-Done detailed sections (drift from the 2026-08-07 pass). All P1–P3 gaps are now Done; only G11 (P4, explicitly deferred to Phase D) remains open.
+>
+> **Previous version (2026-08-07):** Re-verified the full live Purview publish chain end-to-end (`nb_07` domains/data products, `nb_08` glossary/CDE, `nb_09` labels/lineage) after replacing manual-token-paste auth with a shared device-code token cache across all three notebooks. All three notebooks completed with 0 failures. G7/G8/G9/G10 Quick Status rows below corrected to 🟢 Done to match the detailed evidence sections (previously out of sync since the 2026-06-18 closure).
 >
 > `sub1` = Microsoft Fabric workspace and semantic model plane
 > `sub2` = Azure SQL Server source system populated with synthetic Enercare data
@@ -79,12 +81,12 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G2 | Azure SQL source system in sub2 | P1 | 🟢 Done | Sean |
 | G3 | Synthetic data publication from notebooks into Azure SQL | P1 | 🟢 Done | Sean |
 | G4 | Fabric mirroring from sub2 SQL into sub1 | P1 | 🟢 Done | Sean |
-| G5 | Metadata extraction and working metadata store alignment | P1 | DRY_RUN_VALIDATED — customer-files-first ingestion is implemented via `nb_07a_ingest_customer_files`, and `lh_metadata.metadata.*` remains the active working-store path; live publish/read-back remains pending | Sean |
-| G6 | Semantic model metadata write-back and Copilot grounding | P1 | DEMO_VALIDATED — SemPy + SemPy Labs writeback is the active runtime path (`nb_04_sempy_writeback`, `nb_05_push_qa_verified_answers`), and the Phase 3 smoke evidence is captured in the runtime log | Sean |
+| G5 | Metadata extraction and working metadata store alignment | P1 | 🟢 Done — customer-files-first ingestion via `nb_07a_ingest_customer_files` into `lh_metadata.metadata.*`; live publish/read-back confirmed 2026-08-08 (steward-column regression fixed, see G10) | Sean |
+| G6 | Semantic model metadata write-back and Copilot grounding | P1 | 🟢 Done — SemPy + SemPy Labs writeback is the active runtime path (`nb_04_sempy_writeback`, `nb_05_push_qa_verified_answers`), Phase 3 smoke evidence captured in the runtime log | Sean |
 | G7 | Purview deployment in sub3 | P1 | 🟢 Done — live tenant read-back captured via `nb_07` live publish (2026-08-07 re-verification) | Sean |
 | G8 | Purview scans, catalog publication, and glossary | P1 | 🟢 Done — SQL + Fabric scans, domains/data products, and glossary/CDE all confirmed via live read-back (2026-08-07 re-verification) | Sean |
 | G9 | Lineage registration from SQL to Fabric to semantic model | P2 | 🟢 Done — 8/8 lineage edges published live to Purview Atlas, re-confirmed 2026-08-07 | Sean |
-| G10 | Steward workflow and AI-assisted metadata drafting | P3 | � Fix pending live re-verification — 2026-08-08 live run found phase_08 stewardship scoring 18/18 ACTION_REQUIRED (steward never wired into working tables); pipeline fix applied, awaiting SQL re-deploy + rerun | Sean |
+| G10 | Steward workflow and AI-assisted metadata drafting | P3 | 🟢 Done — 2026-08-08 regression (18/18 ACTION_REQUIRED) fixed and live-reverified: `phase_08_stewardship,18,0,PASS` / `phase_09_controls,4,0,PASS` / `phase_10_ai_readiness,4,0,PASS` | Sean |
 | G11 | Optional ontology and B2C extensions | P4 | ⏸ Blocked / Deferred to Phase D | Sean |
 | **G12** | **Phase A design commit (north star, dataset, CSVs, SIN backstop, 2-day plan)** | **P1** | **🟢 Done** | **Sean** |
 
@@ -377,7 +379,7 @@ G8-3 completion evidence (captured Day 5):
 ## G10 — Steward Workflow And AI-Assisted Metadata Drafting
 
 **Priority:** P3
-**Status:** Fix pending live re-verification (regression found 2026-08-08; demo slice previously closed 2026-06-18; full steward workflow remains deferred to Phase D)
+**Status:** 🟢 Done (regression found and fixed 2026-08-08; demo slice previously closed 2026-06-18; full steward review workflow/AI gap-fill at scale remains deferred to Phase D per G10-2/G10-3)
 
 | # | Task | Status | Notes |
 |---|---|---|---|
@@ -399,7 +401,7 @@ G8-3 completion evidence (captured Day 5):
 - **Live nb_10 rerun result (before fix):** Phase 08 stewardship scorecard scored **18/18 `ACTION_REQUIRED`** — every Domain/DataProduct/CDE row had `has_steward=FALSE`. Phase 09 (4/4 PASS) and Phase 10 (4/4 PASS) were unaffected. This contradicts the 2026-06-18 evidence above, which was stale.
 - **Root cause:** Steward data was never wired into the `lh_metadata.metadata.*` working tables. `nb_10`'s `domain_score` hardcoded `steward=None` regardless of data; `governance_data_products` and `governance_cdes` in `sql/06_purview_metadata_schema.sql` never defined a steward column at all (CDEs only carried `owner_role`, a role title, not a person). `nb_07a_ingest_customer_files` (SQL-mirror-only by design) simply passes through whatever columns exist in the mirrored SQL tables, so the gap propagated end-to-end.
 - **Fix applied:** Added `governance_domain_stewards` to `governance_domains`, `stewards` to `governance_data_products`, and `steward_upn` to `governance_cdes` in `sql/06_purview_metadata_schema.sql` (with `ALTER TABLE` guards for already-deployed databases), populated with real steward UPNs (Rupal Solanki / DOM-CUSTOPS, Shruthi Srinivas / DOM-SVCDEL, Ci Zhu / DOM-REVCON — matching the existing data-product steward assignments) in `sql/07_seed_purview_metadata.sql`. Updated `purview/domain-charter.csv` with matching `domain_steward_upn`/`domain_steward_name` columns for consistency (not read by the SQL-mirror-only pipeline, but kept in sync as the T2 reference artifact). Fixed `nb_10`'s `domain_score` to resolve steward via `_steward_column()` instead of a hardcoded `None`, and widened `_steward_column()`'s candidate list to include `stewards` and `governance_domain_stewards`.
-- **Pending:** Requires re-running `sql/06_purview_metadata_schema.sql` and `sql/07_seed_purview_metadata.sql` against sub2 Azure SQL, confirming mirror sync, then re-running `nb_07a_ingest_customer_files` and `nb_10_purview_stewardship_ai` to confirm Phase 08 returns to 0 `ACTION_REQUIRED`. Status will move back to Done once that live re-run is confirmed.
+- **Resolved (2026-08-08):** Root cause traced two layers deep — (1) Spark catalog schema caching in `nb_07a`'s `_try_table()` returned a stale pre-`ALTER TABLE` schema even after the SQL/mirror source was correct (fixed with `spark.catalog.refreshTable()`), then (2) Delta overwrite-mode schema rigidity blocked the write once the new columns were read (fixed with `.option("overwriteSchema", "true")` in both `nb_07a`'s `write_table_from_pandas` and `nb_10`'s `_write_table`). Both fixes committed to git and pushed to the live Fabric notebook items. Live re-run confirmed: `lh_metadata.dbo.domains/data_products/cdes` now carry populated steward columns, and `nb_10` (job `f983f057-...`, Completed 2026-08-08 23:49 UTC) returned `phase_08_stewardship,18,0,PASS` / `phase_09_controls,4,0,PASS` / `phase_10_ai_readiness,4,0,PASS` — 0 `ACTION_REQUIRED` across all three phases. Status moved back to Done.
 
 ---
 
