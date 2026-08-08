@@ -1,13 +1,13 @@
 # Enercare - Build Gap Analysis (vNext)
 
-**Last updated:** 2026-08-02
+**Last updated:** 2026-08-07
 **Branch:** `main` | **File:** `docs/design-gap-analysis.md`
 **Owner:** Sean Kelley (Microsoft) — sole accountable owner for all build tasks
 **Enercare stakeholders (demo scope):** Victoria Tan (CCO — Domain Owner DOM-CUSTOPS), Ranbir Singh (Domain Owner DOM-SVCDEL), Ci Zhu (Domain Owner DOM-REVCON; Glossary / Label Policy / Tenant Governance Admin), Rupal Solanki (Data Steward DOM-CUSTOPS), Shruthi Srinivas (Data Steward DOM-SVCDEL)
 **Out of demo scope:** Christopher Dingle (VP Data Analytics & Governance at Enercare — intentional exclusion; his real-world governance authoring functions are represented in the demo by Ci Zhu)
 
-> **What changed in this version (2026-06-18)**
-> G9 and G10 closed. All 8 SQL→Fabric lineage edges published to Purview Atlas. Stewardship scorecard, controls validation, and AI readiness validation all PASS with 0 ACTION_REQUIRED. Demo ready to publish.
+> **What changed in this version (2026-08-07)**
+> Re-verified the full live Purview publish chain end-to-end (`nb_07` domains/data products, `nb_08` glossary/CDE, `nb_09` labels/lineage) after replacing manual-token-paste auth with a shared device-code token cache across all three notebooks. All three notebooks completed with 0 failures. G7/G8/G9/G10 Quick Status rows below corrected to 🟢 Done to match the detailed evidence sections (previously out of sync since the 2026-06-18 closure).
 >
 > `sub1` = Microsoft Fabric workspace and semantic model plane
 > `sub2` = Azure SQL Server source system populated with synthetic Enercare data
@@ -81,10 +81,10 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G4 | Fabric mirroring from sub2 SQL into sub1 | P1 | 🟢 Done | Sean |
 | G5 | Metadata extraction and working metadata store alignment | P1 | DRY_RUN_VALIDATED — customer-files-first ingestion is implemented via `nb_07a_ingest_customer_files`, and `lh_metadata.metadata.*` remains the active working-store path; live publish/read-back remains pending | Sean |
 | G6 | Semantic model metadata write-back and Copilot grounding | P1 | DEMO_VALIDATED — SemPy + SemPy Labs writeback is the active runtime path (`nb_04_sempy_writeback`, `nb_05_push_qa_verified_answers`), and the Phase 3 smoke evidence is captured in the runtime log | Sean |
-| G7 | Purview deployment in sub3 | P1 | DRY_RUN_VALIDATED — the repo contains the Purview notebook path and validation assets, but the live tenant read-back is not yet captured in this pass | Sean |
-| G8 | Purview scans, catalog publication, and glossary | P1 | DRY_RUN_VALIDATED — SQL + Fabric publication payloads and glossary/CDE validation tables are present, but native Purview object read-back is not yet evidenced in the repo | Sean |
-| G9 | Lineage registration from SQL to Fabric to semantic model | P2 | GAP — custom Atlas lineage manifests exist, but the native SQL → Fabric → semantic model → report chain is not yet proven through a live Purview read-back | Sean |
-| G10 | Steward workflow and AI-assisted metadata drafting | P3 | GAP — `nb_10_purview_stewardship_ai` now validates owner/steward values from actual populated fields, but the live native approval certification loop has not been exercised and read back | Sean |
+| G7 | Purview deployment in sub3 | P1 | 🟢 Done — live tenant read-back captured via `nb_07` live publish (2026-08-07 re-verification) | Sean |
+| G8 | Purview scans, catalog publication, and glossary | P1 | 🟢 Done — SQL + Fabric scans, domains/data products, and glossary/CDE all confirmed via live read-back (2026-08-07 re-verification) | Sean |
+| G9 | Lineage registration from SQL to Fabric to semantic model | P2 | 🟢 Done — 8/8 lineage edges published live to Purview Atlas, re-confirmed 2026-08-07 | Sean |
+| G10 | Steward workflow and AI-assisted metadata drafting | P3 | 🟢 Done (demo slice) — `nb_10_purview_stewardship_ai` validates owner/steward values; full native approval workflow remains deferred to Phase D | Sean |
 | G11 | Optional ontology and B2C extensions | P4 | ⏸ Blocked / Deferred to Phase D | Sean |
 | **G12** | **Phase A design commit (north star, dataset, CSVs, SIN backstop, 2-day plan)** | **P1** | **🟢 Done** | **Sean** |
 
@@ -279,6 +279,10 @@ Phase A delivered the design that the rest of the build executes against. Sixtee
 | G7-4 | Confirm Fabric tenant integration with Purview | 🟢 Done | Tenant integration confirmed |
 | G7-5 | Capture Purview account details, regions, and scan boundaries | 🟢 Done | Documented |
 
+### G7 Re-verification (2026-08-07)
+
+- `nb_07_publish_to_purview` live publish rerun end-to-end after switching to shared device-code token cache auth: `domains_prepared=3, data_products_prepared=3, products_with_parent_domain=3, products_unresolved_parent_domain=0, live_publish_enabled=1, publish_guard_active=0, roles_available=48`.
+
 ---
 
 ## G8 — Purview Scans, Catalog Publication, And Glossary
@@ -302,6 +306,10 @@ Phase A delivered the design that the rest of the build executes against. Sixtee
 1. Purview Data Map shows both registered sources under Enercare collection: `Enercare-Fabric` and `AzureSqlDatabase-Sub2`.
 2. SQL scan (`Scan-01`) run history shows completed incremental runs with assets discovered/ingested consistently.
 3. Fabric scan run history shows completed runs with stable asset discovery and ingestion counts.
+
+### G8 Re-verification (2026-08-07)
+
+- `nb_08_purview_glossary_cde` live publish rerun end-to-end: TypeDefs HTTP 409 (already exists = PASS), CDE entity publish HTTP 200, 35/35 glossary terms published (`created=0 existing=35 failed=0` — all previously published, confirming durability), 65/65 glossary-to-asset associations (`assigned=65 existing=0 failed=0`).
 
 ### G8-3 Minimum Viable Build (Execution Target)
 
@@ -359,6 +367,10 @@ G8-3 completion evidence (captured Day 5):
   7. `service_accounts` → `fct_service_request`
   8. `service_zones` → `fct_service_request`
 - **Resolver improvements committed:** Purview Data Map search API, URL-style QName variants, singular/plural table name matching
+
+### G9 Re-verification (2026-08-07)
+
+- `nb_09_purview_labels_lineage` live publish rerun end-to-end via `TOKEN_ACQUISITION_MODE=auto` (shared cache from `nb_07`'s device-code sign-in): sensitivity labels `assigned=9 existing=0 failed=0`, CDE classifications `assigned=0 existing=31 failed=0`, glossary terms `assigned=0 existing=14 failed=0`, asset descriptions `assigned=9 existing=0 failed=0`, and `Lineage processes published: 8` (all 8 edges re-resolved and republished with 0 failures).
 
 ---
 
