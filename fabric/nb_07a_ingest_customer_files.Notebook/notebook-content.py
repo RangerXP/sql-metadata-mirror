@@ -194,6 +194,7 @@ def write_table_from_pandas(df: pd.DataFrame, table_name: str) -> int:
             (
                 sdf.write
                 .mode("overwrite")
+                .option("overwriteSchema", "true")
                 .format("delta")
                 .saveAsTable(full_table)
             )
