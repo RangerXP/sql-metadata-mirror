@@ -124,6 +124,12 @@ def try_load_sql_dataset(dataset_name: str) -> tuple[pd.DataFrame | None, str | 
         seen_names.add(full_name)
         attempted_names.append(full_name)
         try:
+            # Mirror source schema (e.g. new ALTER TABLE ADD COLUMN) can lag behind the
+            # Spark catalog's cached schema; force a refresh before reading.
+            try:
+                spark.catalog.refreshTable(full_name)
+            except Exception:
+                pass
             sdf = spark.table(full_name)
             return sdf.toPandas(), full_name
         except Exception:
