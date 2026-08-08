@@ -83,7 +83,10 @@ def _write_table(df, table_name: str, mode: str = "overwrite"):
     last_error = None
     for candidate in candidates:
         try:
-            df.write.mode(mode).format("delta").saveAsTable(candidate)
+            writer = df.write.mode(mode).format("delta")
+            if mode == "overwrite":
+                writer = writer.option("overwriteSchema", "true")
+            writer.saveAsTable(candidate)
             return candidate
         except Exception as ex:
             last_error = ex
