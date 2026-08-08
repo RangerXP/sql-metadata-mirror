@@ -48,7 +48,7 @@
 
 DEMO_LAKEHOUSE = "lh_enercare_demo"
 MIRROR_WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
-MIRROR_ITEM_ID = "bdf616e8-625e-4b62-8491-519509f6ffaf"  # Mirrored Azure SQL Database item ID in Enercare-West3
+MIRROR_ITEM_ID = "bf000a9e-6ac4-42a8-abe3-37c815bd2fe6"  # Mirrored Azure SQL Database item ID in Enercare-West3 (recreated 2026-08-08 with SPN/VNet gateway connection)
 MIRROR_ONELAKE_DFS_HOST = "westus3-onelake.dfs.fabric.microsoft.com"
 USE_DEMO_FALLBACK = False  # Use mirrored Azure SQL source tables
 
@@ -74,6 +74,21 @@ def source_has_column(table_name: str, column_name: str) -> bool:
     else:
         cols = spark.read.format("delta").load(mirror_table_path(table_name)).columns
     return column_name in cols
+
+
+def ensure_readable_source() -> None:
+    global USE_DEMO_FALLBACK
+    if USE_DEMO_FALLBACK:
+        return
+    try:
+        spark.read.format("delta").load(mirror_table_path("service_requests")).limit(1).count()
+    except Exception as exc:
+        print("[WARN] Mirror source is restricted/unavailable. Falling back to demo lakehouse source.")
+        print(f"[WARN] Mirror read error: {str(exc)[:400]}")
+        USE_DEMO_FALLBACK = True
+
+
+ensure_readable_source()
 
 
 print(f"Source lakehouse          : {DEMO_LAKEHOUSE}")

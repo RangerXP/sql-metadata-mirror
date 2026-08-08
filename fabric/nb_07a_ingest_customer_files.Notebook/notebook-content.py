@@ -41,7 +41,7 @@ SQL_MIRROR_SCHEMAS = ["dbo", "metadata"]
 MIRROR_WORKSPACE_ID = "b976cac2-7754-4061-88c2-61c0ac016a99"
 # Keep both IDs to tolerate environment drift between mirror item GUID and logicalId.
 MIRROR_ITEM_IDS = [
-    "bdf616e8-625e-4b62-8491-519509f6ffaf",
+    "bf000a9e-6ac4-42a8-abe3-37c815bd2fe6",
     "09f6ffaf-5195-8491-4b62-625ebdf616e8",
 ]
 MIRROR_DFS_HOSTS = [
