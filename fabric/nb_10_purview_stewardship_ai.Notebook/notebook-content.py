@@ -146,7 +146,7 @@ def _owner_column(df):
 
 
 def _steward_column(df):
-    for name in ["steward_upn", "data_steward", "steward_name"]:
+    for name in ["steward_upn", "data_steward", "steward_name", "stewards", "governance_domain_stewards"]:
         if name in df.columns:
             return F.col(name)
     return F.lit(None)
@@ -164,7 +164,7 @@ domain_score = domains_df.select(
     _id_column(domains_df, ["domain_id", "domain_code"]).alias("object_id"),
     F.col("domain_name").alias("object_name"),
     _owner_column(domains_df).alias("owner"),
-    F.lit(None).alias("steward"),
+    _steward_column(domains_df).alias("steward"),
     _status_column(domains_df).alias("status"),
 )
 
@@ -188,9 +188,8 @@ cde_score = cde_df.select(
 )
 
 scorecard_df = domain_score.unionByName(product_score).unionByName(cde_score)
-# Steward gate: Domains require steward. DataProducts and CDEs defer to Phase D (G10-2 not started).
-# Owner gate: Domains and DataProducts require owner UPN. CDEs are governed at domain level —
-# owner/steward tracking per-CDE is Phase D (owner_upn not preserved through SQL mirror ingestion).
+# Steward gate: all object types now carry a steward UPN sourced from governance_domain_stewards
+# (domains), stewards (data products), and steward_upn (CDEs) added to the SQL-first schema.
 scorecard_df = scorecard_df.withColumn(
     "has_steward",
     F.length(F.trim(F.coalesce(F.col("steward"), F.lit("")))) > 0

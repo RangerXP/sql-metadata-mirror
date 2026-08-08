@@ -24,10 +24,15 @@ BEGIN
         parent_domain                VARCHAR(64)   NULL,
         status                       VARCHAR(32)   NOT NULL,
         governance_domain_owners     NVARCHAR(1000) NULL,
+        governance_domain_stewards   NVARCHAR(1000) NULL,
         governance_domain_creators   NVARCHAR(1000) NULL,
         CONSTRAINT PK_governance_domains PRIMARY KEY CLUSTERED (domain_id)
     );
 END
+GO
+
+IF COL_LENGTH('dbo.governance_domains', 'governance_domain_stewards') IS NULL
+    ALTER TABLE dbo.governance_domains ADD governance_domain_stewards NVARCHAR(1000) NULL;
 GO
 
 IF OBJECT_ID(N'dbo.governance_data_products', N'U') IS NULL
@@ -39,6 +44,7 @@ BEGIN
         business_use_case            NVARCHAR(1000) NULL,
         audience                     NVARCHAR(400) NULL,
         owners                       NVARCHAR(1000) NULL,
+        stewards                     NVARCHAR(1000) NULL,
         attached_assets              NVARCHAR(MAX) NULL,
         access_policy                NVARCHAR(MAX) NULL,
         status                       VARCHAR(32)   NOT NULL,
@@ -46,6 +52,10 @@ BEGIN
         CONSTRAINT PK_governance_data_products PRIMARY KEY CLUSTERED (data_product_id)
     );
 END
+GO
+
+IF COL_LENGTH('dbo.governance_data_products', 'stewards') IS NULL
+    ALTER TABLE dbo.governance_data_products ADD stewards NVARCHAR(1000) NULL;
 GO
 
 IF OBJECT_ID(N'dbo.governance_glossary_terms', N'U') IS NULL
@@ -77,12 +87,17 @@ BEGIN
         expected_data_type           VARCHAR(32)   NOT NULL,
         business_definition          NVARCHAR(MAX) NOT NULL,
         owner_role                   VARCHAR(128)  NULL,
+        steward_upn                  VARCHAR(255)  NULL,
         status                       VARCHAR(32)   NOT NULL,
         parent_glossary_term         VARCHAR(64)   NULL,
         bound_columns                NVARCHAR(MAX) NULL,
         CONSTRAINT PK_governance_cdes PRIMARY KEY CLUSTERED (cde_id)
     );
 END
+GO
+
+IF COL_LENGTH('dbo.governance_cdes', 'steward_upn') IS NULL
+    ALTER TABLE dbo.governance_cdes ADD steward_upn VARCHAR(255) NULL;
 GO
 
 IF OBJECT_ID(N'dbo.governance_role_assignments', N'U') IS NULL

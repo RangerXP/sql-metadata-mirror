@@ -22,11 +22,11 @@ GO
 DELETE FROM dbo.governance_domains;
 
 INSERT INTO dbo.governance_domains
-(domain_id, domain_name, domain_type, description, parent_domain, status, governance_domain_owners, governance_domain_creators)
+(domain_id, domain_name, domain_type, description, parent_domain, status, governance_domain_owners, governance_domain_stewards, governance_domain_creators)
 VALUES
-('DOM-CUSTOPS', 'Customer Operations', 'Data domain', 'Customer support, consent, complaint, and profile stewardship domain.', NULL, 'Published', 'Victoria.Tan@enercare.ca;Ci.Zhu@enercare.ca', 'Ci.Zhu@enercare.ca;Alison.Pouw@microsoft.com'),
-('DOM-SVCDEL',  'Service Delivery',    'Data domain', 'Field service scheduling, work-order execution, and SLA governance.', NULL, 'Published', 'ranbir.singh@enercare.ca;Ci.Zhu@enercare.ca', 'Ci.Zhu@enercare.ca;Alison.Pouw@microsoft.com'),
-('DOM-REVCON',  'Revenue and Contracts','Data domain','Billing, contracts, renewals, and financial governance domain.', NULL, 'Published', 'Ci.Zhu@enercare.ca;ranbir.singh@enercare.ca', 'Ci.Zhu@enercare.ca;Alison.Pouw@microsoft.com');
+('DOM-CUSTOPS', 'Customer Operations', 'Data domain', 'Customer support, consent, complaint, and profile stewardship domain.', NULL, 'Published', 'Victoria.Tan@enercare.ca;Ci.Zhu@enercare.ca', 'Rupal.Solanki@enercare.ca', 'Ci.Zhu@enercare.ca;Alison.Pouw@microsoft.com'),
+('DOM-SVCDEL',  'Service Delivery',    'Data domain', 'Field service scheduling, work-order execution, and SLA governance.', NULL, 'Published', 'ranbir.singh@enercare.ca;Ci.Zhu@enercare.ca', 'Shruthi.Srinivas@enercare.ca', 'Ci.Zhu@enercare.ca;Alison.Pouw@microsoft.com'),
+('DOM-REVCON',  'Revenue and Contracts','Data domain','Billing, contracts, renewals, and financial governance domain.', NULL, 'Published', 'Ci.Zhu@enercare.ca;ranbir.singh@enercare.ca', 'Ci.Zhu@enercare.ca', 'Ci.Zhu@enercare.ca;Alison.Pouw@microsoft.com');
 GO
 
 /* ------------------------------------------------------------------------------
@@ -35,11 +35,11 @@ GO
 DELETE FROM dbo.governance_data_products;
 
 INSERT INTO dbo.governance_data_products
-(data_product_id, data_product_name, product_type, business_use_case, audience, owners, attached_assets, access_policy, status, parent_domain_id)
+(data_product_id, data_product_name, product_type, business_use_case, audience, owners, stewards, attached_assets, access_policy, status, parent_domain_id)
 VALUES
-('DP-CUST360', 'Customer 360', 'Master and reference data', 'Single customer profile and consent posture for call-center and compliance operations.', 'Call Center;Privacy;Leadership', 'Victoria.Tan@enercare.ca', 'dbo.customers;dbo.customer_consents;BrookfieldEnercare/dim_customer', 'Role-based access with privacy approval for regulated attributes.', 'Published', 'DOM-CUSTOPS'),
-('DP-SVCPERF', 'Service Performance', 'Dataset', 'Track service request performance, technician throughput, and SLA adherence.', 'Field Operations;Leadership', 'ranbir.singh@enercare.ca', 'dbo.service_requests;dbo.service_accounts;dbo.service_zones;BrookfieldEnercare/fct_service_requests', 'Operational use for service planning and SLA management.', 'Published', 'DOM-SVCDEL'),
-('DP-BILLHEALTH', 'Billing Health', 'Dataset', 'Monitor billing accuracy, repeat complaints, and contract renewal outcomes.', 'Finance;Customer Care;Leadership', 'Ci.Zhu@enercare.ca', 'dbo.billing_transactions;dbo.contracts;dbo.customer_complaints;BrookfieldEnercare/fct_billing', 'Access requires finance and governance approval for sensitive fields.', 'Published', 'DOM-REVCON');
+('DP-CUST360', 'Customer 360', 'Master and reference data', 'Single customer profile and consent posture for call-center and compliance operations.', 'Call Center;Privacy;Leadership', 'Victoria.Tan@enercare.ca', 'Rupal.Solanki@enercare.ca', 'dbo.customers;dbo.customer_consents;BrookfieldEnercare/dim_customer', 'Role-based access with privacy approval for regulated attributes.', 'Published', 'DOM-CUSTOPS'),
+('DP-SVCPERF', 'Service Performance', 'Dataset', 'Track service request performance, technician throughput, and SLA adherence.', 'Field Operations;Leadership', 'ranbir.singh@enercare.ca', 'Shruthi.Srinivas@enercare.ca', 'dbo.service_requests;dbo.service_accounts;dbo.service_zones;BrookfieldEnercare/fct_service_requests', 'Operational use for service planning and SLA management.', 'Published', 'DOM-SVCDEL'),
+('DP-BILLHEALTH', 'Billing Health', 'Dataset', 'Monitor billing accuracy, repeat complaints, and contract renewal outcomes.', 'Finance;Customer Care;Leadership', 'Ci.Zhu@enercare.ca', 'Ci.Zhu@enercare.ca', 'dbo.billing_transactions;dbo.contracts;dbo.customer_complaints;BrookfieldEnercare/fct_billing', 'Access requires finance and governance approval for sensitive fields.', 'Published', 'DOM-REVCON');
 GO
 
 /* ------------------------------------------------------------------------------
@@ -106,20 +106,20 @@ GO
 DELETE FROM dbo.governance_cdes;
 
 INSERT INTO dbo.governance_cdes
-(cde_id, cde_name, expected_data_type, business_definition, owner_role, status, parent_glossary_term, bound_columns)
+(cde_id, cde_name, expected_data_type, business_definition, owner_role, steward_upn, status, parent_glossary_term, bound_columns)
 VALUES
-('CDE-CUST-ID', 'Customer Identifier', 'number', 'Unique enterprise identifier for customer entities.', 'Data Steward', 'Published', 'GT-CUSTOMER', 'dbo.customers.customer_id;dbo.service_accounts.customer_id;dbo.contracts.customer_id'),
-('CDE-SVCACCT-ID', 'Service Account Identifier', 'number', 'Unique identifier for service account records.', 'Data Steward', 'Published', 'GT-SVCREQ', 'dbo.service_accounts.service_account_id;dbo.service_requests.service_account_id'),
-('CDE-CONTRACT-ID', 'Contract Identifier', 'number', 'Unique identifier for customer contracts.', 'Data Steward', 'Published', 'GT-CONTRACT', 'dbo.contracts.contract_id;dbo.billing_transactions.contract_id'),
-('CDE-REQ-ID', 'Service Request Identifier', 'number', 'Unique service request key.', 'Data Steward', 'Published', 'GT-SVCREQ', 'dbo.service_requests.request_id'),
-('CDE-CONSENT-STATUS', 'Consent Status', 'text', 'Current legal status of customer consent record.', 'Privacy Officer', 'Published', 'GT-CONSENT', 'dbo.customer_consents.consent_status'),
-('CDE-SIN', 'Social Insurance Number', 'text', 'Canadian SIN full or partial representation.', 'Privacy Officer', 'Published', 'GT-SIN', 'dbo.employees.sin_full;dbo.customers.sin_last_4'),
-('CDE-DOB', 'Date Of Birth', 'date', 'Customer date of birth for identity and eligibility checks.', 'Privacy Officer', 'Published', 'GT-PII', 'dbo.customers.date_of_birth'),
-('CDE-GEO', 'Geo Coordinates', 'text', 'Service account latitude and longitude values.', 'Data Steward', 'Published', 'GT-GEOPII', 'dbo.service_accounts.latitude;dbo.service_accounts.longitude'),
-('CDE-PAN-LAST4', 'Card PAN Last 4', 'text', 'Last four digits of payment card number.', 'Finance Steward', 'Published', 'GT-PCISCOPE', 'dbo.billing_transactions.card_pan_last_4'),
-('CDE-BANK-LAST4', 'Bank Routing Last 4', 'text', 'Last four digits of bank routing details.', 'Finance Steward', 'Published', 'GT-PCISCOPE', 'dbo.billing_transactions.bank_routing_last_4'),
-('CDE-OWNER-UPN', 'Data Owner UPN', 'text', 'UPN of assigned data owner for governed object.', 'Data Governance Admin', 'Published', 'GT-OWNER', 'dbo.data_owners_directory.data_owner_upn;dbo.data_owners_directory.data_steward_upn'),
-('CDE-AUDIT-PURPOSE', 'Audit Purpose Of Use', 'text', 'Declared purpose for data access event.', 'Data Governance Admin', 'Published', 'GT-AUDIT', 'dbo.audit_data_access.purpose_of_use');
+('CDE-CUST-ID', 'Customer Identifier', 'number', 'Unique enterprise identifier for customer entities.', 'Data Steward', 'Rupal.Solanki@enercare.ca', 'Published', 'GT-CUSTOMER', 'dbo.customers.customer_id;dbo.service_accounts.customer_id;dbo.contracts.customer_id'),
+('CDE-SVCACCT-ID', 'Service Account Identifier', 'number', 'Unique identifier for service account records.', 'Data Steward', 'Shruthi.Srinivas@enercare.ca', 'Published', 'GT-SVCREQ', 'dbo.service_accounts.service_account_id;dbo.service_requests.service_account_id'),
+('CDE-CONTRACT-ID', 'Contract Identifier', 'number', 'Unique identifier for customer contracts.', 'Data Steward', 'Ci.Zhu@enercare.ca', 'Published', 'GT-CONTRACT', 'dbo.contracts.contract_id;dbo.billing_transactions.contract_id'),
+('CDE-REQ-ID', 'Service Request Identifier', 'number', 'Unique service request key.', 'Data Steward', 'Shruthi.Srinivas@enercare.ca', 'Published', 'GT-SVCREQ', 'dbo.service_requests.request_id'),
+('CDE-CONSENT-STATUS', 'Consent Status', 'text', 'Current legal status of customer consent record.', 'Privacy Officer', 'Rupal.Solanki@enercare.ca', 'Published', 'GT-CONSENT', 'dbo.customer_consents.consent_status'),
+('CDE-SIN', 'Social Insurance Number', 'text', 'Canadian SIN full or partial representation.', 'Privacy Officer', 'Rupal.Solanki@enercare.ca', 'Published', 'GT-SIN', 'dbo.employees.sin_full;dbo.customers.sin_last_4'),
+('CDE-DOB', 'Date Of Birth', 'date', 'Customer date of birth for identity and eligibility checks.', 'Privacy Officer', 'Rupal.Solanki@enercare.ca', 'Published', 'GT-PII', 'dbo.customers.date_of_birth'),
+('CDE-GEO', 'Geo Coordinates', 'text', 'Service account latitude and longitude values.', 'Data Steward', 'Shruthi.Srinivas@enercare.ca', 'Published', 'GT-GEOPII', 'dbo.service_accounts.latitude;dbo.service_accounts.longitude'),
+('CDE-PAN-LAST4', 'Card PAN Last 4', 'text', 'Last four digits of payment card number.', 'Finance Steward', 'Ci.Zhu@enercare.ca', 'Published', 'GT-PCISCOPE', 'dbo.billing_transactions.card_pan_last_4'),
+('CDE-BANK-LAST4', 'Bank Routing Last 4', 'text', 'Last four digits of bank routing details.', 'Finance Steward', 'Ci.Zhu@enercare.ca', 'Published', 'GT-PCISCOPE', 'dbo.billing_transactions.bank_routing_last_4'),
+('CDE-OWNER-UPN', 'Data Owner UPN', 'text', 'UPN of assigned data owner for governed object.', 'Data Governance Admin', 'Rupal.Solanki@enercare.ca', 'Published', 'GT-OWNER', 'dbo.data_owners_directory.data_owner_upn;dbo.data_owners_directory.data_steward_upn'),
+('CDE-AUDIT-PURPOSE', 'Audit Purpose Of Use', 'text', 'Declared purpose for data access event.', 'Data Governance Admin', 'Rupal.Solanki@enercare.ca', 'Published', 'GT-AUDIT', 'dbo.audit_data_access.purpose_of_use');
 GO
 
 /* ------------------------------------------------------------------------------

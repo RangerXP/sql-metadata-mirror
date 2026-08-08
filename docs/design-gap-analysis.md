@@ -84,7 +84,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G7 | Purview deployment in sub3 | P1 | 🟢 Done — live tenant read-back captured via `nb_07` live publish (2026-08-07 re-verification) | Sean |
 | G8 | Purview scans, catalog publication, and glossary | P1 | 🟢 Done — SQL + Fabric scans, domains/data products, and glossary/CDE all confirmed via live read-back (2026-08-07 re-verification) | Sean |
 | G9 | Lineage registration from SQL to Fabric to semantic model | P2 | 🟢 Done — 8/8 lineage edges published live to Purview Atlas, re-confirmed 2026-08-07 | Sean |
-| G10 | Steward workflow and AI-assisted metadata drafting | P3 | 🟢 Done (demo slice) — `nb_10_purview_stewardship_ai` validates owner/steward values; full native approval workflow remains deferred to Phase D | Sean |
+| G10 | Steward workflow and AI-assisted metadata drafting | P3 | � Fix pending live re-verification — 2026-08-08 live run found phase_08 stewardship scoring 18/18 ACTION_REQUIRED (steward never wired into working tables); pipeline fix applied, awaiting SQL re-deploy + rerun | Sean |
 | G11 | Optional ontology and B2C extensions | P4 | ⏸ Blocked / Deferred to Phase D | Sean |
 | **G12** | **Phase A design commit (north star, dataset, CSVs, SIN backstop, 2-day plan)** | **P1** | **🟢 Done** | **Sean** |
 
@@ -377,7 +377,7 @@ G8-3 completion evidence (captured Day 5):
 ## G10 — Steward Workflow And AI-Assisted Metadata Drafting
 
 **Priority:** P3
-**Status:** 🟢 Done (demo slice closed 2026-06-18; full steward workflow deferred to Phase D)
+**Status:** Fix pending live re-verification (regression found 2026-08-08; demo slice previously closed 2026-06-18; full steward workflow remains deferred to Phase D)
 
 | # | Task | Status | Notes |
 |---|---|---|---|
@@ -393,6 +393,13 @@ G8-3 completion evidence (captured Day 5):
 - **nb_10 AI Readiness (Phase 10):** 4 checks — `certified_or_published_products` PASS, `glossary_terms_bound_to_assets` PASS, `cdes_bound_to_columns` PASS, `semantic_annotation_plan_available` PASS (77 annotations)
 - **Total ACTION_REQUIRED across all phases:** 0
 - **Output tables written:** `purview_phase_08_stewardship_scorecard`, `purview_phase_09_controls_validation`, `purview_phase_10_ai_readiness_validation`, `purview_phase_08_10_closeout`
+
+### G10 Regression Found And Fixed (2026-08-08)
+
+- **Live nb_10 rerun result (before fix):** Phase 08 stewardship scorecard scored **18/18 `ACTION_REQUIRED`** — every Domain/DataProduct/CDE row had `has_steward=FALSE`. Phase 09 (4/4 PASS) and Phase 10 (4/4 PASS) were unaffected. This contradicts the 2026-06-18 evidence above, which was stale.
+- **Root cause:** Steward data was never wired into the `lh_metadata.metadata.*` working tables. `nb_10`'s `domain_score` hardcoded `steward=None` regardless of data; `governance_data_products` and `governance_cdes` in `sql/06_purview_metadata_schema.sql` never defined a steward column at all (CDEs only carried `owner_role`, a role title, not a person). `nb_07a_ingest_customer_files` (SQL-mirror-only by design) simply passes through whatever columns exist in the mirrored SQL tables, so the gap propagated end-to-end.
+- **Fix applied:** Added `governance_domain_stewards` to `governance_domains`, `stewards` to `governance_data_products`, and `steward_upn` to `governance_cdes` in `sql/06_purview_metadata_schema.sql` (with `ALTER TABLE` guards for already-deployed databases), populated with real steward UPNs (Rupal Solanki / DOM-CUSTOPS, Shruthi Srinivas / DOM-SVCDEL, Ci Zhu / DOM-REVCON — matching the existing data-product steward assignments) in `sql/07_seed_purview_metadata.sql`. Updated `purview/domain-charter.csv` with matching `domain_steward_upn`/`domain_steward_name` columns for consistency (not read by the SQL-mirror-only pipeline, but kept in sync as the T2 reference artifact). Fixed `nb_10`'s `domain_score` to resolve steward via `_steward_column()` instead of a hardcoded `None`, and widened `_steward_column()`'s candidate list to include `stewards` and `governance_domain_stewards`.
+- **Pending:** Requires re-running `sql/06_purview_metadata_schema.sql` and `sql/07_seed_purview_metadata.sql` against sub2 Azure SQL, confirming mirror sync, then re-running `nb_07a_ingest_customer_files` and `nb_10_purview_stewardship_ai` to confirm Phase 08 returns to 0 `ACTION_REQUIRED`. Status will move back to Done once that live re-run is confirmed.
 
 ---
 
