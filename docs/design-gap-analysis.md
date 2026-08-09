@@ -455,7 +455,7 @@ G8-3 completion evidence (captured Day 5):
 | G13-1 | Confirm Fabric Mirroring row-level CDC (not just schema autosync) reflects existing-table value changes end-to-end | 🟢 Done | Confirmed as a side effect of the G10 fix — the mirror correctly streamed `ALTER TABLE`-added column values once the read/write schema-caching bugs in `nb_07a`/`nb_10` were fixed |
 | G13-2 | `dbo.governance_change_requests` gating table (audit-trailed request/approval log) | 🟢 Done | `sql/09_gated_governance_requests_schema.sql` |
 | G13-3 | Companion approval columns on `governance_cdes`/`governance_glossary_terms`; `ai_metadata` certification columns | � Done | SQL-side columns in `sql/09_*.sql`; `ai_metadata` extension added via `nb_04a_extend_metadata_schema` and run live 2026-08-08 (Milestone P4-2) |
-| G13-4 | `nb_11_gated_governance_sync` — automated apply-on-approve notebook | 🔴 Not Started | See `docs/Enercare-Demo-SemPy-Design-Guide.md` §5D Milestone P4-4 |
+| G13-4 | `nb_11_gated_governance_sync` — automated apply-on-approve notebook | � Partial | Built and pushed live 2026-08-09 (Milestone P4-4); dispatches all 4 request types, defaults to `DEMO_MODE=True`. Not yet proven against a live Approved request — blocked on mirror discovering the new `governance_change_requests` source table (see G14-2 note) |
 | G13-5 | Scheduled/triggered re-run of the ingest → writeback → publish chain (vs. today's fully-manual notebook runs) | 🔴 Not Started | Deferred until G14's 4 scenarios are proven manually at least once |
 
 ---
@@ -469,7 +469,7 @@ G8-3 completion evidence (captured Day 5):
 | # | Task | Status | Notes |
 |---|---|---|---|
 | G14-1 | Design + document the 4 gate scenarios and their stakeholder mapping | 🟢 Done | `docs/Enercare-Demo-SemPy-Design-Guide.md` §5D |
-| G14-2 | Seed the 4 demo scenarios in `PendingApproval` | 🟢 Done | `sql/10_seed_gated_governance_scenarios.sql` |
+| G14-2 | Seed the 4 demo scenarios in `PendingApproval` | 🟢 Done | `sql/10_seed_gated_governance_scenarios.sql` — discovered 2026-08-09 that `sql/09_*.sql`/`sql/10_*.sql` had only ever existed as files and were never actually applied to the live `sub2` SQL source; applied both live, confirmed 4 rows in `dbo.governance_change_requests`. Fabric Mirroring did not auto-discover the new table; forced rediscovery via `stopMirroring`/`startMirroring` cycle — rediscovery in progress |
 | G14-3 | Operational workflow for running each scenario live (today, manually, ahead of `nb_11`) | 🟢 Done | `docs/runbooks/phase4-gated-governance-workflow.md` |
 | G14-4 | Live run: KPI Approval (`SLA_BRCH_RATE` v1→v2) | 🔴 Not Started | |
 | G14-5 | Live run: Verified Answer Certification (SLA credit-policy Q&A) | 🔴 Not Started | |

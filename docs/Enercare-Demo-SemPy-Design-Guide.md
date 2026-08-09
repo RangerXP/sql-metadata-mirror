@@ -565,7 +565,7 @@ Seed data for all 4 (status `PendingApproval`) is in `sql/10_seed_gated_governan
 
 #### Milestone P4-3 — Approval surfacing (demo-operable today)
 **Goal:** a demo operator can move any of the 4 seeded requests from `PendingApproval` to `Approved`/`Rejected` via a direct SQL `UPDATE` against `sqldemo` (native Purview workflow-approval APIs remain preview/limited, so the demo models the same state machine on the SQL side, mirrored automatically), and see the row reflect in `lh_metadata.metadata.governance_change_requests` after `nb_07a` runs.
-**Build & Deploy Status:** 🔴 Not Started — depends on P4-1 (done) + a manual re-run of `nb_07a_ingest_customer_files` per gate scenario until P4-4 automates it.
+**Build & Deploy Status:** � Partial — depends on P4-1 (done, and confirmed 2026-08-09 to actually be applied live against `sub2`, not just present as repo files) + a manual re-run of `nb_07a_ingest_customer_files` per gate scenario until P4-4 automates it. `nb_07a` extended 2026-08-09 to ingest `governance_change_requests` into `lh_metadata.metadata.governance_change_requests`.
 
 #### Milestone P4-4 — `nb_11_gated_governance_sync` (planned notebook)
 **Goal:** a new notebook that reads `Approved`/`applied_at IS NULL` rows from `lh_metadata.metadata.governance_change_requests` and dispatches by `request_type`:
@@ -574,8 +574,8 @@ Seed data for all 4 (status `PendingApproval`) is in `sql/10_seed_gated_governan
 - `CDE_CLASSIFICATION` → insert/update `governance_cdes` (status, `classification_approved_by`/`_at`).
 - `GLOSSARY_TERM_DEFINITION` → insert/update `governance_glossary_terms` (definition, `approved_by`/`approved_at`, `previous_definition`).
 
-Then stamps `applied_at = now()`, `status='Applied'`, and triggers the downstream chain: `nb_04_sempy_writeback` → `nb_05_push_qa_verified_answers` → `nb_07_publish_to_purview` (+ `nb_08`/`nb_09` as relevant) → `nb_10_purview_stewardship_ai` re-score.
-**Build & Deploy Status:** 🔴 Not Started — this is the actual "self-healing" automation; until built, the runbook documents the equivalent manual notebook run order.
+Then stamps `applied_at = now()`, `status='Applied'`, and prints the downstream chain to run next: `nb_04_sempy_writeback` → `nb_05_push_qa_verified_answers` → `nb_07_publish_to_purview` (+ `nb_08`/`nb_09` as relevant) → `nb_10_purview_stewardship_ai` re-score (full auto-trigger of that chain is scoped to G13-5, deferred).
+**Build & Deploy Status:** 🟡 Partial — built and pushed live 2026-08-09 as `fabric/nb_11_gated_governance_sync.Notebook/`; reads directly from the `sub2` SQL source (not the lakehouse mirror copy) to avoid acting on stale Approved status, dispatches all 4 request types, defaults to `DEMO_MODE=True`. Not yet run against a live Approved request — see G14-4..G14-7.
 
 #### Milestone P4-5 — Phase 4 closeout gate
 **Goal:** certify all 4 gate types run end-to-end live (SQL request → approval → semantic-model/Purview write-back → scorecard re-confirmation) at least once.
