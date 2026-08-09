@@ -133,14 +133,47 @@ WHERE status = 'Approved' AND applied_at IS NULL
 ORDER BY approved_at
 """.strip()
 
+import traceback
+
+def _log_nb11_diagnostic(stage: str, error: Exception) -> None:
+    try:
+        from pyspark.sql import Row
+        from pyspark.sql.types import StructType, StructField, StringType
+        diag_schema = StructType([
+            StructField("stage", StringType(), True),
+            StructField("error_type", StringType(), True),
+            StructField("error_message", StringType(), True),
+            StructField("traceback", StringType(), True),
+        ])
+        diag_row = Row(
+            stage=stage,
+            error_type=type(error).__name__,
+            error_message=str(error),
+            traceback=traceback.format_exc(),
+        )
+        spark.createDataFrame([diag_row], schema=diag_schema).write.format("delta").mode("append") \
+            .saveAsTable(f"{METADATA_LAKEHOUSE}.nb11_diagnostics_log")
+    except Exception as log_exc:
+        print(f"[diagnostic-logging-failed] {log_exc}")
+
 if DEMO_MODE:
     print("[DEMO_MODE] Would execute:\n")
     print(sql_select_pending_apply)
     # Fabric-mirrored read-only copy stands in for a live SQL read during dry runs.
-    pending_df = spark.sql(
-        f"SELECT * FROM {METADATA_LAKEHOUSE}.governance_change_requests "
-        "WHERE status = 'Approved' AND applied_at IS NULL ORDER BY approved_at"
-    ).toPandas()
+    try:
+        pending_df = spark.sql(
+            f"SELECT * FROM {METADATA_LAKEHOUSE}.governance_change_requests "
+            "WHERE status = 'Approved' AND applied_at IS NULL ORDER BY approved_at"
+        ).toPandas()
+    except Exception as exc:
+        print(f"[DEMO_MODE] pending_df read FAILED: {exc}")
+        _log_nb11_diagnostic("cell3_pending_read", exc)
+        import pandas as pd
+        pending_df = pd.DataFrame(columns=[
+            "request_id", "request_type", "domain_id", "target_object_id", "target_object_label",
+            "change_summary", "proposed_payload", "previous_payload", "requested_by_upn",
+            "approver_upn", "approved_at",
+        ])
 else:
     cursor = sql_conn.cursor()
     cursor.execute(sql_select_pending_apply)
