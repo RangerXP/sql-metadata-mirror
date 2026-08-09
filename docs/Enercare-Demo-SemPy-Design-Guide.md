@@ -561,7 +561,7 @@ Seed data for all 4 (status `PendingApproval`) is in `sql/10_seed_gated_governan
 
 #### Milestone P4-2 — `ai_metadata` certification columns
 **Goal:** add `IsCertified` (INT, default 0), `CertifiedBy` (STRING), `CertifiedDate` (DATE) to `lh_metadata.ai_metadata`, mirroring the pattern already on `kpi_metadata`.
-**Build & Deploy Status:** 🔴 Not Started — small `nb_04a_extend_metadata_schema` extension.
+**Build & Deploy Status:** � Done — new cell in `nb_04a_extend_metadata_schema`, run live 2026-08-08; confirmed via SQL analytics endpoint that `ai_metadata` now has `IsCertified`/`CertifiedBy`/`CertifiedDate`.
 
 #### Milestone P4-3 — Approval surfacing (demo-operable today)
 **Goal:** a demo operator can move any of the 4 seeded requests from `PendingApproval` to `Approved`/`Rejected` via a direct SQL `UPDATE` against `sqldemo` (native Purview workflow-approval APIs remain preview/limited, so the demo models the same state machine on the SQL side, mirrored automatically), and see the row reflect in `lh_metadata.metadata.governance_change_requests` after `nb_07a` runs.

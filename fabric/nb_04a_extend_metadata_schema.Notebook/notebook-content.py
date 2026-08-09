@@ -152,6 +152,43 @@ else:
 
 # CELL ********************
 
+# Phase 4 Milestone P4-2 — ai_metadata certification columns
+# Mirrors the IsCertified/CertifiedBy/CertifiedDate pattern already on kpi_metadata,
+# so nb_11_gated_governance_sync (P4-4) can certify verified answers the same way.
+
+sql_alter_ai_add = f"""
+ALTER TABLE {METADATA_LAKEHOUSE}.ai_metadata
+ADD COLUMNS (
+    IsCertified    INT,
+    CertifiedBy    STRING,
+    CertifiedDate  DATE
+)
+""".strip()
+
+sql_ai_default_certified = f"ALTER TABLE {METADATA_LAKEHOUSE}.ai_metadata ALTER COLUMN IsCertified SET DEFAULT 0"
+
+if DEMO_MODE:
+    print("[DEMO_MODE] Would execute:\n")
+    print(sql_alter_ai_add)
+    print(sql_ai_default_certified)
+else:
+    existing_ai_cols = [c.name for c in spark.table(f"{METADATA_LAKEHOUSE}.ai_metadata").schema]
+    if "IsCertified" not in existing_ai_cols:
+        spark.sql(sql_alter_ai_add)
+        spark.sql(sql_ai_default_certified)
+        print("ai_metadata: 3 certification columns added (IsCertified, CertifiedBy, CertifiedDate)")
+    else:
+        print("ai_metadata: certification columns already present — skipping ADD COLUMNS")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 # G1-5 — Create data_owners table
 # Owner and steward registry per domain
 

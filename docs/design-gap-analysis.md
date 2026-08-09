@@ -454,7 +454,7 @@ G8-3 completion evidence (captured Day 5):
 |---|---|---|---|
 | G13-1 | Confirm Fabric Mirroring row-level CDC (not just schema autosync) reflects existing-table value changes end-to-end | 🟢 Done | Confirmed as a side effect of the G10 fix — the mirror correctly streamed `ALTER TABLE`-added column values once the read/write schema-caching bugs in `nb_07a`/`nb_10` were fixed |
 | G13-2 | `dbo.governance_change_requests` gating table (audit-trailed request/approval log) | 🟢 Done | `sql/09_gated_governance_requests_schema.sql` |
-| G13-3 | Companion approval columns on `governance_cdes`/`governance_glossary_terms`; `ai_metadata` certification columns | 🟡 Partial | SQL-side columns done in `sql/09_*.sql`; `ai_metadata` (Lakehouse-only) extension is Phase 4 Milestone P4-2, not yet built |
+| G13-3 | Companion approval columns on `governance_cdes`/`governance_glossary_terms`; `ai_metadata` certification columns | � Done | SQL-side columns in `sql/09_*.sql`; `ai_metadata` extension added via `nb_04a_extend_metadata_schema` and run live 2026-08-08 (Milestone P4-2) |
 | G13-4 | `nb_11_gated_governance_sync` — automated apply-on-approve notebook | 🔴 Not Started | See `docs/Enercare-Demo-SemPy-Design-Guide.md` §5D Milestone P4-4 |
 | G13-5 | Scheduled/triggered re-run of the ingest → writeback → publish chain (vs. today's fully-manual notebook runs) | 🔴 Not Started | Deferred until G14's 4 scenarios are proven manually at least once |
 
