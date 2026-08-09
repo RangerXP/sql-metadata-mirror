@@ -1,12 +1,15 @@
 # Enercare - Build Gap Analysis (vNext)
 
-**Last updated:** 2026-08-08
+**Last updated:** 2026-08-08 (Phase 4 design added)
 **Branch:** `main` | **File:** `docs/design-gap-analysis.md`
 **Owner:** Sean Kelley (Microsoft) — sole accountable owner for all build tasks
 **Enercare stakeholders (demo scope):** Victoria Tan (CCO — Domain Owner DOM-CUSTOPS), Ranbir Singh (Domain Owner DOM-SVCDEL), Ci Zhu (Domain Owner DOM-REVCON; Glossary / Label Policy / Tenant Governance Admin), Rupal Solanki (Data Steward DOM-CUSTOPS), Shruthi Srinivas (Data Steward DOM-SVCDEL)
 **Out of demo scope:** Christopher Dingle (VP Data Analytics & Governance at Enercare — intentional exclusion; his real-world governance authoring functions are represented in the demo by Ci Zhu)
 
-> **What changed in this version (2026-08-08)**
+> **What changed in this version (2026-08-08, Phase 4 design):**
+> Added **G13** (Self-Healing Semantic Model Sync) and **G14** (Gated Governance Approval Workflows) — a new Phase 4 covering the circular SQL-change → gated-approval → semantic-model/Purview write-back loop, per the new `docs/Enercare-Demo-SemPy-Design-Guide.md` §5D. Both are 🔴 Not Started (design and schema/seed data are done; live scenario runs and the automated `nb_11_gated_governance_sync` notebook are not). New files: `sql/09_gated_governance_requests_schema.sql`, `sql/10_seed_gated_governance_scenarios.sql`, `docs/runbooks/phase4-gated-governance-workflow.md`.
+>
+> **Previous version (2026-08-08, G10 fix):**
 > Fixed and live-reverified the G10 steward-data regression (found the same day): root-caused to Spark catalog schema caching in `nb_07a` plus Delta overwrite-mode schema rigidity in both `nb_07a` and `nb_10`'s write helpers. `nb_10`'s rerun now returns `phase_08_stewardship,18,0,PASS` / `phase_09_controls,4,0,PASS` / `phase_10_ai_readiness,4,0,PASS`. G5/G6 Quick Status rows also corrected to 🟢 Done to match their already-Done detailed sections (drift from the 2026-08-07 pass). All P1–P3 gaps are now Done; only G11 (P4, explicitly deferred to Phase D) remains open.
 >
 > **Previous version (2026-08-07):** Re-verified the full live Purview publish chain end-to-end (`nb_07` domains/data products, `nb_08` glossary/CDE, `nb_09` labels/lineage) after replacing manual-token-paste auth with a shared device-code token cache across all three notebooks. All three notebooks completed with 0 failures. G7/G8/G9/G10 Quick Status rows below corrected to 🟢 Done to match the detailed evidence sections (previously out of sync since the 2026-06-18 closure).
@@ -89,6 +92,8 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G10 | Steward workflow and AI-assisted metadata drafting | P3 | 🟢 Done — 2026-08-08 regression (18/18 ACTION_REQUIRED) fixed and live-reverified: `phase_08_stewardship,18,0,PASS` / `phase_09_controls,4,0,PASS` / `phase_10_ai_readiness,4,0,PASS` | Sean |
 | G11 | Optional ontology and B2C extensions | P4 | ⏸ Blocked / Deferred to Phase D | Sean |
 | **G12** | **Phase A design commit (north star, dataset, CSVs, SIN backstop, 2-day plan)** | **P1** | **🟢 Done** | **Sean** |
+| G13 | Self-healing semantic model sync (SQL value-change propagation, not just schema autosync) | P2 | 🔴 Not Started | Sean |
+| G14 | Gated governance approval workflows (KPI approval, Verified Answer certification, CDE classification, glossary term definition) | P2 | 🔴 Not Started | Sean |
 
 ---
 
@@ -436,6 +441,41 @@ G8-3 completion evidence (captured Day 5):
 | G12-8 | Demo north-star scenario (Maria) memorialized | 🟢 Done | `docs/purview-maria-north-star-scenario.md` — three acts, 8 acceptance criteria, feature traceability |
 | G12-9 | Readiness assessment + 2-day execution plan | 🟢 Done | `docs/purview-design-readiness-assessment.md`, `docs/purview-2-day-execution-plan.md` |
 | G12-10 | Phase A commit to `enercare` branch | 🟡 In Progress | 16 files staged at `/mnt/workspace/output/repo-staging/`; copy + commit pending |
+
+---
+
+## G13 — Self-Healing Semantic Model Sync
+
+**Priority:** P2
+**Status:** 🔴 Not Started
+**Goal:** Ensure SQL-side **value changes** to existing rows (not just new tables/columns) propagate through the mirror into `lh_metadata.metadata.*` and, when they represent a governed metadata change, all the way into the semantic model and Purview — closing the Enercare-Demo-SemPy-Design-Guide's Pillar 5 gap ("live approval → governance-state sync → semantic-model certification transition remains unproven").
+
+| # | Task | Status | Notes |
+|---|---|---|---|
+| G13-1 | Confirm Fabric Mirroring row-level CDC (not just schema autosync) reflects existing-table value changes end-to-end | 🟢 Done | Confirmed as a side effect of the G10 fix — the mirror correctly streamed `ALTER TABLE`-added column values once the read/write schema-caching bugs in `nb_07a`/`nb_10` were fixed |
+| G13-2 | `dbo.governance_change_requests` gating table (audit-trailed request/approval log) | 🟢 Done | `sql/09_gated_governance_requests_schema.sql` |
+| G13-3 | Companion approval columns on `governance_cdes`/`governance_glossary_terms`; `ai_metadata` certification columns | 🟡 Partial | SQL-side columns done in `sql/09_*.sql`; `ai_metadata` (Lakehouse-only) extension is Phase 4 Milestone P4-2, not yet built |
+| G13-4 | `nb_11_gated_governance_sync` — automated apply-on-approve notebook | 🔴 Not Started | See `docs/Enercare-Demo-SemPy-Design-Guide.md` §5D Milestone P4-4 |
+| G13-5 | Scheduled/triggered re-run of the ingest → writeback → publish chain (vs. today's fully-manual notebook runs) | 🔴 Not Started | Deferred until G14's 4 scenarios are proven manually at least once |
+
+---
+
+## G14 — Gated Governance Approval Workflows
+
+**Priority:** P2
+**Status:** 🔴 Not Started
+**Goal:** Prove 4 concrete gated-change scenarios — KPI Approval, Verified Answer Certification, CDE Classification, and Glossary Term Definition — each driven by a Maria-northstar stakeholder and approved by Ci Zhu, running live end-to-end through the self-healing loop.
+
+| # | Task | Status | Notes |
+|---|---|---|---|
+| G14-1 | Design + document the 4 gate scenarios and their stakeholder mapping | 🟢 Done | `docs/Enercare-Demo-SemPy-Design-Guide.md` §5D |
+| G14-2 | Seed the 4 demo scenarios in `PendingApproval` | 🟢 Done | `sql/10_seed_gated_governance_scenarios.sql` |
+| G14-3 | Operational workflow for running each scenario live (today, manually, ahead of `nb_11`) | 🟢 Done | `docs/runbooks/phase4-gated-governance-workflow.md` |
+| G14-4 | Live run: KPI Approval (`SLA_BRCH_RATE` v1→v2) | 🔴 Not Started | |
+| G14-5 | Live run: Verified Answer Certification (SLA credit-policy Q&A) | 🔴 Not Started | |
+| G14-6 | Live run: CDE Classification (`CDE-COMPLAINTREF`) | 🔴 Not Started | |
+| G14-7 | Live run: Glossary Term Definition (`GT-SLA`) | 🔴 Not Started | |
+| G14-8 | Phase 4 closeout — all 4 requests `Applied`, `nb_10` re-confirms 0 `ACTION_REQUIRED` after each | 🔴 Not Started | See Milestone P4-5 |
 
 ---
 

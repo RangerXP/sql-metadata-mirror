@@ -26,6 +26,7 @@ This summary reflects the current repo and notebook state after the safety prefl
 | Phase 3 milestone P3-3 | DEMO_VALIDATED | `docs/runbooks/phase3-step3-runtime-smoke-log.md` shows 5/5 prompt executions and PASS for the expected response classes |
 | Phase 3 milestone P3-5 | GAP | `P3I-003`, `P3I-005`, and `P3I-006` remain pending live runtime proof and/or governed data binding |
 | Phase 3 milestone P3-6 | GAP | The sign-off package is still conditional until the backfit items and native approval evidence are closed |
+| Phase 4 (new, §5D) — gated governance & self-healing semantic model sync | NOT_STARTED | Design committed 2026-08-08; directly targets closing the Pillar 5 gap above (live approval → governance-state sync → semantic-model certification). `sql/09_*.sql`/`sql/10_*.sql` land the gating schema and 4 demo scenarios; `nb_11_gated_governance_sync` is planned but not yet built |
 
 ### Remaining gaps
 - Native Purview domain/product/read-back evidence remains pending for the approved demo scope.
@@ -484,6 +485,105 @@ Each cycle ends with:
 - A publish gate (draft/published surfaces synchronized).
 
 This keeps Phase 3 fast while preserving proof-based governance closure.
+
+---
+
+## 5D. Phase 4 — Gated Governance & Self-Healing Semantic Model Sync
+
+**Status:** 🔴 Not Started (design committed 2026-08-08; build not yet begun)
+**Depends on:** Phase 3 closure pattern (annotation quality), G10 steward pipeline (fixed 2026-08-08, see `docs/design-gap-analysis.md`)
+
+### Phase framing
+
+- **Phase 1 (completed):** Infrastructure and architecture.
+- **Phase 2 (completed):** Semantic modeling and baseline metadata surfaces.
+- **Phase 3 (completed):** AI enrichment for call-center outcomes (Maria northstar).
+- **Phase 4 (new):** Close the loop. Every prior phase pushed metadata **one direction** — SQL → mirror → lakehouse → semantic model → Purview. Phase 4 makes that loop **circular and gated**: a SQL-side change proposes a metadata change, a named steward/owner approves it in a governance gate, and the approved change writes back into the semantic model and Purview *as a certified fact*, closing back to the SQL-facing dashboards Tom, Victoria, and Ci Zhu already use.
+
+### Why this phase exists
+
+Fabric Mirroring with new-table autosync (enabled this session) solves **schema drift** — new tables/columns land automatically. It does **not** solve **governed value drift** — e.g., a data steward approving a KPI recalibration, certifying a verified answer, reclassifying a CDE's sensitivity, or tightening a glossary term's definition. Those are business decisions that must be **requested, reviewed, and approved** before they're allowed to change what Tom's CRM, Victoria's dashboard, or the Data Agent says — otherwise the single-source-of-truth guarantee in the Maria northstar scenario (`docs/purview-maria-north-star-scenario.md` §3.7: *"it would mean someone edited the semantic-model TMDL ... requires my review"*) is just a narrative claim, not an enforced mechanism.
+
+### The self-healing circular architecture
+
+```mermaid
+flowchart LR
+    A["SQL change in sub2\n(dbo.governance_change_requests\nstatus=PendingApproval)"] --> B["Fabric Mirroring\n(schema autosync + row-level CDC,\nalready confirmed working)"]
+    B --> C["nb_07a_ingest_customer_files\nlh_metadata.metadata.* working store"]
+    C --> D{"Gated approval\n(steward/domain-owner review)"}
+    D -- Approved --> E["Apply step\n(nb_11_gated_governance_sync — planned)\nupdates kpi_metadata / ai_metadata /\ngovernance_cdes / governance_glossary_terms"]
+    D -- Rejected --> F["status=Rejected\nrejection_reason recorded\nno downstream write"]
+    E --> G["nb_04_sempy_writeback\nSemPy Labs write-back into\nBrookfieldEnercare semantic model"]
+    G --> H["nb_05_push_qa_verified_answers\nAI enrichment refresh\n(Data Agent verified answers/instructions)"]
+    H --> I["nb_07_publish_to_purview /\nnb_08_purview_glossary_cde /\nnb_09_purview_labels_lineage\nPurview Unified Catalog re-publish"]
+    I --> J["nb_10_purview_stewardship_ai\nscorecard re-score (0 ACTION_REQUIRED)"]
+    J --> A
+```
+
+The loop is genuinely circular: the SQL tables that hold the *request* (`dbo.governance_change_requests`) and the *applied, certified state* (`kpi_metadata.IsCertified`, `governance_cdes.status`, `governance_glossary_terms.status`) are themselves queryable from the same BI/reporting surfaces Victoria and Ci Zhu already use — so "did this change get approved and when" is itself a governed, reportable fact, not a side artifact.
+
+### The gating table: `dbo.governance_change_requests`
+
+Added in `sql/09_gated_governance_requests_schema.sql`. One generic, audit-trailed workflow table serves all four gate types (rather than bolting ad hoc workflow columns onto every target table individually):
+
+| Column | Purpose |
+|---|---|
+| `request_id` | PK |
+| `request_type` | `KPI_APPROVAL` \| `VERIFIED_ANSWER_CERTIFICATION` \| `CDE_CLASSIFICATION` \| `GLOSSARY_TERM_DEFINITION` |
+| `domain_id` | Which of the 3 governance domains this touches |
+| `target_object_id` | KPICode / `ai_metadata.RecordID` / `cde_id` / `term_code` — NULL if the request creates a brand-new object |
+| `proposed_payload` / `previous_payload` | JSON snapshots — proposed new values vs. prior state, for diff and audit |
+| `requested_by_upn` / `requested_at` | Who proposed the change and when |
+| `status` | `Draft` → `PendingApproval` → `Approved`/`Rejected` → `Applied` |
+| `approver_upn` / `approved_at` | Who approved and when |
+| `applied_at` | Stamped once the semantic-model/Purview write-back actually completes |
+
+Companion `approved_by`/`approved_at` columns were also added directly to `governance_glossary_terms` (plus `previous_definition`) and `governance_cdes` (`classification_approved_by`/`classification_approved_at`), so the "who certified this" fact is queryable on the live object itself, not only in the request log. `kpi_metadata` already carries certification columns (`IsCertified`, `Version`, `PreviousFormula`, `CertifiedBy`, `CertifiedDate`) from Phase 2 — no change needed there. `ai_metadata` (Lakehouse-only, not SQL-mirrored) needs an equivalent `IsCertified`/`CertifiedBy`/`CertifiedDate` addition — see Milestone P4-2 below.
+
+### The four gate scenarios
+
+Each of the four Maria-northstar stakeholders drives exactly one gate type as requester; Ci Zhu — already the Act 3 governance-admin figure and co-owner of all three domains — is the constant approver, completing the "requires my review" guarantee for real:
+
+| # | Gate type | Object | Requester | Approver | Maria-scenario tie-in |
+|---|---|---|---|---|---|
+| 1 | **KPI Approval** | `SLA_BRCH_RATE` (v1 → v2) | Ranbir Singh (Domain Owner DOM-SVCDEL) | Ci Zhu | Closes the auto-suppression dispatch bug Ranbir found in Act 2 |
+| 2 | **Verified Answer Certification** | New Q&A: "SLA credit policy for a no-heat call" | Rupal Solanki (Data Steward DOM-CUSTOPS) | Ci Zhu | Certifies the exact credit-policy answer Tom gave Maria in Act 1.3 |
+| 3 | **CDE Classification** | New `CDE-COMPLAINTREF`, Highly Confidential | Shruthi Srinivas (Data Steward DOM-SVCDEL) | Ci Zhu | Governs the complaint/regulator-case-ref field Tom logged in Act 1.4 |
+| 4 | **Glossary Term Definition** | Publish `GT-SLA` (referenced narratively, never registered) | Victoria Tan (Domain Owner DOM-CUSTOPS) | Ci Zhu | Formalizes the SLA definition that drove Victoria's Act 2 fix directive |
+
+Seed data for all 4 (status `PendingApproval`) is in `sql/10_seed_gated_governance_scenarios.sql`. See `docs/runbooks/phase4-gated-governance-workflow.md` for the exact demo-run steps.
+
+### Milestones and closure proofs
+
+#### Milestone P4-1 — Gating schema and demo scenarios
+**Goal:** land `dbo.governance_change_requests` plus the 4 seeded scenarios.
+**Build & Deploy Status:** 🟢 Done — `sql/09_gated_governance_requests_schema.sql`, `sql/10_seed_gated_governance_scenarios.sql`.
+
+#### Milestone P4-2 — `ai_metadata` certification columns
+**Goal:** add `IsCertified` (INT, default 0), `CertifiedBy` (STRING), `CertifiedDate` (DATE) to `lh_metadata.ai_metadata`, mirroring the pattern already on `kpi_metadata`.
+**Build & Deploy Status:** 🔴 Not Started — small `nb_04a_extend_metadata_schema` extension.
+
+#### Milestone P4-3 — Approval surfacing (demo-operable today)
+**Goal:** a demo operator can move any of the 4 seeded requests from `PendingApproval` to `Approved`/`Rejected` via a direct SQL `UPDATE` against `sqldemo` (native Purview workflow-approval APIs remain preview/limited, so the demo models the same state machine on the SQL side, mirrored automatically), and see the row reflect in `lh_metadata.metadata.governance_change_requests` after `nb_07a` runs.
+**Build & Deploy Status:** 🔴 Not Started — depends on P4-1 (done) + a manual re-run of `nb_07a_ingest_customer_files` per gate scenario until P4-4 automates it.
+
+#### Milestone P4-4 — `nb_11_gated_governance_sync` (planned notebook)
+**Goal:** a new notebook that reads `Approved`/`applied_at IS NULL` rows from `lh_metadata.metadata.governance_change_requests` and dispatches by `request_type`:
+- `KPI_APPROVAL` → update `kpi_metadata` (bump `Version`, set `PreviousFormula`, `CertifiedBy`, `CertifiedDate`, `IsCertified=1`).
+- `VERIFIED_ANSWER_CERTIFICATION` → insert/update the row in `ai_metadata` with `IsCertified=1`.
+- `CDE_CLASSIFICATION` → insert/update `governance_cdes` (status, `classification_approved_by`/`_at`).
+- `GLOSSARY_TERM_DEFINITION` → insert/update `governance_glossary_terms` (definition, `approved_by`/`approved_at`, `previous_definition`).
+
+Then stamps `applied_at = now()`, `status='Applied'`, and triggers the downstream chain: `nb_04_sempy_writeback` → `nb_05_push_qa_verified_answers` → `nb_07_publish_to_purview` (+ `nb_08`/`nb_09` as relevant) → `nb_10_purview_stewardship_ai` re-score.
+**Build & Deploy Status:** 🔴 Not Started — this is the actual "self-healing" automation; until built, the runbook documents the equivalent manual notebook run order.
+
+#### Milestone P4-5 — Phase 4 closeout gate
+**Goal:** certify all 4 gate types run end-to-end live (SQL request → approval → semantic-model/Purview write-back → scorecard re-confirmation) at least once.
+**Closure checks:**
+1. Each of the 4 `governance_change_requests` reaches `status='Applied'` with a non-null `applied_at`.
+2. `nb_10_purview_stewardship_ai` re-run shows 0 `ACTION_REQUIRED` after each apply.
+3. Ci Zhu's Act 3 audit answer (`docs/purview-maria-north-star-scenario.md` §3.7) can be demonstrated live against the newly-certified objects, not just narratively.
+**Build & Deploy Status:** 🔴 Not Started.
 
 ---
 
