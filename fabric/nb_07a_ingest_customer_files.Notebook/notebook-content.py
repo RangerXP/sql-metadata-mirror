@@ -56,6 +56,7 @@ SQL_SOURCE_TABLES = {
     "cdes": ["governance_cdes", "metadata_cdes"],
     "role_assignments": ["governance_role_assignments", "metadata_role_assignments"],
     "label_assignments": ["governance_label_assignments", "metadata_label_assignments"],
+    "governance_change_requests": ["governance_change_requests"],
 }
 
 print(f"CSV root: {CSV_ROOT}")
@@ -226,6 +227,7 @@ def build_summary_query() -> str:
         ("cdes", 12),
         ("role_assignments", 48),
         ("label_assignments", 9),
+        ("governance_change_requests", 4),
     ]
     return "\nUNION ALL\n".join(summary_count_select(name, expected) for name, expected in checks) + "\nORDER BY t"
 
@@ -419,6 +421,37 @@ labels_df, labels_source = load_metadata_dataset("label_assignments")
 validate_csv(labels_df, labels_required)
 count_labels = write_table_from_pandas(labels_df, "label_assignments")
 print(f"label_assignments loaded: {count_labels} (source={labels_source})")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Cell 8b: Phase 4 (P4-1 prerequisite) - dbo.governance_change_requests -> metadata.governance_change_requests
+# Read-only working copy for the gated-approval demo; nb_11_gated_governance_sync
+# reads the live SQL source directly rather than this copy, to avoid mirror lag
+# on the Approved status transition, but this copy keeps the request log
+# queryable from the same BI surfaces as the other governance_* tables.
+
+gcr_required = [
+    "request_id",
+    "request_type",
+    "target_object_label",
+    "change_summary",
+    "proposed_payload",
+    "requested_by_upn",
+    "status",
+]
+
+gcr_df, gcr_source = load_metadata_dataset("governance_change_requests")
+validate_csv(gcr_df, gcr_required)
+count_gcr = write_table_from_pandas(gcr_df, "governance_change_requests")
+print(f"governance_change_requests loaded: {count_gcr} (source={gcr_source})")
 
 
 # METADATA ********************
