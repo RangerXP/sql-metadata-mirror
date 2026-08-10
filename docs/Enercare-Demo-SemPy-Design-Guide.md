@@ -16,7 +16,7 @@ This summary reflects the current repo and notebook state after the safety prefl
 | Pillar 2 — SQL source lineage back to mirrored/semantic/report path | GAP | Custom lineage manifests are present in `nb_09_purview_labels_lineage` and `tools/purview_custom_lineage.py`, but the live SQL → OneLake → semantic model → report chain has not been proven through a fresh Purview read-back |
 | Pillar 3 — AI annotations that travel with the model | DEMO_VALIDATED | `nb_04_sempy_writeback` and `nb_05_push_qa_verified_answers` are the active runtime path, and `docs/runbooks/phase3-step3-runtime-smoke-log.md` shows 5/5 prompt executions passing the expected classes |
 | Pillar 4 — Purview governance objects | DRY_RUN_VALIDATED | `purview/*.csv` seed files, `nb_07_publish_to_purview`, and `nb_08_purview_glossary_cde` generate payloads and validation outputs; native Unified Catalog objects are not yet evidenced by a fresh tenant read-back |
-| Pillar 5 — governance-as-functional-model / certification loop | GAP | `nb_10_purview_stewardship_ai` now validates owner/steward values from actual populated fields, but the live approval → governance-state sync → semantic-model certification transition remains unproven |
+| Pillar 5 — governance-as-functional-model / certification loop | DEMO_VALIDATED | Closed 2026-08-10 — all 4 gated scenarios proven live end-to-end via `nb_11_gated_governance_sync`; `nb_10_purview_stewardship_ai` re-confirms 0 `ACTION_REQUIRED` after each apply. See `docs/design-gap-analysis.md` §G14 |
 | Milestone M1 — platform registration and scans | DRY_RUN_VALIDATED | SQL + Fabric scan setup and validation notebooks are present; no fresh portal scan export/read-back is stored in repo |
 | Milestone M2 — governance foundation and data products | DRY_RUN_VALIDATED | Native Unified Catalog domain/product payloads are prepared from repo sources; supplemental custom Atlas evidence remains separate and is not counted as native deployment |
 | Milestone M3 — glossary and CDEs | DRY_RUN_VALIDATED | `nb_08_purview_glossary_cde` writes dry-run artifacts and validation outputs; live glossary/CDE read-back is still pending |
@@ -26,7 +26,7 @@ This summary reflects the current repo and notebook state after the safety prefl
 | Phase 3 milestone P3-3 | DEMO_VALIDATED | `docs/runbooks/phase3-step3-runtime-smoke-log.md` shows 5/5 prompt executions and PASS for the expected response classes |
 | Phase 3 milestone P3-5 | GAP | `P3I-003`, `P3I-005`, and `P3I-006` remain pending live runtime proof and/or governed data binding |
 | Phase 3 milestone P3-6 | GAP | The sign-off package is still conditional until the backfit items and native approval evidence are closed |
-| Phase 4 (new, §5D) — gated governance & self-healing semantic model sync | NOT_STARTED | Design committed 2026-08-08; directly targets closing the Pillar 5 gap above (live approval → governance-state sync → semantic-model certification). `sql/09_*.sql`/`sql/10_*.sql` land the gating schema and 4 demo scenarios; `nb_11_gated_governance_sync` is planned but not yet built |
+| Phase 4 (new, §5D) — gated governance & self-healing semantic model sync | DEMO_VALIDATED | Closed 2026-08-10. All 4 gate scenarios (KPI Approval, Verified Answer Certification, CDE Classification, Glossary Term Definition) ran live through `nb_11_gated_governance_sync` and the full downstream chain, closing the Pillar 5 gap. Only G13-5 (scheduled/triggered automation of the downstream chain) remains open, deferred to Phase D |
 
 ### Remaining gaps
 - Native Purview domain/product/read-back evidence remains pending for the approved demo scope.
@@ -490,7 +490,7 @@ This keeps Phase 3 fast while preserving proof-based governance closure.
 
 ## 5D. Phase 4 — Gated Governance & Self-Healing Semantic Model Sync
 
-**Status:** 🔴 Not Started (design committed 2026-08-08; build not yet begun)
+**Status:** � Done (closed 2026-08-10; G13-5 scheduling automation deferred to Phase D)
 **Depends on:** Phase 3 closure pattern (annotation quality), G10 steward pipeline (fixed 2026-08-08, see `docs/design-gap-analysis.md`)
 
 ### Phase framing
@@ -583,7 +583,7 @@ Then stamps `applied_at = now()`, `status='Applied'`, and prints the downstream 
 1. Each of the 4 `governance_change_requests` reaches `status='Applied'` with a non-null `applied_at`.
 2. `nb_10_purview_stewardship_ai` re-run shows 0 `ACTION_REQUIRED` after each apply.
 3. Ci Zhu's Act 3 audit answer (`docs/purview-maria-north-star-scenario.md` §3.7) can be demonstrated live against the newly-certified objects, not just narratively.
-**Build & Deploy Status:** 🔴 Not Started.
+**Build & Deploy Status:** � Done — all 4 requests reached `Applied` with non-null `applied_at`; `nb_10` re-confirmed 0 `ACTION_REQUIRED` after each apply (2026-08-10).
 
 ---
 
