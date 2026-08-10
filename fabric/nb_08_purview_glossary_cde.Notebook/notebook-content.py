@@ -27,6 +27,7 @@
 import json
 import os
 import base64
+import time
 import uuid
 import requests
 from pyspark.sql import SparkSession
@@ -1008,12 +1009,33 @@ else:
         raise RuntimeError("Could not resolve glossary GUID. Set PURVIEW_GLOSSARY_GUID or PURVIEW_GLOSSARY_NAME.")
     print(f"Resolved glossary guid: {resolved_glossary_guid}")
 
-    typedef_status, typedef_body = _request("POST", "/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
-    if typedef_status not in (200, 201, 409) and "already exists" not in typedef_body.lower():
-        raise RuntimeError(f"TypeDef publish failed: HTTP {typedef_status} | {typedef_body[:500]}")
-    print(f"TypeDefs publish result: HTTP {typedef_status}")
+    # Register each entityDef individually: Atlas's bulk typedefs POST is atomic across
+    # the whole payload, so mixing an already-existing type with a new one can silently
+    # block the new type's creation even though the response looks like a benign "already exists".
+    for entity_def in typedef_payload.get("entityDefs", []):
+        def_name = entity_def.get("name", "<unknown>")
+        def_status, def_body = _request(
+            "POST", "/catalog/api/atlas/v2/types/typedefs", token, {"entityDefs": [entity_def]}
+        )
+        if def_status in (200, 201):
+            print(f"[APPLIED] typedef {def_name}: HTTP {def_status}")
+        elif def_status in (400, 409) and "already exists" in def_body.lower():
+            print(f"[INFO] typedef {def_name} already exists: HTTP {def_status}")
+        else:
+            raise RuntimeError(f"TypeDef publish failed for {def_name}: HTTP {def_status} | {def_body[:500]}")
 
-    entity_status, entity_body = _request("POST", "/catalog/api/atlas/v2/entity/bulk", token, cde_payload)
+    entity_max_attempts = 4
+    entity_backoff_seconds = 10.0
+    entity_status, entity_body = None, ""
+    for attempt in range(1, entity_max_attempts + 1):
+        entity_status, entity_body = _request("POST", "/catalog/api/atlas/v2/entity/bulk", token, cde_payload)
+        if entity_status in (200, 201):
+            break
+        if entity_status == 400 and "ATLAS-400-00-014" in entity_body and "does not exist" in entity_body.lower():
+            print(f"[RETRY] entity/bulk attempt {attempt}/{entity_max_attempts} hit type-cache lag, retrying...")
+            time.sleep(entity_backoff_seconds)
+            continue
+        break
     if entity_status not in (200, 201):
         raise RuntimeError(f"CDE entity publish failed: HTTP {entity_status} | {entity_body[:500]}")
     print(f"CDE entity publish result: HTTP {entity_status}")
