@@ -1,4 +1,4 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/publishInfo/1.0.0/schema.json",
-  "description": "PRIMARY standalone Copilot Data Agent for operational Enercare: service request IDs, dispatch, SLA. Route requests like 2026051142 here."
+  "description": "Hybrid grounding refactor: removed cross-layer duplication of grounding rules across PBI_AI_Instructions, stage_config.json, and datasource.json (2026-08-10)"
 }
