@@ -27,7 +27,8 @@ This summary reflects the current repo and notebook state after the safety prefl
 | Phase 3 milestone P3-5 | GAP | `P3I-003`, `P3I-005`, and `P3I-006` remain pending live runtime proof and/or governed data binding |
 | Phase 3 milestone P3-6 | GAP | The sign-off package is still conditional until the backfit items and native approval evidence are closed |
 | Phase 4 (new, §5D) — gated governance & self-healing semantic model sync | DEMO_VALIDATED | Closed 2026-08-10. All 4 gate scenarios (KPI Approval, Verified Answer Certification, CDE Classification, Glossary Term Definition) ran live through `nb_11_gated_governance_sync` and the full downstream chain, closing the Pillar 5 gap. Only G13-5 (scheduled/triggered automation of the downstream chain) remains open, deferred to Phase D |
-| G11-1 (new, §5E) — formal ontology / OKR business-objective layer | DRY_RUN_VALIDATED | Built 2026-08-11: `sql/11`/`sql/12` schema+seed, `nb_07a` ingestion, `nb_07` OKR/KeyResult Atlas entity publish, `nb_08` CDE→Term relationship fix, `nb_10` Cell 5a ontology scorecard. Not yet live-applied — see §5E "Live-apply sequence" |
+| G11-1 (new, §5E) — formal ontology / OKR business-objective layer | DEMO_VALIDATED (CDE→Term edge only) | The `nb_08` CDE→Term `assignedEntities` relationship is live-verified via direct Atlas read-back (2026-08-10): `cde_term_assigned=12/12`, stale `shortDescription` self-healed on 26 pre-existing terms, and the "Customer" term's `assignedEntities` now includes its governing `EnercareCriticalDataElement`. The remaining ontology pieces (`sql/11`/`sql/12` OKR schema+seed, `nb_07a` ingestion, `nb_07` OKR/KeyResult Atlas entity publish, `nb_10` Cell 5a ontology scorecard) are still DRY_RUN_VALIDATED — see §5E "Live-apply sequence" |
+| Phase 5 (new, §5F) — data validation phase / formal QA validation across full northstar metadata inventory | PLANNED | Added 2026-08-09: frozen inventory of ~83 governed elements (3 domains, 3 data products, 35 glossary terms, 12 CDEs, 8 KPIs, 6 verified answers/instructions, 3 OKRs, 5 key results, 3 OKR-links, 4 change requests) and a 5-milestone QA sweep (Q1–Q5) design. No validation code built yet — see §5F |
 
 ### Remaining gaps
 - Native Purview domain/product/read-back evidence remains pending for the approved demo scope.
@@ -606,7 +607,7 @@ graph LR
     Product -->|linked_data_product_ids| OKR["EnercareOKR\n(nb_07, new)"]
     OKR -->|parent_okr_id| KR["EnercareOKRKeyResult\n(nb_07, new)"]
     KR -->|metric_source| KPI["kpi_metadata.KPICode\n(nb_04a, certified)"]
-    Term["Glossary Term\n(nb_08)"] -->|assignedEntities| CDE["EnercareCriticalDataElement\n(nb_08, fixed)"]
+    Term["Glossary Term\n(nb_08)"] -->|assignedEntities| CDE["EnercareCriticalDataElement\n(nb_08, live-verified)"]
     Term -->|assignedEntities| Asset["Bound SQL/measure asset\n(nb_08, existing)"]
     CDE -.->|domain_code| Domain
 ```
@@ -615,13 +616,15 @@ graph LR
 - **Data Product → OKR**: new (`linked_data_product_ids`/`linked_data_product_qualified_names` on `EnercareOKR`, `nb_07`), sourced from `governance_okr_data_products`.
 - **OKR → Key Result**: new (`parent_okr_id`/`parent_okr_qualified_name` on `EnercareOKRKeyResult`, `nb_07`), sourced from `governance_okr_key_results`.
 - **Key Result → KPI**: `metric_source` points at a real `kpi_metadata.KPICode` (or a `BrookfieldEnercare/_Measures/<name>` semantic-measure asset ref where no KPICode exists yet).
-- **Glossary Term → CDE**: fixed this session — `nb_08` now assigns each CDE's real Atlas entity to its parent term via `assignedEntities`, not just a flat `glossary_term_code` string.
+- **Glossary Term → CDE**: fixed and live-verified — `nb_08` now assigns each CDE's real Atlas entity to its parent term via `assignedEntities`, not just a flat `glossary_term_code` string. Confirmed live via Atlas read-back: `cde_term_assigned=12/12`, 0 unresolved entities.
 
 This mirrors Purview Unified Catalog's native OKR business concept (Objective + Key Results, tied to a Governance Domain and to "Related data products") on top of the repo's existing Atlas v2 API integration, rather than an unverified separate "native" Data Governance REST API.
 
 ### Why this closes a real gap, not a cosmetic one
 
 Before this build, `EnercareCriticalDataElement.glossary_term_code` and `EnercareDataProduct.parent_domain_id` were both flat strings — readable by a human looking at the entity, but not resolvable by Purview's own relationship graph APIs or by any client walking `assignedEntities`. The CDE→Term fix specifically closes that: it was found by code inspection (not assumed), confirming `_assign_term_to_entity()` already existed and worked for `bound_assets` but was never called for the CDEs themselves.
+
+Two distinct bugs had to be fixed and both are now live-verified: (1) `nb_08` was reading the CDE's governing term code from a source column (`glossary_term_code`) that never existed in `lh_metadata.cdes` — the real column is `parent_glossary_term` — so the relationship logic silently no-op'd for every CDE; (2) even after reading the correct column, the term-guid resolution for already-existing terms depended on a `shortDescription` field that had drifted out of sync with the current `term_code` naming convention from an earlier publish session (e.g. `GT-001` vs `GT-CUSTOMER`), which a self-heal GET+PUT now corrects automatically on each run.
 
 ### B2C chatbot end-state (G11-3)
 
@@ -635,14 +638,91 @@ The stated end-state is a customer-facing chatbot that can answer questions like
 
 **Open questions, deliberately not decided in this session (out of scope for the OKR/ontology build itself):** what the actual customer-facing query surface is (Fabric Data Agent? a separate API?); how a B2C/external identity is scoped and authorized against internal governance objects (today's demo identities are all internal Enercare UPNs); and which fields are safe to expose externally (KPI targets and OKR names likely are; owner UPNs and internal steward assignments likely are not). These need a real security/PII review before any external-facing surface is built — this section documents the grounded target architecture, not an approved external-facing build.
 
-### Live-apply sequence (not yet run)
+### Live-apply sequence
+
+**Step 5 (CDE→Term relationship) is now live-verified (2026-08-10)** — the remaining steps below (OKR/Key Result schema, ingestion, and Atlas entity publish) are still pending live application.
 
 1. Apply `sql/11_ontology_okr_schema.sql` then `sql/12_seed_ontology_okrs.sql` against `sqldemo`.
 2. Confirm Fabric mirroring picks up `governance_okrs`/`governance_okr_key_results`/`governance_okr_data_products`.
 3. Run `nb_07a_ingest_customer_files` (Cell 8c ingests the 3 new tables).
 4. Run `nb_07_publish_to_purview` (publishes `EnercareOKR`/`EnercareOKRKeyResult` entities).
-5. Run `nb_08_purview_glossary_cde` (applies the CDE→Term relationship fix).
+5. ✅ Run `nb_08_purview_glossary_cde` (applies the CDE→Term relationship fix) — live-verified: `cde_term_assigned=12/12`, `healed_terms=26`.
 6. Run `nb_10_purview_stewardship_ai` and confirm `purview_phase_11_ontology_validation` shows 0 `ACTION_REQUIRED`.
+
+---
+## 5F. Data Validation Phase & Formal QA Validation (Full Northstar Metadata Coverage)
+
+**Status:** 🟡 PLANNED — design only, not yet built. Added 2026-08-09 in response to the risk that prior phases each validated their own slice (Phase 3 smoke prompts, Phase 4 gate scenarios, §5E ontology scorecard) but no single pass confirms **every** metadata element the Maria northstar scenario narratively depends on.
+**Depends on:** §5C (Maria northstar contract), §5D (gated governance), §5E (ontology/OKR layer) — this phase validates across all three, it does not add new build surfaces of its own.
+
+### Why this phase exists
+
+Every prior validation pass in this guide is scoped to the phase that built it: P3-3's smoke log only checks the 5 verified-answer intents it produced; the Phase 4 closeout only checks the 4 gate-scenario objects; `purview_phase_11_ontology_validation` only checks OKR/key-result/data-product resolution. None of them, individually or together, confirm that the **full metadata surface the Maria scenario narrates** — every domain, data product, glossary term, CDE, KPI, verified answer, OKR, and change request Tom/Victoria/Ranbir/Rupal/Shruthi/Ci Zhu reference across Acts 1–3 — actually exists, resolves, and is populated end to end. A demo walkthrough that happens to touch an element outside what was already spot-checked has no proof behind it today. This phase closes that by defining one inventory-driven QA pass instead of relying on each phase's local scorecard.
+
+### The northstar metadata element inventory (validation scope)
+
+This is the full, counted inventory of metadata elements the northstar scenario (`docs/purview-maria-north-star-scenario.md`) and its extensions (Phase 4, §5E) reference. Counts are grounded against the current repo source files (`purview/*.csv`, `sql/*`), not estimated.
+
+| Element type | Count | Northstar-referenced examples | Source of truth |
+|---|---|---|---|
+| Governance Domains | 3 | `DOM-CUSTOPS`, `DOM-SVCDEL`, `DOM-REVCON` | `purview/domain-charter.csv` |
+| Data Products | 3 | `DP-CUST360`, `DP-SVCPERF`, `DP-BILLHEALTH` | `purview/data-product-catalog.csv` |
+| Glossary Terms | 35 | `GT-CUST`, `GT-ACCOUNT`, `GT-PREMISE`, `GT-FSA`, `GT-CONSENT`, `GT-CASL`, `GT-EQUIP*`, `GT-SVCREQ`, `GT-CONTRACT`, `GT-SLA`, `GT-OCPA`, `GT-COMPLAINT`, `GT-OEB`, `GT-FCR/MTTR/AHT/NPS/REPEATCOMPLAINT/NETREV/CHURN`, `GT-SVCZONE`, `GT-PIPEDA` | `purview/glossary-master.csv` |
+| Critical Data Elements | 12 | `CDE-ACCTNUM`, `CDE-SVCADDR`, `CDE-CONSENTSTATE`, `CDE-CONTRACTAMT`, `CDE-COMPLAINTREF` | `purview/cde-catalog.csv` |
+| Certified KPIs / measures | 8 | `FCR`, `MTTR`, `AHT`, `NPS`, `RepeatComplaintRate`, `NetRevenue`, `Churn`, `SLA_BRCH_RATE` (added Phase 4) | `context/kpi-definitions.json`, `lh_metadata.kpi_metadata` |
+| Verified Answers / AI Instructions | 6 | 5 P3-3 baseline intents (no-heat, no-show, billing-while-unresolved, credit-eligibility, repeat-complaint-risk) + the Phase 4 "SLA credit policy for a no-heat call" VA | `lh_metadata.ai_metadata` |
+| OKRs | 3 | `OKR-SVCDEL-SLA`, `OKR-CUSTOPS-CX`, `OKR-REVCON-RETAIN` | `governance_okrs` (`sql/12_seed_ontology_okrs.sql`) |
+| Key Results | 5 | includes `KR-SLA-BREACH` | `governance_okr_key_results` |
+| OKR → Data Product links | 3 | e.g. `OKR-SVCDEL-SLA` → `DP-SVCPERF` | `governance_okr_data_products` |
+| Governance Change Requests (Phase 4 gates) | 4 | KPI Approval, Verified Answer Certification, CDE Classification, Glossary Term Definition | `governance_change_requests` (`sql/10_seed_gated_governance_scenarios.sql`) |
+| Sensitivity labels / term-level policies | 4 referenced | `GT-PIPEDA` (consent), `GT-CASL` (marketing consent), `GT-OCPA` (auto-renewal disclosure), `GT-OEB` (regulator complaint) | `purview/label-policy.csv` |
+
+**Total distinct governed elements in scope: ~83** (3 domains + 3 data products + 35 glossary terms + 12 CDEs + 8 KPIs + 6 verified answers/instructions + 3 OKRs + 5 key results + 3 OKR-links + 4 change requests + label policies counted once against their governing term above).
+
+### Validation layers (applied per element, where the layer applies to that element type)
+
+Every element above must be checked at each layer that applies to it — not just "does a row exist somewhere":
+
+1. **SQL source row exists** — the authoritative row is present in `sqldemo` (e.g. `dbo.governance_glossary_terms`, `dbo.governance_cdes`, `dbo.governance_okrs`).
+2. **Fabric mirror replication status = `Replicating`** — confirmed via `getTablesMirroringStatus`, not assumed from "mirror all data" being enabled.
+3. **`lh_metadata` ingestion row present** — the element landed in `lh_metadata.metadata.*` via `nb_07a_ingest_customer_files`.
+4. **Purview Atlas entity published + relationship attributes resolve** — the entity exists via `nb_07`/`nb_08`/`nb_09` and, where the element has a documented graph edge (§5E), that edge (`assignedEntities`, `parent_domain_id`, `linked_data_product_ids`, `parent_okr_id`, `metric_source`) actually resolves to the target entity, not just holds a flat string.
+5. **Certification / status flag is correct** — `IsCertified=1` (KPIs, verified answers), `status='Published'` (glossary terms, OKRs), `status='Applied'` (change requests), as appropriate to the element type.
+6. **Runtime surface reflects it** — the element is visible/usable where Tom, Victoria, Ranbir, Rupal, Shruthi, or Ci Zhu would actually encounter it in the scenario (Data Agent verified answer, semantic-model measure, CRM-equivalent query, Purview entity page).
+
+Not every element type needs every layer — e.g. sensitivity labels don't have a `lh_metadata` ingestion step — but each element's applicable subset must all pass before that element counts as validated.
+
+### QA milestones
+
+#### Milestone Q1 — Inventory freeze
+**Goal:** lock the element inventory table above as the authoritative validation scope, so QA has a fixed target instead of an open-ended "test everything" mandate.
+**Approval proof:** inventory table reviewed against `purview/*.csv` row counts and `docs/purview-maria-north-star-scenario.md` element references; counts reconciled (as done above).
+**Build & Deploy Status:** 🟡 PLANNED — this design-guide table is the first draft of the frozen inventory; not yet reviewed/signed off by a steward.
+
+#### Milestone Q2 — Automated element-existence sweep
+**Goal:** for every element in the inventory, mechanically confirm layers 1–3 (SQL row, mirror status, `lh_metadata` row) exist — no manual spot-checking.
+**Design approach:** a new validation cell (proposed `purview_phase_12_northstar_validation`, following the naming pattern of `purview_phase_11_ontology_validation`), likely added to `nb_10_purview_stewardship_ai` or a new `nb_12_northstar_validation` notebook, driven directly off the inventory table so adding a row to the inventory automatically adds it to the sweep.
+**Approval proof:** sweep output shows 0 `MISSING` across all in-scope elements, or an explicit, owned exception list.
+**Build & Deploy Status:** 🔴 Not started.
+
+#### Milestone Q3 — Cross-layer resolution sweep
+**Goal:** confirm layers 4–5 (Purview entity published, relationship attributes resolve, certification/status flags correct) for every element, with particular attention to the graph edges introduced in §5E (`assignedEntities`, `linked_data_product_ids`, `parent_okr_id`, `metric_source`) since those are the newest and least-proven paths.
+**Approval proof:** every documented relationship edge in the §5E diagram resolves to a real target entity (not a dangling string), verified via a fresh Purview/Atlas read-back, not repo-side assumption.
+**Build & Deploy Status:** 🔴 Not started.
+
+#### Milestone Q4 — Northstar runtime re-walk
+**Goal:** re-run the actual Act 1–3 scenario beats (Tom's identity/consent/contract/complaint lookups, Victoria's Act 2 KPI drill, Ci Zhu's Act 3 audit answer) against live runtime surfaces, confirming every element the scenario narrates is not just present in a table but usable in the flow a real user would follow.
+**Approval proof:** each Act 1–3 beat produces the expected answer/state live, cross-referenced back to the specific inventory rows it exercises.
+**Build & Deploy Status:** 🔴 Not started.
+
+#### Milestone Q5 — QA closeout gate
+**Goal:** certify the full northstar metadata surface is demo-safe — any walkthrough path a presenter takes is backed by verified, resolved, certified metadata.
+**Approval proof:** a scorecard artifact (proposed `docs/runbooks/northstar-qa-validation-scorecard.md`) records pass/fail per inventory row across all applicable layers, with a Domain Owner + Data Steward + Demo Owner sign-off, mirroring the P3-6 closeout pattern.
+**Build & Deploy Status:** 🔴 Not started.
+
+### Relationship to existing scorecards
+
+This phase does not replace `purview_phase_11_ontology_validation`, the Phase 3 smoke log, or the Phase 4 closeout checks — it is the superset pass that consumes their existing evidence for the elements they already cover (OKRs, verified-answer intents, gate-scenario objects) and extends the same rigor to the remaining inventory (domains, data products, glossary terms, CDEs, and KPIs not already covered by a prior phase's scorecard).
 
 ---
 ## 6. Layer Responsibilities (Mental Model)
