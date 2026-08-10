@@ -1,0 +1,40 @@
+{
+  "measure_rows": 5,
+  "results": {
+    "not_supported": 5,
+    "resolved_measure_guid": 5,
+    "unresolved_measure_guid": 0
+  },
+  "items": [
+    {
+      "asset_ref": "BrookfieldEnercare/_Measures/FCR",
+      "measure_guid": "d61ecd89-dc45-4248-be2a-29a453034b2e",
+      "status": "not_supported_by_type",
+      "reason": "EnercareSemanticMeasure typedef has no description/userDescription attribute"
+    },
+    {
+      "asset_ref": "BrookfieldEnercare/_Measures/NPS",
+      "measure_guid": "0351d25d-b807-4d98-bd23-1fc9a819a086",
+      "status": "not_supported_by_type",
+      "reason": "EnercareSemanticMeasure typedef has no description/userDescription attribute"
+    },
+    {
+      "asset_ref": "BrookfieldEnercare/_Measures/CSAT",
+      "measure_guid": "e59f858d-dfff-492c-a19a-ecb5e19e919d",
+      "status": "not_supported_by_type",
+      "reason": "EnercareSemanticMeasure typedef has no description/userDescription attribute"
+    },
+    {
+      "asset_ref": "BrookfieldEnercare/_Measures/AvgHandleTime",
+      "measure_guid": "a1d0dd3a-c24c-40e3-93aa-942caea17506",
+      "status": "not_supported_by_type",
+      "reason": "EnercareSemanticMeasure typedef has no description/userDescription attribute"
+    },
+    {
+      "asset_ref": "BrookfieldEnercare/_Measures/RepeatComplaintRate",
+      "measure_guid": "45699943-7f34-4a79-85c5-4e6a776b3ef7",
+      "status": "not_supported_by_type",
+      "reason": "EnercareSemanticMeasure typedef has no description/userDescription attribute"
+    }
+  ]
+}

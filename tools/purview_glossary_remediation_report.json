@@ -1,0 +1,345 @@
+{
+  "counts": {
+    "manifest_rows": 43,
+    "terms_in_manifest": 26
+  },
+  "glossary": {
+    "selected_glossary_guid": "f62711a4-0d1b-4159-8a4c-1ae5046002d7",
+    "selected_glossary_name": "Enercare Glossary",
+    "existing_terms_loaded": 51,
+    "created": 0,
+    "create_failed": 0,
+    "created_terms": [],
+    "create_failures": []
+  },
+  "assignments": {
+    "assigned": 4,
+    "existing": 39,
+    "failed": 0,
+    "unresolved_asset": 0,
+    "unresolved_term": 0,
+    "samples": [
+      {
+        "asset_ref": "dbo.customers.customer_id",
+        "term_name": "Personally Identifiable Information",
+        "term_guid": "27e17bde-a62a-4645-a7af-86ac0f18ce6a",
+        "target_guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.customers.email",
+        "term_name": "Personally Identifiable Information",
+        "term_guid": "27e17bde-a62a-4645-a7af-86ac0f18ce6a",
+        "target_guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.employees.sin_full",
+        "term_name": "Social Insurance Number",
+        "term_guid": "7aa7d84d-5cef-48f2-a3c9-6cba14c8be91",
+        "target_guid": "586c7f88-7d91-48da-a7a7-62f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.customers.sin_last_4",
+        "term_name": "Social Insurance Number",
+        "term_guid": "7aa7d84d-5cef-48f2-a3c9-6cba14c8be91",
+        "target_guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.service_accounts.latitude",
+        "term_name": "Geolocation PII",
+        "term_guid": "ac9d624c-81c8-403c-8928-d7c3a713086e",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.service_accounts.longitude",
+        "term_name": "Geolocation PII",
+        "term_guid": "ac9d624c-81c8-403c-8928-d7c3a713086e",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.customer_consents",
+        "term_name": "Customer Consent",
+        "term_guid": "fd5c8084-58d6-4c5b-a50b-a4c29fefbd5f",
+        "target_guid": "373391cc-3717-4673-9cc3-47f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.billing_transactions.card_pan_last_4",
+        "term_name": "PCI Scope Data",
+        "term_guid": "d59c398b-7384-4b97-8ede-8df4c09f7d5c",
+        "target_guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.billing_transactions.bank_routing_last_4",
+        "term_name": "PCI Scope Data",
+        "term_guid": "d59c398b-7384-4b97-8ede-8df4c09f7d5c",
+        "target_guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.service_requests",
+        "term_name": "Service Request",
+        "term_guid": "823bf69d-8698-475b-9b4e-783cc614bf5c",
+        "target_guid": "171ca864-6c27-4847-9ff9-41f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "BrookfieldEnercare/_Measures/FCR",
+        "term_name": "First Contact Resolution",
+        "term_guid": "bafb22e3-532b-48f2-9af3-814552f292a4",
+        "target_guid": "d61ecd89-dc45-4248-be2a-29a453034b2e",
+        "target_entityType": "EnercareSemanticMeasure",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "BrookfieldEnercare/_Measures/NPS",
+        "term_name": "Net Promoter Score",
+        "term_guid": "4cdfffe8-fff9-489f-8c88-612edcb762b2",
+        "target_guid": "0351d25d-b807-4d98-bd23-1fc9a819a086",
+        "target_entityType": "EnercareSemanticMeasure",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "BrookfieldEnercare/_Measures/CSAT",
+        "term_name": "Customer Satisfaction",
+        "term_guid": "4e971ed7-66f0-4ebb-9605-a006315a6d9e",
+        "target_guid": "e59f858d-dfff-492c-a19a-ecb5e19e919d",
+        "target_entityType": "EnercareSemanticMeasure",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "BrookfieldEnercare/_Measures/AvgHandleTime",
+        "term_name": "Average Handle Time",
+        "term_guid": "54083a47-d88a-4a3f-b7a7-630942c2790e",
+        "target_guid": "a1d0dd3a-c24c-40e3-93aa-942caea17506",
+        "target_entityType": "EnercareSemanticMeasure",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "BrookfieldEnercare/_Measures/RepeatComplaintRate",
+        "term_name": "Repeat Complaint Rate",
+        "term_guid": "d3a5b1e4-5a50-49cc-b867-54f98bb451e8",
+        "target_guid": "45699943-7f34-4a79-85c5-4e6a776b3ef7",
+        "target_entityType": "EnercareSemanticMeasure",
+        "outcome": "assigned"
+      },
+      {
+        "asset_ref": "dbo.contracts",
+        "term_name": "Contract",
+        "term_guid": "6f6933f7-12ac-41fa-b5ac-40b6af9b98f6",
+        "target_guid": "be322fc3-0253-40ed-9971-eff6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.contracts",
+        "term_name": "Auto Renewal",
+        "term_guid": "7849fe48-f261-447d-ae50-2ac42a7d2a7f",
+        "target_guid": "be322fc3-0253-40ed-9971-eff6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.billing_transactions",
+        "term_name": "Billing Transaction",
+        "term_guid": "41b4c005-bab0-484c-9525-b4f2b6186185",
+        "target_guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.customers",
+        "term_name": "Customer",
+        "term_guid": "60c20e7f-42b9-4d06-9408-2cea467aa0fa",
+        "target_guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.service_zones",
+        "term_name": "Service Zone",
+        "term_guid": "eff041b0-6ee1-458a-958a-75e51a73b9cd",
+        "target_guid": "ab42e293-e636-42d2-ae34-41f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "assigned"
+      },
+      {
+        "asset_ref": "dbo.employees",
+        "term_name": "Employee",
+        "term_guid": "2d111b28-c9b9-424d-a3e9-23a23be830be",
+        "target_guid": "586c7f88-7d91-48da-a7a7-62f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.data_owners_directory",
+        "term_name": "Data Owner",
+        "term_guid": "0c227386-6607-4eb5-bf11-5f5d1789df25",
+        "target_guid": "00733fce-e14d-426b-80ac-e0f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.audit_data_access",
+        "term_name": "Data Access Audit",
+        "term_guid": "43853997-d2d0-419a-9f8d-962753940dd6",
+        "target_guid": "4d87cd56-023a-497f-936a-67f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.service_accounts",
+        "term_name": "Equipment",
+        "term_guid": "da2c229a-1b73-4644-9ab8-f96b603c7c7d",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.service_accounts.equipment_type",
+        "term_name": "Furnace",
+        "term_guid": "a00f7006-3ee5-49f5-9885-636dab48b06f",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.service_accounts.equipment_type",
+        "term_name": "Air Conditioner",
+        "term_guid": "28c99962-1fce-481b-980a-b141e644818a",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.service_accounts.equipment_type",
+        "term_name": "Water Heater",
+        "term_guid": "af9ae969-d623-4654-bb9e-4e254f08f78f",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "assigned"
+      },
+      {
+        "asset_ref": "dbo.service_accounts.equipment_type",
+        "term_name": "Heat Pump",
+        "term_guid": "c42c2d12-42dd-405e-9409-8fe84544ad47",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.service_accounts.equipment_type",
+        "term_name": "Heat Recovery Ventilator",
+        "term_guid": "bf125569-d952-4ea9-81a4-42126204a1ff",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.service_accounts.equipment_type",
+        "term_name": "Tankless Water Heater",
+        "term_guid": "f1ca5e9c-9f9c-4121-9218-f8872c397711",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "assigned"
+      },
+      {
+        "asset_ref": "dbo.customers.customer_id",
+        "term_name": "Customer",
+        "term_guid": "60c20e7f-42b9-4d06-9408-2cea467aa0fa",
+        "target_guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.service_accounts.customer_id",
+        "term_name": "Customer",
+        "term_guid": "60c20e7f-42b9-4d06-9408-2cea467aa0fa",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.contracts.customer_id",
+        "term_name": "Customer",
+        "term_guid": "60c20e7f-42b9-4d06-9408-2cea467aa0fa",
+        "target_guid": "be322fc3-0253-40ed-9971-eff6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.service_accounts.service_account_id",
+        "term_name": "Service Request",
+        "term_guid": "823bf69d-8698-475b-9b4e-783cc614bf5c",
+        "target_guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.service_requests.service_account_id",
+        "term_name": "Service Request",
+        "term_guid": "823bf69d-8698-475b-9b4e-783cc614bf5c",
+        "target_guid": "171ca864-6c27-4847-9ff9-41f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.contracts.contract_id",
+        "term_name": "Contract",
+        "term_guid": "6f6933f7-12ac-41fa-b5ac-40b6af9b98f6",
+        "target_guid": "be322fc3-0253-40ed-9971-eff6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.billing_transactions.contract_id",
+        "term_name": "Contract",
+        "term_guid": "6f6933f7-12ac-41fa-b5ac-40b6af9b98f6",
+        "target_guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.service_requests.request_id",
+        "term_name": "Service Request",
+        "term_guid": "823bf69d-8698-475b-9b4e-783cc614bf5c",
+        "target_guid": "171ca864-6c27-4847-9ff9-41f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.customer_consents.consent_status",
+        "term_name": "Customer Consent",
+        "term_guid": "fd5c8084-58d6-4c5b-a50b-a4c29fefbd5f",
+        "target_guid": "373391cc-3717-4673-9cc3-47f6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      },
+      {
+        "asset_ref": "dbo.customers.date_of_birth",
+        "term_name": "Personally Identifiable Information",
+        "term_guid": "27e17bde-a62a-4645-a7af-86ac0f18ce6a",
+        "target_guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "target_entityType": "azure_sql_table",
+        "outcome": "existing"
+      }
+    ],
+    "failures": []
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "counts": {
+    "label_manifest_rows": 26,
+    "glossary_manifest_rows": 44,
+    "description_manifest_rows": 50,
+    "contacts_manifest_rows": 7
+  },
+  "results": {
+    "labels": {
+      "assigned": 26,
+      "existing": 0,
+      "failed": 0,
+      "unresolved": 0
+    },
+    "glossary": {
+      "assigned": 0,
+      "existing": 0,
+      "failed": 0,
+      "unresolved_asset": 0,
+      "unresolved_term": 44
+    },
+    "descriptions": {
+      "assigned": 3,
+      "existing": 10,
+      "failed": 37,
+      "unresolved": 0
+    },
+    "contacts": {
+      "assigned": 0,
+      "existing": 0,
+      "failed": 7,
+      "unresolved": 0
+    }
+  }
+}

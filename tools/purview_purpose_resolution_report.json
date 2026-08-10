@@ -1,0 +1,814 @@
+{
+  "manifest_rows": 63,
+  "resolved_rows": 63,
+  "assigned": 0,
+  "existing": 63,
+  "failed": 0,
+  "verified": 63,
+  "resolution_mode_counts": {
+    "direct_match": 63
+  },
+  "by_classification": {
+    "EnercareCDE": {
+      "rows": 19,
+      "assigned": 0,
+      "existing": 19,
+      "failed": 0,
+      "verified": 19
+    },
+    "EnercareCustomer": {
+      "rows": 17,
+      "assigned": 0,
+      "existing": 17,
+      "failed": 0,
+      "verified": 17
+    },
+    "EnercareServiceEncounter": {
+      "rows": 11,
+      "assigned": 0,
+      "existing": 11,
+      "failed": 0,
+      "verified": 11
+    },
+    "EnercareBilling": {
+      "rows": 8,
+      "assigned": 0,
+      "existing": 8,
+      "failed": 0,
+      "verified": 8
+    },
+    "EnercareExecutive": {
+      "rows": 5,
+      "assigned": 0,
+      "existing": 5,
+      "failed": 0,
+      "verified": 5
+    },
+    "EnercareKPIAnalyst": {
+      "rows": 3,
+      "assigned": 0,
+      "existing": 3,
+      "failed": 0,
+      "verified": 3
+    }
+  },
+  "samples": [
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.customers.customer_id",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers",
+        "name": "customers"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.customers.customer_id",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers",
+        "name": "customers"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.service_accounts.customer_id",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts",
+        "name": "service_accounts"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.service_accounts.customer_id",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts",
+        "name": "service_accounts"
+      }
+    },
+    {
+      "classification": "EnercareServiceEncounter",
+      "asset_ref": "dbo.service_accounts.customer_id",
+      "purpose": "Service interaction and operations answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts",
+        "name": "service_accounts"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.contracts.customer_id",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "be322fc3-0253-40ed-9971-eff6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/contracts",
+        "name": "contracts"
+      }
+    },
+    {
+      "classification": "EnercareBilling",
+      "asset_ref": "dbo.contracts.customer_id",
+      "purpose": "Billing and payment answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "be322fc3-0253-40ed-9971-eff6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/contracts",
+        "name": "contracts"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.contracts.customer_id",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "be322fc3-0253-40ed-9971-eff6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/contracts",
+        "name": "contracts"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.service_accounts.service_account_id",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts",
+        "name": "service_accounts"
+      }
+    },
+    {
+      "classification": "EnercareServiceEncounter",
+      "asset_ref": "dbo.service_accounts.service_account_id",
+      "purpose": "Service interaction and operations answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts",
+        "name": "service_accounts"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.service_requests.service_account_id",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "171ca864-6c27-4847-9ff9-41f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_requests",
+        "name": "service_requests"
+      }
+    },
+    {
+      "classification": "EnercareServiceEncounter",
+      "asset_ref": "dbo.service_requests.service_account_id",
+      "purpose": "Service interaction and operations answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "171ca864-6c27-4847-9ff9-41f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_requests",
+        "name": "service_requests"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.contracts.contract_id",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "be322fc3-0253-40ed-9971-eff6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/contracts",
+        "name": "contracts"
+      }
+    },
+    {
+      "classification": "EnercareBilling",
+      "asset_ref": "dbo.contracts.contract_id",
+      "purpose": "Billing and payment answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "be322fc3-0253-40ed-9971-eff6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/contracts",
+        "name": "contracts"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.billing_transactions.contract_id",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions",
+        "name": "billing_transactions"
+      }
+    },
+    {
+      "classification": "EnercareBilling",
+      "asset_ref": "dbo.billing_transactions.contract_id",
+      "purpose": "Billing and payment answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions",
+        "name": "billing_transactions"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.service_requests.request_id",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "171ca864-6c27-4847-9ff9-41f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_requests",
+        "name": "service_requests"
+      }
+    },
+    {
+      "classification": "EnercareServiceEncounter",
+      "asset_ref": "dbo.service_requests.request_id",
+      "purpose": "Service interaction and operations answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "171ca864-6c27-4847-9ff9-41f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_requests",
+        "name": "service_requests"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.customer_consents.consent_status",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "373391cc-3717-4673-9cc3-47f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customer_consents",
+        "name": "customer_consents"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.customer_consents.consent_status",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "373391cc-3717-4673-9cc3-47f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customer_consents",
+        "name": "customer_consents"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.employees.sin_full",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "586c7f88-7d91-48da-a7a7-62f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/employees",
+        "name": "employees"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.employees.sin_full",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "586c7f88-7d91-48da-a7a7-62f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/employees",
+        "name": "employees"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.customers.sin_last_4",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers",
+        "name": "customers"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.customers.sin_last_4",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers",
+        "name": "customers"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.customers.date_of_birth",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers",
+        "name": "customers"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.customers.date_of_birth",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers",
+        "name": "customers"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.service_accounts.latitude",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts",
+        "name": "service_accounts"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.service_accounts.latitude",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts",
+        "name": "service_accounts"
+      }
+    },
+    {
+      "classification": "EnercareServiceEncounter",
+      "asset_ref": "dbo.service_accounts.latitude",
+      "purpose": "Service interaction and operations answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts",
+        "name": "service_accounts"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.service_accounts.longitude",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts",
+        "name": "service_accounts"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.service_accounts.longitude",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts",
+        "name": "service_accounts"
+      }
+    },
+    {
+      "classification": "EnercareServiceEncounter",
+      "asset_ref": "dbo.service_accounts.longitude",
+      "purpose": "Service interaction and operations answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts",
+        "name": "service_accounts"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.billing_transactions.card_pan_last_4",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions",
+        "name": "billing_transactions"
+      }
+    },
+    {
+      "classification": "EnercareBilling",
+      "asset_ref": "dbo.billing_transactions.card_pan_last_4",
+      "purpose": "Billing and payment answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions",
+        "name": "billing_transactions"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.billing_transactions.bank_routing_last_4",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions",
+        "name": "billing_transactions"
+      }
+    },
+    {
+      "classification": "EnercareBilling",
+      "asset_ref": "dbo.billing_transactions.bank_routing_last_4",
+      "purpose": "Billing and payment answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions",
+        "name": "billing_transactions"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.data_owners_directory.data_owner_upn",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "00733fce-e14d-426b-80ac-e0f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/data_owners_directory",
+        "name": "data_owners_directory"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.data_owners_directory.data_steward_upn",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "00733fce-e14d-426b-80ac-e0f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/data_owners_directory",
+        "name": "data_owners_directory"
+      }
+    },
+    {
+      "classification": "EnercareCDE",
+      "asset_ref": "dbo.audit_data_access.purpose_of_use",
+      "purpose": "Critical data element field governance",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "4d87cd56-023a-497f-936a-67f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/audit_data_access",
+        "name": "audit_data_access"
+      }
+    },
+    {
+      "classification": "EnercareServiceEncounter",
+      "asset_ref": "DP-SVCPERF:overview",
+      "purpose": "Service interaction and operations answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "a0df6b58-9fcd-4aee-8235-d1a035677215",
+        "entityType": "powerbi_dataset",
+        "qualifiedName": "https://app.powerbi.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/datasets/8cb6f6a6-6a9c-4560-9f28-17a1dc4a921c",
+        "name": "BrookfieldEnercare"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.customers",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers",
+        "name": "customers"
+      }
+    },
+    {
+      "classification": "EnercareServiceEncounter",
+      "asset_ref": "dbo.service_requests",
+      "purpose": "Service interaction and operations answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "171ca864-6c27-4847-9ff9-41f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_requests",
+        "name": "service_requests"
+      }
+    },
+    {
+      "classification": "EnercareExecutive",
+      "asset_ref": "BrookfieldEnercare.Report",
+      "purpose": "Executive narrative/report answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "42561931-aa73-4cbd-9fe3-141b0796ecc6",
+        "entityType": "powerbi_report",
+        "qualifiedName": "https://app.powerbi.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/reports/7c4f1103-e22c-4a8c-930d-9fe20b71b409",
+        "name": "BrookfieldEnercare"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.customer_consents",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "373391cc-3717-4673-9cc3-47f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customer_consents",
+        "name": "customer_consents"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.customer_complaints",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "27c71348-e53d-468b-b33e-59f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customer_complaints",
+        "name": "customer_complaints"
+      }
+    },
+    {
+      "classification": "EnercareExecutive",
+      "asset_ref": "BrookfieldEnercare.SemanticModel",
+      "purpose": "Executive narrative/report answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "42561931-aa73-4cbd-9fe3-141b0796ecc6",
+        "entityType": "powerbi_report",
+        "qualifiedName": "https://app.powerbi.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/reports/7c4f1103-e22c-4a8c-930d-9fe20b71b409",
+        "name": "BrookfieldEnercare"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.employees.sin_full",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "586c7f88-7d91-48da-a7a7-62f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/employees",
+        "name": "employees"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.customers.sin_last_4",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers",
+        "name": "customers"
+      }
+    },
+    {
+      "classification": "EnercareBilling",
+      "asset_ref": "dbo.billing_transactions.card_pan_last_4",
+      "purpose": "Billing and payment answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions",
+        "name": "billing_transactions"
+      }
+    },
+    {
+      "classification": "EnercareBilling",
+      "asset_ref": "dbo.billing_transactions.card_pan_last_4",
+      "purpose": "Billing and payment answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions",
+        "name": "billing_transactions"
+      }
+    },
+    {
+      "classification": "EnercareBilling",
+      "asset_ref": "dbo.billing_transactions.bank_routing_last_4",
+      "purpose": "Billing and payment answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "ea0e6b86-92e0-4da4-be2f-6af6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions",
+        "name": "billing_transactions"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.customers.date_of_birth",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers",
+        "name": "customers"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.customers.sin_last_4",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "f9b84dba-6813-4f35-8e2e-cdf6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers",
+        "name": "customers"
+      }
+    },
+    {
+      "classification": "EnercareCustomer",
+      "asset_ref": "dbo.employees.sin_full",
+      "purpose": "Customer identity/privacy answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "586c7f88-7d91-48da-a7a7-62f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/employees",
+        "name": "employees"
+      }
+    },
+    {
+      "classification": "EnercareServiceEncounter",
+      "asset_ref": "dbo.service_accounts.latitude",
+      "purpose": "Service interaction and operations answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts",
+        "name": "service_accounts"
+      }
+    },
+    {
+      "classification": "EnercareServiceEncounter",
+      "asset_ref": "dbo.service_accounts.longitude",
+      "purpose": "Service interaction and operations answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "25d9e6f6-5687-4627-b7af-37f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts",
+        "name": "service_accounts"
+      }
+    },
+    {
+      "classification": "EnercareServiceEncounter",
+      "asset_ref": "dbo.service_zones",
+      "purpose": "Service interaction and operations answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "ab42e293-e636-42d2-ae34-41f6f6f60000",
+        "entityType": "azure_sql_table",
+        "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_zones",
+        "name": "service_zones"
+      }
+    },
+    {
+      "classification": "EnercareExecutive",
+      "asset_ref": "BrookfieldEnercare/_Measures/NPS",
+      "purpose": "Executive narrative/report answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "42561931-aa73-4cbd-9fe3-141b0796ecc6",
+        "entityType": "powerbi_report",
+        "qualifiedName": "https://app.powerbi.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/reports/7c4f1103-e22c-4a8c-930d-9fe20b71b409",
+        "name": "BrookfieldEnercare"
+      }
+    },
+    {
+      "classification": "EnercareKPIAnalyst",
+      "asset_ref": "BrookfieldEnercare/_Measures/NPS",
+      "purpose": "KPI and measure interpretation answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "0351d25d-b807-4d98-bd23-1fc9a819a086",
+        "entityType": "EnercareSemanticMeasure",
+        "qualifiedName": "enercare://semantic/brookfieldenercare/measure/nps",
+        "name": ""
+      }
+    },
+    {
+      "classification": "EnercareExecutive",
+      "asset_ref": "BrookfieldEnercare/_Measures/CSAT",
+      "purpose": "Executive narrative/report answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "42561931-aa73-4cbd-9fe3-141b0796ecc6",
+        "entityType": "powerbi_report",
+        "qualifiedName": "https://app.powerbi.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/reports/7c4f1103-e22c-4a8c-930d-9fe20b71b409",
+        "name": "BrookfieldEnercare"
+      }
+    },
+    {
+      "classification": "EnercareKPIAnalyst",
+      "asset_ref": "BrookfieldEnercare/_Measures/CSAT",
+      "purpose": "KPI and measure interpretation answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "e59f858d-dfff-492c-a19a-ecb5e19e919d",
+        "entityType": "EnercareSemanticMeasure",
+        "qualifiedName": "enercare://semantic/brookfieldenercare/measure/csat",
+        "name": ""
+      }
+    },
+    {
+      "classification": "EnercareExecutive",
+      "asset_ref": "BrookfieldEnercare/_Measures/AvgHandleTime",
+      "purpose": "Executive narrative/report answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "42561931-aa73-4cbd-9fe3-141b0796ecc6",
+        "entityType": "powerbi_report",
+        "qualifiedName": "https://app.powerbi.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/reports/7c4f1103-e22c-4a8c-930d-9fe20b71b409",
+        "name": "BrookfieldEnercare"
+      }
+    },
+    {
+      "classification": "EnercareKPIAnalyst",
+      "asset_ref": "BrookfieldEnercare/_Measures/AvgHandleTime",
+      "purpose": "KPI and measure interpretation answer context",
+      "resolution_mode": "direct_match",
+      "bound_to": {
+        "guid": "a1d0dd3a-c24c-40e3-93aa-942caea17506",
+        "entityType": "EnercareSemanticMeasure",
+        "qualifiedName": "enercare://semantic/brookfieldenercare/measure/avghandletime",
+        "name": ""
+      }
+    }
+  ],
+  "failures": []
+}

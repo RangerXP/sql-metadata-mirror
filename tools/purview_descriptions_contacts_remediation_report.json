@@ -1,0 +1,54 @@
+{
+  "counts": {
+    "description_manifest_rows": 49,
+    "contacts_manifest_rows": 7
+  },
+  "results": {
+    "descriptions": {
+      "assigned": 38,
+      "existing": 6,
+      "failed": 0,
+      "not_supported": 5,
+      "unresolved": 0,
+      "failures": []
+    },
+    "contacts": {
+      "assigned": 0,
+      "existing": 7,
+      "failed": 0,
+      "unresolved": 0,
+      "failures": []
+    }
+  },
+  "baseline": {
+    "descriptions": {
+      "assigned": 3,
+      "existing": 10,
+      "failed": 37,
+      "unresolved": 0
+    },
+    "contacts": {
+      "assigned": 0,
+      "existing": 0,
+      "failed": 7,
+      "unresolved": 0
+    }
+  },
+  "delta": {
+    "descriptions": {
+      "assigned_delta": 35,
+      "existing_delta": -4,
+      "failed_delta": -37,
+      "not_supported": 5,
+      "effective_failed": 0,
+      "effective_failed_delta": -37,
+      "unresolved_delta": 0
+    },
+    "contacts": {
+      "assigned_delta": 0,
+      "existing_delta": 7,
+      "failed_delta": -7,
+      "unresolved_delta": 0
+    }
+  }
+}

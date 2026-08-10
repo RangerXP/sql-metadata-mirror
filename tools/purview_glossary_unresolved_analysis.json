@@ -1,0 +1,441 @@
+{
+  "summary": {
+    "manifest_rows": 44,
+    "unique_terms": 27,
+    "resolved_terms": 0,
+    "unresolved_terms": 27
+  },
+  "resolved_terms": [],
+  "unresolved_terms": [
+    {
+      "term_name": "Air Conditioner",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-EQUIP-AC"
+      ],
+      "asset_refs": [
+        "dbo.service_accounts.equipment_type"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Auto Renewal",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-AUTORENEW"
+      ],
+      "asset_refs": [
+        "dbo.contracts"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Average Handle Time",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-AHT"
+      ],
+      "asset_refs": [
+        "BrookfieldEnercare/_Measures/AvgHandleTime"
+      ],
+      "asset_kind_counts": {
+        "semantic_measure": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Billing Transaction",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-BILLING"
+      ],
+      "asset_refs": [
+        "dbo.billing_transactions"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Contract",
+      "occurrences": 3,
+      "source_rows": [
+        "governance_cdes.parent_glossary_term|cde_name:CDE-CONTRACT-ID",
+        "governance_glossary_terms.bound_assets:GT-CONTRACT"
+      ],
+      "asset_refs": [
+        "dbo.billing_transactions.contract_id",
+        "dbo.contracts",
+        "dbo.contracts.contract_id"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 3
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Customer",
+      "occurrences": 4,
+      "source_rows": [
+        "governance_cdes.parent_glossary_term|cde_name:CDE-CUST-ID",
+        "governance_glossary_terms.bound_assets:GT-CUSTOMER"
+      ],
+      "asset_refs": [
+        "dbo.contracts.customer_id",
+        "dbo.customers",
+        "dbo.customers.customer_id",
+        "dbo.service_accounts.customer_id"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 4
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Customer Consent",
+      "occurrences": 2,
+      "source_rows": [
+        "governance_cdes.parent_glossary_term|cde_name:CDE-CONSENT-STATUS",
+        "governance_glossary_terms.bound_assets:GT-CONSENT"
+      ],
+      "asset_refs": [
+        "dbo.customer_consents",
+        "dbo.customer_consents.consent_status"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 2
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Customer Satisfaction",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-CSAT"
+      ],
+      "asset_refs": [
+        "BrookfieldEnercare/_Measures/CSAT"
+      ],
+      "asset_kind_counts": {
+        "semantic_measure": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Data Access Audit",
+      "occurrences": 2,
+      "source_rows": [
+        "governance_cdes.parent_glossary_term|cde_name:CDE-AUDIT-PURPOSE",
+        "governance_glossary_terms.bound_assets:GT-AUDIT"
+      ],
+      "asset_refs": [
+        "dbo.audit_data_access",
+        "dbo.audit_data_access.purpose_of_use"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 2
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Data Owner",
+      "occurrences": 3,
+      "source_rows": [
+        "governance_cdes.parent_glossary_term|cde_name:CDE-OWNER-UPN",
+        "governance_glossary_terms.bound_assets:GT-OWNER"
+      ],
+      "asset_refs": [
+        "dbo.data_owners_directory",
+        "dbo.data_owners_directory.data_owner_upn",
+        "dbo.data_owners_directory.data_steward_upn"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 3
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Employee",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-EMPLOYEE"
+      ],
+      "asset_refs": [
+        "dbo.employees"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Equipment",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-EQUIP"
+      ],
+      "asset_refs": [
+        "dbo.service_accounts"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "First Contact Resolution",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-FCR"
+      ],
+      "asset_refs": [
+        "BrookfieldEnercare/_Measures/FCR"
+      ],
+      "asset_kind_counts": {
+        "semantic_measure": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Furnace",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-EQUIP-FURNACE"
+      ],
+      "asset_refs": [
+        "dbo.service_accounts.equipment_type"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Geolocation PII",
+      "occurrences": 2,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-GEOPII"
+      ],
+      "asset_refs": [
+        "dbo.service_accounts.latitude",
+        "dbo.service_accounts.longitude"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 2
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Heat Pump",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-EQUIP-HEATPUMP"
+      ],
+      "asset_refs": [
+        "dbo.service_accounts.equipment_type"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Heat Recovery Ventilator",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-EQUIP-HRV"
+      ],
+      "asset_refs": [
+        "dbo.service_accounts.equipment_type"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Net Promoter Score",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-NPS"
+      ],
+      "asset_refs": [
+        "BrookfieldEnercare/_Measures/NPS"
+      ],
+      "asset_kind_counts": {
+        "semantic_measure": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "PCI Scope Data",
+      "occurrences": 2,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-PCISCOPE"
+      ],
+      "asset_refs": [
+        "dbo.billing_transactions.bank_routing_last_4",
+        "dbo.billing_transactions.card_pan_last_4"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 2
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Personally Identifiable Information",
+      "occurrences": 3,
+      "source_rows": [
+        "governance_cdes.parent_glossary_term|cde_name:CDE-DOB",
+        "governance_glossary_terms.bound_assets:GT-PII"
+      ],
+      "asset_refs": [
+        "dbo.customers.customer_id",
+        "dbo.customers.date_of_birth",
+        "dbo.customers.email"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 3
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Repeat Complaint Rate",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-REPEATCOMPLAINT"
+      ],
+      "asset_refs": [
+        "BrookfieldEnercare/_Measures/RepeatComplaintRate"
+      ],
+      "asset_kind_counts": {
+        "semantic_measure": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Service Request",
+      "occurrences": 4,
+      "source_rows": [
+        "governance_cdes.parent_glossary_term|cde_name:CDE-REQ-ID",
+        "governance_cdes.parent_glossary_term|cde_name:CDE-SVCACCT-ID",
+        "governance_glossary_terms.bound_assets:GT-SVCREQ"
+      ],
+      "asset_refs": [
+        "dbo.service_accounts.service_account_id",
+        "dbo.service_requests",
+        "dbo.service_requests.request_id",
+        "dbo.service_requests.service_account_id"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 4
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Service Zone",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-SVCZONE"
+      ],
+      "asset_refs": [
+        "dbo.service_zones"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Social Insurance Number",
+      "occurrences": 2,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-SIN"
+      ],
+      "asset_refs": [
+        "dbo.customers.sin_last_4",
+        "dbo.employees.sin_full"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 2
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Tankless Water Heater",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-EQUIP-TANKLESS"
+      ],
+      "asset_refs": [
+        "dbo.service_accounts.equipment_type"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "term_name",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:term_code"
+      ],
+      "asset_refs": [
+        "bound_assets"
+      ],
+      "asset_kind_counts": {
+        "other": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    },
+    {
+      "term_name": "Water Heater",
+      "occurrences": 1,
+      "source_rows": [
+        "governance_glossary_terms.bound_assets:GT-EQUIP-WATERHEATER"
+      ],
+      "asset_refs": [
+        "dbo.service_accounts.equipment_type"
+      ],
+      "asset_kind_counts": {
+        "sql_table_or_column_ref": 1
+      },
+      "resolved_in_purview": false,
+      "purview_match": null
+    }
+  ]
+}
