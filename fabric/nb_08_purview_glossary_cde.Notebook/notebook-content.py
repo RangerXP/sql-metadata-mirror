@@ -175,7 +175,7 @@ GLOSSARY_COLUMNS_NEEDED = [
     "term_code", "term_name", "definition", "status", "acronyms", "resources", "bound_assets",
 ]
 CDE_COLUMNS_NEEDED = [
-    "cde_id", "cde_code", "cde_name", "domain_code", "glossary_term_code", "expected_data_type",
+    "cde_id", "cde_code", "cde_name", "domain_code", "parent_glossary_term", "expected_data_type",
     "sensitivity_label", "status", "owner_upn", "owner_role", "steward_upn", "bound_columns",
     "validation_rule", "description", "business_definition",
 ]
@@ -337,7 +337,7 @@ try:
                     "cde_id": cde_id,
                     "cde_name": cde_name,
                     "domain_code": _safe_text(getattr(row, "domain_code", None)),
-                    "glossary_term_code": _safe_text(getattr(row, "glossary_term_code", None)),
+                    "glossary_term_code": _safe_text(getattr(row, "parent_glossary_term", None)),
                     "expected_data_type": _safe_text(getattr(row, "expected_data_type", None)),
                     "sensitivity_label": _safe_text(getattr(row, "sensitivity_label", None)),
                     "status": _safe_text(getattr(row, "status", None)),
