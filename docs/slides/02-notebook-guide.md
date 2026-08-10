@@ -158,7 +158,7 @@ This is the critical bridge between governance curation and runtime consumption.
 
 **What It Does**
 
-Pushes **verified Q&A pairs** into the semantic model's AI instruction annotations — pre-approved answers to common business questions that Copilot and Data Agents should use verbatim.
+Pushes **AI instructions** and **verified Q&A pairs** into two distinct semantic model annotations — pre-approved answers to common business questions that Copilot and Data Agents should use verbatim, kept separate from the source/model/agent instruction content so each construct can be audited and regenerated independently.
 
 **Why It Matters**
 
@@ -166,11 +166,11 @@ When Tom asks "What's the SLA for a no-heat call?", the answer should come from 
 
 **Technical Details**
 
-- Reads verified Q&A from `lh_metadata.verified_qa` or curated JSON
-- Formats as PBI_AI_Instructions JSON payload
-- Writes via SemPy Labs `set_annotation()` method
+- Reads `ai_instruction` and `verified_answer` rows from `lh_metadata.ai_metadata`
+- Writes `PBI_AI_Instructions` (ai_instruction rows only) and `PBI_AI_VerifiedAnswers` (verified_answer rows only) as separate annotations
+- Writes via SemPy Labs TOM connector (`model.Annotations` add/update)
 - Includes example questions and canonical answers
-- Output: Semantic model carries verified Q&A for Data Agent consumption
+- Output: Semantic model carries verified Q&A on its own annotation for Data Agent consumption
 
 ---
 

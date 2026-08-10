@@ -75,7 +75,7 @@ descriptions plus AI instruction annotations.
 
 ### nb_05_push_qa_verified_answers
 
-Builds the verified Q and A payload and writes PBI_AI_Instructions using SemPy Labs.
+Builds the AI instructions and verified Q&A payloads and writes them as two distinct annotations — `PBI_AI_Instructions` and `PBI_AI_VerifiedAnswers` — using SemPy Labs, so verified answers stay independently governed from instruction content.
 
 ### nb_05b_test_sql_connectivity
 

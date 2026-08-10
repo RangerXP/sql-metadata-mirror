@@ -50,7 +50,7 @@ You also could not. **Purview classifiers can only see what they scan.** PII has
 | **Classified PII** (names, SIN, payment, address) | **must live here** for classifiers to fire | — | mirrored | classification labels surface here | — |
 | Lineage edges (SQL → mirror → SM → report)       | — | edges CSV (already exists) | edge tracking | **registered here** via custom Atlas | — |
 | Table / column / measure **descriptions**        | — | inputs feed metadata curation | curated in `lh_metadata` | scanned from semantic model | **primary write target** |
-| AI instructions, verified Q&A                    | — | curation inputs | curated in `lh_metadata` | scanned via SM scan | **primary write target** |
+| AI instructions, verified Q&A                    | — | curation inputs | curated in `lh_metadata` | scanned via SM scan | **primary write target (split: `PBI_AI_Instructions` + `PBI_AI_VerifiedAnswers`)** |
 
 **Rule of thumb:**
 - If Purview must **classify it**, it lives in **T1** with realistic values.
@@ -151,8 +151,8 @@ Per Alison's pattern, the semantic model is the **runtime metadata surface** Cop
 | `Measure.Description` | `metadata.glossary_terms` for measure-level KPIs | Copilot, Power BI Q&A |
 | `Model` annotation `Sensitivity_Label` | `metadata.label_assignments` table-level | Fabric MIP label application |
 | `Model` annotation `Data_Product_Owner` | `metadata.role_assignments` | Discoverability, audit |
-| `Model` annotation `PBI_AI_Instructions` | curated content | Power BI Copilot grounding |
-| Verified Q&A entries | curated content | Power BI Copilot (preview) |
+| `Model` annotation `PBI_AI_Instructions` | curated content (`ai_metadata.RecordType='ai_instruction'` rows only) | Power BI Copilot grounding |
+| `Model` annotation `PBI_AI_VerifiedAnswers` | curated content (`ai_metadata.RecordType='verified_answer'` rows only) | Power BI Copilot (preview) |
 
 ### 3.5 Purview-Native Authoring (T4)
 
