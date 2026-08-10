@@ -27,12 +27,17 @@
 # CELL ********************
 
 # Fabric Notebook: nb_05_push_qa_verified_answers
-# Purpose: Read ai_instruction + verified_answer rows from lh_metadata.ai_metadata,
-#          build the PBI_AI_Instructions payload, and write it to the semantic
-#          model using SemPy Labs (primary write-back path).
+# Purpose: Read ai_instruction + verified_answer rows from lh_metadata.ai_metadata
+#          and write them to the semantic model as two distinct annotations using
+#          SemPy Labs (primary write-back path):
+#            PBI_AI_Instructions    <- RecordType='ai_instruction' rows only
+#            PBI_AI_VerifiedAnswers <- RecordType='verified_answer' rows only
+#          Verified answers are a distinct governed construct from ai_metadata and
+#          are kept on their own annotation so they can be regenerated/audited
+#          independently of the source/model/agent instruction content.
 #
-# DEMO_MODE = True  -> dry-run (prints annotation preview, no write)
-# DEMO_MODE = False -> live (writes annotation to semantic model)
+# DEMO_MODE = True  -> dry-run (prints both annotation previews, no write)
+# DEMO_MODE = False -> live (writes both annotations to semantic model)
 
 # Standalone Copilot grounding reads semantic model annotation surfaces.
 # Keep this enabled so write path stays on SemPy Labs-only and avoids TOM drift.
@@ -115,6 +120,16 @@ def _safe(text: str) -> str:
     return text.replace('"', "'").strip()
 
 
+def _truncate(payload: str, label: str) -> str:
+    if len(payload) <= MAX_ANNOTATION_CHARS:
+        return payload
+    truncated = payload[:MAX_ANNOTATION_CHARS]
+    last_sep = truncated.rfind(" | ")
+    truncated = truncated[:last_sep] if last_sep > 0 else truncated
+    print(f"[WARN] {label} truncated to {len(truncated)} chars")
+    return truncated
+
+
 instr_block = " | ".join(_safe(t) for t in ai_instructions)
 qa_parts = [
     f"Q: {_safe(r.TriggerText)} -> {_safe(r.ResponseText)}"
@@ -122,23 +137,22 @@ qa_parts = [
 ]
 qa_block = " | ".join(qa_parts)
 
-if instr_block and qa_block:
-    combined = f"{instr_block} | VERIFIED Q&A: {qa_block}"
-elif qa_block:
-    combined = f"VERIFIED Q&A: {qa_block}"
-else:
-    combined = instr_block
+# Verified answers are their own governed construct (ai_metadata.RecordType=
+# 'verified_answer') and are written to their own annotation so they stay
+# independently addressable/regenerable instead of flattened into one
+# instruction blob alongside source/model/agent instruction content.
+instructions_payload = _truncate(instr_block, "PBI_AI_Instructions")
+verified_answers_payload = _truncate(qa_block, "PBI_AI_VerifiedAnswers")
 
-if len(combined) > MAX_ANNOTATION_CHARS:
-    truncated = combined[:MAX_ANNOTATION_CHARS]
-    last_sep = truncated.rfind(" | ")
-    combined = truncated[:last_sep] if last_sep > 0 else truncated
-    print(f"[WARN] Annotation truncated to {len(combined)} chars")
-
-print(f"Annotation length: {len(combined)}")
+print(f"PBI_AI_Instructions length: {len(instructions_payload)}")
 print("--- Preview (first 500 chars) ---")
-print(combined[:500])
-print("..." if len(combined) > 500 else "")
+print(instructions_payload[:500])
+print("..." if len(instructions_payload) > 500 else "")
+
+print(f"\nPBI_AI_VerifiedAnswers length: {len(verified_answers_payload)}")
+print("--- Preview (first 500 chars) ---")
+print(verified_answers_payload[:500])
+print("..." if len(verified_answers_payload) > 500 else "")
 
 
 # METADATA ********************
@@ -344,9 +358,13 @@ except Exception as ex:
     print(f"       Detail: {ex}")
 
 
-annotation_applied = False
-annotation_write_detail = "not attempted"
-
+# Publish each governed construct to its own annotation surface that standalone
+# Copilot reads — keeps verified Q&A independently regenerable from instructions.
+annotations_to_publish = {
+    "PBI_AI_Instructions": instructions_payload,
+    "PBI_AI_VerifiedAnswers": verified_answers_payload,
+}
+annotation_results = {}
 
 if DEMO_MODE:
     print("[DRY RUN] Annotation write skipped")
@@ -354,20 +372,21 @@ else:
     if labs is None:
         raise RuntimeError(f"DEMO_MODE=False requires sempy_labs. {LABS_SETUP_MESSAGE}")
 
-    # Publish to semantic model annotation surface that standalone Copilot reads.
-    annotation_applied, annotation_write_detail = _publish_annotation_semantic_surface(
-        name="PBI_AI_Instructions",
-        value=combined,
-        labs_module=labs,
-    )
+    for annotation_name, annotation_value in annotations_to_publish.items():
+        applied, detail = _publish_annotation_semantic_surface(
+            name=annotation_name,
+            value=annotation_value,
+            labs_module=labs,
+        )
+        annotation_results[annotation_name] = (applied, detail)
 
-    if annotation_applied:
-        print(f"[APPLIED] Annotation PBI_AI_Instructions ({len(combined)} chars) | {annotation_write_detail}")
-    else:
-        print("[WARN] Annotation write was not applied.")
-        print(f"       Detail: {annotation_write_detail}")
-        print("       Annotation preview (first 500 chars):")
-        print(combined[:500])
+        if applied:
+            print(f"[APPLIED] Annotation {annotation_name} ({len(annotation_value)} chars) | {detail}")
+        else:
+            print(f"[WARN] Annotation write was not applied for {annotation_name}.")
+            print(f"       Detail: {detail}")
+            print("       Annotation preview (first 500 chars):")
+            print(annotation_value[:500])
 
 
 # METADATA ********************
@@ -382,14 +401,17 @@ else:
 # Cell 5: Summary
 
 print("\n=== nb_05 Summary ===")
-print(f"  Model:              {MODEL_NAME}")
-print(f"  AI instructions:    {len(ai_instructions)}")
-print(f"  Verified Q&A pairs: {len(qa_parts)}")
-print(f"  Annotation chars:   {len(combined)} / {MAX_ANNOTATION_CHARS}")
-status = "DRY RUN" if DEMO_MODE else ("APPLIED" if annotation_applied else "FAILED")
-print(f"  Status: {status}")
-if not DEMO_MODE:
-    print(f"  Write detail:       {annotation_write_detail}")
+print(f"  Model:                        {MODEL_NAME}")
+print(f"  AI instructions:              {len(ai_instructions)}")
+print(f"  Verified Q&A pairs:           {len(qa_parts)}")
+print(f"  PBI_AI_Instructions chars:    {len(instructions_payload)} / {MAX_ANNOTATION_CHARS}")
+print(f"  PBI_AI_VerifiedAnswers chars: {len(verified_answers_payload)} / {MAX_ANNOTATION_CHARS}")
+if DEMO_MODE:
+    print("  Status: DRY RUN")
+else:
+    for annotation_name in annotations_to_publish:
+        applied, detail = annotation_results.get(annotation_name, (False, "not attempted"))
+        print(f"  {annotation_name}: {'APPLIED' if applied else 'FAILED'} | {detail}")
 print("\nTo verify: ask Copilot 'what is our FCR?' or 'what is our CSAT score?'")
 
 
