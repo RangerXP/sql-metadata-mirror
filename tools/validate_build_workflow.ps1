@@ -21,6 +21,14 @@ function Add-Warning {
 
 Write-Host "Validating build workflow guardrails..." -ForegroundColor Cyan
 
+# Gate D: canonical no-loop policy checks
+$gateDChecks = New-Object System.Collections.Generic.List[string]
+
+function Add-GateDCheck {
+    param([string]$Message)
+    $gateDChecks.Add($Message)
+}
+
 # Git baseline checks
 $gitStatus = git status --porcelain
 if ($LASTEXITCODE -ne 0) {
@@ -141,9 +149,11 @@ foreach ($relativePath in $requiredDatasourceFiles) {
     $isPlaceholderArtifact = ($json.artifactId -eq $placeholderArtifactId)
 
     if ($isPlaceholderWorkspace -and $isPlaceholderArtifact) {
-        Add-Warning "Canonicalized Fabric datasource IDs detected (logicalId/0000): fabric/$canonicalAgentName/$relativePath"
+        Add-GateDCheck "PASS datasource canonical state: fabric/$canonicalAgentName/$relativePath"
     } elseif ($isPlaceholderWorkspace -or $isPlaceholderArtifact) {
         Add-Issue "Mixed datasource ID state (one placeholder, one non-placeholder): fabric/$canonicalAgentName/$relativePath"
+    } else {
+        Add-Issue "Non-canonical datasource ID state (expected logicalId/0000): fabric/$canonicalAgentName/$relativePath"
     }
 }
 
@@ -154,6 +164,55 @@ foreach ($relativePath in $optionalDatasourceFiles) {
     $fullPath = Join-Path $canonicalAgentPath $relativePath
     if (-not (Test-Path $fullPath)) {
         Add-Warning "Optional published datasource file not present: fabric/$canonicalAgentName/$relativePath"
+        continue
+    }
+
+    try {
+        $json = Get-Content -Raw $fullPath | ConvertFrom-Json
+    } catch {
+        Add-Issue "Invalid JSON in datasource file: fabric/$canonicalAgentName/$relativePath"
+        continue
+    }
+
+    $isPlaceholderWorkspace = ($json.workspaceId -eq $placeholderWorkspaceId)
+    $isPlaceholderArtifact = ($json.artifactId -eq $placeholderArtifactId)
+
+    if ($isPlaceholderWorkspace -and $isPlaceholderArtifact) {
+        Add-GateDCheck "PASS datasource canonical state: fabric/$canonicalAgentName/$relativePath"
+    } elseif ($isPlaceholderWorkspace -or $isPlaceholderArtifact) {
+        Add-Issue "Mixed datasource ID state (one placeholder, one non-placeholder): fabric/$canonicalAgentName/$relativePath"
+    } else {
+        Add-Issue "Non-canonical datasource ID state (expected logicalId/0000): fabric/$canonicalAgentName/$relativePath"
+    }
+}
+
+# Notebook metadata workspaceId canonical checks for no-loop policy
+$canonicalNotebookWorkspaceId = "00000000-0000-0000-0000-000000000000"
+$gateDNotebookFiles = @(
+    "fabric/nb_04_sempy_writeback.Notebook/notebook-content.py",
+    "fabric/nb_05_push_qa_verified_answers.Notebook/notebook-content.py"
+)
+
+foreach ($relativePath in $gateDNotebookFiles) {
+    $fullPath = Join-Path $repoRoot $relativePath
+    if (-not (Test-Path $fullPath)) {
+        Add-Issue "Gate D file missing: $relativePath"
+        continue
+    }
+
+    $line = Select-String -Path $fullPath -Pattern '# META\s+"workspaceId":\s+"([^"]+)"' | Select-Object -First 1
+    if (-not $line) {
+        Add-Issue "Gate D workspaceId metadata header not found: $relativePath"
+        continue
+    }
+
+    if ($line.Matches.Count -gt 0) {
+        $actualWorkspaceId = $line.Matches[0].Groups[1].Value
+        if ($actualWorkspaceId -eq $canonicalNotebookWorkspaceId) {
+            Add-GateDCheck "PASS notebook canonical workspaceId: $relativePath"
+        } else {
+            Add-Issue "Non-canonical notebook workspaceId (expected 0000): $relativePath"
+        }
     }
 }
 
@@ -174,6 +233,13 @@ if ($issues.Count -eq 0 -and $warnings.Count -eq 0) {
     exit 0
 }
 
+if ($gateDChecks.Count -gt 0) {
+    Write-Host "Gate D checks:" -ForegroundColor Green
+    foreach ($gateD in $gateDChecks) {
+        Write-Host " - $gateD"
+    }
+}
+
 if ($issues.Count -gt 0) {
     Write-Host "Blocking issues:" -ForegroundColor Red
     foreach ($issue in $issues) {
@@ -192,7 +258,8 @@ Write-Host ""
 Write-Host "Suggested next actions:" -ForegroundColor Cyan
 Write-Host " 1. Resolve blocking issues first."
 Write-Host " 2. If Fabric items changed, complete Fabric Source Control update to zero pending conflicts."
-Write-Host " 3. Re-run: ./tools/validate_build_workflow.ps1"
+Write-Host " 3. Normalize canonical state: ./tools/normalize_fabric_canonical_state.ps1 -Apply"
+Write-Host " 4. Re-run strict validation: ./tools/validate_build_workflow.ps1 -Strict"
 
 if ($issues.Count -gt 0 -or ($Strict -and $warnings.Count -gt 0)) {
     exit 1
