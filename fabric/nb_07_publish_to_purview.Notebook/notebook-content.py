@@ -654,15 +654,50 @@ else:
         )
     token = _get_purview_token_with_retry("https://purview.azure.net")
 
-    typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
-    if typedef_status in (200, 201):
-        print("[APPLIED] TypeDefs registered/updated.")
-    elif typedef_status in (400, 409) and "already exists" in typedef_body.lower():
-        print("[INFO] TypeDefs already exist. Continuing.")
-    else:
-        raise RuntimeError(f"TypeDefs registration failed: HTTP {typedef_status} | {typedef_body[:500]}")
+    # Atlas's bulk /types/typedefs POST is atomic across the whole request: if the
+    # payload mixes entityDefs that already exist (from a prior publish) with ones
+    # that are genuinely new, the server can reject the entire batch as "already
+    # exists" even though the new types were never created. Registering each
+    # entityDef individually guarantees a pre-existing type never blocks creation
+    # of a new one in the same run.
+    for entity_def in typedef_payload.get("entityDefs", []):
+        single_payload = {"entityDefs": [entity_def]}
+        def_name = entity_def.get("name", "<unknown>")
+        def_status, def_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, single_payload)
+        if def_status in (200, 201):
+            print(f"[APPLIED] TypeDef '{def_name}' registered/updated.")
+        elif def_status in (400, 409) and "already exists" in def_body.lower():
+            print(f"[INFO] TypeDef '{def_name}' already exists. Continuing.")
+        else:
+            raise RuntimeError(f"TypeDef registration failed for '{def_name}': HTTP {def_status} | {def_body[:500]}")
 
-    entity_status, entity_body = _post_json("/catalog/api/atlas/v2/entity/bulk", token, payload)
+    # Purview's Atlas type cache can lag briefly after a typedef create/update
+    # response comes back 200/201, causing an immediately-following entity/bulk
+    # call to fail with ATLAS-400-00-014 "Type ENTITY with name <X> does not
+    # exist" even though the typedef call genuinely just succeeded. Retry the
+    # entity upsert a few times with a short backoff before giving up.
+    entity_max_attempts = 4
+    entity_backoff_seconds = 10.0
+    entity_status, entity_body = None, ""
+    for attempt in range(1, entity_max_attempts + 1):
+        entity_status, entity_body = _post_json("/catalog/api/atlas/v2/entity/bulk", token, payload)
+        if entity_status in (200, 201):
+            break
+        type_not_found = (
+            entity_status == 400
+            and "ATLAS-400-00-014" in entity_body
+            and "does not exist" in entity_body.lower()
+        )
+        if type_not_found and attempt < entity_max_attempts:
+            print(
+                f"[WARN] Entity upsert attempt {attempt}/{entity_max_attempts} failed because a newly "
+                f"registered type is not yet visible to Atlas (type-cache propagation lag). "
+                f"Retrying in {entity_backoff_seconds}s..."
+            )
+            time.sleep(entity_backoff_seconds)
+            continue
+        break
+
     if entity_status in (200, 201):
         print("[APPLIED] Domain, data-product, OKR, and OKR key result entities upserted.")
     else:
