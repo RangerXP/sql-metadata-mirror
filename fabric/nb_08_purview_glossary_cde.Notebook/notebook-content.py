@@ -956,6 +956,25 @@ def _resolve_glossary_term_guid(term_name: str, term_code: str, term_guid_index)
     return ""
 
 
+def _self_heal_term_short_description(term_guid: str, desired_code: str, auth_token: str) -> bool:
+    # Terms created under an earlier/stale numbering convention (e.g. shortDescription
+    # "GT-001" while the current source data's term_code is "GT-CUSTOMER") can never be
+    # resolved by code, which silently blocks CDE-to-Term and asset-association lookups.
+    # Bring the live term's shortDescription back in sync with the current term_code.
+    status, body = _request("GET", f"/catalog/api/atlas/v2/glossary/term/{term_guid}", auth_token)
+    if status != 200:
+        return False
+    try:
+        current = json.loads(body)
+    except Exception:
+        return False
+    if _safe_text(current.get("shortDescription", "")) == desired_code:
+        return False
+    current["shortDescription"] = desired_code
+    put_status, _ = _request("PUT", f"/catalog/api/atlas/v2/glossary/term/{term_guid}", auth_token, current)
+    return put_status in (200, 201)
+
+
 def _assign_term_to_entity(term_guid: str, entity_guid: str, auth_token: str):
     if _safe_text(term_guid) == _safe_text(entity_guid):
         return "skipped", "term_guid equals entity_guid"
@@ -1042,9 +1061,16 @@ else:
 
     created_terms = 0
     existing_terms = 0
+    healed_terms = 0
     failed_terms = []
     term_guid_by_code = {}
     total_terms = len(term_payloads)
+
+    # Build the name/code -> guid index up front so already-existing terms can be
+    # resolved and self-healed in the same pass, not just newly-created ones.
+    term_guid_index = _build_term_guid_index(resolved_glossary_guid, token)
+    print(f"Glossary term index loaded: {len(term_guid_index)} key(s)")
+
     print(f"Starting glossary term publish for {total_terms} terms...")
     for index, term in enumerate(term_payloads, start=1):
         print(f"Publishing term {index}/{total_terms}: {term['term_code']}")
@@ -1062,12 +1088,21 @@ else:
                 pass
         elif term_status == 409 or "already exists" in term_body.lower():
             existing_terms += 1
+            term_name = _safe_text(payload.get("name", ""))
+            existing_guid = _resolve_glossary_term_guid(term_name, term["term_code"], term_guid_index)
+            if existing_guid:
+                term_guid_by_code[term["term_code"]] = existing_guid
+                try:
+                    if _self_heal_term_short_description(existing_guid, term["term_code"], token):
+                        healed_terms += 1
+                except Exception:
+                    pass
         else:
             failed_terms.append((term["term_code"], term_status, term_body[:300]))
         if index % 5 == 0 or index == total_terms:
             print(
                 f"Progress: {index}/{total_terms} | "
-                f"created={created_terms} existing={existing_terms} failed={len(failed_terms)}"
+                f"created={created_terms} existing={existing_terms} healed={healed_terms} failed={len(failed_terms)}"
             )
 
     if failed_terms:
@@ -1079,7 +1114,7 @@ else:
 
     print(
         "Glossary term publish complete. "
-        f"created={created_terms} existing={existing_terms} failed=0"
+        f"created={created_terms} existing={existing_terms} healed={healed_terms} failed=0"
     )
 
     print("Starting glossary-to-asset association...")
@@ -1116,9 +1151,6 @@ else:
                 print(f"[WARN] Semantic-model owner update failed for {owner}: {owner_details}")
         if not owner_applied and owner_candidates:
             print("[WARN] Could not apply owner/steward contact onto semantic-model anchor.")
-
-    term_guid_index = _build_term_guid_index(resolved_glossary_guid, token)
-    print(f"Glossary term index loaded: {len(term_guid_index)} key(s)")
 
     # G11-1 ontology fix: CDE entities have carried glossary_term_code as a flat
     # string attribute since nb_08 was first built, but were never assigned to
