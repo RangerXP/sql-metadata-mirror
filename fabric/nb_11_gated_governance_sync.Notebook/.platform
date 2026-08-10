@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_11_gated_governance_sync",
+    "description": "Phase 4 (P4-4): automated apply-on-approve step for gated governance change requests."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "3f4dcc8e-b82e-a3fb-4fac-9599efba3724"
+  }
+}
