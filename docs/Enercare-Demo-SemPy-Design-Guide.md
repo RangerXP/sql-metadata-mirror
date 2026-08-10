@@ -27,6 +27,7 @@ This summary reflects the current repo and notebook state after the safety prefl
 | Phase 3 milestone P3-5 | GAP | `P3I-003`, `P3I-005`, and `P3I-006` remain pending live runtime proof and/or governed data binding |
 | Phase 3 milestone P3-6 | GAP | The sign-off package is still conditional until the backfit items and native approval evidence are closed |
 | Phase 4 (new, §5D) — gated governance & self-healing semantic model sync | DEMO_VALIDATED | Closed 2026-08-10. All 4 gate scenarios (KPI Approval, Verified Answer Certification, CDE Classification, Glossary Term Definition) ran live through `nb_11_gated_governance_sync` and the full downstream chain, closing the Pillar 5 gap. Only G13-5 (scheduled/triggered automation of the downstream chain) remains open, deferred to Phase D |
+| G11-1 (new, §5E) — formal ontology / OKR business-objective layer | DRY_RUN_VALIDATED | Built 2026-08-11: `sql/11`/`sql/12` schema+seed, `nb_07a` ingestion, `nb_07` OKR/KeyResult Atlas entity publish, `nb_08` CDE→Term relationship fix, `nb_10` Cell 5a ontology scorecard. Not yet live-applied — see §5E "Live-apply sequence" |
 
 ### Remaining gaps
 - Native Purview domain/product/read-back evidence remains pending for the approved demo scope.
@@ -586,7 +587,64 @@ Then stamps `applied_at = now()`, `status='Applied'`, and prints the downstream 
 **Build & Deploy Status:** � Done — all 4 requests reached `Applied` with non-null `applied_at`; `nb_10` re-confirmed 0 `ACTION_REQUIRED` after each apply (2026-08-10).
 
 ---
+## 5E. Formal Ontology & B2C Intelligence Surfacing (G11-1 / G11-3)
 
+**Goal:** give Purview a real, traversable relationship graph above the existing Domain → Data Product → Glossary Term → CDE chain, and describe how a future B2C-facing intelligence surface (e.g. a customer chatbot) would query it.
+
+### What "formal ontology" means in this repo
+
+There are two distinct things this repo has called "ontology," and they are not the same:
+
+1. **Informal ontology (already exists):** the shared business vocabulary captured in `context/kpi-definitions.json`, `context/enercare-schemas.json`, and the glossary terms in `governance_glossary_terms` — human-readable definitions with no machine-traversable edges beyond a flat `domain_code`/`parent_term_code` string reference.
+2. **Formal ontology (G11-1, this section):** real Atlas entities connected by resolvable relationship attributes that Purview (and any API client, including a future chatbot) can traverse: `EnercareDataProduct` → `EnercareOKR` → `EnercareOKRKeyResult` → certified KPI, and `EnercareCriticalDataElement` → assigned Glossary `Term`.
+
+### The relationship graph, end to end
+
+```mermaid
+graph LR
+    Domain["EnercareGovernanceDomain\n(nb_07)"] -->|parent_domain_id| Product["EnercareDataProduct\n(nb_07)"]
+    Product -->|linked_data_product_ids| OKR["EnercareOKR\n(nb_07, new)"]
+    OKR -->|parent_okr_id| KR["EnercareOKRKeyResult\n(nb_07, new)"]
+    KR -->|metric_source| KPI["kpi_metadata.KPICode\n(nb_04a, certified)"]
+    Term["Glossary Term\n(nb_08)"] -->|assignedEntities| CDE["EnercareCriticalDataElement\n(nb_08, fixed)"]
+    Term -->|assignedEntities| Asset["Bound SQL/measure asset\n(nb_08, existing)"]
+    CDE -.->|domain_code| Domain
+```
+
+- **Domain → Data Product**: existing, proven (`parent_domain_id`/`parent_domain_qualified_name` reference attributes, `nb_07`).
+- **Data Product → OKR**: new (`linked_data_product_ids`/`linked_data_product_qualified_names` on `EnercareOKR`, `nb_07`), sourced from `governance_okr_data_products`.
+- **OKR → Key Result**: new (`parent_okr_id`/`parent_okr_qualified_name` on `EnercareOKRKeyResult`, `nb_07`), sourced from `governance_okr_key_results`.
+- **Key Result → KPI**: `metric_source` points at a real `kpi_metadata.KPICode` (or a `BrookfieldEnercare/_Measures/<name>` semantic-measure asset ref where no KPICode exists yet).
+- **Glossary Term → CDE**: fixed this session — `nb_08` now assigns each CDE's real Atlas entity to its parent term via `assignedEntities`, not just a flat `glossary_term_code` string.
+
+This mirrors Purview Unified Catalog's native OKR business concept (Objective + Key Results, tied to a Governance Domain and to "Related data products") on top of the repo's existing Atlas v2 API integration, rather than an unverified separate "native" Data Governance REST API.
+
+### Why this closes a real gap, not a cosmetic one
+
+Before this build, `EnercareCriticalDataElement.glossary_term_code` and `EnercareDataProduct.parent_domain_id` were both flat strings — readable by a human looking at the entity, but not resolvable by Purview's own relationship graph APIs or by any client walking `assignedEntities`. The CDE→Term fix specifically closes that: it was found by code inspection (not assumed), confirming `_assign_term_to_entity()` already existed and worked for `bound_assets` but was never called for the CDEs themselves.
+
+### B2C chatbot end-state (G11-3)
+
+The stated end-state is a customer-facing chatbot that can answer questions like *"why was my no-heat service ticket delayed?"* by walking this graph instead of relying on free-text search over documents:
+
+1. Chatbot resolves the customer's service request to `DP-SVCPERF` (Service Performance data product).
+2. Walks `DP-SVCPERF` → `OKR-SVCDEL-SLA` (Protect SLA Attainment In Field Service Delivery).
+3. Walks the OKR → `KR-SLA-BREACH` (SLA Breach Rate At Or Below Target).
+4. Resolves `metric_source = kpi_metadata.SLA_BRCH_RATE` to the certified KPI definition, current value, and threshold (target 5%, warning >10%, critical >15%, per `nb_04a`).
+5. Answer is grounded and traceable back to a governed, certified object — not a guess.
+
+**Open questions, deliberately not decided in this session (out of scope for the OKR/ontology build itself):** what the actual customer-facing query surface is (Fabric Data Agent? a separate API?); how a B2C/external identity is scoped and authorized against internal governance objects (today's demo identities are all internal Enercare UPNs); and which fields are safe to expose externally (KPI targets and OKR names likely are; owner UPNs and internal steward assignments likely are not). These need a real security/PII review before any external-facing surface is built — this section documents the grounded target architecture, not an approved external-facing build.
+
+### Live-apply sequence (not yet run)
+
+1. Apply `sql/11_ontology_okr_schema.sql` then `sql/12_seed_ontology_okrs.sql` against `sqldemo`.
+2. Confirm Fabric mirroring picks up `governance_okrs`/`governance_okr_key_results`/`governance_okr_data_products`.
+3. Run `nb_07a_ingest_customer_files` (Cell 8c ingests the 3 new tables).
+4. Run `nb_07_publish_to_purview` (publishes `EnercareOKR`/`EnercareOKRKeyResult` entities).
+5. Run `nb_08_purview_glossary_cde` (applies the CDE→Term relationship fix).
+6. Run `nb_10_purview_stewardship_ai` and confirm `purview_phase_11_ontology_validation` shows 0 `ACTION_REQUIRED`.
+
+---
 ## 6. Layer Responsibilities (Mental Model)
 
 | Layer | Role | Tool |

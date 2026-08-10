@@ -1097,6 +1097,77 @@ else:
 
     term_guid_index = _build_term_guid_index(resolved_glossary_guid, token)
     print(f"Glossary term index loaded: {len(term_guid_index)} key(s)")
+
+    # G11-1 ontology fix: CDE entities have carried glossary_term_code as a flat
+    # string attribute since nb_08 was first built, but were never assigned to
+    # their parent glossary Term as a real Purview relationship (the CDE's own
+    # Atlas entity never appeared in that Term's "assignedEntities" graph edge).
+    # Resolve each CDE's real (server-assigned) GUID by qualifiedName and assign
+    # it to its parent term using the same _assign_term_to_entity helper already
+    # used below for bound-asset associations.
+    def _find_entity_guid_by_qualified_name(type_name: str, qualified_name: str, auth_token: str) -> str:
+        status, body = _request(
+            "GET",
+            f"/catalog/api/atlas/v2/entity/uniqueAttribute/type/{type_name}",
+            auth_token,
+            params={"attr:qualifiedName": qualified_name},
+        )
+        if status != 200:
+            return ""
+        try:
+            payload = json.loads(body)
+        except Exception:
+            return ""
+        return _safe_text((payload.get("entity") or {}).get("guid", ""))
+
+    cde_term_attempts = 0
+    cde_term_assigned = 0
+    cde_term_existing = 0
+    cde_term_skipped = 0
+    cde_term_unresolved_entity = 0
+    cde_term_unresolved_term = 0
+    failed_cde_term_links = []
+    for entity in cde_entities:
+        attrs = entity["attributes"]
+        cde_id = attrs["cde_id"]
+        term_code = _safe_text(attrs.get("glossary_term_code", ""))
+        if not term_code:
+            continue
+
+        term_guid = term_guid_by_code.get(term_code, "") or _resolve_glossary_term_guid(term_code, term_code, term_guid_index)
+        if not term_guid:
+            cde_term_unresolved_term += 1
+            continue
+
+        cde_entity_guid = _find_entity_guid_by_qualified_name("EnercareCriticalDataElement", attrs["qualifiedName"], token)
+        if not cde_entity_guid:
+            cde_term_unresolved_entity += 1
+            continue
+
+        cde_term_attempts += 1
+        outcome, details = _assign_term_to_entity(term_guid, cde_entity_guid, token)
+        if outcome == "assigned":
+            cde_term_assigned += 1
+        elif outcome == "existing":
+            cde_term_existing += 1
+        elif outcome == "skipped":
+            cde_term_skipped += 1
+        else:
+            failed_cde_term_links.append((cde_id, term_code, details))
+
+    print(
+        "CDE-to-GlossaryTerm relationship summary: "
+        f"attempted={cde_term_attempts} assigned={cde_term_assigned} existing={cde_term_existing} "
+        f"skipped={cde_term_skipped} unresolved_entity={cde_term_unresolved_entity} "
+        f"unresolved_term={cde_term_unresolved_term} failed={len(failed_cde_term_links)}"
+    )
+    if failed_cde_term_links:
+        sample = failed_cde_term_links[0]
+        raise RuntimeError(
+            "CDE-to-GlossaryTerm relationship assignment completed with failures. "
+            f"failed={len(failed_cde_term_links)} first_failure=({sample[0]}, {sample[1]}, {sample[2]})"
+        )
+
     association_attempts = 0
     association_assigned = 0
     association_existing = 0

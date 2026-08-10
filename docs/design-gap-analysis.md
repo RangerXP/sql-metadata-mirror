@@ -1,12 +1,15 @@
 # Enercare - Build Gap Analysis (vNext)
 
-**Last updated:** 2026-08-10 (Phase 4 closed out)
+**Last updated:** 2026-08-11 (G11-1 ontology/OKR layer built)
 **Branch:** `main` | **File:** `docs/design-gap-analysis.md`
 **Owner:** Sean Kelley (Microsoft) — sole accountable owner for all build tasks
 **Enercare stakeholders (demo scope):** Victoria Tan (CCO — Domain Owner DOM-CUSTOPS), Ranbir Singh (Domain Owner DOM-SVCDEL), Ci Zhu (Domain Owner DOM-REVCON; Glossary / Label Policy / Tenant Governance Admin), Rupal Solanki (Data Steward DOM-CUSTOPS), Shruthi Srinivas (Data Steward DOM-SVCDEL)
 **Out of demo scope:** Christopher Dingle (VP Data Analytics & Governance at Enercare — intentional exclusion; his real-world governance authoring functions are represented in the demo by Ci Zhu)
 
-> **What changed in this version (2026-08-10, Phase 4 closed):**
+> **What changed in this version (2026-08-11, G11-1 built):**
+> Corrected a stale claim that Purview Unified Catalog typed relationships (Domain hierarchy, OKRs, CDE-to-Term links) were "not yet GA" — Microsoft Learn research confirmed these features are available now (OKRs and CDEs in Preview). Built the business-objective (OKR) layer end-to-end: `sql/11_ontology_okr_schema.sql` + `sql/12_seed_ontology_okrs.sql` (3 OKRs, 5 key results tied to real certified KPICodes, 3 OKR→DataProduct links), `purview/okr-catalog.csv`, `nb_07a` ingestion (Cell 8c), `nb_07` publish of `EnercareOKR`/`EnercareOKRKeyResult` Atlas entities with reference-attribute links to Data Products, and a surgical fix in `nb_08` that assigns each CDE's own Atlas entity to its parent glossary term (previously only `bound_assets` were linked, not the CDE entity itself). Added `nb_10` Cell 5a (`purview_phase_11_ontology_validation`). Not yet live-applied — see G11 detailed section for the live-apply sequence. This directly supports the B2C customer chatbot end-state (G11-3): a real relationship graph from Data Product → OKR → Key Result → certified KPI that a future chatbot can traverse instead of relying on free-text search.
+>
+> **Previous version (2026-08-10, Phase 4 closed):**
 > G13 and G14 are now 🟢 Done. All 4 gated-governance scenarios (KPI Approval, Verified Answer Certification, CDE Classification, Glossary Term Definition) were proven live via `nb_11_gated_governance_sync`, and the full downstream propagation chain (`nb_07a`→`nb_04_sempy_writeback`→`nb_05`→`nb_08`→`nb_09`→`nb_10`) was confirmed end-to-end with `nb_10` reporting 0 `ACTION_REQUIRED` across all phases. Separately found and fixed a real data-corruption bug in `nb_04a_extend_metadata_schema`'s Set B seed (a PySpark `Row()` kwarg-order mismatch that rotated `Domain`/`Owner`/`Description` values for 5 certified KPIs); both the code and the live corrupted data (plus the downstream semantic-model measure descriptions) were fixed and re-verified. Only G13-5 (scheduled/triggered re-run automation) remains open, deferred to Phase D alongside G10-2/G10-3/G11. See `docs/build-scorecard.md` for the day-by-day log.
 >
 > **Previous version (2026-08-08, Phase 4 design):**
@@ -93,7 +96,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G8 | Purview scans, catalog publication, and glossary | P1 | 🟢 Done — SQL + Fabric scans, domains/data products, and glossary/CDE all confirmed via live read-back (2026-08-07 re-verification) | Sean |
 | G9 | Lineage registration from SQL to Fabric to semantic model | P2 | 🟢 Done — 8/8 lineage edges published live to Purview Atlas, re-confirmed 2026-08-07 | Sean |
 | G10 | Steward workflow and AI-assisted metadata drafting | P3 | 🟢 Done — 2026-08-08 regression (18/18 ACTION_REQUIRED) fixed and live-reverified: `phase_08_stewardship,18,0,PASS` / `phase_09_controls,4,0,PASS` / `phase_10_ai_readiness,4,0,PASS` | Sean |
-| G11 | Optional ontology and B2C extensions | P4 | ⏸ Blocked / Deferred to Phase D | Sean |
+| G11 | Optional ontology and B2C extensions | P4 | 🟡 In Progress — G11-1 (OKR layer) built, pending live apply; see detailed section | Sean |
 | **G12** | **Phase A design commit (north star, dataset, CSVs, SIN backstop, 2-day plan)** | **P1** | **🟢 Done** | **Sean** |
 | G13 | Self-healing semantic model sync (SQL value-change propagation, not just schema autosync) | P2 | � Done — `nb_11_gated_governance_sync` proven live against all 4 scenarios; G13-5 (scheduled/triggered re-run) remains deferred | Sean |
 | G14 | Gated governance approval workflows (KPI approval, Verified Answer certification, CDE classification, glossary term definition) | P2 | 🟢 Done — all 4 scenarios proven live 2026-08-09, full propagation chain + `nb_10` reconfirm closed 2026-08-10 | Sean |
@@ -416,13 +419,23 @@ G8-3 completion evidence (captured Day 5):
 ## G11 — Optional Ontology And B2C Extensions
 
 **Priority:** P4
-**Status:** ⏸ Blocked / Deferred to Phase D
+**Status:** 🟡 In Progress (G11-1 built, not yet live-applied)
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| G11-1 | Ontology layer for Enercare domain classes (typed relationships) | 🔴 Not Started | Deferred to Phase D — Purview Unified Catalog typed-relationships not yet GA |
-| G11-2 | AI gap-fill at scale across sparse metadata | 🔴 Not Started | Depends on G10 |
-| G11-3 | B2C/customer support chatbot architecture | ⏸ Blocked | Not part of the immediate build |
+| G11-1 | Ontology layer for Enercare domain classes (typed relationships) | 🟡 Built, pending live apply | See detailed findings and build below |
+| G11-2 | AI gap-fill at scale across sparse metadata | 🔴 Not Started | Depends on G10 (now Done) — unblocked, not yet started |
+| G11-3 | B2C/customer support chatbot architecture | 🟡 Grounded, not yet built | End-state target; depends on G11-1 being live-applied so the chatbot has a real relationship graph to query |
+
+**G11-1 — corrected finding (2026-08-10):** the earlier "Deferred to Phase D — Purview Unified Catalog typed-relationships not yet GA" note was **inaccurate**. Microsoft Learn research this session confirmed Governance Domain hierarchy (parent/child, up to 5 levels), Data Products (owned by one domain, linked to OKRs), Critical Data Elements (Preview, linkable to Glossary Terms), and OKRs (Preview, tied to a domain and to "Related data products") are all available now, not gated on a future milestone. The repo's actual gap was narrower and already fixable on the existing Atlas v2 integration:
+
+- **Business-objective layer (OKRs) — closed.** `sql/11_ontology_okr_schema.sql` adds `governance_okrs`, `governance_okr_key_results`, `governance_okr_data_products` (idempotent, FK-constrained). `sql/12_seed_ontology_okrs.sql` seeds 3 OKRs (one per governance domain), 5 key results tied to real `kpi_metadata` KPICodes/targets from `nb_04a` (`SLA_BRCH_RATE` ≤5%, `FCR` ≥78%, `CSAT` ≥4.2/5, `PP_RNW_RATE` ≥82%, plus a repeat-billing-complaint key result), and 3 OKR→DataProduct links. `purview/okr-catalog.csv` mirrors the seed as a T2 reference artifact. `nb_07a_ingest_customer_files` ingests all three new tables (Cell 8c). `nb_07_publish_to_purview` now builds and publishes `EnercareOKR` and `EnercareOKRKeyResult` Atlas entities (Cell 3) with reference-attribute links to `EnercareDataProduct` (`linked_data_product_ids`/`linked_data_product_qualified_names`) and back to the parent OKR (`parent_okr_id`/`parent_okr_qualified_name`) — the same reference-attribute pattern already proven for `EnercareDataProduct.parent_domain_id`.
+- **CDE → GlossaryTerm relationship — closed.** Code inspection found `nb_08_purview_glossary_cde` already stored `glossary_term_code` on each `EnercareCriticalDataElement` entity as a flat string attribute, but never called the existing (and already proven) `_assign_term_to_entity()` helper to make the CDE's own Atlas entity appear in that Term's `assignedEntities` graph edge — `_assign_term_to_entity` was only ever invoked for the term's `bound_assets` (the underlying SQL/measure assets), not for the CDE entities themselves. `nb_08` now resolves each CDE's real (server-assigned) GUID via the Atlas `entity/uniqueAttribute` endpoint and assigns it to its parent glossary term, closing that specific relationship gap.
+- **Domain hierarchy — intentionally deferred, not a blocker.** `governance_domains.parent_domain` has existed since `sql/06` and is a real, working column; every seeded domain just has `parent_domain = NULL` today (flat). Populating a root domain was scoped out of this build because "3 domains" is a hard-coded assumption across `docs/slides/*` and `docs/purview-maria-north-star-scenario.md` — reparenting would require a wider doc/slide sweep unrelated to the OKR ask. No schema change is needed to do this later.
+- **Scorecard coverage.** `nb_10_purview_stewardship_ai` gained Cell 5a (`purview_phase_11_ontology_validation`): checks OKRs/key results are present, every OKR resolves to at least one linked data product, and every key result resolves to its parent OKR.
+- **Still pending before this can be marked Done:** live-apply `sql/11`/`sql/12` against `sqldemo`, confirm Fabric mirroring picks up the 3 new tables, then run `nb_07a` → `nb_07` → `nb_08` → `nb_10` in sequence and verify the new Purview entities/relationships and `purview_phase_11_ontology_validation` all show 0 `ACTION_REQUIRED`.
+
+**G11-3 — B2C/customer chatbot end-state.** With G11-1's relationship graph live, a future customer-facing chatbot query (e.g. "why was my no-heat ticket delayed?") can be grounded by walking real edges instead of free-text search: `EnercareDataProduct` (Service Performance) → `EnercareOKR` (Protect SLA Attainment) → `EnercareOKRKeyResult` (SLA Breach Rate, tied to `kpi_metadata.SLA_BRCH_RATE`) → the certified KPI definition and its current value. See `docs/Enercare-Demo-SemPy-Design-Guide.md` §5E for the full architecture and open questions (query surface, auth/scoping for external users, and which fields are safe to expose to a B2C audience).
 
 ---
 

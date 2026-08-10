@@ -57,6 +57,9 @@ SQL_SOURCE_TABLES = {
     "role_assignments": ["governance_role_assignments", "metadata_role_assignments"],
     "label_assignments": ["governance_label_assignments", "metadata_label_assignments"],
     "governance_change_requests": ["governance_change_requests"],
+    "okrs": ["governance_okrs"],
+    "okr_key_results": ["governance_okr_key_results"],
+    "okr_data_products": ["governance_okr_data_products"],
 }
 
 print(f"CSV root: {CSV_ROOT}")
@@ -228,6 +231,9 @@ def build_summary_query() -> str:
         ("role_assignments", 48),
         ("label_assignments", 9),
         ("governance_change_requests", 4),
+        ("okrs", 3),
+        ("okr_key_results", 5),
+        ("okr_data_products", 3),
     ]
     return "\nUNION ALL\n".join(summary_count_select(name, expected) for name, expected in checks) + "\nORDER BY t"
 
@@ -452,6 +458,61 @@ gcr_df, gcr_source = load_metadata_dataset("governance_change_requests")
 validate_csv(gcr_df, gcr_required)
 count_gcr = write_table_from_pandas(gcr_df, "governance_change_requests")
 print(f"governance_change_requests loaded: {count_gcr} (source={gcr_source})")
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Cell 8c: Ontology/OKR layer (G11-1) - dbo.governance_okrs / _key_results /
+# _data_products -> metadata.okrs / okr_key_results / okr_data_products
+# Business-objective layer that Purview's native OKR business concept links
+# directly to Data Products; closes the top of the ontology graph above
+# GlossaryTerm -> CDE and DataProduct -> Domain (see sql/11_ontology_okr_schema.sql).
+
+okrs_required = [
+    "okr_id",
+    "okr_name",
+    "domain_id",
+    "definition",
+    "owner_upn",
+    "status",
+]
+
+okrs_df, okrs_source = load_metadata_dataset("okrs")
+validate_csv(okrs_df, okrs_required)
+count_okrs = write_table_from_pandas(okrs_df, "okrs")
+print(f"okrs loaded: {count_okrs} (source={okrs_source})")
+
+okr_key_results_required = [
+    "key_result_id",
+    "okr_id",
+    "result_name",
+    "metric_source",
+    "goal_amount",
+    "max_amount",
+    "progress_status",
+]
+
+okr_key_results_df, okr_key_results_source = load_metadata_dataset("okr_key_results")
+validate_csv(okr_key_results_df, okr_key_results_required)
+count_okr_key_results = write_table_from_pandas(okr_key_results_df, "okr_key_results")
+print(f"okr_key_results loaded: {count_okr_key_results} (source={okr_key_results_source})")
+
+okr_data_products_required = [
+    "okr_id",
+    "data_product_id",
+]
+
+okr_data_products_df, okr_data_products_source = load_metadata_dataset("okr_data_products")
+validate_csv(okr_data_products_df, okr_data_products_required)
+count_okr_data_products = write_table_from_pandas(okr_data_products_df, "okr_data_products")
+print(f"okr_data_products loaded: {count_okr_data_products} (source={okr_data_products_source})")
 
 
 # METADATA ********************

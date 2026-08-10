@@ -297,6 +297,65 @@ display(ai_df.orderBy("check_name"))
 
 # CELL ********************
 
+# Cell 5a: Ontology (OKR) relationship integrity validation (G11-1)
+# Confirms the business-objective layer (governance_okrs/okr_key_results/
+# okr_data_products, published by nb_07) resolves cleanly: every OKR has at
+# least one linked data product and every key result resolves to its parent OKR.
+
+okrs_df, okrs_source = _read_table("okrs", required=False)
+okr_key_results_df, okr_key_results_source = _read_table("okr_key_results", required=False)
+okr_data_products_df, okr_data_products_source = _read_table("okr_data_products", required=False)
+
+if okrs_df is not None:
+    print(f"okrs rows: {okrs_df.count()} (source={okrs_source})")
+if okr_key_results_df is not None:
+    print(f"okr_key_results rows: {okr_key_results_df.count()} (source={okr_key_results_source})")
+if okr_data_products_df is not None:
+    print(f"okr_data_products rows: {okr_data_products_df.count()} (source={okr_data_products_source})")
+
+okr_count = okrs_df.count() if okrs_df is not None else 0
+key_result_count = okr_key_results_df.count() if okr_key_results_df is not None else 0
+okr_link_count = okr_data_products_df.count() if okr_data_products_df is not None else 0
+
+okrs_with_linked_product = 0
+if okrs_df is not None and okr_data_products_df is not None and okr_count > 0:
+    okrs_with_linked_product = (
+        okrs_df.select("okr_id")
+        .join(okr_data_products_df.select("okr_id").distinct(), on="okr_id", how="inner")
+        .distinct()
+        .count()
+    )
+
+key_results_with_parent = 0
+if okr_key_results_df is not None and okrs_df is not None and key_result_count > 0:
+    key_results_with_parent = (
+        okr_key_results_df.select("key_result_id", "okr_id")
+        .join(okrs_df.select(F.col("okr_id").alias("okr_id_r")), okr_key_results_df.okr_id == F.col("okr_id_r"), how="inner")
+        .distinct()
+        .count()
+    )
+
+ontology_rows = [
+    ("okrs_available", okr_count, "PASS" if okr_count > 0 else "ACTION_REQUIRED"),
+    ("okr_key_results_available", key_result_count, "PASS" if key_result_count > 0 else "ACTION_REQUIRED"),
+    ("okrs_with_linked_data_product", okrs_with_linked_product, "PASS" if okr_count > 0 and okrs_with_linked_product == okr_count else "ACTION_REQUIRED"),
+    ("key_results_with_resolved_parent_okr", key_results_with_parent, "PASS" if key_result_count > 0 and key_results_with_parent == key_result_count else "ACTION_REQUIRED"),
+]
+ontology_df = spark.createDataFrame(ontology_rows, ["check_name", "check_value", "status"])
+phase_11_ontology_table = _write_table(ontology_df, "purview_phase_11_ontology_validation")
+print(f"[Cell 5a] Wrote ontology relationship validation to: {phase_11_ontology_table}")
+display(ontology_df.orderBy("check_name"))
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 # Cell 6: Write closeout manifest
 
 def _normalize_output_root(path: str) -> str:
@@ -324,6 +383,7 @@ manifest = {
         "phase_08_scorecard": phase_08_scorecard_table,
         "phase_09_controls": phase_09_controls_table,
         "phase_10_ai_readiness": phase_10_ai_table,
+        "phase_11_ontology": phase_11_ontology_table,
     },
     "manual_gate_notes": [
         "Select DLP policy mode before demo: alert-only, policy tip, or block.",
@@ -339,6 +399,7 @@ for name, df in [
     ("phase_08_stewardship", scorecard_df),
     ("phase_09_controls", controls_df),
     ("phase_10_ai_readiness", ai_df),
+    ("phase_11_ontology", ontology_df),
 ]:
     total = df.count()
     if "stage_status" in df.columns:

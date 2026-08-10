@@ -93,10 +93,17 @@ print(f"Metadata source candidates: {_table_candidates('<table>')}")
 domains_df, domains_source = _read_table("domains")
 data_products_df, data_products_source = _read_table("data_products")
 role_assignments_df, roles_source = _read_table("role_assignments")
+# G11-1 ontology layer: business Objectives/Key Results, linked to Data Products.
+okrs_df, okrs_source = _read_table("okrs")
+okr_key_results_df, okr_key_results_source = _read_table("okr_key_results")
+okr_data_products_df, okr_data_products_source = _read_table("okr_data_products")
 
 print(f"domains rows: {domains_df.count()} (source={domains_source})")
 print(f"data_products rows: {data_products_df.count()} (source={data_products_source})")
 print(f"role_assignments rows: {role_assignments_df.count()} (source={roles_source})")
+print(f"okrs rows: {okrs_df.count()} (source={okrs_source})")
+print(f"okr_key_results rows: {okr_key_results_df.count()} (source={okr_key_results_source})")
+print(f"okr_data_products rows: {okr_data_products_df.count()} (source={okr_data_products_source})")
 
 
 # METADATA ********************
@@ -123,6 +130,14 @@ def _domain_qualified_name(domain_id: str) -> str:
 
 def _product_qualified_name(product_id: str) -> str:
     return f"enercare://governance/data-product/{product_id}"
+
+
+def _okr_qualified_name(okr_id: str) -> str:
+    return f"enercare://governance/okr/{okr_id}"
+
+
+def _key_result_qualified_name(key_result_id: str) -> str:
+    return f"enercare://governance/okr-key-result/{key_result_id}"
 
 
 def _guid() -> str:
@@ -163,6 +178,47 @@ typedef_payload = {
                 {"name": "business_use_case", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
                 {"name": "parent_domain_id", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
                 {"name": "parent_domain_qualified_name", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+            ],
+        },
+        {
+            # G11-1 ontology layer: business Objective, linked to one or more Data
+            # Products the same way Purview's native Unified Catalog OKR feature
+            # links an Objective to its "Related data products".
+            "category": "ENTITY",
+            "name": "EnercareOKR",
+            "description": "Business objective (OKR) from lh_metadata.metadata.okrs",
+            "superTypes": ["Referenceable"],
+            "attributeDefs": [
+                {"name": "okr_id", "typeName": "string", "isOptional": False, "cardinality": "SINGLE"},
+                {"name": "okr_name", "typeName": "string", "isOptional": False, "cardinality": "SINGLE"},
+                {"name": "domain_id", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+                {"name": "domain_qualified_name", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+                {"name": "definition", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+                {"name": "owner_upn", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+                {"name": "target_date", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+                {"name": "status", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+                {"name": "linked_data_product_ids", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+                {"name": "linked_data_product_qualified_names", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+            ],
+        },
+        {
+            # G11-1 ontology layer: Key Result under an Objective, linked back to its
+            # parent OKR and to the KPI/measure it tracks (kpi_metadata.KPICode or a
+            # BrookfieldEnercare/_Measures/<name> asset ref).
+            "category": "ENTITY",
+            "name": "EnercareOKRKeyResult",
+            "description": "OKR key result from lh_metadata.metadata.okr_key_results",
+            "superTypes": ["Referenceable"],
+            "attributeDefs": [
+                {"name": "key_result_id", "typeName": "string", "isOptional": False, "cardinality": "SINGLE"},
+                {"name": "result_name", "typeName": "string", "isOptional": False, "cardinality": "SINGLE"},
+                {"name": "parent_okr_id", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+                {"name": "parent_okr_qualified_name", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+                {"name": "metric_source", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+                {"name": "goal_amount", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+                {"name": "progress_amount", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+                {"name": "max_amount", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
+                {"name": "progress_status", "typeName": "string", "isOptional": True, "cardinality": "SINGLE"},
             ],
         },
     ]
@@ -287,13 +343,124 @@ for row in _collect_with_refresh_retry(data_products_df, data_products_source, P
         }
     )
 
-payload = {"entities": domain_entities + product_entities}
+OKR_NEEDED_COLUMNS = [
+    "okr_id",
+    "okr_name",
+    "domain_id",
+    "definition",
+    "owner_upn",
+    "target_date",
+    "status",
+]
+
+OKR_KEY_RESULT_NEEDED_COLUMNS = [
+    "key_result_id",
+    "okr_id",
+    "result_name",
+    "metric_source",
+    "goal_amount",
+    "progress_amount",
+    "max_amount",
+    "progress_status",
+]
+
+OKR_DATA_PRODUCT_NEEDED_COLUMNS = ["okr_id", "data_product_id"]
+
+# okr_id -> list[data_product_id], from the governance_okr_data_products link table.
+okr_linked_product_ids = {}
+for row in _collect_with_refresh_retry(okr_data_products_df, okr_data_products_source, OKR_DATA_PRODUCT_NEEDED_COLUMNS):
+    okr_id = _safe_text(getattr(row, "okr_id", None))
+    product_id = _safe_text(getattr(row, "data_product_id", None))
+    if not okr_id or not product_id:
+        continue
+    okr_linked_product_ids.setdefault(okr_id, []).append(product_id)
+
+okr_entities = []
+okr_id_set = set()
+okrs_with_resolved_products = 0
+okrs_with_unresolved_products = 0
+resolved_product_ids = {e["attributes"]["data_product_id"] for e in product_entities}
+for row in _collect_with_refresh_retry(okrs_df, okrs_source, OKR_NEEDED_COLUMNS):
+    okr_id = _safe_text(getattr(row, "okr_id", None))
+    if not okr_id:
+        continue
+
+    okr_id_set.add(okr_id)
+    linked_product_ids = okr_linked_product_ids.get(okr_id, [])
+    unresolved_products = [pid for pid in linked_product_ids if pid not in resolved_product_ids]
+    if linked_product_ids and not unresolved_products:
+        okrs_with_resolved_products += 1
+    elif unresolved_products:
+        okrs_with_unresolved_products += 1
+
+    domain_id = _safe_text(getattr(row, "domain_id", None))
+
+    okr_entities.append(
+        {
+            "typeName": "EnercareOKR",
+            "guid": _guid(),
+            "attributes": {
+                "qualifiedName": _okr_qualified_name(okr_id),
+                "name": _safe_text(getattr(row, "okr_name", None)) or okr_id,
+                "okr_id": okr_id,
+                "okr_name": _safe_text(getattr(row, "okr_name", None)),
+                "domain_id": domain_id,
+                "domain_qualified_name": _domain_qualified_name(domain_id) if domain_id else "",
+                "definition": _safe_text(getattr(row, "definition", None)),
+                "owner_upn": _safe_text(getattr(row, "owner_upn", None)),
+                "target_date": _safe_text(getattr(row, "target_date", None)),
+                "status": _safe_text(getattr(row, "status", None)),
+                "linked_data_product_ids": ";".join(linked_product_ids),
+                "linked_data_product_qualified_names": ";".join(_product_qualified_name(pid) for pid in linked_product_ids),
+            },
+        }
+    )
+
+key_result_entities = []
+key_results_total = 0
+key_results_with_parent_okr = 0
+for row in _collect_with_refresh_retry(okr_key_results_df, okr_key_results_source, OKR_KEY_RESULT_NEEDED_COLUMNS):
+    key_result_id = _safe_text(getattr(row, "key_result_id", None))
+    if not key_result_id:
+        continue
+
+    key_results_total += 1
+    parent_okr_id = _safe_text(getattr(row, "okr_id", None))
+    if parent_okr_id and parent_okr_id in okr_id_set:
+        key_results_with_parent_okr += 1
+
+    key_result_entities.append(
+        {
+            "typeName": "EnercareOKRKeyResult",
+            "guid": _guid(),
+            "attributes": {
+                "qualifiedName": _key_result_qualified_name(key_result_id),
+                "name": _safe_text(getattr(row, "result_name", None)) or key_result_id,
+                "key_result_id": key_result_id,
+                "result_name": _safe_text(getattr(row, "result_name", None)),
+                "parent_okr_id": parent_okr_id,
+                "parent_okr_qualified_name": _okr_qualified_name(parent_okr_id) if parent_okr_id else "",
+                "metric_source": _safe_text(getattr(row, "metric_source", None)),
+                "goal_amount": _safe_text(getattr(row, "goal_amount", None)),
+                "progress_amount": _safe_text(getattr(row, "progress_amount", None)),
+                "max_amount": _safe_text(getattr(row, "max_amount", None)),
+                "progress_status": _safe_text(getattr(row, "progress_status", None)),
+            },
+        }
+    )
+
+payload = {"entities": domain_entities + product_entities + okr_entities + key_result_entities}
 
 print(f"Domain entities prepared: {len(domain_entities)}")
 print(f"Data product entities prepared: {len(product_entities)}")
+print(f"OKR entities prepared: {len(okr_entities)}")
+print(f"OKR key result entities prepared: {len(key_result_entities)}")
 print(f"Total entities prepared: {len(payload['entities'])}")
 print(f"Products with parent_domain_id: {products_with_parent_domain} / {products_total}")
 print(f"Products with unresolved parent_domain_id: {products_unresolved_parent_domain}")
+print(f"OKRs with resolved linked data products: {okrs_with_resolved_products}")
+print(f"OKRs with unresolved linked data products: {okrs_with_unresolved_products}")
+print(f"Key results with resolved parent OKR: {key_results_with_parent_okr} / {key_results_total}")
 
 
 # METADATA ********************
@@ -497,7 +664,7 @@ else:
 
     entity_status, entity_body = _post_json("/catalog/api/atlas/v2/entity/bulk", token, payload)
     if entity_status in (200, 201):
-        print("[APPLIED] Domain and data-product entities upserted.")
+        print("[APPLIED] Domain, data-product, OKR, and OKR key result entities upserted.")
     else:
         raise RuntimeError(f"Entity upsert failed: HTTP {entity_status} | {entity_body[:500]}")
 
@@ -522,6 +689,11 @@ summary_rows = [
     ("products_with_parent_domain", products_with_parent_domain),
     ("products_unresolved_parent_domain", products_unresolved_parent_domain),
     ("roles_available", role_assignments_df.count()),
+    ("okrs_prepared", len(okr_entities)),
+    ("okr_key_results_prepared", len(key_result_entities)),
+    ("okrs_with_resolved_products", okrs_with_resolved_products),
+    ("okrs_with_unresolved_products", okrs_with_unresolved_products),
+    ("key_results_with_parent_okr", key_results_with_parent_okr),
     ("publish_guard_active", int(publish_guard_active)),
     ("live_publish_enabled", int(live_publish_enabled)),
     ("apply_changes", int(APPLY_CHANGES)),
