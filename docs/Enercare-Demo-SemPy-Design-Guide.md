@@ -27,7 +27,7 @@ This summary reflects the current repo and notebook state after the safety prefl
 | Phase 3 milestone P3-5 | GAP | `P3I-003`, `P3I-005`, and `P3I-006` remain pending live runtime proof and/or governed data binding |
 | Phase 3 milestone P3-6 | GAP | The sign-off package is still conditional until the backfit items and native approval evidence are closed |
 | Phase 4 (new, §5D) — gated governance & self-healing semantic model sync | DEMO_VALIDATED | Closed 2026-08-10. All 4 gate scenarios (KPI Approval, Verified Answer Certification, CDE Classification, Glossary Term Definition) ran live through `nb_11_gated_governance_sync` and the full downstream chain, closing the Pillar 5 gap. Only G13-5 (scheduled/triggered automation of the downstream chain) remains open, deferred to Phase D |
-| G11-1 (new, §5E) — formal ontology / OKR business-objective layer | DEMO_VALIDATED (CDE→Term edge only) | The `nb_08` CDE→Term `assignedEntities` relationship is live-verified via direct Atlas read-back (2026-08-10): `cde_term_assigned=12/12`, stale `shortDescription` self-healed on 26 pre-existing terms, and the "Customer" term's `assignedEntities` now includes its governing `EnercareCriticalDataElement`. The remaining ontology pieces (`sql/11`/`sql/12` OKR schema+seed, `nb_07a` ingestion, `nb_07` OKR/KeyResult Atlas entity publish, `nb_10` Cell 5a ontology scorecard) are still DRY_RUN_VALIDATED — see §5E "Live-apply sequence" |
+| G11-1 (new, §5E) — formal ontology / OKR business-objective layer | DEMO_VALIDATED (full graph) | Full ontology graph live-verified end to end (2026-08-10): `nb_08` CDE→Term `assignedEntities` relationship (`cde_term_assigned=12/12`, 26 terms self-healed) AND the OKR/Key Result layer (`sql/11`/`sql/12` applied to `sqldemo`, mirrored, ingested via `nb_07a`, published live to Atlas via `nb_07` — `EnercareOKR`/`EnercareOKRKeyResult` entities confirmed by direct read-back with correct `parent_okr_id` relationships). Fresh `nb_10` re-run confirms `purview_phase_11_ontology_validation` = 0 `ACTION_REQUIRED` (all 4 checks PASS) — see §5E "Live-apply sequence" |
 | Phase 5 (new, §5F) — data validation phase / formal QA validation across full northstar metadata inventory | PLANNED | Added 2026-08-09: frozen inventory of ~83 governed elements (3 domains, 3 data products, 35 glossary terms, 12 CDEs, 8 KPIs, 6 verified answers/instructions, 3 OKRs, 5 key results, 3 OKR-links, 4 change requests) and a 5-milestone QA sweep (Q1–Q5) design. No validation code built yet — see §5F |
 
 ### Remaining gaps
@@ -640,14 +640,14 @@ The stated end-state is a customer-facing chatbot that can answer questions like
 
 ### Live-apply sequence
 
-**Step 5 (CDE→Term relationship) is now live-verified (2026-08-10)** — the remaining steps below (OKR/Key Result schema, ingestion, and Atlas entity publish) are still pending live application.
+**All 6 steps are now live-verified end to end (confirmed 2026-08-10)** — the full OKR/ontology layer is live in `sqldemo`, mirrored, ingested, published to Purview, and validated with a fresh `nb_10` run (no dry-run assumptions).
 
-1. Apply `sql/11_ontology_okr_schema.sql` then `sql/12_seed_ontology_okrs.sql` against `sqldemo`.
-2. Confirm Fabric mirroring picks up `governance_okrs`/`governance_okr_key_results`/`governance_okr_data_products`.
-3. Run `nb_07a_ingest_customer_files` (Cell 8c ingests the 3 new tables).
-4. Run `nb_07_publish_to_purview` (publishes `EnercareOKR`/`EnercareOKRKeyResult` entities).
-5. ✅ Run `nb_08_purview_glossary_cde` (applies the CDE→Term relationship fix) — live-verified: `cde_term_assigned=12/12`, `healed_terms=26`.
-6. Run `nb_10_purview_stewardship_ai` and confirm `purview_phase_11_ontology_validation` shows 0 `ACTION_REQUIRED`.
+1. ✅ Applied `sql/11_ontology_okr_schema.sql` + `sql/12_seed_ontology_okrs.sql` against `sqldemo` — confirmed live: 3 OKRs (`OKR-CUSTOPS-CX`, `OKR-REVCON-RETAIN`, `OKR-SVCDEL-SLA`, all `status=Published`), 5 key results, 3 OKR→data-product links.
+2. ✅ Fabric mirroring confirmed `Replicating` for all 3 `governance_okr*` tables (`getTablesMirroringStatus`, recent `lastSyncDateTime`).
+3. ✅ `nb_07a_ingest_customer_files` Cell 8c confirmed landed all 3 tables in `lh_metadata.metadata.*` with matching row counts and correct FK references.
+4. ✅ `nb_07_publish_to_purview` confirmed live in Atlas via direct read-back: `EnercareOKR` entities (`OKR-CUSTOPS-CX`, `OKR-REVCON-RETAIN`) and `EnercareOKRKeyResult` entities (`KR-CSAT-SCORE`, `KR-PP-RENEWAL`) resolve by `qualifiedName` with correct `progress_amount`/`goal_amount` and `parent_okr_id`/`parent_okr_qualified_name` relationship attributes.
+5. ✅ `nb_08_purview_glossary_cde` (CDE→Term relationship fix) — live-verified: `cde_term_assigned=12/12`, `healed_terms=26`.
+6. ✅ Re-ran `nb_10_purview_stewardship_ai` fresh (2026-08-10) — `purview_phase_11_ontology_validation` shows all 4 checks `PASS`, **0 `ACTION_REQUIRED`**: `okrs_available=3`, `okr_key_results_available=5`, `okrs_with_linked_data_product=3`, `key_results_with_resolved_parent_okr=5`.
 
 ---
 ## 5F. Data Validation Phase & Formal QA Validation (Full Northstar Metadata Coverage)
