@@ -35,9 +35,7 @@
 | **G14-5 Live run: Verified Answer Certification** | ✅ Proven — new `ai_metadata` row, applied 02:10:15 |
 | **G14-6 Live run: CDE Classification** (`CDE-COMPLAINTREF`) | ✅ Proven — new `governance_cdes` row, applied 02:14:06 |
 | **G14-7 Live run: Glossary Term** (`GT-SLA`) | ✅ Proven — new `governance_glossary_terms` row, applied 02:17:24 |
-| G14-8 Phase 4 closeout (full propagation + `nb_10` reconfirm) | � Done — full chain proven end-to-end, `nb_10` scorecard 0 `ACTION_REQUIRED` across all phases |
-
-> Note: `docs/design-gap-analysis.md` Quick Status rows for G14-4..G14-7 still show 🔴 as of this scorecard's last update — pending sync now that G14-8 has closed out.
+| G14-8 Phase 4 closeout (full propagation + `nb_10` reconfirm) | 🟢 Done — full chain proven end-to-end, `nb_10` scorecard 0 `ACTION_REQUIRED` across all phases |
 
 ---
 
