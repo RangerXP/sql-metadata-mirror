@@ -561,35 +561,43 @@ verified_answers = [
     ("PP_RNW_RATE", "contract renewal",
      "Contract renewal performance is tracked by PP_RNW_RATE. Renewal window: "
      "30 days before to 15 days after the contract end date."),
+    # Certified 2026-08-10 via GCR-VA-001 (VERIFIED_ANSWER_CERTIFICATION, approved by Ci Zhu) —
+    # supersedes the earlier generic 24-hour-window answer with the actual credit-policy remedy.
+    # See sql/10_seed_gated_governance_scenarios.sql and governance_change_requests.GCR-VA-001.
+    ("SLA_BRCH_RATE", "What is our SLA credit policy for a no-heat call during heating season?",
+     "Total Home Protection Plan customers are entitled to a daily pro-rated rental credit for every day past a "
+     "24-hour no-heat SLA breach during heating season, plus a full-month courtesy credit on final resolution."),
     ("SLA_BRCH_RATE", "what's the SLA for a no-heat call?",
-     "For this demo, a NoHeat call is treated as an emergency service request with a 24-hour SLA window. "
-     "An SLA breach occurs when service completion is later than 24 hours from request creation. "
+     "Total Home Protection Plan customers are entitled to a daily pro-rated rental credit for every day past a "
+     "24-hour no-heat SLA breach during heating season, plus a full-month courtesy credit on final resolution. "
      "Use SLA_BRCH_RATE for aggregate tracking; target breach rate is 5%."),
     ("SLA_BRCH_RATE", "what’s the SLA for a no-heat call?",
-     "For this demo, a NoHeat call is treated as an emergency service request with a 24-hour SLA window. "
-     "An SLA breach occurs when service completion is later than 24 hours from request creation. "
+     "Total Home Protection Plan customers are entitled to a daily pro-rated rental credit for every day past a "
+     "24-hour no-heat SLA breach during heating season, plus a full-month courtesy credit on final resolution. "
      "Use SLA_BRCH_RATE for aggregate tracking; target breach rate is 5%."),
     ("SLA_BRCH_RATE", "What’s the SLA for a no-heat call?",
-     "For this demo, a NoHeat call is treated as an emergency service request with a 24-hour SLA window. "
-     "An SLA breach occurs when service completion is later than 24 hours from request creation. "
+     "Total Home Protection Plan customers are entitled to a daily pro-rated rental credit for every day past a "
+     "24-hour no-heat SLA breach during heating season, plus a full-month courtesy credit on final resolution. "
      "Use SLA_BRCH_RATE for aggregate tracking; target breach rate is 5%."),
     ("SLA_BRCH_RATE", "what is the SLA for a no-heat call?",
-     "For this demo, a NoHeat call is treated as an emergency service request with a 24-hour SLA window. "
-     "An SLA breach occurs when service completion is later than 24 hours from request creation. "
+     "Total Home Protection Plan customers are entitled to a daily pro-rated rental credit for every day past a "
+     "24-hour no-heat SLA breach during heating season, plus a full-month courtesy credit on final resolution. "
      "Use SLA_BRCH_RATE for aggregate tracking; target breach rate is 5%."),
     ("SLA_BRCH_RATE", "what's the sla for a no heat call",
-     "For this demo, a NoHeat call is treated as an emergency service request with a 24-hour SLA window. "
-     "An SLA breach occurs when service completion is later than 24 hours from request creation. "
+     "Total Home Protection Plan customers are entitled to a daily pro-rated rental credit for every day past a "
+     "24-hour no-heat SLA breach during heating season, plus a full-month courtesy credit on final resolution. "
      "Use SLA_BRCH_RATE for aggregate tracking; target breach rate is 5%."),
     ("SLA_BRCH_RATE", "no-heat sla",
-     "NoHeat emergency requests use a 24-hour SLA window in this demo. "
+     "NoHeat emergency requests use a 24-hour SLA window in this demo, with a daily pro-rated rental credit for "
+     "every day past breach during heating season plus a full-month courtesy credit on final resolution. "
      "Track aggregate performance with SLA_BRCH_RATE (target breach rate: 5%)."),
     ("SLA_BRCH_RATE", "no heat sla",
-     "NoHeat emergency requests use a 24-hour SLA window in this demo. "
+     "NoHeat emergency requests use a 24-hour SLA window in this demo, with a daily pro-rated rental credit for "
+     "every day past breach during heating season plus a full-month courtesy credit on final resolution. "
      "Track aggregate performance with SLA_BRCH_RATE (target breach rate: 5%)."),
     ("SLA_BRCH_RATE", "whats the sla for a no heat call",
-     "For this demo, a NoHeat call is treated as an emergency service request with a 24-hour SLA window. "
-     "An SLA breach occurs when service completion is later than 24 hours from request creation. "
+     "Total Home Protection Plan customers are entitled to a daily pro-rated rental credit for every day past a "
+     "24-hour no-heat SLA breach during heating season, plus a full-month courtesy credit on final resolution. "
      "Use SLA_BRCH_RATE for aggregate tracking; target breach rate is 5%."),
     ("SVC_CASE", "what is the current status and recommended path for Maria Castellanos Service Account: 183746220",
      "Customer: Maria Castellanos | Service Account: 183746220 (EC18374622-SVC) | Incident / Request ID: 2026051142 | "
