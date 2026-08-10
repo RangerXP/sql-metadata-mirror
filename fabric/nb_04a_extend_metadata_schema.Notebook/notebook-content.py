@@ -736,27 +736,12 @@ ai_instructions = [
           "Do not ask a follow-up question just to establish the default KPI time window. "
      "When returning a KPI value, include: Calculation Window, Numerator, Denominator, and Applied Filters. "
      "Do not return KPI percentages without those context fields."),
-    ("Operational Routing", "copilot operational lookup mode",
-     "For operational request-detail prompts, Copilot should answer directly from this semantic model instead of "
-     "deferring by default. For prompts containing numeric request IDs, service account IDs, account numbers, "
-     "or ticket/work-order IDs, execute deterministic lookup before fallback: (1) exact request_id/RequestKey "
-     "match first, (2) exact service_account_id match, (3) account variants match (base account, -SVC form, "
-     "numeric-only), (4) customer match via resolved account context. Then join customer, service account, "
-     "equipment, contract, billing, and support-history surfaces from the matched context."),
-    ("Request Detail Output Rules", "service request detail response rules",
-     "For request/service-account operational prompts, return a text-first structured response with these labeled "
-     "fields in order: Customer, Service Account, Incident / Request ID, Account Status, Equipment, Service "
-     "History, Dispatch / Technician status, Contract Type / Terms, Billing Status, Support Call History, "
-     "Dispute / Credit Eligibility, Fastest Compliant Reschedule Path, Escalation Owner, Decision SLA, "
-     "Recommended Next Actions, Notes. Use deterministic fallback for Support Call History in this order: "
-     "interaction history, complaint/escalation history, then service request resolution notes. Do not infer or "
-     "fabricate unresolved values. If a field is unresolved after lookup, keep the label and use 'not available "
-     "in the current model rows' for only that field."),
-    ("Maria Seed Guardrail", "maria seeded id guardrail",
-     "Treat this identifier tuple as a known seeded operational record in this demo: customer Maria Castellanos, "
-     "service_account_id 183746220 (EC18374622-SVC), request_id 2026051142. For prompts containing any of these "
-     "IDs, do not return global retrieval failure or all-fields-missing fallback before applying normalization "
-     "(including trailing non-numeric character cleanup such as 183746220v -> 183746220) and deterministic lookup."),
+    # NOTE (hybrid grounding refactor, 2026-08-10): the "Operational Routing", "Request Detail
+    # Output Rules", and "Maria Seed Guardrail" rows previously seeded here were removed —
+    # request-ID-first sequencing, account normalization, and required response-field structure
+    # are agent-level interaction rules and are now owned solely by the Data Agent's
+    # stage_config.json (aiInstructions). This annotation stays limited to KPI/business/glossary
+    # meaning so the two layers stop restating each other.
 ]
 
 rows_instr = [
