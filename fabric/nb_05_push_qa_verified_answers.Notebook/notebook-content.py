@@ -316,8 +316,17 @@ def _set_annotation_via_tom(connector, connector_name, name: str, value: str):
                     existing.Value = value
                     return True, f"updated via {connector_name or 'unknown_connector'}"
 
+                # New annotation: TOM's Annotations.Add() requires an Annotation
+                # object (Add(str, str) has no matching .NET overload), so build
+                # one via the Microsoft.AnalysisServices.Tabular namespace before
+                # adding it to the collection.
                 try:
-                    annotations.Add(name, value)
+                    from Microsoft.AnalysisServices.Tabular import Annotation as TomAnnotation
+
+                    new_annotation = TomAnnotation()
+                    new_annotation.Name = name
+                    new_annotation.Value = value
+                    annotations.Add(new_annotation)
                     return True, f"added via {connector_name or 'unknown_connector'}"
                 except Exception as ex:
                     return False, f"annotation add failed: {ex}"
