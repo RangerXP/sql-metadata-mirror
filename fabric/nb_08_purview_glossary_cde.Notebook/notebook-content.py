@@ -106,6 +106,23 @@ if APPLY_CHANGES:
     print("[RUN] Approved live publish requested. Ensure the runtime environment has the required Purview credentials.")
 
 
+def _log_nb08_diagnostic(stage: str, error: Exception):
+    import traceback
+    diag_row = {
+        "stage": stage,
+        "error_type": type(error).__name__,
+        "error_message": str(error)[:4000],
+        "traceback": traceback.format_exc()[:8000],
+    }
+    try:
+        spark.createDataFrame([diag_row]).write.format("delta").mode("append").saveAsTable("nb08_diagnostics_log")
+        print(f"[DIAG] Logged failure at stage '{stage}' to nb08_diagnostics_log")
+    except Exception as log_ex:
+        print(f"[DIAG] Could not log diagnostic for stage '{stage}': {log_ex}")
+        print(f"[DIAG] Original error at stage '{stage}': {type(error).__name__}: {error}")
+        print(traceback.format_exc())
+
+
 # METADATA ********************
 
 # META {
@@ -130,6 +147,12 @@ def _read_table(table_name: str):
     last_error = None
     for candidate in _table_candidates(table_name):
         try:
+            # Spark's catalog can cache a stale schema (e.g. a dropped/renamed column)
+            # across sessions; refresh before reading to avoid collectToPython mismatches.
+            try:
+                spark.catalog.refreshTable(candidate)
+            except Exception:
+                pass
             return spark.table(candidate), candidate
         except Exception as ex:
             last_error = ex
@@ -143,22 +166,50 @@ def _require_columns(table_name: str, df):
         raise RuntimeError(f"{table_name} missing required column(s): {missing}. Available: {df.columns}")
 
 
-glossary_df, glossary_source = _read_table("glossary_terms")
-cde_df, cde_source = _read_table("cdes")
+# Columns actually read further down. Pruning to this set avoids collectToPython
+# failures when the Delta table's schema has stale/unmaterialized columns
+# (e.g. a schema-declared column from another notebook's write that this
+# session's cached plan still references but the current data doesn't have).
+GLOSSARY_COLUMNS_NEEDED = [
+    "term_code", "term_name", "definition", "status", "acronyms", "resources", "bound_assets",
+]
+CDE_COLUMNS_NEEDED = [
+    "cde_id", "cde_code", "cde_name", "domain_code", "glossary_term_code", "expected_data_type",
+    "sensitivity_label", "status", "owner_upn", "owner_role", "steward_upn", "bound_columns",
+    "validation_rule", "description", "business_definition",
+]
 
-_require_columns("glossary_terms", glossary_df)
-_require_columns("cdes", cde_df)
 
-glossary_count = glossary_df.count()
-cde_count = cde_df.count()
+def _prune_columns(df, needed_columns):
+    available = {c.lower(): c for c in df.columns}
+    select_cols = [available[c] for c in needed_columns if c in available]
+    return df.select(*select_cols)
 
-if glossary_count == 0:
-    raise RuntimeError("metadata.glossary_terms is empty. Run nb_07a ingestion before this notebook.")
-if cde_count == 0:
-    raise RuntimeError("metadata.cdes is empty. Run nb_07a ingestion before this notebook.")
 
-print(f"glossary_terms rows: {glossary_count} (source={glossary_source})")
-print(f"cdes rows: {cde_count} (source={cde_source})")
+try:
+    glossary_df, glossary_source = _read_table("glossary_terms")
+    cde_df, cde_source = _read_table("cdes")
+
+    _require_columns("glossary_terms", glossary_df)
+    _require_columns("cdes", cde_df)
+
+    glossary_df = _prune_columns(glossary_df, GLOSSARY_COLUMNS_NEEDED)
+    cde_df = _prune_columns(cde_df, CDE_COLUMNS_NEEDED)
+
+    glossary_count = glossary_df.count()
+    cde_count = cde_df.count()
+
+    if glossary_count == 0:
+        raise RuntimeError("metadata.glossary_terms is empty. Run nb_07a ingestion before this notebook.")
+    if cde_count == 0:
+        raise RuntimeError("metadata.cdes is empty. Run nb_07a ingestion before this notebook.")
+
+
+    print(f"glossary_terms rows: {glossary_count} (source={glossary_source})")
+    print(f"cdes rows: {cde_count} (source={cde_source})")
+except Exception as ex:
+    _log_nb08_diagnostic("cell2_read_validate", ex)
+    raise
 
 
 # METADATA ********************
@@ -249,58 +300,62 @@ typedef_payload = {
     ],
 }
 
-term_payloads = []
-for row in glossary_df.collect():
-    term_name = _safe_text(getattr(row, "term_name", None))
-    term_code = _safe_text(getattr(row, "term_code", None) or term_name)
-    if not term_name:
-        continue
-    resource_url = _safe_external_url(getattr(row, "resources", None))
-    body = {
-        "name": term_name,
-        "shortDescription": term_code,
-        "longDescription": _safe_text(getattr(row, "definition", None)),
-        "status": _safe_text(getattr(row, "status", None)) or "Draft",
-        "abbreviation": _safe_text(getattr(row, "acronyms", None)),
-        "resources": [{"displayName": term_code, "url": resource_url}] if resource_url else [],
-    }
-    if PURVIEW_GLOSSARY_GUID:
-        body["anchor"] = {"glossaryGuid": PURVIEW_GLOSSARY_GUID}
-    term_payloads.append({"term_code": term_code, "payload": body, "bound_assets": _asset_tokens(getattr(row, "bound_assets", None))})
-
-cde_entities = []
-for row in cde_df.collect():
-    cde_id = _resolve_cde_id(row)
-    if not cde_id:
-        continue
-    cde_name = _safe_text(getattr(row, "cde_name", None)) or cde_id
-    cde_entities.append(
-        {
-            "typeName": "EnercareCriticalDataElement",
-            "guid": _guid(),
-            "attributes": {
-                "qualifiedName": _cde_qualified_name(cde_id),
-                "name": cde_name,
-                "cde_id": cde_id,
-                "cde_name": cde_name,
-                "domain_code": _safe_text(getattr(row, "domain_code", None)),
-                "glossary_term_code": _safe_text(getattr(row, "glossary_term_code", None)),
-                "expected_data_type": _safe_text(getattr(row, "expected_data_type", None)),
-                "sensitivity_label": _safe_text(getattr(row, "sensitivity_label", None)),
-                "status": _safe_text(getattr(row, "status", None)),
-                "owner_upn": _safe_text(getattr(row, "owner_upn", None) or getattr(row, "owner_role", None)),
-                "steward_upn": _safe_text(getattr(row, "steward_upn", None)),
-                "bound_columns": ";".join(_asset_tokens(getattr(row, "bound_columns", None))),
-                "validation_rule": _safe_text(getattr(row, "validation_rule", None)),
-                "description": _safe_text(getattr(row, "description", None) or getattr(row, "business_definition", None)),
-            },
+try:
+    term_payloads = []
+    for row in glossary_df.collect():
+        term_name = _safe_text(getattr(row, "term_name", None))
+        term_code = _safe_text(getattr(row, "term_code", None) or term_name)
+        if not term_name:
+            continue
+        resource_url = _safe_external_url(getattr(row, "resources", None))
+        body = {
+            "name": term_name,
+            "shortDescription": term_code,
+            "longDescription": _safe_text(getattr(row, "definition", None)),
+            "status": _safe_text(getattr(row, "status", None)) or "Draft",
+            "abbreviation": _safe_text(getattr(row, "acronyms", None)),
+            "resources": [{"displayName": term_code, "url": resource_url}] if resource_url else [],
         }
-    )
+        if PURVIEW_GLOSSARY_GUID:
+            body["anchor"] = {"glossaryGuid": PURVIEW_GLOSSARY_GUID}
+        term_payloads.append({"term_code": term_code, "payload": body, "bound_assets": _asset_tokens(getattr(row, "bound_assets", None))})
 
-cde_payload = {"entities": cde_entities}
+    cde_entities = []
+    for row in cde_df.collect():
+        cde_id = _resolve_cde_id(row)
+        if not cde_id:
+            continue
+        cde_name = _safe_text(getattr(row, "cde_name", None)) or cde_id
+        cde_entities.append(
+            {
+                "typeName": "EnercareCriticalDataElement",
+                "guid": _guid(),
+                "attributes": {
+                    "qualifiedName": _cde_qualified_name(cde_id),
+                    "name": cde_name,
+                    "cde_id": cde_id,
+                    "cde_name": cde_name,
+                    "domain_code": _safe_text(getattr(row, "domain_code", None)),
+                    "glossary_term_code": _safe_text(getattr(row, "glossary_term_code", None)),
+                    "expected_data_type": _safe_text(getattr(row, "expected_data_type", None)),
+                    "sensitivity_label": _safe_text(getattr(row, "sensitivity_label", None)),
+                    "status": _safe_text(getattr(row, "status", None)),
+                    "owner_upn": _safe_text(getattr(row, "owner_upn", None) or getattr(row, "owner_role", None)),
+                    "steward_upn": _safe_text(getattr(row, "steward_upn", None)),
+                    "bound_columns": ";".join(_asset_tokens(getattr(row, "bound_columns", None))),
+                    "validation_rule": _safe_text(getattr(row, "validation_rule", None)),
+                    "description": _safe_text(getattr(row, "description", None) or getattr(row, "business_definition", None)),
+                },
+            }
+        )
 
-print(f"Glossary term payloads prepared: {len(term_payloads)}")
-print(f"CDE entities prepared: {len(cde_entities)}")
+    cde_payload = {"entities": cde_entities}
+
+    print(f"Glossary term payloads prepared: {len(term_payloads)}")
+    print(f"CDE entities prepared: {len(cde_entities)}")
+except Exception as ex:
+    _log_nb08_diagnostic("cell3_build_payloads", ex)
+    raise
 
 
 # METADATA ********************
@@ -314,44 +369,48 @@ print(f"CDE entities prepared: {len(cde_entities)}")
 
 # Cell 4: Write dry-run payloads and validation manifest
 
-mssparkutils.fs.mkdirs(OUTPUT_ROOT)
-mssparkutils.fs.put(f"{OUTPUT_ROOT}/typedefs_glossary_cde.json", json.dumps(typedef_payload, indent=2), True)
-mssparkutils.fs.put(f"{OUTPUT_ROOT}/glossary_terms.json", json.dumps(term_payloads, indent=2), True)
-mssparkutils.fs.put(f"{OUTPUT_ROOT}/cde_entities.json", json.dumps(cde_payload, indent=2), True)
+try:
+    mssparkutils.fs.mkdirs(OUTPUT_ROOT)
+    mssparkutils.fs.put(f"{OUTPUT_ROOT}/typedefs_glossary_cde.json", json.dumps(typedef_payload, indent=2), True)
+    mssparkutils.fs.put(f"{OUTPUT_ROOT}/glossary_terms.json", json.dumps(term_payloads, indent=2), True)
+    mssparkutils.fs.put(f"{OUTPUT_ROOT}/cde_entities.json", json.dumps(cde_payload, indent=2), True)
 
-validation_rows = [
-    ("glossary_terms_source_rows", glossary_count, "PASS" if glossary_count > 0 else "FAIL"),
-    ("cdes_source_rows", cde_count, "PASS" if cde_count > 0 else "FAIL"),
-    ("glossary_payloads_prepared", len(term_payloads), "PASS" if term_payloads else "FAIL"),
-    ("cde_entities_prepared", len(cde_entities), "PASS" if cde_entities else "FAIL"),
-    ("glossary_target_configured", int(bool(PURVIEW_GLOSSARY_GUID) or bool(PURVIEW_GLOSSARY_NAME)), "INFO"),
-]
-validation_df = spark.createDataFrame(validation_rows, ["check_name", "check_value", "status"])
+    validation_rows = [
+        ("glossary_terms_source_rows", glossary_count, "PASS" if glossary_count > 0 else "FAIL"),
+        ("cdes_source_rows", cde_count, "PASS" if cde_count > 0 else "FAIL"),
+        ("glossary_payloads_prepared", len(term_payloads), "PASS" if term_payloads else "FAIL"),
+        ("cde_entities_prepared", len(cde_entities), "PASS" if cde_entities else "FAIL"),
+        ("glossary_target_configured", int(bool(PURVIEW_GLOSSARY_GUID) or bool(PURVIEW_GLOSSARY_NAME)), "INFO"),
+    ]
+    validation_df = spark.createDataFrame(validation_rows, ["check_name", "check_value", "status"])
 
-validation_table_candidates = []
-if METADATA_SCHEMA:
-    validation_table_candidates.append(f"{METADATA_SCHEMA}.purview_phase_04_05_validation")
-validation_table_candidates.append("purview_phase_04_05_validation")
+    validation_table_candidates = []
+    if METADATA_SCHEMA:
+        validation_table_candidates.append(f"{METADATA_SCHEMA}.purview_phase_04_05_validation")
+    validation_table_candidates.append("purview_phase_04_05_validation")
 
-validation_table_written = None
-last_validation_error = None
-for table_name in validation_table_candidates:
-    try:
-        validation_df.write.mode("overwrite").format("delta").saveAsTable(table_name)
-        validation_table_written = table_name
-        break
-    except Exception as ex:
-        last_validation_error = ex
+    validation_table_written = None
+    last_validation_error = None
+    for table_name in validation_table_candidates:
+        try:
+            validation_df.write.mode("overwrite").format("delta").saveAsTable(table_name)
+            validation_table_written = table_name
+            break
+        except Exception as ex:
+            last_validation_error = ex
 
-if not validation_table_written:
-    raise RuntimeError(
-        "Could not write validation table. "
-        f"Tried: {validation_table_candidates}. Last error: {last_validation_error}"
-    )
+    if not validation_table_written:
+        raise RuntimeError(
+            "Could not write validation table. "
+            f"Tried: {validation_table_candidates}. Last error: {last_validation_error}"
+        )
 
-print(f"Payloads written to: {OUTPUT_ROOT}")
-print(f"Validation table written to: {validation_table_written}")
-display(validation_df.orderBy("check_name"))
+    print(f"Payloads written to: {OUTPUT_ROOT}")
+    print(f"Validation table written to: {validation_table_written}")
+    display(validation_df.orderBy("check_name"))
+except Exception as ex:
+    _log_nb08_diagnostic("cell4_write_validation", ex)
+    raise
 
 
 # METADATA ********************

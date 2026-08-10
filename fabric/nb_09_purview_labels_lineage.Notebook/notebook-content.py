@@ -88,6 +88,24 @@ print(f"Purview account: {PURVIEW_ACCOUNT_NAME}")
 print(f"Apply changes: {APPLY_CHANGES}")
 print(f"Output root: {OUTPUT_ROOT}")
 
+
+def _log_nb09_diagnostic(stage: str, error: Exception):
+    import traceback
+    diag_row = {
+        "stage": stage,
+        "error_type": type(error).__name__,
+        "error_message": str(error)[:4000],
+        "traceback": traceback.format_exc()[:8000],
+    }
+    try:
+        spark.createDataFrame([diag_row]).write.format("delta").mode("append").saveAsTable("nb09_diagnostics_log")
+        print(f"[DIAG] Logged failure at stage '{stage}' to nb09_diagnostics_log")
+    except Exception as log_ex:
+        print(f"[DIAG] Could not log diagnostic for stage '{stage}': {log_ex}")
+        print(f"[DIAG] Original error at stage '{stage}': {type(error).__name__}: {error}")
+        print(traceback.format_exc())
+
+
 # Cell 1 complete: Configuration initialized
 
 
@@ -136,6 +154,14 @@ def _read_table(table_name: str, required=True):
     last_error = None
     for candidate in _table_candidates(table_name):
         try:
+            # Spark's catalog can cache a stale schema (e.g. a dropped/renamed column,
+            # or a schema seen by another notebook sharing this warm pool/session)
+            # across notebook runs; refresh before reading to avoid collectToPython
+            # mismatches. Same fix validated in nb_08_purview_glossary_cde.
+            try:
+                spark.catalog.refreshTable(candidate)
+            except Exception:
+                pass
             return spark.table(candidate), candidate
         except Exception as ex:
             last_error = ex
@@ -144,20 +170,61 @@ def _read_table(table_name: str, required=True):
     return None, None
 
 
-cde_df, cde_source = _read_table("cdes")
-labels_df, labels_source = _read_table("label_assignments", required=False)
-glossary_df, glossary_source = _read_table("glossary_terms", required=False)
-data_products_df, data_products_source = _read_table("data_products")
+# Columns actually read further down (Cells 3/4). Pruning to this set avoids
+# collectToPython/IllegalStateException failures when a Delta table's cached
+# schema has stale/unmaterialized columns (e.g. a schema-declared column from
+# another notebook's write that this session's cached plan still references
+# but the current data doesn't have). Same fix validated in nb_08.
+CDE_COLUMNS_NEEDED = [
+    "sensitivity_label", "cde_id", "cde_code", "cde_name", "parent_glossary_term",
+    "owner_role", "business_definition", "bound_columns",
+]
+LABELS_COLUMNS_NEEDED = [
+    "label_name", "protection_policy", "sensitivity_tier", "applies_to_asset_ids",
+    "enforcement_target", "assignment_rule", "label_id",
+]
+GLOSSARY_COLUMNS_NEEDED = [
+    "term_code", "term_name", "name", "definition", "bound_assets", "applies_to_asset_ids",
+]
+DATA_PRODUCTS_COLUMNS_NEEDED = [
+    "data_product_id", "product_id", "attached_assets", "data_product_name",
+    "product_name", "sql_assets", "fabric_assets", "semantic_model_assets",
+]
 
-if labels_df is None:
-    print("[WARN] metadata.label_assignments not found; label rules will be inferred from CDE values when possible.")
 
-print(f"cdes rows: {cde_df.count()} (source={cde_source})")
-if labels_df is not None:
-    print(f"label_assignments rows: {labels_df.count()} (source={labels_source})")
-if glossary_df is not None:
-    print(f"glossary_terms rows: {glossary_df.count()} (source={glossary_source})")
-print(f"data_products rows: {data_products_df.count()} (source={data_products_source})")
+def _prune_columns(df, needed_columns):
+    if df is None:
+        return None
+    available = {c.lower(): c for c in df.columns}
+    select_cols = [available[c] for c in needed_columns if c in available]
+    if not select_cols:
+        return df
+    return df.select(*select_cols)
+
+
+try:
+    cde_df, cde_source = _read_table("cdes")
+    labels_df, labels_source = _read_table("label_assignments", required=False)
+    glossary_df, glossary_source = _read_table("glossary_terms", required=False)
+    data_products_df, data_products_source = _read_table("data_products")
+
+    cde_df = _prune_columns(cde_df, CDE_COLUMNS_NEEDED)
+    labels_df = _prune_columns(labels_df, LABELS_COLUMNS_NEEDED)
+    glossary_df = _prune_columns(glossary_df, GLOSSARY_COLUMNS_NEEDED)
+    data_products_df = _prune_columns(data_products_df, DATA_PRODUCTS_COLUMNS_NEEDED)
+
+    if labels_df is None:
+        print("[WARN] metadata.label_assignments not found; label rules will be inferred from CDE values when possible.")
+
+    print(f"cdes rows: {cde_df.count()} (source={cde_source})")
+    if labels_df is not None:
+        print(f"label_assignments rows: {labels_df.count()} (source={labels_source})")
+    if glossary_df is not None:
+        print(f"glossary_terms rows: {glossary_df.count()} (source={glossary_source})")
+    print(f"data_products rows: {data_products_df.count()} (source={data_products_source})")
+except Exception as ex:
+    _log_nb09_diagnostic("cell2_read_validate", ex)
+    raise
 
 # Cell 2 complete: Metadata tables loaded
 
