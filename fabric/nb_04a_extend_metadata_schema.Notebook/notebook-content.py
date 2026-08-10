@@ -461,8 +461,10 @@ cc_kpi_defs = [
 ]
 
 rows_set_b = [
+    # Keyword order must match KPI_SCHEMA field order — createDataFrame(rows, schema=...)
+    # binds Row values positionally, not by name.
     Row(
-        KPIName=name, Formula=formula, Description=desc, Domain=domain, Owner=owner,
+        KPIName=name, Formula=formula, Domain=domain, Owner=owner, Description=desc,
         IsDraft=0, KPICode=code, IsCertified=1, Version=1,
         PreviousFormula=None, CertifiedBy=CERTIFIED_BY, CertifiedDate=certified_date_obj,
         TargetValue=tgt, WarningThreshold=warn, CriticalThreshold=crit, UnitType=unit,
