@@ -388,6 +388,19 @@ else:
             print("       Annotation preview (first 500 chars):")
             print(annotation_value[:500])
 
+    # Operational debug log: records applied/failed status + detail per annotation
+    # so a live run's outcome can be inspected without a separate readback notebook.
+    try:
+        mssparkutils.fs.mkdirs("Files/debug")
+        debug_lines = [
+            f"{name}: applied={annotation_results.get(name, (False, 'not attempted'))[0]} "
+            f"detail={annotation_results.get(name, (False, 'not attempted'))[1]}"
+            for name in annotations_to_publish
+        ]
+        mssparkutils.fs.put("Files/debug/nb05_last_run.txt", "\n".join(debug_lines), True)
+    except Exception as debug_ex:
+        print(f"[WARN] Could not write nb05 debug log: {debug_ex}")
+
 
 # METADATA ********************
 
