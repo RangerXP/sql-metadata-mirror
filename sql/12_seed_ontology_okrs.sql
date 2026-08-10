@@ -37,14 +37,21 @@ GO
       goal/max amounts match the certified thresholds documented in nb_04a's
       AI Data Schema (FCR 78%, CSAT 4.2/5, PP_RNW_RATE 82%, SLA_BRCH_RATE 5%).
 ------------------------------------------------------------------------------ */
+-- NOTE: progress_amount must NEVER be seeded as NULL. An all-NULL column across
+-- every row causes Spark to infer NullType when nb_07a converts this table to a
+-- pandas/Spark DataFrame, which Delta then declares in the schema but does not
+-- physically materialize in the Parquet files -- an identical failure class to
+-- the historical domains.parent_domain issue. This breaks nb_07's column-pruned
+-- .collect() with "Couldn't find progress_amount#... in [...]" even though the
+-- column is listed in df.columns. Always seed a real numeric value.
 INSERT INTO dbo.governance_okr_key_results
 (key_result_id, okr_id, result_name, metric_source, goal_amount, progress_amount, max_amount, progress_status)
 VALUES
-('KR-SLA-BREACH',      'OKR-SVCDEL-SLA',    'SLA Breach Rate At Or Below Target',        'kpi_metadata.SLA_BRCH_RATE', 5.00,  NULL, 100.00, 'OnTrack'),
-('KR-FCR-RATE',        'OKR-CUSTOPS-CX',    'First Contact Resolution At Or Above Target','kpi_metadata.FCR',           78.00, NULL, 100.00, 'OnTrack'),
-('KR-CSAT-SCORE',      'OKR-CUSTOPS-CX',    'Customer Satisfaction At Or Above Target',   'kpi_metadata.CSAT',          4.20,  NULL, 5.00,   'OnTrack'),
-('KR-PP-RENEWAL',      'OKR-REVCON-RETAIN', 'Protection Plan Renewal Rate At Or Above Target','kpi_metadata.PP_RNW_RATE', 82.00, NULL, 100.00, 'OnTrack'),
-('KR-REPEAT-COMPLAINT','OKR-REVCON-RETAIN', 'Repeat Billing Complaint Rate Reduced',      'BrookfieldEnercare/_Measures/RepeatComplaintRate', 10.00, NULL, 100.00, 'AtRisk');
+('KR-SLA-BREACH',      'OKR-SVCDEL-SLA',    'SLA Breach Rate At Or Below Target',        'kpi_metadata.SLA_BRCH_RATE', 5.00,  3.80, 100.00, 'OnTrack'),
+('KR-FCR-RATE',        'OKR-CUSTOPS-CX',    'First Contact Resolution At Or Above Target','kpi_metadata.FCR',           78.00, 81.50, 100.00, 'OnTrack'),
+('KR-CSAT-SCORE',      'OKR-CUSTOPS-CX',    'Customer Satisfaction At Or Above Target',   'kpi_metadata.CSAT',          4.20,  4.35, 5.00,   'OnTrack'),
+('KR-PP-RENEWAL',      'OKR-REVCON-RETAIN', 'Protection Plan Renewal Rate At Or Above Target','kpi_metadata.PP_RNW_RATE', 82.00, 84.00, 100.00, 'OnTrack'),
+('KR-REPEAT-COMPLAINT','OKR-REVCON-RETAIN', 'Repeat Billing Complaint Rate Reduced',      'BrookfieldEnercare/_Measures/RepeatComplaintRate', 10.00, 14.50, 100.00, 'AtRisk');
 GO
 
 /* ------------------------------------------------------------------------------
