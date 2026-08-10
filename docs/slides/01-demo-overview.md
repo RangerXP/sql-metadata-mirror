@@ -127,14 +127,31 @@ She picks up the phone.
 
 ## Key Metrics (Demo Closure 2026-06-18)
 
+### Governance Metadata
+
 | Metric | Value |
 |--------|-------|
 | Governance Domains | 3 (Customer Operations, Service Delivery, Revenue & Contracts) |
 | Data Products | 3 (Customer 360, Service Performance, Billing & Contract Health) |
 | Glossary Terms | 35+ |
 | Critical Data Elements | 12 |
+
+### Protection Metadata
+
+| Metric | Value |
+|--------|-------|
 | Sensitivity Labels | 4 (Public → Highly Confidential) |
+
+### Lineage Metadata
+
+| Metric | Value |
+|--------|-------|
 | Lineage Edges Published | 8 (SQL → Fabric Semantic Model) |
+
+### Semantic Metadata
+
+| Metric | Value |
+|--------|-------|
 | Semantic Model Measures | 15+ KPIs |
 | Notebooks in Pipeline | 13 |
 
