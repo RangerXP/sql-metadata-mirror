@@ -186,7 +186,15 @@ def upsert_annotation(obj, key, value):
     if existing is not None:
         existing.Value = value
     else:
-        annotations.Add(key, value)
+        try:
+            from Microsoft.AnalysisServices.Tabular import Annotation as TomAnnotation
+        except ImportError as exc:
+            raise RuntimeError("The TOM Annotation type is unavailable in this Fabric runtime.") from exc
+
+        new_annotation = TomAnnotation()
+        new_annotation.Name = key
+        new_annotation.Value = value
+        annotations.Add(new_annotation)
 
 
 def read_annotation(obj, key):
