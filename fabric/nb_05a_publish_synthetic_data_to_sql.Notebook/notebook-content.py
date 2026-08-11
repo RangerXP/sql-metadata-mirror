@@ -1282,3 +1282,40 @@ else:
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
+
+# CELL ********************
+
+# CELL B7 — Grant the Purview managed identity read access (one-time admin step)
+#
+# Run this cell manually, once, after approving the Purview managed private endpoint
+# (enercareSqlPE) on this SQL server. Requires this notebook's identity to have
+# CONTROL/ALTER ANY USER rights on the database (same identity used elsewhere in this
+# notebook already has db owner-level write access, so it is reused here).
+#
+# Purview account: Purview-West2 (system-assigned managed identity,
+# principalId ef32ae42-62e3-4302-b99a-d5b11e925e4a). Azure SQL AAD auth resolves this
+# principal by its display name, which matches the Purview account name.
+
+GRANT_PURVIEW_SQL_ACCESS = False
+PURVIEW_MI_DISPLAY_NAME = "Purview-West2"
+
+if not GRANT_PURVIEW_SQL_ACCESS:
+    print("[SKIPPED] Set GRANT_PURVIEW_SQL_ACCESS = True and re-run this cell to grant access.")
+elif DEMO_MODE:
+    print("[DRY RUN] Skipping Purview MI grant.")
+else:
+    grant_cur = conn.cursor()
+    grant_cur.execute(
+        f"IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'{PURVIEW_MI_DISPLAY_NAME}') "
+        f"CREATE USER [{PURVIEW_MI_DISPLAY_NAME}] FROM EXTERNAL PROVIDER;"
+    )
+    grant_cur.execute(f"ALTER ROLE db_datareader ADD MEMBER [{PURVIEW_MI_DISPLAY_NAME}];")
+    conn.commit()
+    print(f"Granted db_datareader to [{PURVIEW_MI_DISPLAY_NAME}] on {DATABASE_NAME}.")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
