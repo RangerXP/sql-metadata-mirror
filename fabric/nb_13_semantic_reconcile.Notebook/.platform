@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_13_semantic_reconcile",
+    "description": "P2: reconcile approved GT-SLA metadata to the semantic model, verify read-back, and close the governance request."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "c6fc38da-8ea9-4d64-95d0-c820b7e43879"
+  }
+}
