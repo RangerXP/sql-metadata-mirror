@@ -67,3 +67,13 @@ ORDER BY target_system, receipt_type;
 ```
 
 Expected result: the request is `Completed`, and both `PublicationReadback` and `SemanticModelReadback` are `Passed` with matching hashes.
+
+## Proven Execution
+
+Validated on 2026-08-11 for request `PV-GT-SLA-0359C207890E4EB1B8AB`:
+
+- Three semantic objects were updated and read back successfully.
+- `SemanticModelReadback` passed with hash `e699c7842d8009828a21e17962224e3ee92989029bfea34d35c3d1081987dede`.
+- `PublicationReadback` passed with hash `7bbd4fa674b042d407af51b8ced5ebd0ed24f9a8f6b54c9107d1f31394c5b40a`.
+- The request reached `Completed` at `2026-08-11 23:10:02.516876` UTC.
+- The `sqldemo` SQL analytics endpoint showed the completed request and both passing receipts after mirroring caught up.

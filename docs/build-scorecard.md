@@ -36,6 +36,9 @@
 | **G14-6 Live run: CDE Classification** (`CDE-COMPLAINTREF`) | ✅ Proven — new `governance_cdes` row, applied 02:14:06 |
 | **G14-7 Live run: Glossary Term** (`GT-SLA`) | ✅ Proven — new `governance_glossary_terms` row, applied 02:17:24 |
 | G14-8 Phase 4 closeout (full propagation + `nb_10` reconfirm) | 🟢 Done — full chain proven end-to-end, `nb_10` scorecard 0 `ACTION_REQUIRED` across all phases |
+| **G15-1 Native Purview publication evidence** (`GT-SLA`) | ✅ Proven — native approval published, immutable Draft/Published versions recorded, `PublicationReadback=Passed` |
+| **G15-2 Semantic reconciliation closeout** (`nb_13`) | ✅ Proven — 3 SLA objects updated and read back, `SemanticModelReadback=Passed`, request `Completed` at 2026-08-11 23:10:02 UTC |
+| **G15-3 Mirrored closed-loop evidence** | ✅ Proven — `sqldemo` SQL analytics endpoint showed `Completed` plus both passing receipts with matching hashes |
 
 ---
 

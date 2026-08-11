@@ -34,13 +34,31 @@ table _Measures
 		formatString: #,0
 		lineageTag: 39fe6c97-94a0-4fda-9608-9fc03ba025fd
 
+	/// Count of service requests that breached the governed service-level target. Governed definition (GT-SLA): <div>The contracted or policy-defined response and resolution targets per service-request priority and service zone. Targets are governed by the Service Delivery domain and require approval before publication.</div>
 	measure 'SLA Breach Count' = SUMX(fct_service_request, fct_service_request[IsSlaBreachFlag])
 		formatString: #,0
 		lineageTag: 201b4368-2ce7-4dce-966b-63b3df08c9b1
 
+		annotation Glossary_Term_References = GT-SLA
+
+		annotation Purview_Term_Id = b3b54277-3b36-47d8-831c-a2b9a5f02634
+
+		annotation Purview_Publication_Content_Hash = 7bbd4fa674b042d407af51b8ced5ebd0ed24f9a8f6b54c9107d1f31394c5b40a
+
+		annotation Governance_Request_Id = PV-GT-SLA-0359C207890E4EB1B8AB
+
+	/// Share of service requests that met the governed service-level target. Governed definition (GT-SLA): <div>The contracted or policy-defined response and resolution targets per service-request priority and service zone. Targets are governed by the Service Delivery domain and require approval before publication.</div>
 	measure 'SLA Compliance Rate' = VAR _hasDateFilter = ISCROSSFILTERED(dim_date[DateKey]) || ISCROSSFILTERED(dim_date[FullDate]) VAR _anchorDate = MAXX(ALL(dim_date), dim_date[FullDate]) RETURN IF(_hasDateFilter, DIVIDE(COUNTROWS(fct_service_request) - [SLA Breach Count], COUNTROWS(fct_service_request)), CALCULATE(DIVIDE(COUNTROWS(fct_service_request) - [SLA Breach Count], COUNTROWS(fct_service_request)), DATESINPERIOD(dim_date[FullDate], _anchorDate, -12, MONTH)))
 		formatString: 0.0%
 		lineageTag: 487de699-0427-4396-aea0-9592c7a2a85c
+
+		annotation Glossary_Term_References = GT-SLA
+
+		annotation Purview_Term_Id = b3b54277-3b36-47d8-831c-a2b9a5f02634
+
+		annotation Purview_Publication_Content_Hash = 7bbd4fa674b042d407af51b8ced5ebd0ed24f9a8f6b54c9107d1f31394c5b40a
+
+		annotation Governance_Request_Id = PV-GT-SLA-0359C207890E4EB1B8AB
 
 	measure 'Warranty Coverage Rate' = DIVIDE(SUMX(dim_equipment, dim_equipment[IsUnderWarranty]), COUNTROWS(dim_equipment))
 		formatString: 0.0%

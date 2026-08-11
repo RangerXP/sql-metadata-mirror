@@ -134,7 +134,7 @@ table fct_service_request
 
 		annotation SummarizationSetBy = Automatic
 
-	/// 1 if age_hours > sla_target_hours and request not yet completed
+	/// Indicates whether the service request breached the governed service-level target. Governed definition (GT-SLA): <div>The contracted or policy-defined response and resolution targets per service-request priority and service zone. Targets are governed by the Service Delivery domain and require approval before publication.</div>
 	column IsSlaBreachFlag
 		dataType: int64
 		formatString: 0
@@ -144,6 +144,14 @@ table fct_service_request
 		sourceColumn: IsSlaBreachFlag
 
 		annotation SummarizationSetBy = Automatic
+
+		annotation Glossary_Term_References = GT-SLA
+
+		annotation Purview_Term_Id = b3b54277-3b36-47d8-831c-a2b9a5f02634
+
+		annotation Purview_Publication_Content_Hash = 7bbd4fa674b042d407af51b8ced5ebd0ed24f9a8f6b54c9107d1f31394c5b40a
+
+		annotation Governance_Request_Id = PV-GT-SLA-0359C207890E4EB1B8AB
 
 	column DaysToComplete
 		dataType: int64
