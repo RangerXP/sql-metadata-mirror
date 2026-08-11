@@ -33,3 +33,7 @@ Thumbs.db
 
 # Azure deployment artifacts (auto-generated)
 .azure/
+
+# Scratch / probe output — never meant to be committed
+.tmp/
+tools/_tmp_*
