@@ -70,6 +70,11 @@ Expected result: one `Draft` request projection, event, and governed object vers
 4. Confirm `GT-SLA` now shows `Published` in Unified Catalog.
 5. Rerun `nb_12_purview_workflow_sync` with the same settings and correlation ID.
 
+When prompted by Cell 3, open the device-login URL in an InPrivate browser and sign in
+with Sean's account in tenant `b7e47691-9726-4f67-a302-e567815f3522`. The notebook uses
+interactive MSAL authentication because Fabric NotebookUtils does not support a Purview
+token audience.
+
 Expected result: the SQL request advances to `Approved`, a publication observation event is appended once, and the Purview publication read-back receipt is `Passed`. Repeating the notebook produces no duplicate event or version.
 
 ## 6. Verify the durable evidence
@@ -101,6 +106,9 @@ Required evidence:
 - One Draft observation and one Published observation for the same local correlation.
 - One immutable version per distinct canonical term hash.
 - `PublicationReadback` has matching expected and observed hashes and status `Passed`.
+- Governed-version hashes cover the full snapshot, including lifecycle status. Publication
+   receipt hashes exclude `status` so the expected Draft content can be compared with the
+   Published read-back without treating the approved lifecycle transition as content drift.
 - `authority_request_id`, `decided_by`, and `decided_at` remain `NULL` because the supported Unified Catalog API does not expose those workflow fields.
 
 ## 7. Completion boundary

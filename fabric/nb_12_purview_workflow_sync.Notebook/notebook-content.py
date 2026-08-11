@@ -77,7 +77,7 @@ import requests
 ODBC_SQL_COPT_SS_ACCESS_TOKEN = 1256
 
 
-def _get_token(scopes):
+def _get_fabric_token(scopes):
     last_error = None
     for scope in scopes:
         try:
@@ -88,7 +88,30 @@ def _get_token(scopes):
 
 
 def get_purview_token():
-    return _get_token(["https://purview.azure.net/", "https://purview.azure.net"])
+    try:
+        from azure.identity import DeviceCodeCredential
+    except ImportError:
+        import subprocess
+        import sys
+
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--quiet", "azure-identity"],
+            check=True,
+        )
+        from azure.identity import DeviceCodeCredential
+
+    def show_device_code(verification_uri, user_code, expires_on):
+        print(
+            f"[AUTH] Open {verification_uri} in an InPrivate browser and enter "
+            f"code {user_code}. Sign in as the Sean account in tenant {PURVIEW_TENANT_ID}."
+        )
+
+    credential = DeviceCodeCredential(
+        client_id="04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+        tenant_id=PURVIEW_TENANT_ID,
+        prompt_callback=show_device_code,
+    )
+    return credential.get_token("https://purview.azure.net/.default").token
 
 
 def get_sql_connection():
@@ -101,7 +124,7 @@ def get_sql_connection():
     if SQL_AUTH_MODE == "managed_identity":
         return pyodbc.connect(connection_string + "Authentication=ActiveDirectoryMsi;", autocommit=False)
 
-    token = _get_token(["https://database.windows.net/", "https://database.windows.net"])
+    token = _get_fabric_token(["https://database.windows.net/", "https://database.windows.net"])
     encoded_token = token.encode("utf-16-le")
     token_struct = struct.pack(f"<I{len(encoded_token)}s", len(encoded_token), encoded_token)
     return pyodbc.connect(
@@ -117,6 +140,12 @@ def canonical_json(value):
 
 def sha256_text(value):
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def publication_content_hash(term):
+    content = dict(term)
+    content.pop("status", None)
+    return sha256_text(canonical_json(content))
 
 
 def utc_now():
@@ -161,6 +190,7 @@ if term_snapshot["status"] not in ("Draft", "Published"):
 
 snapshot_json = canonical_json(term_snapshot)
 definition_hash = sha256_text(snapshot_json)
+content_hash = publication_content_hash(term_snapshot)
 observed_at = utc_now()
 
 print(
@@ -196,6 +226,7 @@ request_payload = canonical_json(
     {
         "localCorrelationId": RUN_CORRELATION_ID.strip(),
         "definitionHash": definition_hash,
+        "publicationContentHash": content_hash,
         "term": term_snapshot,
         "workflowEvidenceLimitations": {
             "authorityRequestId": "not exposed by the supported Unified Catalog API",
@@ -239,11 +270,12 @@ if not DEMO_MODE:
                 "while Draft, submit it to the native workflow, then rerun after approval."
             )
 
-        expected_hash = (
-            existing_payload.get("definitionHash")
-            if existing_payload
-            else definition_hash
-        )
+        if existing_payload:
+            expected_hash = existing_payload.get("publicationContentHash")
+            if not expected_hash:
+                expected_hash = publication_content_hash(existing_payload["term"])
+        else:
+            expected_hash = content_hash
         normalized_status = "Approved" if term_snapshot["status"] == "Published" else "Draft"
 
         if existing_row:
@@ -324,12 +356,12 @@ if not DEMO_MODE:
         )
 
         if normalized_status == "Approved":
-            validation_status = "Passed" if definition_hash == expected_hash else "Failed"
+            validation_status = "Passed" if content_hash == expected_hash else "Failed"
             evidence = canonical_json(
                 {
                     "term": term_snapshot,
                     "expectedHash": expected_hash,
-                    "observedHash": definition_hash,
+                    "observedHash": content_hash,
                     "observedAt": observed_at.isoformat() + "Z",
                     "decisionActor": None,
                     "decisionTimestamp": None,
@@ -359,14 +391,14 @@ if not DEMO_MODE:
                 request_id,
                 PURVIEW_TERM_ID,
                 expected_hash,
-                definition_hash,
+                content_hash,
                 validation_status,
                 observed_at,
                 evidence,
                 request_id,
                 PURVIEW_TERM_ID,
                 expected_hash,
-                definition_hash,
+                content_hash,
                 validation_status,
                 observed_at,
                 evidence,
@@ -392,7 +424,88 @@ if not DEMO_MODE:
 
 # CELL ********************
 
-# Cell 6: Completion boundary
+# Cell 6: Verify the durable P1 evidence contract
+
+if not DEMO_MODE:
+    connection = get_sql_connection()
+    cursor = connection.cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT current_status, authority_request_id, decided_by, decided_at
+            FROM dbo.governance_requests
+            WHERE request_id = ?
+            """,
+            request_id,
+        )
+        request_evidence = cursor.fetchone()
+
+        cursor.execute(
+            """
+            SELECT event_type, COUNT(*)
+            FROM dbo.governance_events
+            WHERE request_id = ?
+            GROUP BY event_type
+            """,
+            request_id,
+        )
+        event_counts = dict(cursor.fetchall())
+
+        cursor.execute(
+            """
+            SELECT lifecycle_status, COUNT(*)
+            FROM dbo.governed_object_versions
+            WHERE request_id = ?
+            GROUP BY lifecycle_status
+            """,
+            request_id,
+        )
+        version_counts = dict(cursor.fetchall())
+
+        cursor.execute(
+            """
+            SELECT validation_status, expected_hash, observed_hash
+            FROM dbo.governance_target_receipts
+            WHERE request_id = ? AND target_system = 'Purview'
+              AND target_object_type = 'GlossaryTerm' AND target_object_id = ?
+              AND receipt_type = 'PublicationReadback'
+            """,
+            request_id,
+            PURVIEW_TERM_ID,
+        )
+        publication_receipt = cursor.fetchone()
+
+        if not request_evidence or request_evidence[0] != "Approved":
+            raise RuntimeError("P1 verification failed: request is not Approved.")
+        if any(request_evidence[index] is not None for index in range(1, 4)):
+            raise RuntimeError("P1 verification failed: unsupported workflow fields must remain NULL.")
+        if event_counts.get("TermDraftObserved") != 1 or event_counts.get("TermPublishedObserved") != 1:
+            raise RuntimeError(f"P1 verification failed: unexpected event counts {event_counts!r}.")
+        if version_counts.get("Draft") != 1 or version_counts.get("Published") != 1:
+            raise RuntimeError(f"P1 verification failed: unexpected version counts {version_counts!r}.")
+        if not publication_receipt or publication_receipt[0] != "Passed":
+            raise RuntimeError("P1 verification failed: PublicationReadback did not pass.")
+        if publication_receipt[1] != publication_receipt[2]:
+            raise RuntimeError("P1 verification failed: publication receipt hashes differ.")
+
+        print(
+            f"[VERIFIED] request={request_id} status=Approved "
+            f"events={event_counts} versions={version_counts} receipt=Passed"
+        )
+    finally:
+        cursor.close()
+        connection.close()
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Cell 7: Completion boundary
 
 print(
     "P1 Purview evidence collection finished. This notebook does not mark the request "
