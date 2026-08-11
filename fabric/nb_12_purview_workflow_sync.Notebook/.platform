@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_12_purview_workflow_sync",
+    "description": "P1: observe one native Purview GT-SLA publication workflow and persist idempotent SQL ledger evidence."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "e83313a8-5016-4b17-8a3e-247b8042d539"
+  }
+}
