@@ -13,7 +13,7 @@ This summary reflects the current repo and notebook state after the safety prefl
 | Pillar / milestone | Status | Evidence pointer |
 |---|---|---|
 | Pillar 1 — self-adapting metadata repository | DRY_RUN_VALIDATED | `nb_07b_merge_customer_metadata`, `nb_04_sempy_writeback`, and `lh_metadata.metadata.*` reconciliation logic are present and wired to re-converge on metadata changes; live publish/read-back has not been re-executed end to end in this pass |
-| Pillar 2 — SQL source lineage back to mirrored/semantic/report path | GAP | Custom lineage manifests are present in `nb_09_purview_labels_lineage` and `tools/purview_custom_lineage.py`, but the live SQL → OneLake → semantic model → report chain has not been proven through a fresh Purview read-back |
+| Pillar 2 — SQL source lineage back to mirrored/semantic/report path | GAP | Custom lineage manifests are present in `nb_09_purview_labels_lineage`, but the live SQL → OneLake → semantic model → report chain has not been proven through a fresh Purview read-back |
 | Pillar 3 — AI annotations that travel with the model | DEMO_VALIDATED | `nb_04_sempy_writeback` and `nb_05_push_qa_verified_answers` are the active runtime path, and `docs/runbooks/phase3-step3-runtime-smoke-log.md` shows 5/5 prompt executions passing the expected classes |
 | Pillar 4 — Purview governance objects | DRY_RUN_VALIDATED | `purview/*.csv` seed files, `nb_07_publish_to_purview`, and `nb_08_purview_glossary_cde` generate payloads and validation outputs; native Unified Catalog objects are not yet evidenced by a fresh tenant read-back |
 | Pillar 5 — governance-as-functional-model / certification loop | DEMO_VALIDATED | Closed 2026-08-10 — all 4 gated scenarios proven live end-to-end via `nb_11_gated_governance_sync`; `nb_10_purview_stewardship_ai` re-confirms 0 `ACTION_REQUIRED` after each apply. See `docs/design-gap-analysis.md` §G14 |
@@ -266,6 +266,7 @@ This is the active notebook construct in the repo today.
 ### Why `nb_06_purview_sql_grants` was de-emphasized
 
 - The demo moved to private-safe metadata scanning and custom lineage publication workflows rather than relying on the earlier SQL lineage-grant path as a mandatory runtime step.
+- Azure SQL and Purview remain private. Native SQL and Fabric scans own discovery and stable asset identities; custom Atlas processes supplement only missing cross-system edges. Native SQL stored-procedure lineage extraction is optional diagnostics and must not drive a public-network exception. See `docs/closed-loop-governance-reference-model.md`.
 - The semantic-model-first writeback and Fabric scan flow remains the primary implementation pattern.
 
 For run-by-run validation of this construct, use `docs/build-evaluation-matrix.md`.

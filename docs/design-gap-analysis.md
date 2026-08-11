@@ -44,6 +44,8 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 - **Keep the current Fabric assets.** Existing notebooks, `lh_metadata` scaffolding, semantic model, and connectivity work are adapted, not discarded.
 - **Keep semantic model descriptions.** Even with Purview as catalog system of record, Copilot and Fabric Data Agents still need metadata propagated into the semantic model via SemPy Labs.
 - **Purview is the governed catalog endpoint.** `lh_metadata` is a working/staging store for authoring and propagation, not the final catalog authority.
+- **Keep SQL and Purview private.** Native private SQL/Fabric scans provide asset discovery and stable identities; custom Atlas processes provide only the cross-system edges native scans cannot observe. Native SQL stored-procedure lineage extraction is optional diagnostics, not a deployment dependency. See `docs/closed-loop-governance-reference-model.md`.
+- **Deliver one native Purview workflow first.** Prove either glossary-term or data-product publication read-back into SQL receipts before adding the second native scenario or expanding into SQL-controlled approval types.
 - **SemPy + SemPy Labs is the semantic-model write-back path.** TMDL remains a Git-backed source-control artifact through Fabric Git sync.
 - **Four-tier placement model.** T1 = Source SQL (operational data + PII), T2 = customer-owned external files (`purview/*.csv`), T3 = Fabric-native (`lh_metadata` + semantic model + lakehouses), T4 = Purview Unified Catalog. See `docs/purview-demo-data-design.md` §1 for the placement matrix.
 - **Maria scenario is the demo's pass/fail bar.** Every design element earns its place by serving Tom's call, Victoria's review, or Ci Zhu's audit answer. See `docs/purview-maria-north-star-scenario.md`.
@@ -66,7 +68,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 - DirectLake semantic model refreshed and queryable after mirror cutover.
 - `Purview-West3` deployed in `AzureWest3-RG` (`westus3`, subscription `bde41857-48c2-4eb5-9959-208f768deafb`); status `Succeeded`, 1 CU.
 - SQL scan and Fabric scan completed successfully; current asset inventory reflects the 7-table source plus 46 Fabric assets.
-- Custom Atlas lineage tooling (`tools/purview_custom_lineage.py`) registers SQL → Fabric edge sets.
+- Custom Atlas lineage in `nb_09_purview_labels_lineage` registers SQL → Fabric edge sets against scanned asset identities.
 - **Phase A design committed** — see "Phase A Design Commit" section below.
 
 ### What is not yet built (target: 2-day window)
@@ -362,7 +364,7 @@ G8-3 completion evidence (captured Day 5):
 |---|---|---|---|
 | G9-1 | Update Purview lineage graph modeling for SQL → mirrored → SM path | 🟢 Done | `nb_09_purview_labels_lineage` has live Atlas publish path; 8 lineage edges published |
 | G9-2 | Validate whether native Purview lineage appears for the Fabric SM path | 🟢 Done | Native SP lineage incompatible with private-only scan; custom Atlas lineage is the path |
-| G9-3 | Build Purview lineage registration notebook/script | 🟢 Done | `nb_09_purview_labels_lineage` Cell 6 publishes classification typedefs and Atlas process entities with manual token mode |
+| G9-3 | Build Purview lineage registration notebook | 🟢 Done | `nb_09_purview_labels_lineage` publishes classification typedefs and Atlas process entities with manual token mode |
 | G9-4 | Register at least one complete sample lineage chain | 🟢 Done | 8 SQL source → Fabric SM edges published live to Purview Atlas |
 | G9-5 | Validate lineage graph in Purview for a representative KPI/column | 🟢 Done | Classification typedefs registered (HTTP 409 = already exists); all 8 lineage process entities published |
 
@@ -510,7 +512,7 @@ These maintained assets remain valid:
 - `fabric/BrookfieldEnercare.SemanticModel/definition/`
 - `lh_metadata` lakehouse and its working metadata tables
 - Fabric managed private endpoint from `Enercare-West3` to `sqlserver-sk2wus3`
-- `tools/purview_custom_lineage.py`
+- `fabric/nb_09_purview_labels_lineage.Notebook/`
 
 ### Additional retained requirement
 

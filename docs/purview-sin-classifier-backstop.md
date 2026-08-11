@@ -106,7 +106,7 @@ This pushes every SIN value to Luhn-valid before the Fabric mirror picks them up
 
 ### How to confirm Layer 1 works (no manual reading required)
 
-After the Fabric scan runs, query Purview's `/catalog/api/atlas/v2/search/advanced` endpoint for any asset where `classification = "MICROSOFT.CANADIAN.SIN"`. If the result includes `dbo.employees.sin_full`, layer 1 works. The `tools/purview_custom_lineage.py` script in the demo already authenticates against Purview — extending it with a verification call is ~30 lines.
+After the Fabric scan runs, query Purview for any asset where `classification = "MICROSOFT.CANADIAN.SIN"`. If the result includes `dbo.employees.sin_full`, layer 1 works. Reuse the token and Data Map search helpers in `nb_09_purview_labels_lineage` for this verification.
 
 ---
 
@@ -221,34 +221,7 @@ After the scan, query Purview for any asset classified with `ENERCARE.PRIVACY.SI
 
 If both classifiers fail (which would mean either no SQL data was scanned, or the scan-rule set was misconfigured), there's still one signal that should appear: **a manual classification on the asset itself**, pushed via the Purview Atlas API.
 
-The `tools/purview_custom_lineage.py` script in the demo already authenticates against Purview and creates entities. Add a step that **directly classifies the columns** with `MICROSOFT.CANADIAN.SIN` and `ENERCARE.PRIVACY.SIN_BACKSTOP` so the columns show as classified in the catalog UI even if no classifier ever fired during scan.
-
-```python
-# Add to tools/purview_custom_lineage.py
-def classify_column(token, column_qualified_name, classifications):
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    payload = {
-        "classification": {
-            "typeName": classifications[0],
-            "attributes": {}
-        }
-    }
-    # Find entity by qualified name first, then add classification
-    r = requests.post(
-        f"{BASE_URL}/catalog/api/atlas/v2/entity/uniqueAttribute/type/column"
-        f"?attr:qualifiedName={column_qualified_name}/classifications",
-        headers=headers, json=payload
-    )
-    r.raise_for_status()
-
-# Targets — the two SIN columns
-for col in [
-    "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/employees#sin_full",
-    "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers#sin_last_4",
-]:
-    classify_column(token, col, ["MICROSOFT.CANADIAN.SIN"])
-    classify_column(token, col, ["ENERCARE.PRIVACY.SIN_BACKSTOP"])
-```
+`nb_09_purview_labels_lineage` already resolves scanned columns by qualified name and publishes classifications. Add any direct backstop assignment there so it **classifies the existing scanned columns** with `MICROSOFT.CANADIAN.SIN` and `ENERCARE.PRIVACY.SIN_BACKSTOP`; do not create replacement column entities.
 
 This is a **belt-and-suspenders-and-zipper** approach: even if both classifiers fail, the columns show as classified in the catalog UI because we pushed the classification labels directly to the assets.
 
@@ -292,5 +265,5 @@ If yes → demo passes. If no → check that the scan rule set has both `MICROSO
 | `output/tools/purview_create_sin_backstop.py` (new) | Layer 2 — creates the custom SIT in Purview |
 | `output/tools/sin_luhn_generator.py` (new) | Layer 1 — Python helpers used by `nb_05a` |
 | Updates to `nb_05a_publish_synthetic_data_to_sql` notebook | Layer 1 — replace random SIN block with Luhn-valid generator |
-| Updates to `tools/purview_custom_lineage.py` | Layer 3 — direct column classification as last-resort |
+| Updates to `nb_09_purview_labels_lineage` | Layer 3 — direct classification of scanned columns as last resort |
 | `output/sql-additions/05_seed_purview_demo_data.sql` (updated note) | T-SQL seed leaves SIN columns NULL so the Python notebook can populate Luhn-valid values |

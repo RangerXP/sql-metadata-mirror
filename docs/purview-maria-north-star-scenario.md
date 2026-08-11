@@ -179,7 +179,7 @@ Ci Zhu opens Purview Unified Catalog.
 
 ### 3.6 — The lineage
 
-> "Click 'View lineage' on the Net Revenue measure. The chain: Power BI visual → SM measure → `lh_enercare_demo.fct_billing` → mirrored OneLake table from sqldemo → source `sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions`. Eight edges. Every edge is registered via either native Purview scan output or `tools/purview_custom_lineage.py`. This is the provable chain."
+> "Click 'View lineage' on the Net Revenue measure. The chain: Power BI visual → SM measure → `lh_enercare_demo.fct_billing` → mirrored OneLake table from sqldemo → source `sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions`. Eight edges. Native SQL and Fabric scans establish the asset identities; `nb_09_purview_labels_lineage` publishes the missing cross-system process edges. This is the provable chain."
 
 ### 3.7 — The audit answer
 
@@ -198,7 +198,7 @@ When Maria's scenario plays end-to-end in the demo without intervention, the dem
 3. **Privacy is enforced, not procedural** — Tom can't send a CASL-restricted follow-up to Maria without `consent_status='Granted'`; the data product blocks it. ✓ CDE-CONSENTSTATE + term-level policy on GT-CONSENT.
 4. **Regulatory compliance is provable** — OCPA, OEB, PIPEDA, CASL each have a glossary term with an external regulator reference and binding to the relevant CDE/column. ✓ Glossary master covers all four.
 5. **Sensitivity labels gate behavior, not just visibility** — Tom's $200 credit ceiling is enforced by the Confidential label's mandatory rule; SIN columns are Highly Confidential and trigger Protection Policy. ✓ Label policy + Fabric Protection Policy.
-6. **Lineage answers "where did this number come from?"** — Every measure has a clickable chain from visual to source. ✓ `tools/purview_custom_lineage.py` plus native scan output.
+6. **Lineage answers "where did this number come from?"** — Every measure has a clickable chain from visual to source. ✓ `nb_09_purview_labels_lineage` plus native scan output.
 7. **The Data Agent answers in business language** — Tom can ask "show me Maria's furnace status" and the agent disambiguates "furnace" via the equipment ontology, resolves the service request, and surfaces the SLA breach. ✓ Phase C deliverable: equipment ontology + verified Q&A pack.
 8. **Three personas, one truth** — Tom, Victoria, and the auditor see the same KPIs by the same definitions through the same governed surfaces, with no manual reconciliation step. ✓ End-to-end demo run.
 
@@ -219,7 +219,7 @@ If any of those eight acceptance criteria fails when the scenario runs, the demo
 | Term-level policies on PIPEDA / CASL / CONSENT / SIN / PCISCOPE terms | Tom can't text Maria without active consent; the data product enforces the rule, not Tom's training |
 | SemPy Labs writeback of descriptions, AI instructions, verified Q&A on `BrookfieldEnercare` | The Data Agent can answer Tom's natural-language questions because the runtime metadata surface carries the business definitions Purview governs |
 | Custom Purview SIT (ENERCARE.PRIVACY.SIN_BACKSTOP) | Layered SIN classification guarantee — even on synthetic data, classification fires and the Highly Confidential auto-apply rule engages |
-| Custom Atlas lineage via `tools/purview_custom_lineage.py` | The "where did this number come from?" answer is one click from any KPI |
+| Custom Atlas lineage via `nb_09_purview_labels_lineage` | The "where did this number come from?" answer is one click from any KPI |
 | `dbo.audit_data_access` table | Every Tom-style session and Victoria-style query is logged with purpose-of-use, supporting privacy-incident response |
 
 ---

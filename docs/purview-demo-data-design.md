@@ -216,7 +216,7 @@ nb_07_publish_to_purview (NEW — primary of nb_07 family)
 Manual: Apply Fabric Protection Policies (MIP labels)
         │
         ▼
-tools/purview_custom_lineage.py ──► lineage edges already in place
+nb_09_purview_labels_lineage ──► supplemental Atlas lineage edges
 ```
 
 ### New notebooks/scripts to add
@@ -246,7 +246,7 @@ For your demo walkthrough, this is the "every Purview feature has a story" matri
 | CDE catalog                                  | ~12 CDEs tied to regulators (PIPEDA, OEB)                                                                  | `cde-catalog.csv` |
 | Sensitivity labels                           | Confidential / Highly Confidential labels visible in Fabric on semantic model and lakehouse               | MIP portal → Fabric |
 | Steward / owner roles                        | Each domain has named owner, each data product has owner + steward                                         | `role-directory.csv` |
-| Lineage                                      | SQL → mirror → semantic model edges already in place via `tools/purview_custom_lineage.py`                | existing |
+| Lineage                                      | SQL → mirror → semantic model edges published by `nb_09_purview_labels_lineage` against scanned asset identities | existing |
 | Conflict resolution                          | Demo a "scan said X / steward says Y" reconciliation                                                       | `nb_07b_merge_customer_metadata` |
 | Industry vocabulary                          | Glossary contains FCR (First Call Resolution), MRR, OEB, PIPEDA, CASL, FSA, etc.                          | `glossary-master.csv` |
 | Sensitive PII demonstration                  | DOB, SIN partial, GPS, payment partial — classifiers fire on the synthetic values                         | T1 SQL extensions |

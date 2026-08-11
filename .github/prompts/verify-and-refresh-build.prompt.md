@@ -89,7 +89,9 @@ source-of-record anchor; the Fabric scan supplies lakehouse, semantic-model, and
 Retire only the dependency on `sys.extended_properties`, not the SQL scan. Two lineage surfaces are
 required. **Fabric semantic-model lineage view** shows mirror→lakehouse→model→report. **Purview
 lineage** extends left to Azure SQL. If native lineage is incomplete under private networking, use
-custom Atlas process edges (`nb_09_purview_labels_lineage` / `tools/purview_custom_lineage.py`).
+custom Atlas process edges from `nb_09_purview_labels_lineage`. Keep SQL and Purview private; native
+SQL stored-procedure lineage extraction is optional diagnostics and must not justify public SQL
+access. Custom edges must resolve to native scanned asset identities.
 - **Verify:** at least one KPI chain (Net Revenue or FCR) resolves **SQL server → OneLake → semantic model → report** in Purview, and the mirrored-source origin is visible in the Fabric lineage view.
 
 ### Pillar 3 — AI annotations that travel with the data (model level)
@@ -145,7 +147,7 @@ Cross-walk each pillar to the guide's own milestones and validation tables. Fill
 | P4 (native domains/products) | M2 — Governance foundation & data products | Native Unified Catalog configuration plus `domain-charter.csv` and `data-product-catalog.csv` | 3 native domains + 3 native products read back; each product bound to SQL, Fabric, and model assets; owners/stewards visible | |
 | P4 (custom Atlas supplemental objects) | M2 — Supplemental technical metadata | `nb_07_publish_to_purview` | Atlas API read-back explicitly labeled supplemental, not counted as native domains/products | |
 | P4 (glossary/CDE) | M3 — Glossary & CDEs | `glossary-master.csv`, `cde-catalog.csv`, `nb_08_purview_glossary_cde` | validation PASS plus live glossary/CDE read-back and asset bindings | |
-| P2 + P4 (classifications/lineage) | M4 — Data Map classification and lineage | `nb_09_purview_labels_lineage`, `tools/purview_custom_lineage.py` | classification read-back; one SQL→mirror→semantic model→report chain visible in Purview; Fabric lineage screenshot | |
+| P2 + P4 (classifications/lineage) | M4 — Data Map classification and lineage | `nb_09_purview_labels_lineage` | classification read-back; one SQL→mirror→semantic model→report chain visible in Purview; Fabric lineage screenshot | |
 | P4 (sensitivity labels) | M4 — Information Protection | `label-policy.csv` plus Fabric/Purview Information Protection configuration | real MIP label displayed on pilot semantic model; mandatory/default/auto-label behavior demonstrated | |
 | P1 + P3 (metadata/writeback) | M5 — Runtime metadata and AI readiness | `nb_07b_merge_customer_metadata`, `nb_04_sempy_writeback`, `nb_05_push_qa_verified_answers` | model read-back of descriptions/annotations; repeat run proves idempotence; schema-change test passes | |
 | P5 (stewardship controls) | M5 — Stewardship/certification | corrected `nb_10_purview_stewardship_ai` | corrected closeout has zero genuine `ACTION_REQUIRED`; DLP mode explicitly chosen | |

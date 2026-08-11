@@ -13,7 +13,9 @@ Work in:
 
 Use GitHub Copilot only to implement the required changes.
 
-The completed workflow must execute through Microsoft Purview, Azure SQL, Fabric Mirroring, Fabric notebooks, the semantic model, and the Fabric Data Agent. This prompt is not part of the runtime.
+Use `docs/closed-loop-governance-reference-model.md` and `docs/Option_B_Closed_Loop_Governance_Development_Guide.docx` as the controlling architecture decision. Deliver one Purview-native publication workflow first. Do not expand into additional workflow types or SQL-controlled approvals until its read-back, SQL receipt, semantic reconciliation, and validation loop is proven.
+
+The eventual expanded workflow may execute through Microsoft Purview, Azure SQL, Fabric Mirroring, Fabric notebooks, the semantic model, and the Fabric Data Agent. The first milestone ends at the selected Purview-native publication, SQL ledger, mirror observation, required semantic reconciliation, and validated receipts. This prompt is not part of the runtime.
 
 The current demo proves metadata publication, but its approval loop is still too static. Replace the single SQL-only gate with a **two-authority circular governance model**:
 
@@ -27,6 +29,38 @@ The current demo proves metadata publication, but its approval loop is still too
 ## Governing Principle
 
 > Use Purview workflows where Purview can natively own the approval. Use SQL governance requests where Purview has no native approval type. Normalize both approval paths into one SQL governance-event contract, propagate through Fabric Mirroring, apply changes to runtime surfaces, and write publication evidence back to SQL.
+
+## Network and Lineage Guardrail
+
+- Keep Azure SQL and Purview private.
+- Preserve native Azure SQL and Fabric scans for discovery, classifications where supported, stable GUIDs/qualified names, search, and schema-change detection.
+- Use custom Atlas Process entities only for missing SQL-to-Fabric, notebook, governance-process, publication, and validation edges.
+- Resolve custom process inputs and outputs to native scanned assets; do not create duplicate stand-in entities.
+- Store the canonical lineage manifest and read-back receipts in SQL.
+- Treat native SQL stored-procedure lineage extraction as optional diagnostics, not a dependency.
+- Never open Azure SQL publicly merely to enable native stored-procedure lineage extraction.
+
+## Delivery Sequence
+
+### Phase 1: Purview-native closed loop
+
+Implement and prove exactly one initial publication scenario:
+
+1. Glossary-term publication or data-product publication.
+2. Purview polling/read-back into the unified SQL event contract.
+3. Semantic reconciliation only where the approved object requires it.
+4. Object-specific Purview and semantic read-back.
+5. SQL events, object versions, and target receipts.
+
+Data-product access is a later audit-only native scenario and must not block the first closeout. It must not mutate semantic definitions merely because access changed.
+
+### Phase 2: SQL source discovery
+
+Detect one newly mirrored regular SQL table, inventory its identity and schema hash, assign an onboarding disposition, and create a governance design request when eligible. Do not automatically expose newly mirrored tables in the semantic model. Treat views through a separate materialization, pipeline, or semantic-definition path.
+
+### Later extension: SQL-controlled approvals
+
+Only after the native workflow and source-onboarding mechanics are proven, add SQL-controlled KPI, verified-answer, CDE, agent-grounding, semantic-metadata, and label-policy approvals.
 
 ## Native Purview Workflow Scope
 
@@ -52,7 +86,7 @@ Do not pretend that Purview approves unsupported change types.
 
 ## Authority Matrix
 
-Implement a configurable authority matrix rather than hard-coding authority decisions throughout notebooks.
+Define the authority matrix now, but implement only the selected Purview-native publication type in the first milestone. Do not hard-code authority decisions throughout notebooks.
 
 | Change type | Approval authority | Canonical approval evidence | Downstream action |
 |---|---|---|---|
@@ -230,6 +264,8 @@ A governance request reaches `Completed` only when every required target in the 
 
 ## SQL Approval Interface
 
+**Later extension only:** Do not build this interface as part of the first Purview-native publication milestone or the source-discovery milestone.
+
 The current demonstration depends on direct SQL updates. Replace ad hoc updates with controlled stored procedures:
 
 ```sql
@@ -263,6 +299,8 @@ dbo.vw_governance_completed_changes
 
 ## Mirror Confirmation Gate
 
+For the initial Purview-native scenario, confirm that the normalized SQL event and approved payload are observed through Mirroring before runtime reconciliation. The SQL-controlled approval checks below apply only to the later extension.
+
 Extend `nb_07a_ingest_customer_files` or create a focused control notebook so Fabric can prove the approved SQL event arrived through Mirroring.
 
 For each SQL-controlled event:
@@ -285,6 +323,8 @@ The notebook must distinguish:
 - Validation timestamp.
 
 ## Refactor `nb_11_gated_governance_sync`
+
+**Later extension only:** Keep the current notebook intact during the first native-gate milestone unless a small compatibility change is required by the shared event contract.
 
 Update `nb_11` to become the common apply dispatcher.
 
@@ -408,7 +448,7 @@ Rules:
 
 ## Demo Scenarios
 
-Implement and document at least these live scenarios.
+Select and implement one of the first two Purview publication scenarios for Phase 1. The other native scenario and all SQL scenarios are follow-up work and must not block Phase 1 closeout.
 
 ### Scenario 1: Purview term publication
 
@@ -431,7 +471,7 @@ Flow:
 9. Runtime and Purview read-back receipts are recorded.
 10. Event becomes `Completed`.
 
-### Scenario 2: Purview data-product publication
+### Alternative Scenario 2: Purview data-product publication
 
 Object:
 
@@ -441,7 +481,7 @@ DP-SVCPERF
 
 Demonstrate Purview publication approval, SQL snapshot replication, mirror confirmation, binding reconciliation, and completed receipts.
 
-### Scenario 3: SQL KPI approval
+### Later Scenario 3: SQL KPI approval
 
 Object:
 
@@ -460,7 +500,7 @@ Demonstrate:
 - Purview reconciliation if required.
 - Completed receipts.
 
-### Scenario 4: SQL verified-answer certification
+### Later Scenario 4: SQL verified-answer certification
 
 Question:
 
@@ -470,7 +510,7 @@ What is the SLA for a no-heat call?
 
 Demonstrate SQL approval, mirror confirmation, AI metadata update, Data Agent/semantic answer refresh, publish, prompt validation, and completed receipts.
 
-### Scenario 5: SQL CDE classification
+### Later Scenario 5: SQL CDE classification
 
 Object:
 
@@ -482,7 +522,7 @@ Demonstrate SQL approval followed by mirrored propagation and Purview publicatio
 
 ## Validation Requirements
 
-For every scenario, capture:
+For every scenario included in the active delivery phase, capture:
 
 - Authority decision.
 - Approval request ID.
@@ -541,20 +581,21 @@ Document clearly:
 
 ## Deliverables
 
-Return:
+Return these first-milestone deliverables:
 
 1. Authority matrix.
-2. SQL schema migrations.
-3. Stored procedures and views.
-4. New or updated Fabric notebooks.
-5. Refactored `nb_11`.
-6. Purview workflow setup instructions.
-7. Purview workflow synchronization logic.
-8. Publication receipt implementation.
-9. Loop-prevention design.
-10. Updated documentation and runbook.
-11. Validation evidence for all five scenarios.
-12. Remaining limitations.
+2. Additive SQL schema for requests, append-only events, object versions, target receipts, source/semantic inventories, and object mappings.
+3. Controlled SQL write procedures required by the Purview bridge and receipt closeout, without the later SQL approval interface.
+4. Purview workflow setup instructions for the selected publication type.
+5. Purview polling/read-back synchronization logic.
+6. Semantic reconciliation and object-level read-back for the selected scenario.
+7. Publication receipt and loop-prevention implementation.
+8. Source-discovery design and, after the native loop closes, one governed onboarding proof.
+9. Updated documentation and runbook.
+10. Validation evidence for the selected native scenario only.
+11. Remaining limitations and the explicit backlog for additional native and SQL-controlled scenarios.
+
+Later-phase deliverables include the SQL approval procedures, `nb_11` refactor, KPI/verified-answer/CDE scenarios, operational scheduling, and Advanced DAX evaluation. They must not block the first native-gate closeout.
 
 The completed demonstration must show a genuinely circular process:
 
