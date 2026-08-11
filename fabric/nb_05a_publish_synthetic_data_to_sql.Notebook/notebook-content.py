@@ -829,10 +829,12 @@ GO
 PURVIEW_METADATA_SEED_SQL = r"""
 SET NOCOUNT ON;
 GO
--- Clear the OKR->DataProduct link table first (sql/11_ontology_okr_schema.sql), which
--- FK-references governance_data_products and is not owned by this notebook. Re-run
--- sql/12_seed_ontology_okrs.sql afterward to restore these links.
+-- Clear the OKR tables first (sql/11_ontology_okr_schema.sql), which FK-reference
+-- governance_domains/governance_data_products and are not owned by this notebook.
+-- Re-run sql/12_seed_ontology_okrs.sql afterward to restore OKRs and their links.
 IF OBJECT_ID(N'dbo.governance_okr_data_products', N'U') IS NOT NULL DELETE FROM dbo.governance_okr_data_products;
+IF OBJECT_ID(N'dbo.governance_okr_key_results', N'U') IS NOT NULL DELETE FROM dbo.governance_okr_key_results;
+IF OBJECT_ID(N'dbo.governance_okrs', N'U') IS NOT NULL DELETE FROM dbo.governance_okrs;
 DELETE FROM dbo.governance_label_assignments; DELETE FROM dbo.governance_role_assignments; DELETE FROM dbo.governance_cdes; DELETE FROM dbo.governance_glossary_terms; DELETE FROM dbo.governance_data_products; DELETE FROM dbo.governance_domains;
 GO
 INSERT INTO dbo.governance_domains (domain_id, domain_name, domain_type, description, parent_domain, status, governance_domain_owners, governance_domain_creators) VALUES ('DOM-CUSTOPS','Customer Operations','Data domain','Customer support, consent, complaint, and profile stewardship domain.',NULL,'Published','Victoria.Tan@enercare.ca;Ci.Zhu@enercare.ca','Ci.Zhu@enercare.ca;Alison.Pouw@microsoft.com'),('DOM-SVCDEL','Service Delivery','Data domain','Field service scheduling, work-order execution, and SLA governance.',NULL,'Published','ranbir.singh@enercare.ca;Ci.Zhu@enercare.ca','Ci.Zhu@enercare.ca;Alison.Pouw@microsoft.com'),('DOM-REVCON','Revenue and Contracts','Data domain','Billing, contracts, renewals, and financial governance domain.',NULL,'Published','Ci.Zhu@enercare.ca;ranbir.singh@enercare.ca','Ci.Zhu@enercare.ca;Alison.Pouw@microsoft.com');
