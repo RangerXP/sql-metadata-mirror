@@ -261,7 +261,7 @@ finally:
     cursor.close()
     connection.close()
 
-request_payload = json.loads(request_row[1])
+request_payload = json.loads(request_row[1]) if request_row[1] else {}
 published_term = json.loads(version_row[0])
 if published_term.get("id") != PURVIEW_TERM_ID or published_term.get("status") != "Published":
     raise RuntimeError("Published source payload does not match the configured GT-SLA term.")
@@ -270,9 +270,22 @@ approved_definition = description_text(published_term.get("description"))
 if not approved_definition:
     raise RuntimeError("Published GT-SLA has no usable description to reconcile.")
 
-publication_content_hash = request_payload.get("publicationContentHash")
-if not publication_content_hash:
-    raise RuntimeError("P1 proposed_payload has no publicationContentHash.")
+receipt_content_hash = publication_receipt[1]
+payload_content_hash = request_payload.get("publicationContentHash")
+if receipt_content_hash and payload_content_hash and receipt_content_hash != payload_content_hash:
+    raise RuntimeError("P1 receipt and proposed_payload publication hashes differ.")
+
+if receipt_content_hash:
+    publication_content_hash = receipt_content_hash
+elif payload_content_hash:
+    publication_content_hash = payload_content_hash
+else:
+    publication_content = dict(published_term)
+    publication_content.pop("status", None)
+    publication_content_hash = sha256_text(canonical_json(publication_content))
+
+if len(publication_content_hash) != 64:
+    raise RuntimeError("Resolved publication content hash is not a SHA-256 value.")
 
 semantic_annotations = {
     "Glossary_Term_References": PURVIEW_TERM_CODE,
