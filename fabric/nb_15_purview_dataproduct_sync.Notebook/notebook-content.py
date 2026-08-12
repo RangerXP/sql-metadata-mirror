@@ -39,7 +39,7 @@ PURVIEW_CATALOG_BASE_URL = (
     "https://b7e47691-9726-4f67-a302-e567815f3522-api."
     "purview-service.microsoft.com/datagovernance/catalog"
 )
-PURVIEW_DATA_PRODUCT_ID = "59e0c2d5-64a1-4e55-91be-47ab5b2f6841"
+PURVIEW_DATA_PRODUCT_ID = "d5c9cc77-aaaf-4e07-9010-e3758d50cb87"  # Re-verified 2026-08-12 via /dataproducts list; changed from 59e0c2d5-... after unpublish/edit/republish/unpublish cycle.
 PURVIEW_DATA_PRODUCT_CODE = "DP-SVCPERF"
 PURVIEW_DOMAIN_ID = "061ad71f-26e1-49c1-8f54-95f67ce61c53"
 

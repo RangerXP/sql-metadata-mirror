@@ -42,7 +42,7 @@ DEMO_MODE = True
 RUN_REQUEST_ID = ""  # Example: PV-DP-SVCPERF-<hash>
 
 MODEL_NAME = "BrookfieldEnercare"
-PURVIEW_DATA_PRODUCT_ID = "59e0c2d5-64a1-4e55-91be-47ab5b2f6841"
+PURVIEW_DATA_PRODUCT_ID = "d5c9cc77-aaaf-4e07-9010-e3758d50cb87"  # Re-verified 2026-08-12; changed from 59e0c2d5-... after unpublish/edit/republish/unpublish cycle.
 PURVIEW_DATA_PRODUCT_CODE = "DP-SVCPERF"
 
 SERVER_NAME = "sqlserver-sk2wus3.database.windows.net"
