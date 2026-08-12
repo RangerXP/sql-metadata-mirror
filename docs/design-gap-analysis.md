@@ -102,6 +102,8 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | **G12** | **Phase A design commit (north star, dataset, CSVs, SIN backstop, 2-day plan)** | **P1** | **🟢 Done** | **Sean** |
 | G13 | Self-healing semantic model sync (SQL value-change propagation, not just schema autosync) | P2 | � Done — `nb_11_gated_governance_sync` proven live against all 4 scenarios; G13-5 (scheduled/triggered re-run) remains deferred | Sean |
 | G14 | Gated governance approval workflows (KPI approval, Verified Answer certification, CDE classification, glossary term definition) | P2 | 🟢 Done — all 4 scenarios proven live 2026-08-09, full propagation chain + `nb_10` reconfirm closed 2026-08-10 | Sean |
+| G15 | Native Purview publication closed loop (`GT-SLA`, Ci Zhu) — publication, semantic reconciliation, mirrored evidence | P2 | 🟢 Done — `PublicationReadback`/`SemanticModelReadback` both Passed, request `Completed` 2026-08-11 | Sean |
+| G16 | Native Purview workflow stakeholder coverage — remaining 4 stakeholders (P3 Data Product Access, P4 Data Product Publish) | P2 | 🟡 In Progress — wireframe committed, P3/P4 not yet built | Sean |
 
 ---
 
@@ -494,6 +496,35 @@ G8-3 completion evidence (captured Day 5):
 | G14-6 | Live run: CDE Classification (`CDE-COMPLAINTREF`) | 🟢 Done | Proven — new `governance_cdes` row, applied 02:14:06 |
 | G14-7 | Live run: Glossary Term Definition (`GT-SLA`) | 🟢 Done | Proven — new `governance_glossary_terms` row, applied 02:17:24 |
 | G14-8 | Phase 4 closeout — all 4 requests `Applied`, `nb_10` re-confirms 0 `ACTION_REQUIRED` after each | 🟢 Done | Full propagation chain (`nb_07a`→`nb_04_sempy_writeback`→`nb_05`→`nb_08`→`nb_09`→`nb_10`) proven end-to-end 2026-08-10; `nb_10` scorecard 0 `ACTION_REQUIRED` across all phases |
+
+---
+
+## G15 — Native Purview Publication Closed Loop (`GT-SLA`)
+
+**Priority:** P2
+**Status:** 🟢 Done
+**Goal:** Prove one native Purview publication workflow (Term publish) end-to-end into the SQL ledger, semantic model, and mirrored evidence — before extending to the remaining 4 stakeholders (G16).
+
+| # | Task | Status | Notes |
+|---|---|---|---|
+| G15-1 | Native Purview publication evidence (`nb_12_purview_workflow_sync`) | 🟢 Done | `PublicationReadback=Passed`, Draft/Published versions recorded immutably |
+| G15-2 | Semantic reconciliation closeout (`nb_13_semantic_reconcile`) | 🟢 Done | 3 SLA objects updated and read back, `SemanticModelReadback=Passed`, request `Completed` 2026-08-11 23:10:02 UTC |
+| G15-3 | Mirrored closed-loop evidence | 🟢 Done | `sqldemo` SQL analytics endpoint shows `Completed` plus both passing receipts with matching hashes |
+
+---
+
+## G16 — Native Purview Workflow Stakeholder Coverage (Remaining 4 Stakeholders)
+
+**Priority:** P2
+**Status:** 🟡 In Progress
+**Goal:** Extend the G15 pattern to Victoria Tan, Rupal Solanki, Ranbir Singh, and Shruthi Srinivas using only native Purview workflow types (Data product access, Data product publish), fitting all 5 stakeholders across the 3 workflow types Unified Catalog actually supports. Full design in `docs/purview-native-workflow-wireframe.md`.
+
+| # | Task | Status | Notes |
+|---|---|---|---|
+| G16-1 | Wireframe: stakeholder-to-scenario mapping, ground-truth workflow types, manual-role prerequisites | 🟢 Done | `docs/purview-native-workflow-wireframe.md` |
+| G16-2 | P3 — Data product access (`DP-CUST360`): Victoria Tan approver, Rupal Solanki requester | 🟡 In Progress — `nb_14_purview_access_sync` built (2026-08-12); Stage 1 (Configure) and a full real submit + two-tier approval cycle proven live (Privacy Compliance Approval + main Approval, both by Victoria Tan). Confirmed (research + live diagnostic-log test) that no API/log exposes the decision for independent verification — `nb_14` uses operator-attested evidence for the decision, with the data product's own state independently API-verified | Not yet run live (DEMO_MODE dry run + live run both pending) |
+| G16-3 | P4 — Data product publish (`DP-SVCPERF`/DOM-SVCDEL): Ranbir Singh approver, Shruthi Srinivas requester | 🟡 In Progress — all live setup complete (2026-08-12): roles assigned, 8 correct data assets attached, "Service Delivery Data Product Publish" workflow built via Process automation and saved (Ranbir Singh approver). `nb_15`/`nb_16` built, not yet run | Next: `nb_15` DEMO_MODE dry run, then real Draft revision submitted by Shruthi + Ranbir's live approval, then live `nb_15`/`nb_16` runs; `nb_16`'s `SEMANTIC_TARGETS` still need confirmation against the live semantic model |
+| G16-4 | Phase closeout — all 5 stakeholders have a proven native scenario; move to non-native workflow phase | 🔴 Not Started | Depends on G16-2, G16-3 |
 
 ---
 

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_14_purview_access_sync",
+    "description": "P3: bridge one native Purview Data Product access decision (DP-CUST360) into idempotent SQL ledger evidence. Audit-only; attested decision, no semantic mutation."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "00000000-0000-0000-0000-000000000000"
+  }
+}
