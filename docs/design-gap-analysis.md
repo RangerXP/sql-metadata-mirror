@@ -115,7 +115,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G16 | Native Purview workflow stakeholder coverage — remaining 4 stakeholders (P3 Data Product Access, P4 Data Product Publish) | P2 | ✅ Done — all 5 stakeholders (Ci Zhu, Victoria Tan, Rupal Solanki, Ranbir Singh, Shruthi Srinivas) closed live 2026-08-12 | Sean |
 | G17 | Unify SQL-controlled and Purview-native governance under one closed-loop ledger contract — reconcile `governance_change_requests` (legacy) into `governance_requests`/events/receipts/versions, close the AI-instructions/OKR/role-assignment gating gaps, and prove drift-and-restore self-correction for real (see G18 for the separate "self-healing semantic model" concept) | P2 | ✅ Done — R1-R6 all closed 2026-08-13 | Sean |
 | G18 | **Self-healing semantic model** — source table discovery & governed onboarding (Loop B). This is the team's adopted definition of "self-healing": a new SQL table must be inventoried, dispositioned, and pass an approval gate (domain, data product, sensitivity, semantic role) before it is ever added to the semantic model or surfaced to the Data Agent; Fabric Mirror autosync and Purview scans provide discovery only, never governance or model inclusion | P2 | � In Progress — G18-A (`@tag` native extraction: discovery/classification/approval loop) closed 2026-08-13 with real Completed/Rejected/Submitted demo objects; full G18 (CDE mapping + real semantic-model TMDL promotion) still open | Sean |
-| G19 | Closed-loop governance completeness review — governance lifecycle management (not just publication): ontology/Objective-level governance & certification (priority 1), AI Instruction lifecycle, Data Product certification lifecycle, G18 discovery-to-ontology completion, first-class governance receipts, scheduled automation (G13-5) | P2 | � In Progress — G19-1 + G19-3 (Objective governance + ontology evidence graph) closed 2026-08-13; G19-4/5/6/2/7/8 remain | Sean |
+| G19 | Closed-loop governance completeness review — governance lifecycle management (not just publication): ontology/Objective-level governance & certification (priority 1), AI Instruction lifecycle, Data Product certification lifecycle, G18 discovery-to-ontology completion, first-class governance receipts, scheduled automation (G13-5) | P2 | 🟡 In Progress — G19-1 + G19-3 (Objective governance + ontology evidence graph) and G19-4 (AI Instruction effective-date + rollback) closed 2026-08-13; G19-5/6/2/7/8 remain | Sean |
 | G20 | Close remaining "zero gate of any kind" deployed governance objects (stale-element audit, 2026-08-13): Governance Domains, OKR Objectives, Data Product Certification (incl. `DP-BILLHEALTH`'s total lack of coverage), Purview scan completion — deliberately scoped to lightweight synthetic/attested records, not new interactive workflows, per explicit user direction (these are pre-assumed data-model elements, not stakeholder-tied demo moments) | P2 | ✅ Done 2026-08-13 — `sql/23_g20_synthetic_governance_attestation.sql`, 11 real attested records | Sean |
 
 ---
@@ -689,7 +689,7 @@ this lifecycle-completion theme rather than by which G17 sub-phase they extend.
 | G19-1 | **Ontology governance completeness** — Objective-level approval (not just Key Result), Objective certification/recertification, ownership validation (`owner_upn` resolves to a real, currently-assigned domain owner), drift detection (an Objective's linked data products/domain still exist and match), and a retirement workflow | G17-R4 | A real Objective edit goes through Draft→Approve→Apply; a recertification request is proposed and approved for an already-Completed OKR; a retired Objective is excluded from active-graph reads |
 | G19-2 | **Generic certification lifecycle model** — extend the existing Draft→Submitted→Approved→Applied states with `Certified`, `Expired`, `Decertified`, `RecertificationRequired`, `Retired`, reusable across Data Products, AI Instructions, KPIs, Objectives, and Verified Answers (a governance-lifecycle state machine, not a one-off per object type) | G19-1 | At least 2 distinct object types (e.g. Objective + Data Product) each pass through the full extended state machine with real receipts at each transition |
 | G19-3 | **Ontology evidence graph** — extend today's Objective→KeyResult→KPI chain with linked receipts at every hop (Approval Receipt, Certification Receipt, Semantic Model Receipt) so a business objective can be explained end-to-end by evidence, not just by data | G19-1, G19-2 | A single query/read-back walks Objective → Key Result → KPI → Data Product → Domain and returns a real receipt at every edge |
-| G19-4 | **AI Instruction lifecycle completeness** — effective-date activation (`EffectiveDate` column + gating so an approved instruction doesn't take effect until its date) and a rollback workflow (revert to the prior certified version, itself going through the same approval gate) | G17-R3 | A real AI instruction is approved with a future effective date, confirmed NOT active until that date; a real rollback request is approved and restores the prior certified text |
+| G19-4 | **AI Instruction lifecycle completeness** — effective-date activation (`EffectiveDate` column + gating so an approved instruction doesn't take effect until its date) and a rollback workflow (revert to the prior certified version, itself going through the same approval gate) | G17-R3 | ✅ Done 2026-08-13 — A real AI instruction is approved with a future effective date, confirmed NOT active until that date; a real rollback request is approved and restores the prior certified text; see results below |
 | G19-5 | **Data Product certification lifecycle** — certify/de-certify/expiration-review, distinct from Publish (already proven in P4) | G16 (P4), G19-2 | A published data product is separately certified (new `request_type`, e.g. `DataProductCertification`), with a real expiration date and a real de-certification example |
 | G19-6 | **Discovery-to-ontology loop (G18 completion)** — extend G18-A's discovery→classify→approve chain with a CDE mapping step and an ontology mapping step (link the approved table/column to a real ontology node — Domain/Data Product/OKR — not just a domain tag) before actual semantic-model promotion (real SemPy Labs TOM mutation, not just a SQL-side receipt) | G18-A | An approved G18-A object (e.g. `vw_technician_utilization_summary`) resolves to a real ontology node, is actually added to the semantic model, and is read back — matching the `nb_13`/`nb_16` apply+validate pattern |
 | G19-7 | **First-class governance receipts** — promote domain-publish and Purview-scan-completion events from "missing" to typed receipts: Domain Publish Receipt (Published→Read Back→Validated), Purview Scan Receipt (Started→Completed→Assets Discovered→Read Back), Objective Approval Receipt (Approved→Ontology Updated→Relationships Validated) | G19-1, G17 ledger | A real domain publish and a real scan run each produce a queryable, typed receipt in the unified ledger |
@@ -798,6 +798,35 @@ Objectives (`OKR-CUSTOPS-CX`, `OKR-REVCON-RETAIN`) are untouched; all 14 new rec
 (`SqlApplyReadback` x2, `ObjectiveCertificationReadback`, `ObjectiveRecertificationReadback`,
 `ObjectiveRetirementReadback`, `OwnershipValidationReadback` x3, `DriftDetectionReadback` x3,
 plus the pre-existing `OperatorAttestedObjectiveApproval` x3 from G20) show `validation_status='Passed'`.
+
+### G19-4 results (closed 2026-08-13)
+
+Extended `nb_11_gated_governance_sync` (same existing AI Instruction gate GCR-AII-001 already
+proved, not a new/parallel workflow) with effective-date activation and a rollback handler:
+
+| Item | Result |
+|---|---|
+| Schema | `lh_metadata.ai_metadata` extended with `EffectiveDate`, `IsRolledBack`, `RolledBackFromRecordID`, `RollbackReason` (idempotent `ALTER TABLE ADD COLUMNS`, guarded by column-existence check) |
+| Effective-date activation | `GCR-AII-002` — new "Winter Weather Delay Communication" instruction certified with `EffectiveDate` 14 days out (2026-08-27); confirmed live it is NOT active yet (real future date stored, not backdated) |
+| Rollback | `GCR-AII-003` — a flawed edit to the existing "escalation" instruction (Shruthi Srinivas requester, Ci Zhu approver) that unintentionally dropped the safety/emergency escalation clause, a real governance risk; `GCR-AII-004` — Ranbir Singh catches it and requests rollback, approved by Ci Zhu. `apply_ai_instruction_rollback` dynamically resolves the currently-active certified row and the version immediately before it (no hardcoded RecordID) |
+| Live result | The flawed row is superseded (`IsCertified=0`) and a new row reverts to the original safety-clause-inclusive text, `IsRolledBack=1`, `RolledBackFromRecordID` pointing at the superseded row |
+
+**Real incident hit and fixed during this build:** the first `nb_11` run executed before the git
+sync had actually landed (`updateFromGit` failed with `MissingWorkspaceConflictResolution` — the
+fix was adding `conflictResolution: {conflictResolutionType: "Workspace", conflictResolutionPolicy:
+"PreferRemote"}` to the request body, a new gotcha beyond the previously-documented
+`allowOverrideItems` fix). That first run silently executed the OLD pre-G19-4 code, which
+appended 2 orphan duplicate rows (RecordID 41 `weather_delay`, RecordID 42 `escalation`, both
+missing the new lifecycle columns) before failing on the unknown `AI_INSTRUCTION_ROLLBACK`
+request_type and rolling back only the SQL-side `applied_at` stamps (Delta appends are
+independent commits, not part of that transaction). After fixing the sync and re-running
+cleanly, the rollback's "prior version" lookup was contaminated by orphan RecordID 42 (picked
+as "immediately prior" instead of the true original RecordID 40), reverting to the wrong
+(still-flawed) text. Fixed via a disposable temp notebook (created, run, deleted per standard
+hygiene) that deleted the 2 orphan rows and corrected the rollback row's text to the true
+original. Final state independently re-verified via OneLake debug-file fetch: 4 clean rows
+(`RecordID 40` original, `44` superseded flawed edit, `45` correct rollback with the full
+safety-clause text restored, `43` the future-dated weather instruction) — no orphans remain.
 
 ---
 
