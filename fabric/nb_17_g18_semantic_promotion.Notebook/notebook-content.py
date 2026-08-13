@@ -195,12 +195,16 @@ expected_hash = sha256_text(canonical_json(expected_measure))
 print(f"[READY] request={RUN_REQUEST_ID} status={request_row[0]} target={TARGET_TABLE}.{NEW_MEASURE_NAME} expected_hash={expected_hash}")
 
 # Apply -- add the new measure via SemPy Labs TOM (real TMDL mutation, not just a SQL receipt).
+# NOTE: Microsoft.AnalysisServices.Tabular is only importable AFTER connect_semantic_model has
+# bootstrapped the CLR bridge in this session -- importing it before any connect_semantic_model
+# call raises ModuleNotFoundError: No module named 'Microsoft'. Always import it INSIDE the
+# active `with` block (matches nb_16's upsert_annotation, which only ever runs inside one).
 if DEMO_MODE:
     print("[DEMO_MODE] Semantic measure creation skipped.")
 else:
-    from Microsoft.AnalysisServices.Tabular import Measure as TomMeasure
-
     with connect_semantic_model(dataset=MODEL_NAME, readonly=False) as tom:
+        from Microsoft.AnalysisServices.Tabular import Measure as TomMeasure
+
         table = find_by_name(tom.model.Tables, TARGET_TABLE)
         if table is None:
             raise RuntimeError(f"Semantic table not found: {TARGET_TABLE}")
