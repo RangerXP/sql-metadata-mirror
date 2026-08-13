@@ -3,6 +3,15 @@ table fct_service_request
 	lineageTag: 82a63417-6d59-4b67-81fc-0dcc3763236a
 	sourceLineageTag: [dbo].[fct_service_request]
 
+	measure 'Technician Utilization Rate' = DIVIDE(DISTINCTCOUNT(fct_service_request[TechnicianId]), COUNTROWS(fct_service_request))
+		formatString: 0.0%
+
+		annotation SourceObject_References = dbo.vw_technician_utilization_summary
+
+		annotation KeyResult_Id = KR-TECH-UTIL
+
+		annotation Governance_Request_Id = SEMPROMO-TECHUTIL-001
+
 	/// Unique service request identifier
 	column RequestKey
 		dataType: int64
@@ -114,7 +123,7 @@ table fct_service_request
 
 		annotation SummarizationSetBy = Automatic
 
-	/// Assigned technician; NULL if unassigned
+	/// Identifies the dispatched technician for the service request. Governed definition (DP-SVCPERF): <div>Field service performance product covering service requests, technician utilization, equipment failure rates, SLA attainment, and call-center first call resolution - used for daily field-ops dashboards and quarterly SLA reviews.</div>
 	column TechnicianId
 		dataType: int64
 		formatString: 0
@@ -124,6 +133,14 @@ table fct_service_request
 		sourceColumn: TechnicianId
 
 		annotation SummarizationSetBy = Automatic
+
+		annotation DataProduct_References = DP-SVCPERF
+
+		annotation Purview_DataProduct_Id = d5c9cc77-aaaf-4e07-9010-e3758d50cb87
+
+		annotation Purview_Publication_Content_Hash = 4e1c301cb2cf87553d58db2c9c9a3d5d39bd43149ec3251b9e3c53551bf695fc
+
+		annotation Governance_Request_Id = PV-DP-SVCPERF-9EAF4919D7DFD8F8B5C6
 
 	column ResolutionNotes
 		dataType: string

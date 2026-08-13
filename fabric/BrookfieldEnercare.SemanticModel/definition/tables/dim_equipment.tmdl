@@ -24,7 +24,7 @@ table dim_equipment
 
 		annotation SummarizationSetBy = Automatic
 
-	/// Category: Water Heater | Furnace | Central AC | Heat Pump | Smart Thermostat
+	/// Identifies the equipment category serviced under this request. Governed definition (DP-SVCPERF): <div>Field service performance product covering service requests, technician utilization, equipment failure rates, SLA attainment, and call-center first call resolution - used for daily field-ops dashboards and quarterly SLA reviews.</div>
 	column EquipmentType
 		dataType: string
 		lineageTag: 64f441f5-ae9e-47ea-8316-d9793332a30a
@@ -33,6 +33,14 @@ table dim_equipment
 		sourceColumn: EquipmentType
 
 		annotation SummarizationSetBy = Automatic
+
+		annotation DataProduct_References = DP-SVCPERF
+
+		annotation Purview_DataProduct_Id = d5c9cc77-aaaf-4e07-9010-e3758d50cb87
+
+		annotation Purview_Publication_Content_Hash = 4e1c301cb2cf87553d58db2c9c9a3d5d39bd43149ec3251b9e3c53551bf695fc
+
+		annotation Governance_Request_Id = PV-DP-SVCPERF-9EAF4919D7DFD8F8B5C6
 
 	/// Manufacturer name
 	column Make
