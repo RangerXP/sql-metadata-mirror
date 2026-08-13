@@ -115,7 +115,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G16 | Native Purview workflow stakeholder coverage — remaining 4 stakeholders (P3 Data Product Access, P4 Data Product Publish) | P2 | ✅ Done — all 5 stakeholders (Ci Zhu, Victoria Tan, Rupal Solanki, Ranbir Singh, Shruthi Srinivas) closed live 2026-08-12 | Sean |
 | G17 | Unify SQL-controlled and Purview-native governance under one closed-loop ledger contract — reconcile `governance_change_requests` (legacy) into `governance_requests`/events/receipts/versions, close the AI-instructions/OKR/role-assignment gating gaps, and prove drift-and-restore self-correction for real (see G18 for the separate "self-healing semantic model" concept) | P2 | ✅ Done — R1-R6 all closed 2026-08-13 | Sean |
 | G18 | **Self-healing semantic model** — source table discovery & governed onboarding (Loop B). This is the team's adopted definition of "self-healing": a new SQL table must be inventoried, dispositioned, and pass an approval gate (domain, data product, sensitivity, semantic role) before it is ever added to the semantic model or surfaced to the Data Agent; Fabric Mirror autosync and Purview scans provide discovery only, never governance or model inclusion | P2 | � In Progress — G18-A (`@tag` native extraction: discovery/classification/approval loop) closed 2026-08-13 with real Completed/Rejected/Submitted demo objects; full G18 (CDE mapping + real semantic-model TMDL promotion) still open | Sean |
-| G19 | Closed-loop governance completeness review — governance lifecycle management (not just publication): ontology/Objective-level governance & certification (priority 1), AI Instruction lifecycle, Data Product certification lifecycle, G18 discovery-to-ontology completion, first-class governance receipts, scheduled automation (G13-5) | P2 | 🟡 In Progress — G19-1 + G19-3 (Objective governance + ontology evidence graph), G19-4 (AI Instruction effective-date + rollback), and G19-5 (Data Product certification lifecycle) closed 2026-08-13; G19-6/2/7/8 remain | Sean |
+| G19 | Closed-loop governance completeness review — governance lifecycle management (not just publication): ontology/Objective-level governance & certification (priority 1), AI Instruction lifecycle, Data Product certification lifecycle, G18 discovery-to-ontology completion, first-class governance receipts, scheduled automation (G13-5) | P2 | 🟡 In Progress — G19-1 + G19-3 (Objective governance + ontology evidence graph), G19-4 (AI Instruction effective-date + rollback), G19-5 (Data Product certification lifecycle), and G19-6 (G18 CDE/ontology mapping + real semantic-model promotion) closed 2026-08-13; G19-2/7/8 remain | Sean |
 | G20 | Close remaining "zero gate of any kind" deployed governance objects (stale-element audit, 2026-08-13): Governance Domains, OKR Objectives, Data Product Certification (incl. `DP-BILLHEALTH`'s total lack of coverage), Purview scan completion — deliberately scoped to lightweight synthetic/attested records, not new interactive workflows, per explicit user direction (these are pre-assumed data-model elements, not stakeholder-tied demo moments) | P2 | ✅ Done 2026-08-13 — `sql/23_g20_synthetic_governance_attestation.sql`, 11 real attested records | Sean |
 
 ---
@@ -691,7 +691,7 @@ this lifecycle-completion theme rather than by which G17 sub-phase they extend.
 | G19-3 | **Ontology evidence graph** — extend today's Objective→KeyResult→KPI chain with linked receipts at every hop (Approval Receipt, Certification Receipt, Semantic Model Receipt) so a business objective can be explained end-to-end by evidence, not just by data | G19-1, G19-2 | A single query/read-back walks Objective → Key Result → KPI → Data Product → Domain and returns a real receipt at every edge |
 | G19-4 | **AI Instruction lifecycle completeness** — effective-date activation (`EffectiveDate` column + gating so an approved instruction doesn't take effect until its date) and a rollback workflow (revert to the prior certified version, itself going through the same approval gate) | G17-R3 | ✅ Done 2026-08-13 — A real AI instruction is approved with a future effective date, confirmed NOT active until that date; a real rollback request is approved and restores the prior certified text; see results below |
 | G19-5 | **Data Product certification lifecycle** — certify/de-certify/expiration-review, distinct from Publish (already proven) | G16 (P4), G19-2 | ✅ Done 2026-08-13 — A published data product is separately certified (new `request_type`, `DataProductCertification`), with a real expiration date and a real de-certification example; see results below |
-| G19-6 | **Discovery-to-ontology loop (G18 completion)** — extend G18-A's discovery→classify→approve chain with a CDE mapping step and an ontology mapping step (link the approved table/column to a real ontology node — Domain/Data Product/OKR — not just a domain tag) before actual semantic-model promotion (real SemPy Labs TOM mutation, not just a SQL-side receipt) | G18-A | An approved G18-A object (e.g. `vw_technician_utilization_summary`) resolves to a real ontology node, is actually added to the semantic model, and is read back — matching the `nb_13`/`nb_16` apply+validate pattern |
+| G19-6 | **Discovery-to-ontology loop (G18 completion)** — extend G18-A's discovery→classify→approve chain with a CDE mapping step and an ontology mapping step (link the approved table/column to a real ontology node — Domain/Data Product/OKR — not just a domain tag) before actual semantic-model promotion (real SemPy Labs TOM mutation, not just a SQL-side receipt) | G18-A | ✅ Done 2026-08-13 — An approved G18-A object (`vw_technician_utilization_summary`) resolves to a real ontology node, is actually added to the semantic model, and is read back — matching the `nb_13`/`nb_16` apply+validate pattern; see results below |
 | G19-7 | **First-class governance receipts** — promote domain-publish and Purview-scan-completion events from "missing" to typed receipts: Domain Publish Receipt (Published→Read Back→Validated), Purview Scan Receipt (Started→Completed→Assets Discovered→Read Back), Objective Approval Receipt (Approved→Ontology Updated→Relationships Validated) | G19-1, G17 ledger | A real domain publish and a real scan run each produce a queryable, typed receipt in the unified ledger |
 | G19-8 | **Autonomous governance (G13-5)** — scheduled/triggered automation of the full chain (proposal → approval → propagation → validation → receipt → reconciliation) without a human manually triggering each notebook run | All of the above | A governance change flows end-to-end without manual notebook triggering |
 
@@ -847,6 +847,41 @@ decertified_at=<timestamp>`; `DP-CUST360`/`DP-BILLHEALTH` untouched; all 5 new r
 (`SqlApplyReadback`, `DataProductCertificationReadback` x2, `DataProductExpirationReviewReadback`,
 `DataProductDecertificationReadback`) plus the pre-existing 3 `OperatorAttestedDataProductCertification`
 receipts from G20 show `validation_status='Passed'`.
+
+---
+
+### G19-6 results (closed 2026-08-13)
+
+Completed G18's discovery→classify→approve→CDE/ontology-map→promote chain via `sql/27`, `sql/28`,
+and a new `nb_17_g18_semantic_promotion` notebook:
+
+| Item | Result |
+|---|---|
+| CDE mapping | `CDEMAP-CONTRACT-RENEWAL-001` — `vw_contract_renewal_pipeline` (G18-A's genuinely-pending 3rd demo object) mapped to `CDE-CONTRACT-ID` (a real fit — the view selects `contract_id`). This CDE backing then justified finally deciding the pending object: `TAG-D0BF6E496681E6B0` **Approved** (Ci Zhu), giving all 3 original G18-A demo objects a real terminal state |
+| Ontology mapping | `ONTOMAP-TECHUTIL-001` — `vw_technician_utilization_summary` (already Approved/Completed via G18-A) mapped to the real Key Result `KR-TECH-UTIL`, which it was literally built to serve (not a contrived link) |
+| Semantic model promotion | `nb_17_g18_semantic_promotion` added a REAL new measure `fct_service_request[Technician Utilization Rate]` (DAX: `DIVIDE(DISTINCTCOUNT(fct_service_request[TechnicianId]), COUNTROWS(fct_service_request))`) to the live `BrookfieldEnercare` semantic model via SemPy Labs TOM — an actual TMDL mutation, not just a SQL-side receipt — with annotations (`SourceObject_References`, `KeyResult_Id`, `Governance_Request_Id`), then read back read-only and receipted (`SemanticModelReadback`, Passed) |
+
+**Real bug found and fixed during this build:** `nb_17` failed repeatedly with a generic
+`System_Cancelled_Session_Statements_Failed` error across three different notebook shapes
+(multi-cell, single flattened cell, single flattened cell with a pip-install fallback) before a
+targeted debug-wrapped diagnostic surfaced the real Python traceback:
+`ModuleNotFoundError: No module named 'Microsoft'`. Root cause: `Microsoft.AnalysisServices.Tabular`
+(the .NET/CLR interop module SemPy Labs TOM exposes) is only importable **after**
+`connect_semantic_model` has been entered at least once in that session — it bootstraps the CLR
+bridge on first use. The `from Microsoft.AnalysisServices.Tabular import Measure as TomMeasure`
+import was written BEFORE the `with connect_semantic_model(...)` block instead of inside it
+(nb_16's equivalent `Annotation` import is correctly nested inside `upsert_annotation`, which is
+only ever called from within an already-active session — that's why nb_16 never hit this).
+Fix: move the import inside the active `with` block. General lesson for any future SemPy Labs
+TOM code: never import `Microsoft.AnalysisServices.Tabular.*` types at module/cell top level or
+before any `connect_semantic_model` call in that session — always import them from inside an
+active session context.
+
+Live-verified: `SEMPROMO-TECHUTIL-001` shows `current_status=Completed`; the
+`SemanticModelReadback` receipt on `fct_service_request.Technician Utilization Rate` shows
+`validation_status=Passed`; the new measure is confirmed present in the git-committed TMDL
+(`fabric/BrookfieldEnercare.SemanticModel/definition/tables/fct_service_request.tmdl`) after a
+`commitToGit` sync back from the live workspace.
 
 ---
 
