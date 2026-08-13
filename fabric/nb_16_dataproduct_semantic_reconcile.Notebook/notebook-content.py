@@ -34,12 +34,11 @@
 # changes metadata only, verifies a fresh semantic-model read-back, and marks the request
 # Completed only after both required receipts pass.
 #
-# SEMANTIC_TARGETS below are PLACEHOLDER real-table references (fct_service_request is a confirmed
-# real table per the G9 lineage edges) -- confirm exact column/measure names against the live
-# semantic model before the first live run; do not run with DEMO_MODE=False until confirmed.
+# SEMANTIC_TARGETS below are confirmed real columns (verified 2026-08-12 against the live TMDL
+# definitions in fabric/BrookfieldEnercare.SemanticModel/definition/tables/).
 
-DEMO_MODE = True
-RUN_REQUEST_ID = ""  # Example: PV-DP-SVCPERF-<hash>
+DEMO_MODE = False
+RUN_REQUEST_ID = "PV-DP-SVCPERF-9EAF4919D7DFD8F8B5C6"  # Real, live-approved P4 request confirmed via nb_15 2026-08-12.
 
 MODEL_NAME = "BrookfieldEnercare"
 PURVIEW_DATA_PRODUCT_ID = "d5c9cc77-aaaf-4e07-9010-e3758d50cb87"  # Re-verified 2026-08-12; changed from 59e0c2d5-... after unpublish/edit/republish/unpublish cycle.
@@ -52,7 +51,10 @@ SQL_LOGIN_TIMEOUT_SECONDS = 30
 SQL_AUTH_MODE = "tokenlibrary"  # tokenlibrary | managed_identity
 
 SEMANTIC_TARGETS = [
-    # TODO before live run: confirm these table/column names against the live semantic model.
+    # Confirmed 2026-08-12 against fabric/BrookfieldEnercare.SemanticModel/definition/tables/*.tmdl.
+    # ServiceZoneCode does not exist anywhere in the model; swapped for dim_equipment.EquipmentType.
+    # fct_service_request.IsSlaBreachFlag is intentionally excluded: it already carries P1's GT-SLA
+    # governance annotations (Glossary_Term_References=GT-SLA) and must not be overwritten here.
     {
         "table": "fct_service_request",
         "objectType": "Column",
@@ -60,10 +62,10 @@ SEMANTIC_TARGETS = [
         "descriptionPrefix": "Identifies the dispatched technician for the service request.",
     },
     {
-        "table": "fct_service_request",
+        "table": "dim_equipment",
         "objectType": "Column",
-        "objectName": "ServiceZoneCode",
-        "descriptionPrefix": "Identifies the service zone the request was dispatched from.",
+        "objectName": "EquipmentType",
+        "descriptionPrefix": "Identifies the equipment category serviced under this request.",
     },
 ]
 
