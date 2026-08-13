@@ -672,13 +672,19 @@ if DEMO_MODE:
     print(f"[DEMO_MODE] Verified answers — {len(rows_va)} certified KPI and Maria source-story rows:\n")
     df_va.select("RecordID", "LinkedKPICode", "TriggerText").show(truncate=60)
 else:
-    # Deterministic refresh: clear current certified verified answers for this model,
-    # then reinsert canonical seed rows to avoid stale/duplicate trigger drift.
+    # Deterministic refresh: clear current UNCERTIFIED verified answers for this model, then
+    # reinsert canonical seed rows. G17-R3 structural fix (same root cause as the ai_instruction
+    # guard above): a real 2026-08-10 regression silently wiped a governance-approved
+    # (IsCertified=1) verified answer via this exact blanket DELETE, only patched at the time by
+    # baking the approved text into the hardcoded rows_va list below. That workaround does not
+    # protect any FUTURE governance-approved verified answer not yet added to this list -- this
+    # guard closes the root cause instead: certified rows are never eligible for this reseed.
     spark.sql(
         f"DELETE FROM {METADATA_LAKEHOUSE}.ai_metadata "
         f"WHERE ModelName = {_sql_string(MODEL_NAME)} "
         f"AND RecordType = 'verified_answer' "
-        f"AND IsDraft = 0"
+        f"AND IsDraft = 0 "
+        f"AND (IsCertified IS NULL OR IsCertified = 0)"
     )
     df_va.write.format("delta").mode("append").option("mergeSchema", "true") \
          .saveAsTable(f"{METADATA_LAKEHOUSE}.ai_metadata")
@@ -767,13 +773,18 @@ if DEMO_MODE:
     print(f"[DEMO_MODE] AI instruction rows — {len(rows_instr)} rows:\n")
     df_instr.select("RecordID", "RecordType", "TriggerText").show(truncate=60)
 else:
-    # Deterministic refresh: clear current certified AI instruction rows for this model,
-    # then reinsert canonical rows to prevent duplicate/legacy instruction accumulation.
+    # Deterministic refresh: clear current UNCERTIFIED AI instruction rows for this model, then
+    # reinsert canonical rows. G17-R3 structural fix: rows with IsCertified=1 came from a real
+    # governance approval (nb_11 apply-on-approve) and must NEVER be wiped by this hardcoded-list
+    # reseed, regardless of whether their content also happens to be baked into ai_instructions
+    # above -- this closes the 2026-08-10 silent-wipe regression class of bug at its root, rather
+    # than only patching it by keeping the hardcoded list in sync.
     spark.sql(
         f"DELETE FROM {METADATA_LAKEHOUSE}.ai_metadata "
         f"WHERE ModelName = {_sql_string(MODEL_NAME)} "
         f"AND RecordType = 'ai_instruction' "
-        f"AND IsDraft = 0"
+        f"AND IsDraft = 0 "
+        f"AND (IsCertified IS NULL OR IsCertified = 0)"
     )
     df_instr.write.format("delta").mode("append").option("mergeSchema", "true") \
             .saveAsTable(f"{METADATA_LAKEHOUSE}.ai_metadata")

@@ -41,7 +41,7 @@
 # DEMO_MODE = True  -> print every planned mutation; no SQL/Delta writes
 # DEMO_MODE = False -> execute the apply + status-stamp writes live
 
-DEMO_MODE = True            # default safe mode; set False only for a live scenario run
+DEMO_MODE = False            # G17-R3 live apply run for GCR-AII-001 (AI Instruction Certification)
 
 METADATA_LAKEHOUSE = "lh_metadata"
 MODEL_NAME         = "BrookfieldEnercare"
@@ -348,6 +348,10 @@ DISPATCH = {
     "VERIFIED_ANSWER_CERTIFICATION": lambda r, payload: apply_verified_answer_certification(r["request_id"], payload, r["approver_upn"]),
     "CDE_CLASSIFICATION": lambda r, payload: apply_cde_classification(r["request_id"], payload, r["requested_by_upn"], r["approver_upn"]),
     "GLOSSARY_TERM_DEFINITION": lambda r, payload: apply_glossary_term_definition(r["request_id"], payload, r["approver_upn"]),
+    # G17-R3: AI Instruction certification reuses apply_verified_answer_certification unchanged --
+    # that handler already reads RecordType from the payload rather than hardcoding it, so it
+    # appends a certified 'ai_instruction' row (IsCertified=1) exactly like a 'verified_answer' row.
+    "AI_INSTRUCTION_CERTIFICATION": lambda r, payload: apply_verified_answer_certification(r["request_id"], payload, r["approver_upn"]),
 }
 
 for _, request in pending_df.iterrows():
