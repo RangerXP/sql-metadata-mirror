@@ -115,7 +115,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G16 | Native Purview workflow stakeholder coverage — remaining 4 stakeholders (P3 Data Product Access, P4 Data Product Publish) | P2 | ✅ Done — all 5 stakeholders (Ci Zhu, Victoria Tan, Rupal Solanki, Ranbir Singh, Shruthi Srinivas) closed live 2026-08-12 | Sean |
 | G17 | Unify SQL-controlled and Purview-native governance under one closed-loop ledger contract — reconcile `governance_change_requests` (legacy) into `governance_requests`/events/receipts/versions, close the AI-instructions/OKR/role-assignment gating gaps, and prove drift-and-restore self-correction for real (see G18 for the separate "self-healing semantic model" concept) | P2 | ✅ Done — R1-R6 all closed 2026-08-13 | Sean |
 | G18 | **Self-healing semantic model** — source table discovery & governed onboarding (Loop B). This is the team's adopted definition of "self-healing": a new SQL table must be inventoried, dispositioned, and pass an approval gate (domain, data product, sensitivity, semantic role) before it is ever added to the semantic model or surfaced to the Data Agent; Fabric Mirror autosync and Purview scans provide discovery only, never governance or model inclusion | P2 | � In Progress — G18-A (`@tag` native extraction: discovery/classification/approval loop) closed 2026-08-13 with real Completed/Rejected/Submitted demo objects; full G18 (CDE mapping + real semantic-model TMDL promotion) still open | Sean |
-| G19 | Closed-loop governance completeness review — governance lifecycle management (not just publication): ontology/Objective-level governance & certification (priority 1), AI Instruction lifecycle, Data Product certification lifecycle, G18 discovery-to-ontology completion, first-class governance receipts, scheduled automation (G13-5) | P2 | 🟡 In Progress — G19-1/3/4/5/6 closed 2026-08-13; G19-2 and G19-7 satisfied via cross-reference to existing work (no new code needed); only G19-8 (scheduled automation) remains | Sean |
+| G19 | Closed-loop governance completeness review — governance lifecycle management (not just publication): ontology/Objective-level governance & certification (priority 1), AI Instruction lifecycle, Data Product certification lifecycle, G18 discovery-to-ontology completion, first-class governance receipts, scheduled automation (G13-5) | P2 | � Done — G19-1/3/4/5/6 closed 2026-08-13; G19-2/G19-7 satisfied via cross-reference; G19-8 (scheduled automation) explicitly descoped by user ("only need to support the demo") and replaced with `nb_18_demo_reset` for repeatable live demos | Sean |
 | G20 | Close remaining "zero gate of any kind" deployed governance objects (stale-element audit, 2026-08-13): Governance Domains, OKR Objectives, Data Product Certification (incl. `DP-BILLHEALTH`'s total lack of coverage), Purview scan completion — deliberately scoped to lightweight synthetic/attested records, not new interactive workflows, per explicit user direction (these are pre-assumed data-model elements, not stakeholder-tied demo moments) | P2 | ✅ Done 2026-08-13 — `sql/23_g20_synthetic_governance_attestation.sql`, 11 real attested records | Sean |
 
 ---
@@ -693,7 +693,7 @@ this lifecycle-completion theme rather than by which G17 sub-phase they extend.
 | G19-5 | **Data Product certification lifecycle** — certify/de-certify/expiration-review, distinct from Publish (already proven) | G16 (P4), G19-2 | ✅ Done 2026-08-13 — A published data product is separately certified (new `request_type`, `DataProductCertification`), with a real expiration date and a real de-certification example; see results below |
 | G19-6 | **Discovery-to-ontology loop (G18 completion)** — extend G18-A's discovery→classify→approve chain with a CDE mapping step and an ontology mapping step (link the approved table/column to a real ontology node — Domain/Data Product/OKR — not just a domain tag) before actual semantic-model promotion (real SemPy Labs TOM mutation, not just a SQL-side receipt) | G18-A | ✅ Done 2026-08-13 — An approved G18-A object (`vw_technician_utilization_summary`) resolves to a real ontology node, is actually added to the semantic model, and is read back — matching the `nb_13`/`nb_16` apply+validate pattern; see results below |
 | G19-7 | **First-class governance receipts** — promote domain-publish and Purview-scan-completion events from "missing" to typed receipts: Domain Publish Receipt (Published→Read Back→Validated), Purview Scan Receipt (Started→Completed→Assets Discovered→Read Back), Objective Approval Receipt (Approved→Ontology Updated→Relationships Validated) | G19-1, G17 ledger | ✅ Satisfied 2026-08-13 — G20's `DomainPublication` (x3) and `ScanCompletion` (x2) receipts already give every domain and every real scan run a queryable, typed receipt in the unified ledger, meeting this criterion literally. The richer multi-stage breakdown (separate Started/Completed/AssetsDiscovered/ReadBack events) is deliberately NOT built — Domains and Scans are pre-assumed data-model elements, not stakeholder-tied demo moments (same 2026-08-13 scope decision as G20) |
-| G19-8 | **Autonomous governance (G13-5)** — scheduled/triggered automation of the full chain (proposal → approval → propagation → validation → receipt → reconciliation) without a human manually triggering each notebook run | All of the above | A governance change flows end-to-end without manual notebook triggering |
+| G19-8 | **Autonomous governance (G13-5)** — scheduled/triggered automation of the full chain (proposal → approval → propagation → validation → receipt → reconciliation) without a human manually triggering each notebook run | All of the above | ⛔ Descoped 2026-08-13 by explicit user direction — "the trigger is not needed now, we only need to support the demo." Replaced with `nb_18_demo_reset` (see below): a reusable notebook that resets G19's demo requests back to pre-decision status so the live approval narrative can be re-demoed indefinitely, instead of automating a production-style schedule nobody asked for |
 
 **Recommended priority (executive-demo framing, supersedes the original cheapest-first
 sequencing):**
@@ -882,6 +882,41 @@ Live-verified: `SEMPROMO-TECHUTIL-001` shows `current_status=Completed`; the
 `validation_status=Passed`; the new measure is confirmed present in the git-committed TMDL
 (`fabric/BrookfieldEnercare.SemanticModel/definition/tables/fct_service_request.tmdl`) after a
 `commitToGit` sync back from the live workspace.
+
+### Demo repeatability — `nb_18_demo_reset` (added 2026-08-13)
+
+G19-8 (scheduled automation) was explicitly descoped by the user — "the trigger is not needed
+now, we only need to support the demo." In its place: a reusable reset notebook so the entire
+G19 approval narrative can be re-demoed live, indefinitely, without re-running any SQL setup
+scripts.
+
+**Scope decisions (explicit user direction):** this is about request STATUS, not deleting
+anything — no governed object row is ever deleted. The two disposable demo objects
+(`OKR-CUSTOPS-LEGACY-NPS`, `DP-LEGACY-CALLCENTER-IVR`) keep their CREATE decision applied (the
+object keeps existing); only their later decisions (Certify, Retire/Decertify) reset, so a
+presenter can re-demo "certify it, then retire it" repeatedly without recreating the object each
+time. The 2 real production objects touched this session (`OKR-SVCDEL-SLA`, `DP-SVCPERF`) reset
+fully to their true pre-G19 baseline.
+
+`fabric/nb_18_demo_reset.Notebook` (DEMO_MODE=True by default, matching every other notebook's
+safe-default convention) resets, in one run:
+
+| Scope | Action |
+|---|---|
+| G19-1 (`OBJEDIT`/`OBJCERT`/`OBJRECERT`-SVCDEL-SLA, `OBJRETIRE`-CUSTOPS-LEGACY-NPS) | `governance_requests.current_status` back to `Submitted`; `governance_okrs` fields (`target_date`, `is_certified`, `certified_by`, `certified_date`, `recertification_due`, retirement fields) reverted |
+| G19-5 (`DPCERT`/`DPCERTREVIEW`-SVCPERF, `DPCERT`/`DPDECERT`-LEGACY-IVR) | Same pattern on `governance_data_products` |
+| G18-A / G19-6 (`TAG-D0BF6E496681E6B0`, `CDEMAP-CONTRACT-RENEWAL-001`, `ONTOMAP-TECHUTIL-001`) | Reset to `Submitted`; `SEMPROMO-TECHUTIL-001` reset to `Approved` (it's a system gate, not a steward-click moment) |
+| Semantic model | Removes the `Technician Utilization Rate` measure entirely so `nb_17` can recreate it fresh |
+| G19-4 (`GCR-AII-002/003/004`, legacy table) | Reset to `PendingApproval`; `ai_metadata` demo rows deleted, keeping only the original baseline row (`RecordID 40`) |
+
+Every reset also deletes the `Decided`/`Applied` `governance_events`, `governed_object_versions`,
+and `governance_target_receipts` rows tied to that request, so the ledger looks freshly
+pre-decision, not just status-flipped. Live-tested in `DEMO_MODE=True` (preview, no writes) —
+confirmed the notebook runs cleanly end-to-end. Re-demoing after a live reset requires flipping
+each request back to `Approved` (a small SQL `UPDATE`, or the live Purview/portal workflow where
+one exists) and re-running the matching apply step (`nb_11` for AI Instructions, `nb_17` for the
+semantic promotion); the original `sql/24`/`sql/26`/`sql/27` build scripts will NOT reapply a
+reset request since they're guarded by request_id existence, not status.
 
 ---
 
