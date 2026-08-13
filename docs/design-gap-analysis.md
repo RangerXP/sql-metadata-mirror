@@ -105,7 +105,8 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G15 | Native Purview publication closed loop (`GT-SLA`, Ci Zhu) — publication, semantic reconciliation, mirrored evidence | P2 | 🟢 Done — `PublicationReadback`/`SemanticModelReadback` both Passed, request `Completed` 2026-08-11 | Sean |
 | G16 | Native Purview workflow stakeholder coverage — remaining 4 stakeholders (P3 Data Product Access, P4 Data Product Publish) | P2 | ✅ Done — all 5 stakeholders (Ci Zhu, Victoria Tan, Rupal Solanki, Ranbir Singh, Shruthi Srinivas) closed live 2026-08-12 | Sean |
 | G17 | Unify SQL-controlled and Purview-native governance under one closed-loop ledger contract — reconcile `governance_change_requests` (legacy) into `governance_requests`/events/receipts/versions, close the AI-instructions/OKR/role-assignment gating gaps, and prove drift-and-restore self-correction for real (see G18 for the separate "self-healing semantic model" concept) | P2 | ✅ Done — R1-R6 all closed 2026-08-13 | Sean |
-| G18 | **Self-healing semantic model** — source table discovery & governed onboarding (Loop B). This is the team's adopted definition of "self-healing": a new SQL table must be inventoried, dispositioned, and pass an approval gate (domain, data product, sensitivity, semantic role) before it is ever added to the semantic model or surfaced to the Data Agent; Fabric Mirror autosync and Purview scans provide discovery only, never governance or model inclusion | P2 | 🔴 Not Started — design-only since Phase A (`docs/closed-loop-governance-reference-model.md` Loop B / Gate F / Phase P3); `dbo.source_object_inventory` and `dbo.semantic_object_inventory` were never actually created; see detailed section below | Sean |
+| G18 | **Self-healing semantic model** — source table discovery & governed onboarding (Loop B). This is the team's adopted definition of "self-healing": a new SQL table must be inventoried, dispositioned, and pass an approval gate (domain, data product, sensitivity, semantic role) before it is ever added to the semantic model or surfaced to the Data Agent; Fabric Mirror autosync and Purview scans provide discovery only, never governance or model inclusion | P2 | � In Progress — G18-A (`@tag` native extraction: discovery/classification/approval loop) closed 2026-08-13 with real Completed/Rejected/Submitted demo objects; full G18 (CDE mapping + real semantic-model TMDL promotion) still open | Sean |
+| G19 | Closed-loop governance completeness review — fact-checked external backlog review against actual build state; formalizes the REAL remaining gaps (AI Instruction lifecycle, OKR governance completeness, Data Product certification lifecycle, G18 completion, new evidence-receipt gaps, G13-5) into a phased delivery plan | P2 | 🔴 Not Started — see detailed section below | Sean |
 
 ---
 
@@ -634,6 +635,46 @@ replacing a standalone Python/regex prototype, wired directly into the unified l
 Remaining full G18 (source table discovery beyond `@tag` markers, `source_object_inventory`/
 `semantic_object_inventory`, automatic semantic-model inclusion) is still open — see the build
 tasks table above.
+
+---
+
+## G19 — Closed-Loop Governance Completeness Review (fact-checked phased backlog)
+
+**Priority:** P2
+**Status:** 🔴 Not Started
+**Origin:** An external analysis (research notes reviewing `docs/Enercare-Demo-SemPy-Design-Guide.md`
+and this file) proposed a governance backlog. That analysis was **stale — it predated the entire
+2026-08-12/13 build session** (P1-P4 closure, G17 R1-R6, G18-A). Several of its "gaps" were
+actually closed live during that session. This section is the fact-checked, corrected version —
+see the corrections table below before trusting any of the phases.
+
+### Fact-check corrections (do not re-open these)
+
+| Original claim | Correction |
+|---|---|
+| "Native Purview Approval Readback... not yet evidenced from the tenant" | **False.** P1 (`GT-SLA`) and P4 (`DP-SVCPERF`) both have real `PublicationReadback`+`SemanticModelReadback` receipts, `Completed` status, and live-proven drift-and-restore self-healing (G17-R6). Fully closed, not a gap. |
+| "AI Instruction Approval... Missing: Steward approval, Domain owner approval, Evidence receipt" | **Partially false.** G17-R3 built real Draft→Submitted→Approved→Applied gating with a real receipt. Only effective-date activation and rollback remain genuinely open. |
+| "Ontology/OKR Approval... Missing: Approval workflow" | **Partially false.** G17-R4 built real Key Result approval with a real receipt. Only Objective-level approval, certification/recertification, and ownership validation remain genuinely open. |
+| "Data Product Certification... Missing: Publish request, Steward review" | **Partially false.** P4 proved the full real Publish workflow. Only certification/de-certification/expiration review (a distinct concept from Publish) remains genuinely open. |
+| "G18 Source Discovery... No onboarding loop" | **Partially false.** G18-A built a real, live discovery→classify→approve/reject loop with 3 real demo objects (Completed/Rejected/Submitted). Only CDE mapping and actual semantic-model TMDL promotion remain genuinely open. |
+| "Missing Evidence Receipts: KPI, AI instruction, Glossary, CDE, Semantic model updated" | **False.** All of these have real receipts today (G17-R1 migration + P1/P4 native receipts). |
+| "Missing Evidence Receipts: Data product certified, Domain published, Scan completed, Ontology change approved" | **True.** These remain genuine gaps — see G19-5 below. |
+| G13-5 (scheduled automation) | Unchanged — still a genuine, explicitly-deferred gap. |
+
+### Phased delivery plan (the REAL remaining backlog)
+
+| Phase | Task | Depends on | Acceptance criterion |
+|---|---|---|---|
+| G19-1 | AI Instruction lifecycle completeness: effective-date activation (`EffectiveDate` column + gating logic so an approved instruction doesn't take effect until its date) and a rollback workflow (revert to the prior certified version, itself going through the same approval gate) | G17-R3 | A real AI instruction is approved with a future effective date, confirmed NOT active until that date; a real rollback request is approved and restores the prior certified text |
+| G19-2 | OKR governance completeness: Objective-level approval (not just Key Result), a certification/recertification cadence, and validation that `owner_upn` resolves to a real, currently-assigned domain owner | G17-R4 | A real Objective edit goes through Draft→Approve→Apply; a recertification request is proposed and approved for an already-Completed OKR |
+| G19-3 | Data Product certification lifecycle: certify/de-certify/expiration-review, distinct from Publish (which is already proven) | G16 (P4) | A published data product is separately certified (a new request_type, e.g. `DataProductCertification`), with a real expiration date and a real de-certification example |
+| G19-4 | G18 completion: CDE mapping step (link a detected/approved table or column to a real Critical Data Element) + actual semantic-model promotion (real SemPy Labs TOM mutation adding the approved table/column to `BrookfieldEnercare`, not just a SQL-side receipt) | G18-A | An approved G18-A object (e.g. `vw_technician_utilization_summary`) is actually added to the semantic model and read back, matching the `nb_13`/`nb_16` apply+validate pattern |
+| G19-5 | New evidence-receipt gaps: domain-publish receipts (a governance_requests/receipt entry when a governance domain itself is published) and scan-completion receipts (a receipt when a Purview scan run completes, referencing the real scan-run ID) | G17 ledger | A real domain publish and a real scan run each produce a queryable receipt in the unified ledger |
+| G19-6 | G13-5: scheduled/triggered automation of the governance sync chain (vs. today's fully-manual notebook runs) | All of the above | A governance change flows from proposal to applied evidence without a human manually triggering each notebook run |
+
+Recommended sequencing: G19-1 → G19-2 → G19-3 (similar shape, cheapest first) → G19-4 (larger,
+requires real TMDL mutation) → G19-5 (new receipt types, moderate) → G19-6 (infrastructure,
+do last, matches G17's own R6-last precedent).
 
 ---
 
