@@ -115,7 +115,8 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G16 | Native Purview workflow stakeholder coverage — remaining 4 stakeholders (P3 Data Product Access, P4 Data Product Publish) | P2 | ✅ Done — all 5 stakeholders (Ci Zhu, Victoria Tan, Rupal Solanki, Ranbir Singh, Shruthi Srinivas) closed live 2026-08-12 | Sean |
 | G17 | Unify SQL-controlled and Purview-native governance under one closed-loop ledger contract — reconcile `governance_change_requests` (legacy) into `governance_requests`/events/receipts/versions, close the AI-instructions/OKR/role-assignment gating gaps, and prove drift-and-restore self-correction for real (see G18 for the separate "self-healing semantic model" concept) | P2 | ✅ Done — R1-R6 all closed 2026-08-13 | Sean |
 | G18 | **Self-healing semantic model** — source table discovery & governed onboarding (Loop B). This is the team's adopted definition of "self-healing": a new SQL table must be inventoried, dispositioned, and pass an approval gate (domain, data product, sensitivity, semantic role) before it is ever added to the semantic model or surfaced to the Data Agent; Fabric Mirror autosync and Purview scans provide discovery only, never governance or model inclusion | P2 | � In Progress — G18-A (`@tag` native extraction: discovery/classification/approval loop) closed 2026-08-13 with real Completed/Rejected/Submitted demo objects; full G18 (CDE mapping + real semantic-model TMDL promotion) still open | Sean |
-| G19 | Closed-loop governance completeness review — governance lifecycle management (not just publication): ontology/Objective-level governance & certification (priority 1), AI Instruction lifecycle, Data Product certification lifecycle, G18 discovery-to-ontology completion, first-class governance receipts, scheduled automation (G13-5) | P2 | 🔴 Not Started — see detailed section below | Sean |
+| G19 | Closed-loop governance completeness review — governance lifecycle management (not just publication): ontology/Objective-level governance & certification (priority 1), AI Instruction lifecycle, Data Product certification lifecycle, G18 discovery-to-ontology completion, first-class governance receipts, scheduled automation (G13-5) | P2 | 🔴 Not Started — see detailed section below (G20 must close first) | Sean |
+| G20 | Close remaining "zero gate of any kind" deployed governance objects (stale-element audit, 2026-08-13): Governance Domains, OKR Objectives, Data Product Certification (incl. `DP-BILLHEALTH`'s total lack of coverage), Purview scan completion — deliberately scoped to lightweight synthetic/attested records, not new interactive workflows, per explicit user direction (these are pre-assumed data-model elements, not stakeholder-tied demo moments) | P2 | ✅ Done 2026-08-13 — `sql/23_g20_synthetic_governance_attestation.sql`, 11 real attested records | Sean |
 
 ---
 
@@ -709,6 +710,69 @@ sequencing):**
    abstraction before it has real usages).
 6. **G19-8** — scheduled automation, last, matching G17's own R6-last precedent (self-healing
    was proven manually before it was worth automating).
+
+---
+
+## G20 — Close Remaining Ungated Deployed Governance Objects (stale-element audit)
+
+**Priority:** P2
+**Status:** ✅ Done 2026-08-13
+**Origin:** Before starting G19's deeper lifecycle-maturity work, the user asked for an
+inventory of every currently-deployed governance object to confirm none were "stale" —
+deployed with no workflow or approval gate defined and tested at all.
+
+**Explicit scope decision (user direction, 2026-08-13):** not every governed object needs a
+full interactive approval workflow. Only the core demo functions tied to a specific
+stakeholder moment (P1-P4, G13, G14, G17-R3/R4, G18-A) warrant that investment. Objects that
+are pre-assumed/foundational parts of the data model are satisfied with a lightweight,
+honestly-labeled **synthetic/attested** governance record — same pattern as G17-R5's
+`RoleAssignment` backfill — not a new interactive workflow, notebook, or UI.
+
+### Audit method
+
+Queried `dbo.governance_requests` live against every deployed governance object table
+(`governance_domains`, `governance_data_products`, `governance_okrs`,
+`governance_okr_key_results`, `governance_cdes`, `governance_glossary_terms`,
+`governance_role_assignments`) to find any category with **zero** gated instance of any kind
+(not just "fewer than ideal" — genuinely never gated once).
+
+| Category | Live count | Gated instances (before G20) | Verdict |
+|---|---|---|---|
+| Governance Domains | 3 | 0 | 🔴 Stale — no domain-level gate existed |
+| OKR Objectives | 3 | 0 | 🔴 Stale — only child Key Results could be gated (1/6 KRs was, via G17-R4) |
+| Data Product Certification (concept) | 3 products | 0 | 🔴 Stale — no `request_type` for certification existed for any product |
+| `DP-BILLHEALTH` specifically | 1 product | 0 | 🔴 Stale — the only data product with zero governance trail of any kind |
+| Purview Scan completion | n/a | 0 | 🔴 Stale — no receipt/gate concept existed |
+| Glossary Terms, CDEs, AI Instructions, Verified Answers, KPIs, Role Assignments, G18-A source objects | various | ≥1 each | 🟢 Already meets the G17-R4 "at least one real gated demo object" bar — not stale |
+
+### Resolution
+
+`sql/23_g20_synthetic_governance_attestation.sql` (idempotent, same 3-table insert shape as
+`sql/17`) added 11 real attested records, all grounded in already-true live facts (real
+domain/OKR/data-product owners queried directly from `dbo.governance_domains`/
+`governance_okrs`/`governance_data_products`; real Purview scan run outcomes from repo
+memory) — nothing fabricated:
+
+| request_type | Rows | Coverage |
+|---|---|---|
+| `DomainPublication` | 3 | All 3 domains (DOM-CUSTOPS, DOM-SVCDEL, DOM-REVCON) |
+| `ObjectiveApproval` | 3 | All 3 OKR Objectives (distinct from the existing Key Result gate) |
+| `DataProductCertification` | 3 | All 3 data products, including `DP-BILLHEALTH` (closes its total-zero-coverage gap) |
+| `ScanCompletion` | 2 | `enercareFabricScan` (real run `0164ff32-3a06-4db7-b97c-410bb09aa690`) and `enercareSqlScan` |
+
+Each record has a full `governance_requests` → `governance_events` → `governance_target_receipts`
+chain, `current_status='Completed'`, receipt type `OperatorAttested<RequestType>`,
+`validation_status='Passed'`, and an evidence payload explicitly labeled as a 2026-08-13
+scope-decision synthetic attestation (not a live interactive workflow decision) — same honesty
+convention as every other attested (vs. machine-verified) receipt in this repo. Live-verified via
+`SELECT request_type, COUNT(*) FROM dbo.governance_requests GROUP BY request_type` showing all
+4 new types present with the expected row counts (15 total distinct request types now covered,
+up from 11).
+
+This closes the stale-element audit. **G19's deeper lifecycle-maturity work (Objective
+certification/recertification/ownership validation/drift detection, full certification state
+machine, evidence graphs, etc.) is unaffected and remains the next real build** — G20 only
+guarantees every deployed object category has at least one real gate to build on top of.
 
 ---
 
