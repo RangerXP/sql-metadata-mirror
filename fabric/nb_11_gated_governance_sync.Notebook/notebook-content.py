@@ -41,7 +41,7 @@
 # DEMO_MODE = True  -> print every planned mutation; no SQL/Delta writes
 # DEMO_MODE = False -> execute the apply + status-stamp writes live
 
-DEMO_MODE = False            # G17-R3 live apply run for GCR-AII-001 (AI Instruction Certification)
+DEMO_MODE = False            # G19-4 live apply run for GCR-AII-002/003/004 (AI Instruction effective-date + rollback)
 
 METADATA_LAKEHOUSE = "lh_metadata"
 MODEL_NAME         = "BrookfieldEnercare"
@@ -195,6 +195,37 @@ if len(pending_df) > 0:
 
 # CELL ********************
 
+# Cell 3b: G19-4 -- idempotent ai_metadata schema migration for AI Instruction
+# lifecycle (effective-date activation + rollback). Guarded by column existence
+# check since Delta's ADD COLUMNS has no native IF NOT EXISTS.
+
+_ai_metadata_columns = set(spark.table(f"{METADATA_LAKEHOUSE}.ai_metadata").columns)
+_ai_metadata_new_columns = {
+    "EffectiveDate": "DATE",
+    "IsRolledBack": "INT",
+    "RolledBackFromRecordID": "INT",
+    "RollbackReason": "STRING",
+}
+_ai_metadata_missing = {c: t for c, t in _ai_metadata_new_columns.items() if c not in _ai_metadata_columns}
+if _ai_metadata_missing:
+    _add_clause = ", ".join(f"{c} {t}" for c, t in _ai_metadata_missing.items())
+    if DEMO_MODE:
+        print(f"[DEMO_MODE] Would execute: ALTER TABLE {METADATA_LAKEHOUSE}.ai_metadata ADD COLUMNS ({_add_clause})")
+    else:
+        spark.sql(f"ALTER TABLE {METADATA_LAKEHOUSE}.ai_metadata ADD COLUMNS ({_add_clause})")
+        print(f"ai_metadata schema extended: {list(_ai_metadata_missing.keys())}")
+else:
+    print("ai_metadata already has EffectiveDate/IsRolledBack/RolledBackFromRecordID/RollbackReason.")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 # Cell 4: Apply-step dispatch handlers, one per request_type
 
 applied_request_ids = []
@@ -242,6 +273,11 @@ def apply_verified_answer_certification(request_id, payload, approver_upn):
         next_id_row = spark.sql(f"SELECT COALESCE(MAX(RecordID), 0) + 1 AS next_id FROM {METADATA_LAKEHOUSE}.ai_metadata").first()
         next_id = int(next_id_row["next_id"])
 
+    # G19-4: optional EffectiveDate gates when a certified instruction actually takes
+    # effect -- defaults to today (immediate) for every existing caller/scenario.
+    effective_date_raw = payload.get("EffectiveDate")
+    effective_date = date.fromisoformat(effective_date_raw) if effective_date_raw else date.today()
+
     row = Row(
         RecordID=next_id,
         ModelName=MODEL_NAME,
@@ -254,6 +290,10 @@ def apply_verified_answer_certification(request_id, payload, approver_upn):
         IsCertified=1,
         CertifiedBy=approver_upn,
         CertifiedDate=date.today(),
+        EffectiveDate=effective_date,
+        IsRolledBack=0,
+        RolledBackFromRecordID=None,
+        RollbackReason=None,
     )
     if DEMO_MODE:
         print(f"[DEMO_MODE] [{request_id}] Would append to ai_metadata:\n{row.asDict()}")
@@ -270,10 +310,73 @@ def apply_verified_answer_certification(request_id, payload, approver_upn):
             StructField("IsCertified", IntegerType(), True),
             StructField("CertifiedBy", StringType(), True),
             StructField("CertifiedDate", DateType(), True),
+            StructField("EffectiveDate", DateType(), True),
+            StructField("IsRolledBack", IntegerType(), True),
+            StructField("RolledBackFromRecordID", IntegerType(), True),
+            StructField("RollbackReason", StringType(), True),
         ])
         spark.createDataFrame([row], schema=schema).write.format("delta").mode("append") \
             .saveAsTable(f"{METADATA_LAKEHOUSE}.ai_metadata")
-        print(f"[{request_id}] ai_metadata appended: RecordID={next_id}")
+        print(f"[{request_id}] ai_metadata appended: RecordID={next_id} EffectiveDate={effective_date}")
+
+
+def apply_ai_instruction_rollback(request_id, payload, approver_upn):
+    """G19-4: revert an ai_instruction/verified_answer to its immediately prior
+    certified version. Dynamically resolves the currently-active certified row
+    for TriggerText (no hardcoded RecordID needed), so this works regardless of
+    how many bad edits preceded it -- always reverts one step back."""
+    from pyspark.sql import Row
+    from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DateType
+
+    trigger_text = payload["TriggerText"]
+    record_type = payload.get("RecordType", "ai_instruction")
+    rollback_reason = payload.get("RollbackReason", "")
+
+    if DEMO_MODE:
+        print(f"[DEMO_MODE] [{request_id}] Would roll back TriggerText='{trigger_text}' (reason: {rollback_reason})")
+        return
+
+    current_row = spark.sql(
+        f"SELECT RecordID FROM {METADATA_LAKEHOUSE}.ai_metadata "
+        f"WHERE TriggerText = '{trigger_text}' AND RecordType = '{record_type}' AND IsCertified = 1 "
+        "ORDER BY RecordID DESC LIMIT 1"
+    ).first()
+    if current_row is None:
+        raise ValueError(f"No currently-certified row found for TriggerText='{trigger_text}' -- nothing to roll back.")
+    superseded_id = int(current_row["RecordID"])
+
+    revert_to_row = spark.sql(
+        f"SELECT ResponseText, LinkedKPICode FROM {METADATA_LAKEHOUSE}.ai_metadata "
+        f"WHERE TriggerText = '{trigger_text}' AND RecordType = '{record_type}' AND RecordID < {superseded_id} "
+        "ORDER BY RecordID DESC LIMIT 1"
+    ).first()
+    if revert_to_row is None:
+        raise ValueError(f"No prior certified version found for TriggerText='{trigger_text}' to revert to.")
+
+    spark.sql(f"UPDATE {METADATA_LAKEHOUSE}.ai_metadata SET IsCertified = 0 WHERE RecordID = {superseded_id}")
+
+    next_id_row = spark.sql(f"SELECT COALESCE(MAX(RecordID), 0) + 1 AS next_id FROM {METADATA_LAKEHOUSE}.ai_metadata").first()
+    next_id = int(next_id_row["next_id"])
+
+    row = Row(
+        RecordID=next_id, ModelName=MODEL_NAME, RecordType=record_type, TriggerText=trigger_text,
+        ResponseText=revert_to_row["ResponseText"], LinkedKPICode=revert_to_row["LinkedKPICode"],
+        IsDraft=0, CreatedDate=date.today(), IsCertified=1, CertifiedBy=approver_upn, CertifiedDate=date.today(),
+        EffectiveDate=date.today(), IsRolledBack=1, RolledBackFromRecordID=superseded_id, RollbackReason=rollback_reason,
+    )
+    schema = StructType([
+        StructField("RecordID", IntegerType(), True), StructField("ModelName", StringType(), True),
+        StructField("RecordType", StringType(), True), StructField("TriggerText", StringType(), True),
+        StructField("ResponseText", StringType(), True), StructField("LinkedKPICode", StringType(), True),
+        StructField("IsDraft", IntegerType(), True), StructField("CreatedDate", DateType(), True),
+        StructField("IsCertified", IntegerType(), True), StructField("CertifiedBy", StringType(), True),
+        StructField("CertifiedDate", DateType(), True), StructField("EffectiveDate", DateType(), True),
+        StructField("IsRolledBack", IntegerType(), True), StructField("RolledBackFromRecordID", IntegerType(), True),
+        StructField("RollbackReason", StringType(), True),
+    ])
+    spark.createDataFrame([row], schema=schema).write.format("delta").mode("append") \
+        .saveAsTable(f"{METADATA_LAKEHOUSE}.ai_metadata")
+    print(f"[{request_id}] rollback applied: superseded RecordID={superseded_id}, reverted RecordID={next_id}")
 
 
 def apply_cde_classification(request_id, payload, requested_by_upn, approver_upn):
@@ -352,6 +455,9 @@ DISPATCH = {
     # that handler already reads RecordType from the payload rather than hardcoding it, so it
     # appends a certified 'ai_instruction' row (IsCertified=1) exactly like a 'verified_answer' row.
     "AI_INSTRUCTION_CERTIFICATION": lambda r, payload: apply_verified_answer_certification(r["request_id"], payload, r["approver_upn"]),
+    # G19-4: AI Instruction lifecycle -- effective-date activation (handled inside
+    # apply_verified_answer_certification above) and rollback to the prior certified version.
+    "AI_INSTRUCTION_ROLLBACK": lambda r, payload: apply_ai_instruction_rollback(r["request_id"], payload, r["approver_upn"]),
 }
 
 for _, request in pending_df.iterrows():
@@ -398,3 +504,22 @@ print("  2. nb_04_sempy_writeback          (push certification into the semantic
 print("  3. nb_05_push_qa_verified_answers (refresh Data Agent verified answers)")
 print("  4. nb_07_publish_to_purview / nb_08_purview_glossary_cde / nb_09_purview_labels_lineage (re-publish to Purview)")
 print("  5. nb_10_purview_stewardship_ai   (confirm 0 ACTION_REQUIRED)")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Cell 7: G19-4 debug read-back (job status API exposes no stdout -- write to a file instead)
+
+if not DEMO_MODE:
+    _verify_df = spark.sql(
+        f"SELECT RecordID, TriggerText, ResponseText, IsCertified, EffectiveDate, IsRolledBack, RolledBackFromRecordID, RollbackReason "
+        f"FROM {METADATA_LAKEHOUSE}.ai_metadata WHERE TriggerText IN ('escalation', 'weather_delay') ORDER BY TriggerText, RecordID"
+    ).toPandas()
+    mssparkutils.fs.put("Files/debug/nb11_g19_4_ai_instruction_lifecycle_check.txt", _verify_df.to_string(index=False), True)
+    print("Debug file written: Files/debug/nb11_g19_4_ai_instruction_lifecycle_check.txt")
