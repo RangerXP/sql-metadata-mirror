@@ -54,9 +54,12 @@ Expected result: Ranbir Singh appears as both a Governance Domain Owner and a Da
 the Service Delivery domain's Roles tab; Shruthi Srinivas appears as a Data Steward on that same
 tab, plus the tenant-wide Global Catalog Reader list. All 4 confirmed live.
 
-**Follow-up item (not yet done):** verify Victoria Tan actually holds the real domain-level
-**Data Product Owners** role on **Customer Operations** (not just the Customer 360 metadata Owner
-field) — likely root cause of her earlier 403 on deleting an access request.
+**Follow-up item — RESOLVED 2026-08-13:** confirmed Victoria Tan was genuinely missing the real
+domain-level **Data Product Owners** role on **Customer Operations** (only ever had the Customer
+360 metadata Owner field, `ROLE-P3-001`) — matching the hypothesis that this was the root cause of
+her earlier 403 on deleting an access request. Added live via the domain **Roles** tab; now one of
+3 Data Product Owners (alongside Sean Kelley and "SA"). Recorded in the unified ledger as
+`ROLE-P3-004` (`sql/22_victoria_data_product_owners_followup.sql`).
 
 ## 3. Workflow-authoring role (confirm, don't reassign)
 
