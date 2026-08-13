@@ -522,9 +522,9 @@ G8-3 completion evidence (captured Day 5):
 | # | Task | Status | Notes |
 |---|---|---|---|
 | G16-1 | Wireframe: stakeholder-to-scenario mapping, ground-truth workflow types, manual-role prerequisites | 🟢 Done | `docs/purview-native-workflow-wireframe.md` |
-| G16-2 | P3 — Data product access (`DP-CUST360`): Victoria Tan approver, Rupal Solanki requester | 🟡 In Progress — `nb_14_purview_access_sync` built (2026-08-12); Stage 1 (Configure) and a full real submit + two-tier approval cycle proven live (Privacy Compliance Approval + main Approval, both by Victoria Tan). Confirmed (research + live diagnostic-log test) that no API/log exposes the decision for independent verification — `nb_14` uses operator-attested evidence for the decision, with the data product's own state independently API-verified | Not yet run live (DEMO_MODE dry run + live run both pending) |
+| G16-2 | P3 — Data product access (`DP-CUST360`): Victoria Tan approver, Rupal Solanki requester | ✅ Done — fully closed live end-to-end (2026-08-12): `request=PV-CUST360-ACCESS-BD3BEBA460C530FA5076 status=Completed`, `AccessDecisionReadback` receipt Passed (operator-attested decision, per confirmed platform limitation; data product's own state independently API-verified) | None — closed |
 | G16-3 | P4 — Data product publish (`DP-SVCPERF`/DOM-SVCDEL): Ranbir Singh approver, Shruthi Srinivas requester | ✅ Done — fully closed live end-to-end (2026-08-12): `request=PV-DP-SVCPERF-9EAF4919D7DFD8F8B5C6 status=Completed`, both `PublicationReadback` and `SemanticModelReadback` receipts Passed. Real Draft→Published cycle approved by Ranbir Singh; semantic metadata reconciled to `fct_service_request.TechnicianId` and `dim_equipment.EquipmentType` | None — closed |
-| G16-4 | Phase closeout — all 5 stakeholders have a proven native scenario; move to non-native workflow phase | 🔴 Not Started | Depends on G16-2, G16-3 |
+| G16-4 | Phase closeout — all 5 stakeholders have a proven native scenario; move to non-native workflow phase | ✅ Done — all 5 stakeholders (Ci Zhu, Victoria Tan, Rupal Solanki, Ranbir Singh, Shruthi Srinivas) now have at least one proven native Purview workflow scenario closed live (2026-08-12) | Ready for the non-native workflow reconciliation phase |
 
 ---
 

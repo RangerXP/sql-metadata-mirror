@@ -77,7 +77,7 @@
 | Unit | Status |
 |---|---|
 | Wireframe: stakeholder-to-scenario mapping, ground-truth native workflow types, manual-role prerequisites | 🟢 Done — `docs/purview-native-workflow-wireframe.md` |
-| P3 — Data product access (`DP-CUST360`): Victoria Tan approver, Rupal Solanki requester | 🟡 In Progress — `nb_14_purview_access_sync` built (operator-attested evidence design, confirmed no API/log alternative exists); full real submit + two-tier approval cycle proven live; live notebook run still pending |
+| P3 — Data product access (`DP-CUST360`): Victoria Tan approver, Rupal Solanki requester | ✅ Done — fully closed live end-to-end (2026-08-12): `request=PV-CUST360-ACCESS-BD3BEBA460C530FA5076 status=Completed`, `AccessDecisionReadback` receipt Passed (operator-attested decision, per confirmed platform limitation) |
 | P4 — Data product publish (`DP-SVCPERF`/DOM-SVCDEL): Ranbir Singh approver, Shruthi Srinivas requester | ✅ Done — fully closed live end-to-end (2026-08-12): real Draft→Published cycle approved by Ranbir Singh, `nb_15`/`nb_16` evidence chain Completed with both receipts Passed |
 | Phase closeout — all 5 stakeholders proven; move to non-native workflow phase | 🔴 Not started |
 
