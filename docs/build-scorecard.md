@@ -40,6 +40,19 @@
 | **G15-2 Semantic reconciliation closeout** (`nb_13`) | ✅ Proven — 3 SLA objects updated and read back, `SemanticModelReadback=Passed`, request `Completed` at 2026-08-11 23:10:02 UTC |
 | **G15-3 Mirrored closed-loop evidence** | ✅ Proven — `sqldemo` SQL analytics endpoint showed `Completed` plus both passing receipts with matching hashes |
 
+## Phase 5 — G17: Unified Governance Ledger Reconciliation (closed 2026-08-13)
+
+| Unit | Status |
+|---|---|
+| R1 Migrate legacy `governance_change_requests` into unified ledger | ✅ Done — `sql/14_migrate_legacy_governance_to_unified_ledger.sql`, 4/4 rows migrated |
+| R2 Reconcile duplicate `GT-SLA` governance record | ✅ Done — `sql/15_reconcile_gt_sla_duplicate_governance.sql`, legacy row `Superseded`, mapped to native |
+| R3 Gate AI Instructions (structural fix, not a patch) | ✅ Done — `sql/16_add_ai_instruction_gate.sql`; `nb_04a`'s reseed now structurally excludes `IsCertified=1` rows |
+| R4 Gate OKR Key Result creation | ✅ Done — `sql/18_add_okr_approval_gate.sql`, real `KR-TECH-UTIL` under `OKR-SVCDEL-SLA` |
+| R5 Role-assignment ledger entries | ✅ Done — `sql/17_backfill_role_assignment_ledger.sql`, 8 entries covering every real P3/P4 role grant |
+| **R6 Prove drift-and-restore self-correction for real** | ✅ Done — live-tested on the Purview-native track (`DP-SVCPERF`/`nb_16`): deliberately drifted a semantic annotation, confirmed wrong, re-ran `nb_16`, confirmed restored, same request/receipt (no new approval fabricated). SQL-controlled track (`nb_04_sempy_writeback`) confirmed structurally identical (unconditional reapply from `kpi_metadata` every run) |
+
+Every one of the 8 `governance_requests.request_type` values now has at least one real, `Completed`, queryable demo object. **G17 fully closed.**
+
 ---
 
 ## Downstream Propagation Chain (proving G14-8)
