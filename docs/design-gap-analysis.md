@@ -115,7 +115,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G16 | Native Purview workflow stakeholder coverage — remaining 4 stakeholders (P3 Data Product Access, P4 Data Product Publish) | P2 | ✅ Done — all 5 stakeholders (Ci Zhu, Victoria Tan, Rupal Solanki, Ranbir Singh, Shruthi Srinivas) closed live 2026-08-12 | Sean |
 | G17 | Unify SQL-controlled and Purview-native governance under one closed-loop ledger contract — reconcile `governance_change_requests` (legacy) into `governance_requests`/events/receipts/versions, close the AI-instructions/OKR/role-assignment gating gaps, and prove drift-and-restore self-correction for real (see G18 for the separate "self-healing semantic model" concept) | P2 | ✅ Done — R1-R6 all closed 2026-08-13 | Sean |
 | G18 | **Self-healing semantic model** — source table discovery & governed onboarding (Loop B). This is the team's adopted definition of "self-healing": a new SQL table must be inventoried, dispositioned, and pass an approval gate (domain, data product, sensitivity, semantic role) before it is ever added to the semantic model or surfaced to the Data Agent; Fabric Mirror autosync and Purview scans provide discovery only, never governance or model inclusion | P2 | � In Progress — G18-A (`@tag` native extraction: discovery/classification/approval loop) closed 2026-08-13 with real Completed/Rejected/Submitted demo objects; full G18 (CDE mapping + real semantic-model TMDL promotion) still open | Sean |
-| G19 | Closed-loop governance completeness review — governance lifecycle management (not just publication): ontology/Objective-level governance & certification (priority 1), AI Instruction lifecycle, Data Product certification lifecycle, G18 discovery-to-ontology completion, first-class governance receipts, scheduled automation (G13-5) | P2 | 🔴 Not Started — see detailed section below (G20 must close first) | Sean |
+| G19 | Closed-loop governance completeness review — governance lifecycle management (not just publication): ontology/Objective-level governance & certification (priority 1), AI Instruction lifecycle, Data Product certification lifecycle, G18 discovery-to-ontology completion, first-class governance receipts, scheduled automation (G13-5) | P2 | � In Progress — G19-1 + G19-3 (Objective governance + ontology evidence graph) closed 2026-08-13; G19-4/5/6/2/7/8 remain | Sean |
 | G20 | Close remaining "zero gate of any kind" deployed governance objects (stale-element audit, 2026-08-13): Governance Domains, OKR Objectives, Data Product Certification (incl. `DP-BILLHEALTH`'s total lack of coverage), Purview scan completion — deliberately scoped to lightweight synthetic/attested records, not new interactive workflows, per explicit user direction (these are pre-assumed data-model elements, not stakeholder-tied demo moments) | P2 | ✅ Done 2026-08-13 — `sql/23_g20_synthetic_governance_attestation.sql`, 11 real attested records | Sean |
 
 ---
@@ -773,6 +773,31 @@ This closes the stale-element audit. **G19's deeper lifecycle-maturity work (Obj
 certification/recertification/ownership validation/drift detection, full certification state
 machine, evidence graphs, etc.) is unaffected and remains the next real build** — G20 only
 guarantees every deployed object category has at least one real gate to build on top of.
+
+### G19-1 + G19-3 results (closed 2026-08-13)
+
+`sql/24_g19_ontology_governance_completeness.sql` (idempotent, same battle-tested pattern as
+`sql/18`/`sql/21`) built the full Objective-level governance lifecycle for real, distinct from
+G20's synthetic attestation:
+
+| Item | Result |
+|---|---|
+| Schema | `dbo.governance_okrs` extended with `is_certified`, `certified_by`, `certified_date`, `recertification_due`, `retired_at`, `retired_by`, `retirement_reason` — kept as direct columns (not a generic reusable table; that generalization is G19-2, deliberately deferred until proven on a 2nd object type) |
+| Real edit-approval cycle | `OBJEDIT-SVCDEL-SLA-001` — `OKR-SVCDEL-SLA`'s `target_date` extended 2026-12-31 → 2027-06-30 via a real Draft→Submitted→Approved→Applied cycle (requester Ranbir Singh, approver Ci Zhu), `governed_object_versions` snapshot + `SqlApplyReadback` receipt Passed — distinct from G20's attestation and from the Key Result gate (G17-R4) |
+| Certification | `OBJCERT-SVCDEL-SLA-001` — `OKR-SVCDEL-SLA` certified (requester Shruthi Srinivas, approver Ci Zhu), `recertification_due` deliberately backdated 30 days to prove the recert path for real |
+| Recertification | `OBJRECERT-SVCDEL-SLA-001` — only proceeds if genuinely past-due (guarded check); recertified with `recertification_due` extended to 2027-02-09, `ObjectiveRecertificationReadback` receipt Passed |
+| Ownership validation | 3 real, **machine-verified** (not attested) checks — `owner_upn` confirmed against `dbo.governance_domains.governance_domain_owners` via `STRING_SPLIT` for all 3 real Objectives, all `Passed` |
+| Drift detection | 3 real, **machine-verified** checks — each Objective's linked Data Product confirmed to still exist and still belong to the Objective's own domain, all `Passed` |
+| Retirement workflow | New demo Objective `OKR-CUSTOPS-LEGACY-NPS` (a Net Promoter Score objective superseded by `OKR-CUSTOPS-CX`'s CSAT/FCR measures) created via a real gate (`OBJAPPR-CUSTOPS-LEGACY-NPS-001`) then retired via a real gate (`OBJRETIRE-CUSTOPS-LEGACY-NPS-001`) — proves the full lifecycle without touching any of the 3 real production Objectives |
+| Ontology evidence graph (G19-3) | `dbo.vw_ontology_evidence_graph` walks Objective → Key Result → Data Product → Domain, surfacing the real receipt/status at every edge (KPI-level evidence already exists separately via `KpiApproval` receipts in the Lakehouse tier, out of scope for a SQL-native view) |
+
+All live-verified via direct SQL read-back: `OKR-SVCDEL-SLA` shows `target_date=2027-06-30,
+is_certified=1, certified_by=Ci.Zhu@enercare.ca, recertification_due=2027-02-09`;
+`OKR-CUSTOPS-LEGACY-NPS` shows `status=Retired, retired_at=<timestamp>`; the other 2 real
+Objectives (`OKR-CUSTOPS-CX`, `OKR-REVCON-RETAIN`) are untouched; all 14 new receipts
+(`SqlApplyReadback` x2, `ObjectiveCertificationReadback`, `ObjectiveRecertificationReadback`,
+`ObjectiveRetirementReadback`, `OwnershipValidationReadback` x3, `DriftDetectionReadback` x3,
+plus the pre-existing `OperatorAttestedObjectiveApproval` x3 from G20) show `validation_status='Passed'`.
 
 ---
 
