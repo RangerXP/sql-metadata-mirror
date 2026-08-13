@@ -103,7 +103,8 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G13 | Self-healing semantic model sync (SQL value-change propagation, not just schema autosync) | P2 | � Done — `nb_11_gated_governance_sync` proven live against all 4 scenarios; G13-5 (scheduled/triggered re-run) remains deferred | Sean |
 | G14 | Gated governance approval workflows (KPI approval, Verified Answer certification, CDE classification, glossary term definition) | P2 | 🟢 Done — all 4 scenarios proven live 2026-08-09, full propagation chain + `nb_10` reconfirm closed 2026-08-10 | Sean |
 | G15 | Native Purview publication closed loop (`GT-SLA`, Ci Zhu) — publication, semantic reconciliation, mirrored evidence | P2 | 🟢 Done — `PublicationReadback`/`SemanticModelReadback` both Passed, request `Completed` 2026-08-11 | Sean |
-| G16 | Native Purview workflow stakeholder coverage — remaining 4 stakeholders (P3 Data Product Access, P4 Data Product Publish) | P2 | 🟡 In Progress — wireframe committed, P3/P4 not yet built | Sean |
+| G16 | Native Purview workflow stakeholder coverage — remaining 4 stakeholders (P3 Data Product Access, P4 Data Product Publish) | P2 | ✅ Done — all 5 stakeholders (Ci Zhu, Victoria Tan, Rupal Solanki, Ranbir Singh, Shruthi Srinivas) closed live 2026-08-12 | Sean |
+| G17 | Unify SQL-controlled and Purview-native governance under one closed-loop, self-healing ledger contract — reconcile `governance_change_requests` (legacy) into `governance_requests`/events/receipts/versions, close the AI-instructions/OKR/role-assignment gating gaps, and prove self-healing (drift-and-restore) for real | P2 | 🔴 Not Started — see detailed section below | Sean |
 
 ---
 
@@ -516,7 +517,7 @@ G8-3 completion evidence (captured Day 5):
 ## G16 — Native Purview Workflow Stakeholder Coverage (Remaining 4 Stakeholders)
 
 **Priority:** P2
-**Status:** 🟡 In Progress
+**Status:** ✅ Done
 **Goal:** Extend the G15 pattern to Victoria Tan, Rupal Solanki, Ranbir Singh, and Shruthi Srinivas using only native Purview workflow types (Data product access, Data product publish), fitting all 5 stakeholders across the 3 workflow types Unified Catalog actually supports. Full design in `docs/purview-native-workflow-wireframe.md`.
 
 | # | Task | Status | Notes |
@@ -525,6 +526,38 @@ G8-3 completion evidence (captured Day 5):
 | G16-2 | P3 — Data product access (`DP-CUST360`): Victoria Tan approver, Rupal Solanki requester | ✅ Done — fully closed live end-to-end (2026-08-12): `request=PV-CUST360-ACCESS-BD3BEBA460C530FA5076 status=Completed`, `AccessDecisionReadback` receipt Passed (operator-attested decision, per confirmed platform limitation; data product's own state independently API-verified) | None — closed |
 | G16-3 | P4 — Data product publish (`DP-SVCPERF`/DOM-SVCDEL): Ranbir Singh approver, Shruthi Srinivas requester | ✅ Done — fully closed live end-to-end (2026-08-12): `request=PV-DP-SVCPERF-9EAF4919D7DFD8F8B5C6 status=Completed`, both `PublicationReadback` and `SemanticModelReadback` receipts Passed. Real Draft→Published cycle approved by Ranbir Singh; semantic metadata reconciled to `fct_service_request.TechnicianId` and `dim_equipment.EquipmentType` | None — closed |
 | G16-4 | Phase closeout — all 5 stakeholders have a proven native scenario; move to non-native workflow phase | ✅ Done — all 5 stakeholders (Ci Zhu, Victoria Tan, Rupal Solanki, Ranbir Singh, Shruthi Srinivas) now have at least one proven native Purview workflow scenario closed live (2026-08-12) | Ready for the non-native workflow reconciliation phase |
+
+---
+
+## G17 — Unify SQL-Controlled And Purview-Native Governance Under One Closed-Loop, Self-Healing Contract
+
+**Priority:** P2
+**Status:** 🔴 Not Started
+**Goal:** With all 5 stakeholders now closed under at least one proven workflow (G14 SQL-controlled gates, G15/G16 Purview-native gates), reconcile the two parallel governance tracks under the single ledger contract defined in `docs/closed-loop-governance-reference-model.md`, close the gating gaps for artifact types that currently have none, and prove self-healing (drift-and-restore) for real rather than by design-doc assertion. This is the explicitly-deferred "non-native workflow phase" referenced in `docs/purview-native-workflow-wireframe.md` §7.
+
+**Findings from the comparison pass (2026-08-12):**
+
+| Finding | Evidence | Risk |
+|---|---|---|
+| Two parallel, unreconciled SQL schemas exist for the same governance concept | Legacy `dbo.governance_change_requests` (`sql/09_gated_governance_requests_schema.sql`, request_type enum limited to `KPI_APPROVAL`\|`VERIFIED_ANSWER_CERTIFICATION`\|`CDE_CLASSIFICATION`\|`GLOSSARY_TERM_DEFINITION`) vs. the newer `dbo.governance_requests`/`governance_events`/`governance_target_receipts`/`governed_object_versions` ledger (`sql/13_closed_loop_governance_ledger.sql`, open `request_type` string, used by `nb_12`-`nb_16`). `sql/13`'s own header explicitly states it "does not replace the legacy... table." | Two disconnected audit trails; no single query answers "is this artifact closed-loop-complete" across both tracks |
+| `GT-SLA` (glossary term) is governed twice, under two disconnected systems, for the same real-world object | G14-7 (legacy SQL gate, `Applied` 2026-08-09) AND G15 (Purview-native, `Completed` 2026-08-11) both cover the identical glossary term with no cross-reference between the two request rows | Ambiguous system of record; a future auditor cannot tell which decision is authoritative |
+| **AI Instructions** (`PBI_AI_Instructions`) have zero governance gating of any kind | Seeded directly by `nb_04a_extend_metadata_schema`'s hardcoded Python list (full DELETE+re-INSERT), no `request_type` exists for it in either schema. A real regression already occurred from this exact gap: a 2026-08-10 reseed silently wiped governance-applied verified-answer content until manually baked back into the hardcoded list (see `docs/design-gap-analysis.md` G14-8 history / repo memory) | Highest-priority gap — the user's own governed-artifact list explicitly names AI instructions, and this is the one proven to have already broken silently |
+| **OKRs** have zero approval/certification/nomination gate | Built and live-published (`sql/11-12`, `nb_07a`, `nb_07`, `nb_10` §5a) entirely outside any Draft→Approve→Apply flow — objectives/key results are just directly created via the Purview API | No requester/approver/decision trail for a business-objective artifact that is otherwise treated as governed |
+| Role assignment ("elections/nominations" — who is Domain Owner, Data Product Owner, Data Steward, or a workflow's named approver) has zero ledger evidence | Confirmed UI-only, no REST API (repo memory, `docs/purview-native-workflow-wireframe.md` §4) — every P3/P4 role change this session was a pure portal click with no request/decision/audit row anywhere | "Who nominated/approved this person for this role, and when" is unanswerable from SQL today |
+| Self-healing (drift detection + automatic correction) has never actually been demonstrated, on either track | `docs/closed-loop-governance-reference-model.md` Phase P4 ("Deliberately drifted approved semantic property restored idempotently") has no corresponding proof anywhere in this repo's history, despite G13 being marked 🟢 Done. G13-5 (scheduled/triggered re-run) is separately still deferred. Every closed scenario so far (G14, G15, G16) proves request→approve→apply→validate, but none proves detect-drift→self-correct | The model's own headline claim ("self-healing") is currently unverified for every workstream |
+
+**Phasing for the next end-to-end validations:**
+
+| Phase | Task | Depends on | Acceptance criterion |
+|---|---|---|---|
+| R1 | Migrate the 4 `Applied` legacy rows (`governance_change_requests`) into the unified ledger as historical `governance_requests`/`governance_events`/`governed_object_versions` rows (`authority='SQL'`), without re-running the original approvals | None | Every artifact governed to date (KPI, Verified Answer, CDE, GT-SLA) has exactly one row in the unified `governance_requests` table, queryable the same way regardless of authority |
+| R2 | Reconcile the duplicate `GT-SLA` governance record — link the legacy R1-migrated row and the native G15 row via `governance_object_mappings`, or mark the legacy row `Superseded` in favor of the Purview-native one | R1 | One authoritative `current_status` per real-world object; no ambiguity about which decision governs `GT-SLA` today |
+| R3 | Add `request_type='AiInstructionCertification'` to the unified ledger; gate `PBI_AI_Instructions` changes through Draft→Approve→Apply the same way KPIs/CDEs are gated, replacing the hardcoded-reseed pattern in `nb_04a` with an apply-on-approve step (mirroring `nb_11`) | R1 | A real AI-instruction change is proposed, approved by a named steward, applied, and the prior 2026-08-10-style silent-wipe regression is structurally impossible (reseed reads from the ledger, not a hardcoded list) |
+| R4 | Add `request_type='OkrApproval'` (or an audit-only observation receipt if a full gate is out of scope) covering Objective/KeyResult creation and edits | R1 | At least one OKR has a real requester/approver/decision trail before its next live-apply |
+| R5 | Add a lightweight `request_type='RoleAssignment'` entry (authority='SQL' or a new authority='Manual') for governance-domain-role and workflow-approver nominations, written by the operator immediately after each real portal-side role change | R1 | "Who is Data Product Owner on Service Delivery, since when, per whose decision" is answerable from `governance_requests`, not tribal/portal-only knowledge |
+| R6 | Prove self-healing for real: deliberately drift one already-`Completed` object outside the approval flow (e.g., hand-edit a certified KPI's semantic-model description via TOM directly, or revert a Purview term's description via the portal) and confirm a re-run of the relevant sync notebook detects the drift and restores the last-approved value idempotently, without fabricating a new approval | R1-R5 (pick one representative object per track: one SQL-controlled, one Purview-native) | `docs/closed-loop-governance-reference-model.md` Phase P4's acceptance criterion is met with real evidence, not design-doc assertion; closes G13-5 |
+
+Recommended sequencing: R1 → R2 (cheap, unblocks a single query surface) → R3 (highest real risk, already caused one regression) → R5 (cheap, high audit value) → R4 → R6 (most valuable, most expensive — do last once every workstream shares one contract to drift-test against).
 
 ---
 
