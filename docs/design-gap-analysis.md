@@ -614,6 +614,27 @@ Loop B operating sequence (from the reference model, unchanged):
 
 Recommended to sequence after G17's R4/R6 (OKR gating, self-healing proof) since G18 is a materially larger build (two new tables + a new notebook + a new approval surface), not a quick reconciliation task like R1-R5.
 
+### G18-A — @tag Native Extraction (built 2026-08-13, first sub-unit of G18)
+
+**Status:** ✅ Done. A narrower, SQL-native precursor to the full G18 discovery/onboarding
+loop above — extracts `@tag:` comment annotations from live view/procedure DDL automatically,
+replacing a standalone Python/regex prototype, wired directly into the unified ledger.
+
+| # | Task | Result |
+|---|---|---|
+| G18-A-1 | Read `nb_02_metadata_pipeline_demo` in full, identify the `@tag` parsing logic | Confirmed: hardcoded `SQL_MODULES` dict + `HEADER_RE`/`_TAG_LINE_RE` regex parser, entirely standalone/disconnected from the real governance pipeline |
+| G18-A-2 | `sql/19_tag_annotation_extraction.sql` — `dbo.usp_extract_tag_annotations` (PATINDEX/SUBSTRING/STRING_SPLIT, no CLR) + idempotent hash comparison, writes `governance_requests`/`governance_events` (`request_type='SourceTagAnnotationDetected'`, `event_type='SOURCE_TAG_DETECTED'`), status `Submitted` only, never auto-approved | Built; one real bug found+fixed during dry-run: initial hash was computed over the full payload including a live timestamp, breaking idempotency — fixed to hash only stable content fields |
+| G18-A-3 | Database-scoped DDL trigger `trg_tag_annotation_extraction` (`CREATE_VIEW`, `ALTER_VIEW`, `ALTER_PROCEDURE`), TRY/CATCH-wrapped so a trigger failure never blocks the DDL | Built and confirmed firing live on both `CREATE VIEW` and `ALTER VIEW`/`ALTER PROCEDURE` |
+| G18-A-4 | Shrink `nb_02`: remove Python `@tag` parsing entirely, replace with a thin SQL reader | **828 → 172 lines** (79% reduction). Also removed two previously-undiscovered live-write risks: an unconditional `overwrite` of `kpi_metadata`/`asset_metadata`/`column_metadata` (same table the real KPI-approval pipeline owns) and a real `ALTER TABLE ... COMMENT` execution against `lh_enercare_demo` tables (`DEMO_MODE` was `False` by default). Confirmed via a live read-only check that this had never actually run against production data before the fix. Original backed up to `tools/backups/nb_02_metadata_pipeline_demo.notebook-content.ORIGINAL-2026-08-13.py.bak` |
+| G18-A-5 | Confirm Azure SQL views are covered directly via `sys.sql_modules`, independent of Mirroring | Confirmed — the proc reads `sys.sql_modules` directly; no dependency on Mirroring transporting view definitions |
+| G18-A-6 | Dry-run + final-form demo: real approved example, real rejected example, real pending example | `dbo.vw_technician_utilization_summary` — **Approved** by Ranbir Singh, fully applied (`governed_object_versions` + `SqlApplyReadback` receipt Passed, `Completed`). `dbo.vw_employee_pii_export` — **Rejected** (exposes raw SIN/DOB/postal code, no CDE backing) — real business rationale in `failure_reason`, proves the gate blocks adoption, not just detects. `dbo.vw_contract_renewal_pipeline` — **Submitted**, genuinely pending; `nb_02`'s thin reader confirmed picking up exactly this 1 row into `lh_metadata.source_tag_detections` |
+| G18-A-7 | Doc updates | This section; `docs/build-scorecard.md` Phase 6 entry added; `docs/closed-loop-governance-reference-model.md`'s target-systems list needs no change (`SOURCE_TAG_DETECTED` is an event type, not a target system; `'SQL'` already fits `SQL_CANONICAL`) |
+| G18-A-8 | Cleanup | All temp/scratch notebooks (`nb_tmp_r6_*`, `nb_tmp_g18a_*`) and scripts deleted from both the live Fabric workspace and the repo before final commit |
+
+Remaining full G18 (source table discovery beyond `@tag` markers, `source_object_inventory`/
+`semantic_object_inventory`, automatic semantic-model inclusion) is still open — see the build
+tasks table above.
+
 ---
 
 ## What Stays From The Current Build

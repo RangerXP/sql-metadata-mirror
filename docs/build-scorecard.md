@@ -53,6 +53,14 @@
 
 Every one of the 8 `governance_requests.request_type` values now has at least one real, `Completed`, queryable demo object. **G17 fully closed.**
 
+## Phase 6 — G18-A: @tag Native Extraction (closed 2026-08-13)
+
+| Unit | Status |
+|---|---|
+| `sql/19_tag_annotation_extraction.sql` (proc + DDL trigger, native SQL, no CLR) | ✅ Done — real idempotency bug found+fixed (timestamp was polluting the content hash) |
+| `nb_02` shrink (remove standalone Python `@tag` prototype, thin SQL reader) | ✅ Done — 828 → 172 lines; removed 2 previously-undiscovered live-write risks (`kpi_metadata` overwrite, real `ALTER TABLE COMMENT`), confirmed neither had ever run against production; original backed up |
+| Final-form demo: Approved / Rejected / Pending | ✅ Done — `vw_technician_utilization_summary` (Completed), `vw_employee_pii_export` (Rejected, real PII rationale), `vw_contract_renewal_pipeline` (Submitted, confirmed picked up by `nb_02`'s thin reader) |
+
 ---
 
 ## Downstream Propagation Chain (proving G14-8)
