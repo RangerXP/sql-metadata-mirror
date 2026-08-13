@@ -16,10 +16,6 @@
 # META           "id": "824f4a52-baa0-4c3f-88dc-203c1d85c89a"
 # META         }
 # META       ]
-# META     },
-# META     "environment": {
-# META       "environmentId": "7380ddbb-a87b-8113-489c-049cb1998b35",
-# META       "workspaceId": "00000000-0000-0000-0000-000000000000"
 # META     }
 # META   }
 # META }
@@ -32,9 +28,14 @@
 #
 # Unlike nb_13/nb_16 (which only annotate EXISTING columns), this notebook ADDS a brand-new
 # measure to the semantic model -- the actual "promotion" step G18's design always intended.
-# Mirrors nb_16's apply+validate+receipt pattern exactly. Fails closed: requires the gating
-# SemanticModelPromotion request to be Approved and its prerequisite ontology-mapping receipt
-# to have passed.
+# Fails closed: requires the gating SemanticModelPromotion request to be Approved and its
+# prerequisite ontology-mapping receipt to have passed.
+#
+# Kept as a single flattened cell -- a multi-cell version of this notebook repeatedly failed
+# with a generic System_Cancelled_Session_Statements_Failed error (no cell-level detail
+# available) even though a flattened single-cell diagnostic replicating the same TOM read+write
+# logic succeeded twice. Matches an established repo pattern (see repo memory): flatten to one
+# cell when a multi-cell notebook fails this way.
 
 DEMO_MODE = False
 RUN_REQUEST_ID = "SEMPROMO-TECHUTIL-001"  # Real, Approved via sql/28, gated on ONTOMAP-TECHUTIL-001.
@@ -53,17 +54,6 @@ SQL_AUTH_MODE = "tokenlibrary"  # tokenlibrary | managed_identity
 
 print(f"nb_17 | DEMO_MODE={DEMO_MODE} | request={RUN_REQUEST_ID} | model={MODEL_NAME}")
 
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
-# META }
-
-# CELL ********************
-
-# Cell 2: Connection and helpers (mirrors nb_16)
-
 import hashlib
 import json
 import struct
@@ -76,8 +66,6 @@ import pyodbc
 try:
     from sempy_labs.tom import connect_semantic_model
 except ImportError:
-    # Fallback for a cold/detached session where the attached environment's
-    # pre-installed package set isn't yet resolved -- proven reliable in this repo.
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", "semantic-link-labs"], check=True)
     from sempy_labs.tom import connect_semantic_model
 
@@ -153,18 +141,8 @@ def read_annotation(obj, key):
 if not RUN_REQUEST_ID.strip():
     raise RuntimeError("Set RUN_REQUEST_ID to the approved SemanticModelPromotion request ID.")
 
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
-# META }
-
-# CELL ********************
-
-# Cell 3: Load the approved request and enforce the gate -- requires the prerequisite
-# ontology-mapping receipt to have already passed (fails closed, matching nb_16's pattern).
-
+# Load the approved request and enforce the gate -- requires the prerequisite ontology-mapping
+# receipt to have already passed (fails closed).
 connection = get_sql_connection()
 cursor = connection.cursor()
 try:
@@ -216,17 +194,7 @@ expected_measure = {
 expected_hash = sha256_text(canonical_json(expected_measure))
 print(f"[READY] request={RUN_REQUEST_ID} status={request_row[0]} target={TARGET_TABLE}.{NEW_MEASURE_NAME} expected_hash={expected_hash}")
 
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
-# META }
-
-# CELL ********************
-
-# Cell 4: Apply -- add the new measure via SemPy Labs TOM (real TMDL mutation, not just a SQL receipt)
-
+# Apply -- add the new measure via SemPy Labs TOM (real TMDL mutation, not just a SQL receipt).
 if DEMO_MODE:
     print("[DEMO_MODE] Semantic measure creation skipped.")
 else:
@@ -255,17 +223,7 @@ else:
         for key, value in expected_measure["annotations"].items():
             upsert_annotation(target_measure, key, value)
 
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
-# META }
-
-# CELL ********************
-
-# Cell 5: Reopen the model read-only and compute the observed hash (real read-back, matching nb_16)
-
+# Reopen the model read-only and compute the observed hash (real read-back).
 if DEMO_MODE:
     observed_measure = expected_measure
     observed_hash = expected_hash
@@ -289,17 +247,7 @@ else:
     validation_status = "Passed" if observed_hash == expected_hash else "Failed"
     print(f"[READBACK] status={validation_status} expected_hash={expected_hash} observed_hash={observed_hash}")
 
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
-# META }
-
-# CELL ********************
-
-# Cell 6: Persist the read-back receipt and complete only after it passes (mirrors nb_16 Cell 6)
-
+# Persist the read-back receipt and complete only after it passes.
 if DEMO_MODE:
     print("[DEMO_MODE] SQL receipt and request completion skipped.")
 else:
@@ -372,3 +320,11 @@ else:
     finally:
         cursor.close()
         connection.close()
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
