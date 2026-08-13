@@ -67,16 +67,19 @@ print(f"nb_17 | DEMO_MODE={DEMO_MODE} | request={RUN_REQUEST_ID} | model={MODEL_
 import hashlib
 import json
 import struct
+import subprocess
+import sys
 from datetime import datetime, timezone
 
 import pyodbc
 
 try:
     from sempy_labs.tom import connect_semantic_model
-except ImportError as exc:
-    raise RuntimeError(
-        "semantic-link-labs is required. Attach the SempyLabsV2 environment and restart the session."
-    ) from exc
+except ImportError:
+    # Fallback for a cold/detached session where the attached environment's
+    # pre-installed package set isn't yet resolved -- proven reliable in this repo.
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "semantic-link-labs"], check=True)
+    from sempy_labs.tom import connect_semantic_model
 
 ODBC_SQL_COPT_SS_ACCESS_TOKEN = 1256
 ANNOTATION_KEYS = ("SourceObject_References", "KeyResult_Id", "Governance_Request_Id")
