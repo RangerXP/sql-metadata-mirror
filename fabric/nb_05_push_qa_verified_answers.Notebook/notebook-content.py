@@ -67,11 +67,15 @@ print(f"Max annotation chars: {MAX_ANNOTATION_CHARS}")
 # CELL ********************
 
 # Cell 2: Read ai_metadata
+# Gate matches nb_04_sempy_writeback's KPI pattern exactly (WHERE IsCertified = 1): only
+# certified content reaches the Data Agent's live grounding surface. Previously this filtered
+# only IsDraft = 0, which let content with no certification decision at all (IsCertified NULL)
+# through -- found during the 2026-08-13 notebook governance review (docs/01_Notebook_Description.md).
 
 ai_df = spark.sql(f"""
     SELECT RecordType, TriggerText, ResponseText, LinkedKPICode
     FROM {METADATA_LH}.ai_metadata
-    WHERE IsDraft = 0
+    WHERE IsDraft = 0 AND IsCertified = 1
     ORDER BY RecordType, RecordID
 """)
 ai_rows = ai_df.collect()

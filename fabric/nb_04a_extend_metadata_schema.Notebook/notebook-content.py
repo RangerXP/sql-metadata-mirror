@@ -650,6 +650,7 @@ rows_va = [
         RecordID=i + 1, ModelName=MODEL_NAME, RecordType="verified_answer",
         TriggerText=trigger, ResponseText=response, LinkedKPICode=code,
         IsDraft=0, CreatedDate=date.fromisoformat(CERTIFIED_DATE),
+        IsCertified=1, CertifiedBy=CERTIFIED_BY, CertifiedDate=date.fromisoformat(CERTIFIED_DATE),
     )
     for i, (code, trigger, response) in enumerate(verified_answers)
 ]
@@ -664,6 +665,9 @@ AI_SCHEMA = StructType([
     StructField("LinkedKPICode", StringType(),  True),
     StructField("IsDraft",       IntegerType(), True),
     StructField("CreatedDate",   DateType(),    True),
+    StructField("IsCertified",   IntegerType(), True),
+    StructField("CertifiedBy",   StringType(),  True),
+    StructField("CertifiedDate", DateType(),    True),
 ])
 
 df_va = spark.createDataFrame(rows_va, schema=AI_SCHEMA)
@@ -672,19 +676,20 @@ if DEMO_MODE:
     print(f"[DEMO_MODE] Verified answers — {len(rows_va)} certified KPI and Maria source-story rows:\n")
     df_va.select("RecordID", "LinkedKPICode", "TriggerText").show(truncate=60)
 else:
-    # Deterministic refresh: clear current UNCERTIFIED verified answers for this model, then
+    # Deterministic refresh: clear current baseline-seed verified answers for this model, then
     # reinsert canonical seed rows. G17-R3 structural fix (same root cause as the ai_instruction
-    # guard above): a real 2026-08-10 regression silently wiped a governance-approved
+    # guard below): a real 2026-08-10 regression silently wiped a governance-approved
     # (IsCertified=1) verified answer via this exact blanket DELETE, only patched at the time by
     # baking the approved text into the hardcoded rows_va list below. That workaround does not
     # protect any FUTURE governance-approved verified answer not yet added to this list -- this
-    # guard closes the root cause instead: certified rows are never eligible for this reseed.
+    # guard closes the root cause instead: only rows NOT certified, or certified under this
+    # notebook's own baseline-seed authority (CERTIFIED_BY = "Victoria Tan"), are eligible for this reseed --
     spark.sql(
         f"DELETE FROM {METADATA_LAKEHOUSE}.ai_metadata "
         f"WHERE ModelName = {_sql_string(MODEL_NAME)} "
         f"AND RecordType = 'verified_answer' "
         f"AND IsDraft = 0 "
-        f"AND (IsCertified IS NULL OR IsCertified = 0)"
+        f"AND (IsCertified IS NULL OR IsCertified = 0 OR CertifiedBy = {_sql_string(CERTIFIED_BY)})"
     )
     df_va.write.format("delta").mode("append").option("mergeSchema", "true") \
          .saveAsTable(f"{METADATA_LAKEHOUSE}.ai_metadata")
@@ -763,6 +768,7 @@ rows_instr = [
         RecordID=record_id + i, ModelName=MODEL_NAME, RecordType="ai_instruction",
         TriggerText=trigger, ResponseText=content, LinkedKPICode=None,
         IsDraft=0, CreatedDate=date.fromisoformat(CERTIFIED_DATE),
+        IsCertified=1, CertifiedBy=CERTIFIED_BY, CertifiedDate=date.fromisoformat(CERTIFIED_DATE),
     )
     for i, (title, trigger, content) in enumerate(ai_instructions)
 ]
@@ -773,18 +779,19 @@ if DEMO_MODE:
     print(f"[DEMO_MODE] AI instruction rows — {len(rows_instr)} rows:\n")
     df_instr.select("RecordID", "RecordType", "TriggerText").show(truncate=60)
 else:
-    # Deterministic refresh: clear current UNCERTIFIED AI instruction rows for this model, then
-    # reinsert canonical rows. G17-R3 structural fix: rows with IsCertified=1 came from a real
-    # governance approval (nb_11 apply-on-approve) and must NEVER be wiped by this hardcoded-list
-    # reseed, regardless of whether their content also happens to be baked into ai_instructions
-    # above -- this closes the 2026-08-10 silent-wipe regression class of bug at its root, rather
+    # Deterministic refresh: clear current baseline-seed AI instruction rows for this model, then
+    # reinsert canonical rows. G17-R3 structural fix: rows with IsCertified=1 stamped by a REAL
+    # governance approval (nb_11 apply-on-approve, always the real approver's UPN) must NEVER be
+    # wiped by this hardcoded-list reseed. Only rows not certified, or certified under this
+    # notebook's own baseline-seed authority (CERTIFIED_BY = "Victoria Tan"), are eligible for this reseed --
+    # this closes the 2026-08-10 silent-wipe regression class of bug at its root, rather
     # than only patching it by keeping the hardcoded list in sync.
     spark.sql(
         f"DELETE FROM {METADATA_LAKEHOUSE}.ai_metadata "
         f"WHERE ModelName = {_sql_string(MODEL_NAME)} "
         f"AND RecordType = 'ai_instruction' "
         f"AND IsDraft = 0 "
-        f"AND (IsCertified IS NULL OR IsCertified = 0)"
+        f"AND (IsCertified IS NULL OR IsCertified = 0 OR CertifiedBy = {_sql_string(CERTIFIED_BY)})"
     )
     df_instr.write.format("delta").mode("append").option("mergeSchema", "true") \
             .saveAsTable(f"{METADATA_LAKEHOUSE}.ai_metadata")
