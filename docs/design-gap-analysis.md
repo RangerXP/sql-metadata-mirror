@@ -37,6 +37,15 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 5. Uses **Purview as the published metadata system of record** for governed discovery.
 6. **Passes the Maria scenario** end-to-end: customer call → exec review → governance audit, all served from a single governed surface with no manual reconciliation. See `docs/purview-maria-north-star-scenario.md`.
 
+> **Revised North Star (2026-08-13):** the project has crossed a maturity threshold from
+> *governance publication* (get things approved and published) to *governance lifecycle
+> management*. Objective going forward: **a closed-loop governance platform where every
+> governed asset, relationship, approval, certification, AI annotation, ontology object, and
+> onboarding decision produces durable evidence, supports drift detection and self-healing, and
+> can be independently validated through read-back from operational and governance systems.**
+> This supersedes the original "publish and prove read-back once" bar and directly motivates
+> G19 below.
+
 ### Non-negotiable design decisions
 
 - **Do not assume source extended properties exist.** They do not.
@@ -106,7 +115,7 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G16 | Native Purview workflow stakeholder coverage — remaining 4 stakeholders (P3 Data Product Access, P4 Data Product Publish) | P2 | ✅ Done — all 5 stakeholders (Ci Zhu, Victoria Tan, Rupal Solanki, Ranbir Singh, Shruthi Srinivas) closed live 2026-08-12 | Sean |
 | G17 | Unify SQL-controlled and Purview-native governance under one closed-loop ledger contract — reconcile `governance_change_requests` (legacy) into `governance_requests`/events/receipts/versions, close the AI-instructions/OKR/role-assignment gating gaps, and prove drift-and-restore self-correction for real (see G18 for the separate "self-healing semantic model" concept) | P2 | ✅ Done — R1-R6 all closed 2026-08-13 | Sean |
 | G18 | **Self-healing semantic model** — source table discovery & governed onboarding (Loop B). This is the team's adopted definition of "self-healing": a new SQL table must be inventoried, dispositioned, and pass an approval gate (domain, data product, sensitivity, semantic role) before it is ever added to the semantic model or surfaced to the Data Agent; Fabric Mirror autosync and Purview scans provide discovery only, never governance or model inclusion | P2 | � In Progress — G18-A (`@tag` native extraction: discovery/classification/approval loop) closed 2026-08-13 with real Completed/Rejected/Submitted demo objects; full G18 (CDE mapping + real semantic-model TMDL promotion) still open | Sean |
-| G19 | Closed-loop governance completeness review — fact-checked external backlog review against actual build state; formalizes the REAL remaining gaps (AI Instruction lifecycle, OKR governance completeness, Data Product certification lifecycle, G18 completion, new evidence-receipt gaps, G13-5) into a phased delivery plan | P2 | 🔴 Not Started — see detailed section below | Sean |
+| G19 | Closed-loop governance completeness review — governance lifecycle management (not just publication): ontology/Objective-level governance & certification (priority 1), AI Instruction lifecycle, Data Product certification lifecycle, G18 discovery-to-ontology completion, first-class governance receipts, scheduled automation (G13-5) | P2 | 🔴 Not Started — see detailed section below | Sean |
 
 ---
 
@@ -663,18 +672,43 @@ see the corrections table below before trusting any of the phases.
 
 ### Phased delivery plan (the REAL remaining backlog)
 
+**Revised framing (2026-08-13, second pass):** the project has crossed a maturity threshold —
+the original objective was *governance publication* (get things approved and published); the
+current objective is *governance lifecycle management* (every governed object — domain, data
+product, OKR, KPI, AI instruction, ontology node, onboarded source — carries a durable
+certification/expiration/retirement state and evidence trail, not just a one-time approval).
+The OKR/ontology layer is the load-bearing structure for this: `EnercareDataProduct` →
+`EnercareOKR` → `EnercareOKRKeyResult` → `kpi_metadata` is already the real edge a future
+agent walks instead of free-text search (see line ~445 above), so governance gaps in that
+graph outrank gaps in lower-value surfaces like glossary terms. Sub-tasks below are grouped by
+this lifecycle-completion theme rather than by which G17 sub-phase they extend.
+
 | Phase | Task | Depends on | Acceptance criterion |
 |---|---|---|---|
-| G19-1 | AI Instruction lifecycle completeness: effective-date activation (`EffectiveDate` column + gating logic so an approved instruction doesn't take effect until its date) and a rollback workflow (revert to the prior certified version, itself going through the same approval gate) | G17-R3 | A real AI instruction is approved with a future effective date, confirmed NOT active until that date; a real rollback request is approved and restores the prior certified text |
-| G19-2 | OKR governance completeness: Objective-level approval (not just Key Result), a certification/recertification cadence, and validation that `owner_upn` resolves to a real, currently-assigned domain owner | G17-R4 | A real Objective edit goes through Draft→Approve→Apply; a recertification request is proposed and approved for an already-Completed OKR |
-| G19-3 | Data Product certification lifecycle: certify/de-certify/expiration-review, distinct from Publish (which is already proven) | G16 (P4) | A published data product is separately certified (a new request_type, e.g. `DataProductCertification`), with a real expiration date and a real de-certification example |
-| G19-4 | G18 completion: CDE mapping step (link a detected/approved table or column to a real Critical Data Element) + actual semantic-model promotion (real SemPy Labs TOM mutation adding the approved table/column to `BrookfieldEnercare`, not just a SQL-side receipt) | G18-A | An approved G18-A object (e.g. `vw_technician_utilization_summary`) is actually added to the semantic model and read back, matching the `nb_13`/`nb_16` apply+validate pattern |
-| G19-5 | New evidence-receipt gaps: domain-publish receipts (a governance_requests/receipt entry when a governance domain itself is published) and scan-completion receipts (a receipt when a Purview scan run completes, referencing the real scan-run ID) | G17 ledger | A real domain publish and a real scan run each produce a queryable receipt in the unified ledger |
-| G19-6 | G13-5: scheduled/triggered automation of the governance sync chain (vs. today's fully-manual notebook runs) | All of the above | A governance change flows from proposal to applied evidence without a human manually triggering each notebook run |
+| G19-1 | **Ontology governance completeness** — Objective-level approval (not just Key Result), Objective certification/recertification, ownership validation (`owner_upn` resolves to a real, currently-assigned domain owner), drift detection (an Objective's linked data products/domain still exist and match), and a retirement workflow | G17-R4 | A real Objective edit goes through Draft→Approve→Apply; a recertification request is proposed and approved for an already-Completed OKR; a retired Objective is excluded from active-graph reads |
+| G19-2 | **Generic certification lifecycle model** — extend the existing Draft→Submitted→Approved→Applied states with `Certified`, `Expired`, `Decertified`, `RecertificationRequired`, `Retired`, reusable across Data Products, AI Instructions, KPIs, Objectives, and Verified Answers (a governance-lifecycle state machine, not a one-off per object type) | G19-1 | At least 2 distinct object types (e.g. Objective + Data Product) each pass through the full extended state machine with real receipts at each transition |
+| G19-3 | **Ontology evidence graph** — extend today's Objective→KeyResult→KPI chain with linked receipts at every hop (Approval Receipt, Certification Receipt, Semantic Model Receipt) so a business objective can be explained end-to-end by evidence, not just by data | G19-1, G19-2 | A single query/read-back walks Objective → Key Result → KPI → Data Product → Domain and returns a real receipt at every edge |
+| G19-4 | **AI Instruction lifecycle completeness** — effective-date activation (`EffectiveDate` column + gating so an approved instruction doesn't take effect until its date) and a rollback workflow (revert to the prior certified version, itself going through the same approval gate) | G17-R3 | A real AI instruction is approved with a future effective date, confirmed NOT active until that date; a real rollback request is approved and restores the prior certified text |
+| G19-5 | **Data Product certification lifecycle** — certify/de-certify/expiration-review, distinct from Publish (already proven in P4) | G16 (P4), G19-2 | A published data product is separately certified (new `request_type`, e.g. `DataProductCertification`), with a real expiration date and a real de-certification example |
+| G19-6 | **Discovery-to-ontology loop (G18 completion)** — extend G18-A's discovery→classify→approve chain with a CDE mapping step and an ontology mapping step (link the approved table/column to a real ontology node — Domain/Data Product/OKR — not just a domain tag) before actual semantic-model promotion (real SemPy Labs TOM mutation, not just a SQL-side receipt) | G18-A | An approved G18-A object (e.g. `vw_technician_utilization_summary`) resolves to a real ontology node, is actually added to the semantic model, and is read back — matching the `nb_13`/`nb_16` apply+validate pattern |
+| G19-7 | **First-class governance receipts** — promote domain-publish and Purview-scan-completion events from "missing" to typed receipts: Domain Publish Receipt (Published→Read Back→Validated), Purview Scan Receipt (Started→Completed→Assets Discovered→Read Back), Objective Approval Receipt (Approved→Ontology Updated→Relationships Validated) | G19-1, G17 ledger | A real domain publish and a real scan run each produce a queryable, typed receipt in the unified ledger |
+| G19-8 | **Autonomous governance (G13-5)** — scheduled/triggered automation of the full chain (proposal → approval → propagation → validation → receipt → reconciliation) without a human manually triggering each notebook run | All of the above | A governance change flows end-to-end without manual notebook triggering |
 
-Recommended sequencing: G19-1 → G19-2 → G19-3 (similar shape, cheapest first) → G19-4 (larger,
-requires real TMDL mutation) → G19-5 (new receipt types, moderate) → G19-6 (infrastructure,
-do last, matches G17's own R6-last precedent).
+**Recommended priority (executive-demo framing, supersedes the original cheapest-first
+sequencing):**
+
+1. **G19-1 + G19-3** — Objective-level ontology governance, certification, and approval
+   receipts. This is the highest-value change: it turns the OKR/ontology layer from "just
+   linked data" into a governed business-reasoning graph, which is the strongest differentiator
+   for Enercare/Brookfield and future agent experiences.
+2. **G19-4** — AI Instruction lifecycle (effective dates, rollback).
+3. **G19-5** — Data Product certification lifecycle.
+4. **G19-6** — G18 semantic-model promotion (larger; real TMDL mutation).
+5. **G19-2 + G19-7** — generalize the certification state machine and receipt types once at
+   least two real object types have proven the pattern in 1-3 above (avoids over-building an
+   abstraction before it has real usages).
+6. **G19-8** — scheduled automation, last, matching G17's own R6-last precedent (self-healing
+   was proven manually before it was worth automating).
 
 ---
 
