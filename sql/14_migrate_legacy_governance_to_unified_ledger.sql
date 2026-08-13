@@ -54,6 +54,7 @@ SELECT
         WHEN 'VERIFIED_ANSWER_CERTIFICATION'    THEN 'VerifiedAnswerCertification'
         WHEN 'CDE_CLASSIFICATION'               THEN 'CdeClassification'
         WHEN 'GLOSSARY_TERM_DEFINITION'         THEN 'GlossaryTermDefinition'
+        WHEN 'AI_INSTRUCTION_CERTIFICATION'     THEN 'AiInstructionCertification'
         ELSE 'LegacyUnknown'
     END                                                                    AS mapped_request_type,
     CASE gcr.request_type
@@ -61,6 +62,7 @@ SELECT
         WHEN 'VERIFIED_ANSWER_CERTIFICATION'    THEN 'VerifiedAnswer'
         WHEN 'CDE_CLASSIFICATION'               THEN 'CriticalDataElement'
         WHEN 'GLOSSARY_TERM_DEFINITION'         THEN 'GlossaryTerm'
+        WHEN 'AI_INSTRUCTION_CERTIFICATION'     THEN 'AiInstruction'
         ELSE 'LegacyUnknownObject'
     END                                                                    AS mapped_object_type,
     'SQL-LEGACY-' + gcr.request_id                                         AS new_request_id,
