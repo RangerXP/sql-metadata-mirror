@@ -34,17 +34,17 @@
 # Product's own current state (status, domain, definition hash) IS read live and IS real,
 # API-verified evidence; only the access decision itself is attested.
 
-DEMO_MODE = True
-WORKFLOW_CONFIGURED = False
-RUN_CORRELATION_ID = ""  # Example: DP-CUST360-ACCESS-RUPAL-A; local correlation, not a Purview workflow ID.
+DEMO_MODE = False
+WORKFLOW_CONFIGURED = True
+RUN_CORRELATION_ID = "DP-CUST360-ACCESS-RUPAL-A"
 
-ATTESTED_REQUESTER_UPN = ""
-ATTESTED_PRIVACY_REVIEWER_UPN = ""
-ATTESTED_APPROVER_UPN = ""
-ATTESTED_PURPOSE = ""
-ATTESTED_BUSINESS_JUSTIFICATION = ""
-ATTESTED_DECISION = ""  # "Approved" | "Rejected"
-ATTESTED_BY = ""  # operator attesting this evidence, e.g. "sean.kelley@microsoft.com - directly observed both approval tiers in Requests and approvals"
+ATTESTED_REQUESTER_UPN = "rupal.solanki@MngEnvMCAP660444.onmicrosoft.com"
+ATTESTED_PRIVACY_REVIEWER_UPN = "victoria.tan@MngEnvMCAP660444.onmicrosoft.com"
+ATTESTED_APPROVER_UPN = "victoria.tan@MngEnvMCAP660444.onmicrosoft.com"
+ATTESTED_PURPOSE = "Customer-experience analytics"
+ATTESTED_BUSINESS_JUSTIFICATION = "Rupal Solanki (Data Steward, Customer Operations) requested access to Customer 360 to support customer-experience analytics reporting. Victoria Tan completed both required approval tiers (Privacy Compliance Approval, then the main Approval for data access request) in the Requests and approvals flyout."
+ATTESTED_DECISION = "Approved"
+ATTESTED_BY = "sean.kelley@microsoft.com - directly observed both approval tiers completed live in Requests and approvals"
 
 PURVIEW_TENANT_ID = "b7e47691-9726-4f67-a302-e567815f3522"
 PURVIEW_CATALOG_BASE_URL = (
