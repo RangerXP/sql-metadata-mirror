@@ -100,11 +100,12 @@ The Enercare demo is an end-to-end cross-subscription architecture that:
 | G10 | Steward workflow and AI-assisted metadata drafting | P3 | 🟢 Done — 2026-08-08 regression (18/18 ACTION_REQUIRED) fixed and live-reverified: `phase_08_stewardship,18,0,PASS` / `phase_09_controls,4,0,PASS` / `phase_10_ai_readiness,4,0,PASS` | Sean |
 | G11 | Optional ontology and B2C extensions | P4 | 🟡 In Progress — G11-1 (OKR layer) built, pending live apply; see detailed section | Sean |
 | **G12** | **Phase A design commit (north star, dataset, CSVs, SIN backstop, 2-day plan)** | **P1** | **🟢 Done** | **Sean** |
-| G13 | Self-healing semantic model sync (SQL value-change propagation, not just schema autosync) | P2 | � Done — `nb_11_gated_governance_sync` proven live against all 4 scenarios; G13-5 (scheduled/triggered re-run) remains deferred | Sean |
+| G13 | Governed value-change propagation (SQL value-change → gated approval → semantic-model sync, not just schema autosync). NOTE: previously labeled "self-healing semantic model sync" — renamed 2026-08-12 to avoid confusion with G18, which the team now uses "self-healing semantic model" to mean (see G18) | P2 | 🟢 Done — `nb_11_gated_governance_sync` proven live against all 4 scenarios; G13-5 (scheduled/triggered re-run) remains deferred | Sean |
 | G14 | Gated governance approval workflows (KPI approval, Verified Answer certification, CDE classification, glossary term definition) | P2 | 🟢 Done — all 4 scenarios proven live 2026-08-09, full propagation chain + `nb_10` reconfirm closed 2026-08-10 | Sean |
 | G15 | Native Purview publication closed loop (`GT-SLA`, Ci Zhu) — publication, semantic reconciliation, mirrored evidence | P2 | 🟢 Done — `PublicationReadback`/`SemanticModelReadback` both Passed, request `Completed` 2026-08-11 | Sean |
 | G16 | Native Purview workflow stakeholder coverage — remaining 4 stakeholders (P3 Data Product Access, P4 Data Product Publish) | P2 | ✅ Done — all 5 stakeholders (Ci Zhu, Victoria Tan, Rupal Solanki, Ranbir Singh, Shruthi Srinivas) closed live 2026-08-12 | Sean |
-| G17 | Unify SQL-controlled and Purview-native governance under one closed-loop, self-healing ledger contract — reconcile `governance_change_requests` (legacy) into `governance_requests`/events/receipts/versions, close the AI-instructions/OKR/role-assignment gating gaps, and prove self-healing (drift-and-restore) for real | P2 | 🔴 Not Started — see detailed section below | Sean |
+| G17 | Unify SQL-controlled and Purview-native governance under one closed-loop ledger contract — reconcile `governance_change_requests` (legacy) into `governance_requests`/events/receipts/versions, close the AI-instructions/OKR/role-assignment gating gaps, and prove drift-and-restore self-correction for real (see G18 for the separate "self-healing semantic model" concept) | P2 | � In Progress — R1/R2/R3/R5 Done (legacy migration, GT-SLA reconciliation, AI Instructions gating, role-assignment ledger); R4/R6 remain | Sean |
+| G18 | **Self-healing semantic model** — source table discovery & governed onboarding (Loop B). This is the team's adopted definition of "self-healing": a new SQL table must be inventoried, dispositioned, and pass an approval gate (domain, data product, sensitivity, semantic role) before it is ever added to the semantic model or surfaced to the Data Agent; Fabric Mirror autosync and Purview scans provide discovery only, never governance or model inclusion | P2 | 🔴 Not Started — design-only since Phase A (`docs/closed-loop-governance-reference-model.md` Loop B / Gate F / Phase P3); `dbo.source_object_inventory` and `dbo.semantic_object_inventory` were never actually created; see detailed section below | Sean |
 
 ---
 
@@ -554,10 +555,62 @@ G8-3 completion evidence (captured Day 5):
 | R2 | Reconcile the duplicate `GT-SLA` governance record — link the legacy R1-migrated row and the native G15 row via `governance_object_mappings`, or mark the legacy row `Superseded` in favor of the Purview-native one | R1 | One authoritative `current_status` per real-world object; no ambiguity about which decision governs `GT-SLA` today | ✅ Done 2026-08-12 — `sql/15_reconcile_gt_sla_duplicate_governance.sql`; `SQL-LEGACY-GCR-GT-001` marked `Superseded`, mapped to `PV-GT-SLA-0359C207890E4EB1B8AB` |
 | R3 | Add `request_type='AiInstructionCertification'` to the unified ledger; gate `PBI_AI_Instructions` changes through Draft→Approve→Apply the same way KPIs/CDEs are gated, replacing the hardcoded-reseed pattern in `nb_04a` with an apply-on-approve step (mirroring `nb_11`) | R1 | A real AI-instruction change is proposed, approved by a named steward, applied, and the prior 2026-08-10-style silent-wipe regression is structurally impossible (reseed reads from the ledger, not a hardcoded list) | ✅ Done 2026-08-12/13 — `sql/16_add_ai_instruction_gate.sql` (GCR-AII-001, Escalation Guidance, requester Rupal Solanki, approver Ci Zhu), `nb_11` dispatch extended (`AI_INSTRUCTION_CERTIFICATION` reuses `apply_verified_answer_certification`), `nb_04a`'s reseed DELETEs on both `verified_answer` and `ai_instruction` now structurally exclude `IsCertified=1` rows (root-cause fix, not a hardcoded-list patch), migrated into the unified ledger via `sql/14` |
 | R4 | Add `request_type='OkrApproval'` (or an audit-only observation receipt if a full gate is out of scope) covering Objective/KeyResult creation and edits | R1 | At least one OKR has a real requester/approver/decision trail before its next live-apply | 🔴 Not Started |
-| R5 | Add a lightweight `request_type='RoleAssignment'` entry (authority='SQL' or a new authority='Manual') for governance-domain-role and workflow-approver nominations, written by the operator immediately after each real portal-side role change | R1 | "Who is Data Product Owner on Service Delivery, since when, per whose decision" is answerable from `governance_requests`, not tribal/portal-only knowledge | 🔴 Not Started |
-| R6 | Prove self-healing for real: deliberately drift one already-`Completed` object outside the approval flow (e.g., hand-edit a certified KPI's semantic-model description via TOM directly, or revert a Purview term's description via the portal) and confirm a re-run of the relevant sync notebook detects the drift and restores the last-approved value idempotently, without fabricating a new approval | R1-R5 (pick one representative object per track: one SQL-controlled, one Purview-native) | `docs/closed-loop-governance-reference-model.md` Phase P4's acceptance criterion is met with real evidence, not design-doc assertion; closes G13-5 | 🔴 Not Started |
+| R5 | Add a lightweight `request_type='RoleAssignment'` entry (authority='SQL' or a new authority='Manual') for governance-domain-role and workflow-approver nominations, written by the operator immediately after each real portal-side role change | R1 | "Who is Data Product Owner on Service Delivery, since when, per whose decision" is answerable from `governance_requests`, not tribal/portal-only knowledge | ✅ Done 2026-08-12 — `sql/17_backfill_role_assignment_ledger.sql`, 8 entries (`ROLE-P3-001..003`, `ROLE-P4-001..005`) covering every real P3/P4 role grant this session, `authority='Purview'`, operator-attested per confirmed no-RBAC-API limitation |
+| R6 | Prove drift-and-restore self-correction for real (a third, distinct "self-healing"-adjacent concept from G18): deliberately drift one already-`Completed` object outside the approval flow (e.g., hand-edit a certified KPI's semantic-model description via TOM directly, or revert a Purview term's description via the portal) and confirm a re-run of the relevant sync notebook detects the drift and restores the last-approved value idempotently, without fabricating a new approval | R1-R5 (pick one representative object per track: one SQL-controlled, one Purview-native) | `docs/closed-loop-governance-reference-model.md` Phase P4's acceptance criterion is met with real evidence, not design-doc assertion; closes G13-5 | 🔴 Not Started |
 
 Recommended sequencing: R1 → R2 (cheap, unblocks a single query surface) → R3 (highest real risk, already caused one regression) → R5 (cheap, high audit value) → R4 → R6 (most valuable, most expensive — do last once every workstream shares one contract to drift-test against).
+
+---
+
+## G18 — Self-Healing Semantic Model: Source Table Discovery & Governed Onboarding (Loop B)
+
+**Priority:** P2
+**Status:** 🔴 Not Started
+**Terminology note (2026-08-12):** the team has adopted **"self-healing semantic model"** to mean specifically this workstream — the semantic model automatically, systematically reflects newly-governed SQL tables/columns through a discovery → approval → inclusion loop, rather than silently drifting out of sync with whatever a person manually added. This is distinct from G13 (governed *value*-change propagation for already-modeled objects) and G17-R6 (drift-and-restore self-correction for already-approved properties) — all three are related but separate mechanisms; only G18 is "the" self-healing semantic model.
+**Goal:** Close the gap between "a new SQL table exists" and "a new SQL table is governed" — today those two things are unrelated. Implements `docs/closed-loop-governance-reference-model.md`'s **Loop B** and **Gate F**, which have existed as design text since Phase A but were never built.
+
+### Why this exists (the question that surfaced it)
+
+Fabric Mirroring's new-table autosync and Purview's SQL/Fabric scans are both already enabled and working — but they solve two different, narrower problems than "should this table be governed":
+
+| Mechanism | What it actually does | What it does NOT do |
+|---|---|---|
+| Fabric Mirror new-table autosync | Transports a new SQL table into OneLake automatically | Decide whether it belongs in the semantic model |
+| Purview SQL/Fabric scan | Makes the table searchable/discoverable in the catalog, on its own schedule | Decide domain, data product, sensitivity, or semantic role |
+| **Today's actual gate for semantic-model inclusion** | **None** — whoever edits `nb_04`/`nb_04a`/TMDL just adds it | — |
+
+A new table can silently reach Tom's dashboard or the Data Agent's grounding with zero domain-owner or steward review. This is the same class of risk R1-R6 closed for KPIs/CDEs/Verified-Answers/AI-Instructions, but for the table/column layer itself.
+
+### Design (already specified, never built)
+
+Two new SQL tables from `docs/closed-loop-governance-reference-model.md`'s "Durable SQL Artifacts" section:
+
+- `dbo.source_object_inventory` — SQL/mirrored identity, first/last seen, schema hash, and onboarding disposition (`Ignore` \| `StageOnly` \| `CandidateDimension` \| `CandidateFact` \| `Reference` \| `Governance` \| `Unclassified`).
+- `dbo.semantic_object_inventory` — actual semantic tables/columns/measures/relationships/annotations, used to confirm a proposed table was actually (and only) added after approval, not to itself be an approval authority.
+
+Loop B operating sequence (from the reference model, unchanged):
+
+1. New regular table created/altered in private Azure SQL.
+2. Fabric Mirroring transports it into OneLake (already automatic).
+3. A discovery step compares qualified names/schema hashes against `source_object_inventory`.
+4. A newly observed table is classified into a disposition.
+5. An eligible table creates a `governance_requests` row (`request_type='SourceTableOnboarding'`, `authority='SQL'`, `current_status='Draft'`) proposing owner, domain, data product, sensitivity intent, description, key grain, and semantic role.
+6. **Only an approved request is transformed and added to the semantic model.**
+7. Runtime behavior/relationships are validated; receipts return to SQL (same `governance_target_receipts` contract as every other workstream).
+8. The resulting governed asset is associated with Purview where supported.
+
+### Build tasks
+
+| # | Task | Notes |
+|---|---|---|
+| G18-1 | `sql/18_source_discovery_schema.sql` — create `dbo.source_object_inventory` and `dbo.semantic_object_inventory` | Additive; no change to existing tables |
+| G18-2 | New notebook `nb_17_source_discovery` — queries `sys.tables`/`sys.columns` (or the mirrored lakehouse catalog) for the current inventory, diffs against `source_object_inventory`, flags brand-new tables, and opens a `Draft` `governance_requests` row for each eligible one (dispositions of `Ignore`/`StageOnly` do not require approval) | Read-only against the source; only writes inventory + Draft requests, never mutates the semantic model itself |
+| G18-3 | Approval step (reuse the existing Approve pattern — either a `governance_change_requests`-style manual SQL update, or extend `nb_11`'s dispatch with a `SOURCE_TABLE_ONBOARDING` handler) | Approver = the relevant governance-domain owner, not a blanket approver |
+| G18-4 | Apply step — only on `Approved`, extend the semantic model (SemPy Labs) with the proposed table/columns, matching the approved semantic role | Mirrors `nb_13`/`nb_16`'s pattern: mutate only after approval, then read back and validate |
+| G18-5 | Wire into the unified ledger directly (no legacy-schema detour needed — this is a new workstream, not a migration) | `governance_requests`/events/receipts/versions from day one |
+| G18-6 | Runbook: `docs/runbooks/g18-source-table-onboarding.md` documenting the end-to-end demo flow (add a real new table to `sqldemo`, watch it get flagged, approve it, watch it appear in the semantic model) | Mirrors the style of existing P1-P4 runbooks |
+
+Recommended to sequence after G17's R4/R6 (OKR gating, self-healing proof) since G18 is a materially larger build (two new tables + a new notebook + a new approval surface), not a quick reconciliation task like R1-R5.
 
 ---
 

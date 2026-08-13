@@ -28,6 +28,8 @@ This summary reflects the current repo and notebook state after the safety prefl
 | Phase 3 milestone P3-6 | GAP | The sign-off package is still conditional until the backfit items and native approval evidence are closed |
 | Phase 4 (new, §5D) — gated governance & self-healing semantic model sync | DEMO_VALIDATED | Closed 2026-08-10. All 4 gate scenarios (KPI Approval, Verified Answer Certification, CDE Classification, Glossary Term Definition) ran live through `nb_11_gated_governance_sync` and the full downstream chain, closing the Pillar 5 gap. Only G13-5 (scheduled/triggered automation of the downstream chain) remains open, deferred to Phase D |
 | G11-1 (new, §5E) — formal ontology / OKR business-objective layer | DEMO_VALIDATED (full graph) | Full ontology graph live-verified end to end (2026-08-10): `nb_08` CDE→Term `assignedEntities` relationship (`cde_term_assigned=12/12`, 26 terms self-healed) AND the OKR/Key Result layer (`sql/11`/`sql/12` applied to `sqldemo`, mirrored, ingested via `nb_07a`, published live to Atlas via `nb_07` — `EnercareOKR`/`EnercareOKRKeyResult` entities confirmed by direct read-back with correct `parent_okr_id` relationships). Fresh `nb_10` re-run confirms `purview_phase_11_ontology_validation` = 0 `ACTION_REQUIRED` (all 4 checks PASS) — see §5E "Live-apply sequence" |
+| G17 (new) — unify SQL-controlled and Purview-native governance under one closed-loop ledger | IN_PROGRESS | R1/R2/R3/R5 done live 2026-08-12/13 (legacy migration, GT-SLA reconciliation, AI Instructions gating, role-assignment ledger); R4 (OKR gating) and R6 (prove self-healing for real) remain — see `docs/design-gap-analysis.md` G17 |
+| G18 (new, §5G) — source table discovery & governed onboarding (Loop B) | GAP | Design-only since Phase A, never built — `dbo.source_object_inventory`/`dbo.semantic_object_inventory` do not exist, no discovery notebook exists. A new SQL table can reach the semantic model/Data Agent today with zero domain-owner review. See §5G and `docs/design-gap-analysis.md` G18 |
 | Phase 5 (new, §5F) — data validation phase / formal QA validation across full northstar metadata inventory | PLANNED | Added 2026-08-09: frozen inventory of ~83 governed elements (3 domains, 3 data products, 35 glossary terms, 12 CDEs, 8 KPIs, 6 verified answers/instructions, 3 OKRs, 5 key results, 3 OKR-links, 4 change requests) and a 5-milestone QA sweep (Q1–Q5) design. No validation code built yet — see §5F |
 
 ### Remaining gaps
@@ -724,6 +726,44 @@ Not every element type needs every layer — e.g. sensitivity labels don't have 
 ### Relationship to existing scorecards
 
 This phase does not replace `purview_phase_11_ontology_validation`, the Phase 3 smoke log, or the Phase 4 closeout checks — it is the superset pass that consumes their existing evidence for the elements they already cover (OKRs, verified-answer intents, gate-scenario objects) and extends the same rigor to the remaining inventory (domains, data products, glossary terms, CDEs, and KPIs not already covered by a prior phase's scorecard).
+
+---
+
+## 5G. Source Table Discovery & Governed Onboarding (Loop B) — new, not yet built
+
+**Status:** 🔴 Not started (design-only since Phase A; see `docs/design-gap-analysis.md` G18)
+**Depends on:** Fabric Mirror new-table autosync (already enabled), Purview SQL/Fabric scans (already working)
+
+### The gap this closes
+
+Mirroring and scanning solve **discovery** — a new SQL table lands in OneLake automatically, and becomes searchable in the catalog on the next scan cycle. Neither one decides whether that table **belongs** in the semantic model or should ever reach the Data Agent's grounding. Today, that decision is unmade — whoever next edits `nb_04`/`nb_04a`/the TMDL just adds a new table, with zero domain-owner or steward review. This is the same governance gap R1-R6 (§ G17) closed for KPIs/CDEs/Verified-Answers/AI-Instructions/OKRs, but one layer down, at the table/column level itself.
+
+### How discovery and governance actually relate
+
+| Mechanism | Scope | Gates semantic-model inclusion? |
+|---|---|---|
+| Fabric Mirror new-table autosync | Transport: SQL → OneLake | No |
+| Purview SQL/Fabric scan | Discovery: makes the table searchable in the catalog | No |
+| **Loop B (this phase)** | **Governance: Draft → domain/data-product/sensitivity/semantic-role review → Approved → semantic-model extension** | **Yes** |
+
+### Operating sequence (per `docs/closed-loop-governance-reference-model.md` Loop B)
+
+1. A new regular table is created/altered in private Azure SQL.
+2. Fabric Mirroring transports it into OneLake (already automatic today).
+3. A discovery notebook compares qualified names/schema hashes against `dbo.source_object_inventory`.
+4. A newly observed table is classified: `Ignore` \| `StageOnly` \| `CandidateDimension` \| `CandidateFact` \| `Reference` \| `Governance` \| `Unclassified`.
+5. An eligible (non-`Ignore`/`StageOnly`) table opens a `Draft` request in the unified ledger (`request_type='SourceTableOnboarding'`) proposing owner, domain, data product, sensitivity intent, description, key grain, and semantic role.
+6. **Only an Approved request is transformed and added to the semantic model** — via SemPy Labs, same as every other governed write-back in this repo.
+7. Runtime relationships are validated and receipts return to SQL — same `governance_target_receipts` contract as P1-P4/G17.
+8. The resulting governed asset is associated with Purview where supported.
+
+### Build tasks (see `docs/design-gap-analysis.md` G18 for the tracked table)
+
+- `sql/18_source_discovery_schema.sql` — `dbo.source_object_inventory` + `dbo.semantic_object_inventory`.
+- `nb_17_source_discovery` — read-only diff notebook; writes inventory rows + `Draft` requests only, never mutates the semantic model.
+- An approval step reusing the same pattern already proven for KPI/CDE/AI-Instruction gates.
+- An apply step (mirrors `nb_13`/`nb_16`): extend the TMDL only after Approved, then read back and validate.
+- Wired directly into the unified `governance_requests`/events/receipts/versions ledger from day one — no legacy-schema migration needed since this is a new workstream.
 
 ---
 ## 6. Layer Responsibilities (Mental Model)
