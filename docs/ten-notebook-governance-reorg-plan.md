@@ -83,8 +83,8 @@ Purpose:
 - establish the environment for the governance lifecycle
 
 Current repo inputs:
-- [fabric/nb_01_environment_and_source_baseline.Notebook](../fabric/nb_01_environment_and_source_baseline.Notebook)
-- [fabric/nb_02_sql_source_publish_and_mirror.Notebook](../fabric/nb_02_sql_source_publish_and_mirror.Notebook)
+- [nb_01_environment_and_source_baseline.Notebook](../nb_01_environment_and_source_baseline.Notebook)
+- [nb_02_sql_source_publish_and_mirror.Notebook](../nb_02_sql_source_publish_and_mirror.Notebook)
 
 Outcome:
 - source data exists in SQL and is mirrored into Fabric
@@ -98,7 +98,7 @@ Purpose:
 - route any @tag metadata to the governance ledger
 
 Current repo inputs:
-- [fabric/nb_04_metadata_discovery_and_stewardship.Notebook](../fabric/nb_04_metadata_discovery_and_stewardship.Notebook)
+- [nb_04_metadata_discovery_and_stewardship.Notebook](../nb_04_metadata_discovery_and_stewardship.Notebook)
 - [sql/19_tag_annotation_extraction.sql](../sql/19_tag_annotation_extraction.sql)
 - [sql/20_g18a_demo_views.sql](../sql/20_g18a_demo_views.sql)
 
@@ -115,8 +115,8 @@ Purpose:
 - record the decision in the governance ledger
 
 Current repo inputs:
-- [fabric/nb_04_metadata_discovery_and_stewardship.Notebook](../fabric/nb_04_metadata_discovery_and_stewardship.Notebook)
-- [fabric/nb_10_governance_validation_and_healthcheck.Notebook](../fabric/nb_10_governance_validation_and_healthcheck.Notebook)
+- [nb_04_metadata_discovery_and_stewardship.Notebook](../nb_04_metadata_discovery_and_stewardship.Notebook)
+- [nb_10_governance_validation_and_healthcheck.Notebook](../nb_10_governance_validation_and_healthcheck.Notebook)
 
 Outcome:
 - one steward-facing queue of pending metadata requests
@@ -131,9 +131,9 @@ Purpose:
 - create the canonical metadata working tables
 
 Current repo inputs:
-- [fabric/nb_05_metadata_staging_and_schema.Notebook](../fabric/nb_05_metadata_staging_and_schema.Notebook)
-- [fabric/nb_07a_ingest_customer_files.Notebook](../fabric/nb_07a_ingest_customer_files.Notebook)
-- [fabric/nb_07b_merge_customer_metadata.Notebook](../fabric/nb_07b_merge_customer_metadata.Notebook)
+- [nb_05_metadata_staging_and_schema.Notebook](../nb_05_metadata_staging_and_schema.Notebook)
+- [nb_07a_ingest_customer_files.Notebook](../nb_07a_ingest_customer_files.Notebook)
+- [nb_07b_merge_customer_metadata.Notebook](../nb_07b_merge_customer_metadata.Notebook)
 
 Outcome:
 - approved metadata exists in the lakehouse working layer
@@ -147,8 +147,8 @@ Purpose:
 - keep model writeback constrained to approved metadata only
 
 Current repo inputs:
-- [fabric/nb_06_semantic_apply_and_certification.Notebook](../fabric/nb_06_semantic_apply_and_certification.Notebook)
-- [fabric/nb_07_ai_grounding_and_verified_answers.Notebook](../fabric/nb_07_ai_grounding_and_verified_answers.Notebook)
+- [nb_06_semantic_apply_and_certification.Notebook](../nb_06_semantic_apply_and_certification.Notebook)
+- [nb_07_ai_grounding_and_verified_answers.Notebook](../nb_07_ai_grounding_and_verified_answers.Notebook)
 
 Outcome:
 - the semantic model reflects only approved metadata
@@ -163,8 +163,8 @@ Purpose:
 - maintain a clear evidence trail for business answers
 
 Current repo inputs:
-- [fabric/nb_07_ai_grounding_and_verified_answers.Notebook](../fabric/nb_07_ai_grounding_and_verified_answers.Notebook)
-- [fabric/nb_11_gated_governance_sync.Notebook](../fabric/nb_11_gated_governance_sync.Notebook)
+- [nb_07_ai_grounding_and_verified_answers.Notebook](../nb_07_ai_grounding_and_verified_answers.Notebook)
+- [nb_11_gated_governance_sync.Notebook](../nb_11_gated_governance_sync.Notebook)
 
 Outcome:
 - AI grounding is tied to approved governance decisions
@@ -178,8 +178,8 @@ Purpose:
 - keep catalog publication aligned to approved business metadata
 
 Current repo inputs:
-- [fabric/nb_08_purview_publication_stage.Notebook](../fabric/nb_08_purview_publication_stage.Notebook)
-- [fabric/nb_08_purview_glossary_cde.Notebook](../fabric/nb_08_purview_glossary_cde.Notebook)
+- [nb_08_purview_publication_stage.Notebook](../nb_08_purview_publication_stage.Notebook)
+- [nb_08_purview_glossary_cde.Notebook](../nb_08_purview_glossary_cde.Notebook)
 
 Outcome:
 - domains, products, terms, and CDEs are published from approved metadata state
@@ -192,7 +192,7 @@ Purpose:
 - connect SQL → mirror → lakehouse → semantic model evidence into a single lineage story
 
 Current repo inputs:
-- [fabric/nb_09_lineage_and_labels_stage.Notebook](../fabric/nb_09_lineage_and_labels_stage.Notebook)
+- [nb_09_lineage_and_labels_stage.Notebook](../nb_09_lineage_and_labels_stage.Notebook)
 
 Outcome:
 - lineage is explicit and traceable across the stack
@@ -205,7 +205,7 @@ Purpose:
 - confirm no action required before the demo is considered live
 
 Current repo inputs:
-- [fabric/nb_10_governance_validation_and_healthcheck.Notebook](../fabric/nb_10_governance_validation_and_healthcheck.Notebook)
+- [nb_10_governance_validation_and_healthcheck.Notebook](../nb_10_governance_validation_and_healthcheck.Notebook)
 
 Outcome:
 - health check confirms the system is ready and evidence-backed
@@ -231,26 +231,26 @@ Outcome:
 
 | Current notebook | Target lifecycle stage |
 |---|---|
-| [fabric/nb_01_environment_and_source_baseline.Notebook](../fabric/nb_01_environment_and_source_baseline.Notebook) | 1 |
-| [fabric/nb_02_sql_source_publish_and_mirror.Notebook](../fabric/nb_02_sql_source_publish_and_mirror.Notebook) | 1 |
-| [fabric/nb_03_star_schema_and_source_model.Notebook](../fabric/nb_03_star_schema_and_source_model.Notebook) | 1 / 2 |
-| [fabric/nb_04_metadata_discovery_and_stewardship.Notebook](../fabric/nb_04_metadata_discovery_and_stewardship.Notebook) | 2 / 3 |
-| [fabric/nb_05_metadata_staging_and_schema.Notebook](../fabric/nb_05_metadata_staging_and_schema.Notebook) | 4 |
-| [fabric/nb_07a_ingest_customer_files.Notebook](../fabric/nb_07a_ingest_customer_files.Notebook) | 4 |
-| [fabric/nb_07b_merge_customer_metadata.Notebook](../fabric/nb_07b_merge_customer_metadata.Notebook) | 4 |
-| [fabric/nb_06_semantic_apply_and_certification.Notebook](../fabric/nb_06_semantic_apply_and_certification.Notebook) | 5 |
-| [fabric/nb_07_ai_grounding_and_verified_answers.Notebook](../fabric/nb_07_ai_grounding_and_verified_answers.Notebook) | 5 / 6 |
-| [fabric/nb_08_purview_publication_stage.Notebook](../fabric/nb_08_purview_publication_stage.Notebook) | 7 |
-| [fabric/nb_08_purview_glossary_cde.Notebook](../fabric/nb_08_purview_glossary_cde.Notebook) | 7 |
-| [fabric/nb_09_lineage_and_labels_stage.Notebook](../fabric/nb_09_lineage_and_labels_stage.Notebook) | 8 |
-| [fabric/nb_10_governance_validation_and_healthcheck.Notebook](../fabric/nb_10_governance_validation_and_healthcheck.Notebook) | 9 |
-| [fabric/nb_11_gated_governance_sync.Notebook](../fabric/nb_11_gated_governance_sync.Notebook) | 3 / 6 |
-| [fabric/nb_12_purview_workflow_sync.Notebook](../fabric/nb_12_purview_workflow_sync.Notebook) | 10 |
-| [fabric/nb_13_semantic_reconcile.Notebook](../fabric/nb_13_semantic_reconcile.Notebook) | 10 |
-| [fabric/nb_14_purview_access_sync.Notebook](../fabric/nb_14_purview_access_sync.Notebook) | 10 |
-| [fabric/nb_15_purview_dataproduct_sync.Notebook](../fabric/nb_15_purview_dataproduct_sync.Notebook) | 10 |
-| [fabric/nb_16_dataproduct_semantic_reconcile.Notebook](../fabric/nb_16_dataproduct_semantic_reconcile.Notebook) | 10 |
-| [fabric/nb_17_g18_semantic_promotion.Notebook](../fabric/nb_17_g18_semantic_promotion.Notebook) | 10 |
+| [nb_01_environment_and_source_baseline.Notebook](../nb_01_environment_and_source_baseline.Notebook) | 1 |
+| [nb_02_sql_source_publish_and_mirror.Notebook](../nb_02_sql_source_publish_and_mirror.Notebook) | 1 |
+| [nb_03_star_schema_and_source_model.Notebook](../nb_03_star_schema_and_source_model.Notebook) | 1 / 2 |
+| [nb_04_metadata_discovery_and_stewardship.Notebook](../nb_04_metadata_discovery_and_stewardship.Notebook) | 2 / 3 |
+| [nb_05_metadata_staging_and_schema.Notebook](../nb_05_metadata_staging_and_schema.Notebook) | 4 |
+| [nb_07a_ingest_customer_files.Notebook](../nb_07a_ingest_customer_files.Notebook) | 4 |
+| [nb_07b_merge_customer_metadata.Notebook](../nb_07b_merge_customer_metadata.Notebook) | 4 |
+| [nb_06_semantic_apply_and_certification.Notebook](../nb_06_semantic_apply_and_certification.Notebook) | 5 |
+| [nb_07_ai_grounding_and_verified_answers.Notebook](../nb_07_ai_grounding_and_verified_answers.Notebook) | 5 / 6 |
+| [nb_08_purview_publication_stage.Notebook](../nb_08_purview_publication_stage.Notebook) | 7 |
+| [nb_08_purview_glossary_cde.Notebook](../nb_08_purview_glossary_cde.Notebook) | 7 |
+| [nb_09_lineage_and_labels_stage.Notebook](../nb_09_lineage_and_labels_stage.Notebook) | 8 |
+| [nb_10_governance_validation_and_healthcheck.Notebook](../nb_10_governance_validation_and_healthcheck.Notebook) | 9 |
+| [nb_11_gated_governance_sync.Notebook](../nb_11_gated_governance_sync.Notebook) | 3 / 6 |
+| [nb_12_purview_workflow_sync.Notebook](../nb_12_purview_workflow_sync.Notebook) | 10 |
+| [nb_13_semantic_reconcile.Notebook](../nb_13_semantic_reconcile.Notebook) | 10 |
+| [nb_14_purview_access_sync.Notebook](../nb_14_purview_access_sync.Notebook) | 10 |
+| [nb_15_purview_dataproduct_sync.Notebook](../nb_15_purview_dataproduct_sync.Notebook) | 10 |
+| [nb_16_dataproduct_semantic_reconcile.Notebook](../nb_16_dataproduct_semantic_reconcile.Notebook) | 10 |
+| [nb_17_g18_semantic_promotion.Notebook](../nb_17_g18_semantic_promotion.Notebook) | 10 |
 
 ---
 

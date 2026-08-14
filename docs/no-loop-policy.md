@@ -12,8 +12,8 @@ This policy defines canonical states that the repo should keep, introduces a gua
 
 Files:
 
-- `fabric/ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/Files/Config/draft/semantic-model-BrookfieldEnercare/datasource.json`
-- `fabric/ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/Files/Config/published/semantic-model-BrookfieldEnercare/datasource.json`
+- `ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/Files/Config/draft/semantic-model-BrookfieldEnercare/datasource.json`
+- `ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/Files/Config/published/semantic-model-BrookfieldEnercare/datasource.json`
 
 Required canonical values:
 
@@ -26,8 +26,8 @@ Policy note: do not keep objectId/live workspace overrides in git for these file
 
 Files:
 
-- `fabric/nb_04_sempy_writeback.Notebook/notebook-content.py`
-- `fabric/nb_05_push_qa_verified_answers.Notebook/notebook-content.py`
+- `nb_04_sempy_writeback.Notebook/notebook-content.py`
+- `nb_05_push_qa_verified_answers.Notebook/notebook-content.py`
 
 Required canonical value inside header metadata when present:
 
@@ -39,7 +39,7 @@ Policy note: runtime workspace binding should be resolved in notebook logic and 
 
 Scope:
 
-- `fabric/BrookfieldEnercare.SemanticModel/definition/**`
+- `BrookfieldEnercare.SemanticModel/definition/**`
 
 Required policy:
 

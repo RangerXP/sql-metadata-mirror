@@ -252,11 +252,11 @@ Domains, Products, Glossary, CDEs, Lineage
 
 | Artifact Type | Count | Location |
 |---------------|-------|----------|
-| Notebooks | 13 | fabric/nb_*.Notebook/ |
-| Lakehouses | 2 | fabric/lh_*.Lakehouse/ |
-| Semantic Model | 1 | fabric/BrookfieldEnercare.SemanticModel/ |
-| Power BI Report | 1 | fabric/BrookfieldEnercare.Report/ |
-| Data Agent | 1 | fabric/ee82668f...DataAgent/ |
+| Notebooks | 13 | nb_*.Notebook/ |
+| Lakehouses | 2 | lh_*.Lakehouse/ |
+| Semantic Model | 1 | BrookfieldEnercare.SemanticModel/ |
+| Power BI Report | 1 | BrookfieldEnercare.Report/ |
+| Data Agent | 1 | ee82668f...DataAgent/ |
 | SQL Scripts | 5 | sql/*.sql |
 | Governance CSVs | 6 | purview/*.csv |
 | Context JSONs | 5 | context/*.json |

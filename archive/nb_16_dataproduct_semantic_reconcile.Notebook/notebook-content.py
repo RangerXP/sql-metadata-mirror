@@ -35,7 +35,7 @@
 # Completed only after both required receipts pass.
 #
 # SEMANTIC_TARGETS below are confirmed real columns (verified 2026-08-12 against the live TMDL
-# definitions in fabric/BrookfieldEnercare.SemanticModel/definition/tables/).
+# definitions in BrookfieldEnercare.SemanticModel/definition/tables/).
 
 DEMO_MODE = False
 RUN_REQUEST_ID = "PV-DP-SVCPERF-9EAF4919D7DFD8F8B5C6"  # Real, live-approved P4 request confirmed via nb_15 2026-08-12.
@@ -51,7 +51,7 @@ SQL_LOGIN_TIMEOUT_SECONDS = 30
 SQL_AUTH_MODE = "tokenlibrary"  # tokenlibrary | managed_identity
 
 SEMANTIC_TARGETS = [
-    # Confirmed 2026-08-12 against fabric/BrookfieldEnercare.SemanticModel/definition/tables/*.tmdl.
+    # Confirmed 2026-08-12 against BrookfieldEnercare.SemanticModel/definition/tables/*.tmdl.
     # ServiceZoneCode does not exist anywhere in the model; swapped for dim_equipment.EquipmentType.
     # fct_service_request.IsSlaBreachFlag is intentionally excluded: it already carries P1's GT-SLA
     # governance annotations (Glossary_Term_References=GT-SLA) and must not be overwritten here.

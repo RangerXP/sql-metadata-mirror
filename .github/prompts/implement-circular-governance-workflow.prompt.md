@@ -141,7 +141,7 @@ Purview workflows currently don't provide external connectors for directly invok
 Create a new notebook, unless equivalent functionality already exists:
 
 ```text
-fabric/nb_12_purview_workflow_sync.Notebook/
+nb_12_purview_workflow_sync.Notebook/
 ```
 
 Responsibilities:

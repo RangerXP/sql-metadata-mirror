@@ -880,7 +880,7 @@ active session context.
 Live-verified: `SEMPROMO-TECHUTIL-001` shows `current_status=Completed`; the
 `SemanticModelReadback` receipt on `fct_service_request.Technician Utilization Rate` shows
 `validation_status=Passed`; the new measure is confirmed present in the git-committed TMDL
-(`fabric/BrookfieldEnercare.SemanticModel/definition/tables/fct_service_request.tmdl`) after a
+(`BrookfieldEnercare.SemanticModel/definition/tables/fct_service_request.tmdl`) after a
 `commitToGit` sync back from the live workspace.
 
 ### Demo repeatability — `nb_18_demo_reset` (added 2026-08-13)
@@ -898,7 +898,7 @@ presenter can re-demo "certify it, then retire it" repeatedly without recreating
 time. The 2 real production objects touched this session (`OKR-SVCDEL-SLA`, `DP-SVCPERF`) reset
 fully to their true pre-G19 baseline.
 
-`fabric/nb_18_demo_reset.Notebook` (DEMO_MODE=True by default, matching every other notebook's
+`nb_18_demo_reset.Notebook` (DEMO_MODE=True by default, matching every other notebook's
 safe-default convention) resets, in one run:
 
 | Scope | Action |
@@ -924,18 +924,18 @@ reset request since they're guarded by request_id existence, not status.
 
 These maintained assets remain valid:
 
-- `fabric/nb_01_setup_demo_environment.Notebook/`
-- `fabric/nb_02_metadata_pipeline_demo.Notebook/`
-- `fabric/nb_03_pbi_star_schema.Notebook/`
-- `fabric/nb_04a_extend_metadata_schema.Notebook/`
-- `fabric/nb_04_sempy_writeback.Notebook/`
-- `fabric/nb_05a_publish_synthetic_data_to_sql.Notebook/`
-- `fabric/nb_05_push_qa_verified_answers.Notebook/`
-- `fabric/nb_06_purview_sql_grants.Notebook/`
-- `fabric/BrookfieldEnercare.SemanticModel/definition/`
+- `nb_01_setup_demo_environment.Notebook/`
+- `nb_02_metadata_pipeline_demo.Notebook/`
+- `nb_03_pbi_star_schema.Notebook/`
+- `nb_04a_extend_metadata_schema.Notebook/`
+- `nb_04_sempy_writeback.Notebook/`
+- `nb_05a_publish_synthetic_data_to_sql.Notebook/`
+- `nb_05_push_qa_verified_answers.Notebook/`
+- `nb_06_purview_sql_grants.Notebook/`
+- `BrookfieldEnercare.SemanticModel/definition/`
 - `lh_metadata` lakehouse and its working metadata tables
 - Fabric managed private endpoint from `Enercare-West3` to `sqlserver-sk2wus3`
-- `fabric/nb_09_purview_labels_lineage.Notebook/`
+- `nb_09_purview_labels_lineage.Notebook/`
 
 ### Additional retained requirement
 
@@ -968,9 +968,9 @@ These maintained assets remain valid:
 
 ### New artifacts (Phase B — Days 1–3)
 
-- `fabric/nb_07a_ingest_customer_files.Notebook/` (support — runs first)
-- `fabric/nb_07b_merge_customer_metadata.Notebook/` (support — runs second)
-- `fabric/nb_07_publish_to_purview.Notebook/` (**primary** of nb_07 family)
+- `nb_07a_ingest_customer_files.Notebook/` (support — runs first)
+- `nb_07b_merge_customer_metadata.Notebook/` (support — runs second)
+- `nb_07_publish_to_purview.Notebook/` (**primary** of nb_07 family)
 - `tools/sempy_label_writer.py` (helper for `nb_04` MIP label annotations)
 
 ---

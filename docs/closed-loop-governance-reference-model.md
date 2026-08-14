@@ -265,7 +265,7 @@ A generated Atlas payload is not publication evidence. A successful receipt requ
 | P7 | Evaluate Advanced DAX | Fixed test pack measures quality without changing governance authority |
 
 P0/P1 implementation assets are `sql/13_closed_loop_governance_ledger.sql`,
-`fabric/nb_12_purview_workflow_sync.Notebook/`, and
+`nb_12_purview_workflow_sync.Notebook/`, and
 `docs/runbooks/p1-native-term-publication.md`.
 
 Advanced DAX consumes the governed semantic layer. It is not an approval authority or a reason to create a duplicate semantic metadata store.

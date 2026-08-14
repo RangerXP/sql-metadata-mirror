@@ -101,8 +101,8 @@ Also determine whether direct Lakehouse, Warehouse, KQL, mirrored-database, or o
 Inspect:
 
 ```text
-fabric/BrookfieldEnercare.SemanticModel/definition/model.tmdl
-fabric/BrookfieldEnercare.SemanticModel/definition/tables/*.tmdl
+BrookfieldEnercare.SemanticModel/definition/model.tmdl
+BrookfieldEnercare.SemanticModel/definition/tables/*.tmdl
 ```
 
 ### Metadata Publication Notebooks
@@ -110,10 +110,10 @@ fabric/BrookfieldEnercare.SemanticModel/definition/tables/*.tmdl
 Inspect:
 
 ```text
-fabric/nb_04_sempy_writeback.Notebook/notebook-content.py
-fabric/nb_05_push_qa_verified_answers.Notebook/notebook-content.py
-fabric/nb_07b_merge_customer_metadata.Notebook/notebook-content.py
-fabric/nb_11_gated_governance_sync.Notebook/notebook-content.py
+nb_04_sempy_writeback.Notebook/notebook-content.py
+nb_05_push_qa_verified_answers.Notebook/notebook-content.py
+nb_07b_merge_customer_metadata.Notebook/notebook-content.py
+nb_11_gated_governance_sync.Notebook/notebook-content.py
 ```
 
 ### Governance Inputs

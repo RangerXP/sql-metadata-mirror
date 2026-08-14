@@ -42,7 +42,7 @@ SemPy and SemPy Labs are the primary write-back model for semantic metadata.
 
 - SemPy reads semantic model objects and metadata state.
 - SemPy Labs writes table, column, measure descriptions and AI annotations.
-- TMDL files in fabric/BrookfieldEnercare.SemanticModel remain source-controlled artifacts,
+- TMDL files in BrookfieldEnercare.SemanticModel remain source-controlled artifacts,
   but direct REST mutation of TMDL is no longer the primary notebook method.
 
 ## Maintained Repo Surface

@@ -8,7 +8,7 @@ Maintained git source for the current Enercare deployment pattern:
 - `sub2`: Azure SQL authoritative source and Fabric mirroring input
 - `sub3`: Purview governance plane
 
-Primary repo surface is `fabric/`. Do not recreate duplicate notebook mirrors elsewhere.
+Fabric items live at the repository root. Do not recreate duplicate notebook mirrors elsewhere.
 
 ## Repo Structure
 
@@ -20,22 +20,21 @@ Primary repo surface is `fabric/`. Do not recreate duplicate notebook mirrors el
 |- docs/
 |  |- design-gap-analysis.md
 |  \- sub2-sql-source-mapping.md
-|- fabric/
-|  |- BrookfieldEnercare.Report/
-|  |- BrookfieldEnercare.SemanticModel/
-|  |- ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/   (Enercare Data Agent — operational request/SLA lookup)
-|  |- lh_enercare_demo.Lakehouse/
-|  |- lh_metadata.Lakehouse/
-|  |- nb_01_environment_and_source_baseline.Notebook/
-|  |- nb_02_sql_source_publish_and_mirror.Notebook/
-|  |- nb_03_star_schema_and_source_model.Notebook/
-|  |- nb_04_metadata_discovery_and_stewardship.Notebook/
-|  |- nb_05_metadata_staging_and_schema.Notebook/
-|  |- nb_06_semantic_apply_and_certification.Notebook/
-|  |- nb_07_ai_grounding_and_verified_answers.Notebook/
-|  |- nb_08_purview_publication_stage.Notebook/
-|  |- nb_09_lineage_and_labels_stage.Notebook/
-|  \- nb_10_governance_validation_and_healthcheck.Notebook/
+|- BrookfieldEnercare.Report/
+|- BrookfieldEnercare.SemanticModel/
+|- ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/   (Enercare Data Agent — operational request/SLA lookup)
+|- lh_enercare_demo.Lakehouse/
+|- lh_metadata.Lakehouse/
+|- nb_01_environment_and_source_baseline.Notebook/
+|- nb_02_sql_source_publish_and_mirror.Notebook/
+|- nb_03_star_schema_and_source_model.Notebook/
+|- nb_04_metadata_discovery_and_stewardship.Notebook/
+|- nb_05_metadata_staging_and_schema.Notebook/
+|- nb_06_semantic_apply_and_certification.Notebook/
+|- nb_07_ai_grounding_and_verified_answers.Notebook/
+|- nb_08_purview_publication_stage.Notebook/
+|- nb_09_lineage_and_labels_stage.Notebook/
+\- nb_10_governance_validation_and_healthcheck.Notebook/
 |- sql/
 |  \- 02_sub2_sql_source_schema.sql
 |- sql-private-dns-vnet-link.bicep
@@ -44,9 +43,9 @@ Primary repo surface is `fabric/`. Do not recreate duplicate notebook mirrors el
 
 ## Maintained Deployment Rules
 
-1. Treat `fabric/` as the single git source-of-truth for Fabric items.
+1. Treat the repository root as the single git source-of-truth for Fabric items.
 2. Keep only the current deployment assets in this repo.
-3. Do not add duplicate notebook source mirrors outside `fabric/`.
+3. Do not add duplicate notebook source mirrors outside the repository root.
 4. Do not add presentation exports, zip exports, walkthrough notebooks, or legacy setup packages.
 5. No secrets in repo. Load credentials from environment variables or Key Vault-backed runtime configuration.
 
@@ -62,7 +61,7 @@ Primary repo surface is `fabric/`. Do not recreate duplicate notebook mirrors el
 
 ## Notebook Conventions
 
-- Fabric notebooks live only as `fabric/nb_0N_name.Notebook/` folders with `.platform` and `notebook-content.py`.
+- Fabric notebooks live only as `nb_0N_name.Notebook/` folders with `.platform` and `notebook-content.py`.
 - Preserve existing Fabric metadata headers when editing notebook content.
 - Use `DEMO_MODE = True` for dry-run support where the notebook already follows that pattern.
 - Match existing column naming such as `IsDraft`, `IsCertified`, `DefinitionHash`, `AssetName`, and `ColumnName`.
@@ -70,7 +69,7 @@ Primary repo surface is `fabric/`. Do not recreate duplicate notebook mirrors el
 ## Semantic Model Rules
 
 - Use SemPy (read) and SemPy Labs (write) as the baseline semantic write-back approach.
-- Preserve git-backed TMDL artifacts in `fabric/BrookfieldEnercare.SemanticModel/definition/` as source-controlled deployment assets.
+- Preserve git-backed TMDL artifacts in `BrookfieldEnercare.SemanticModel/definition/` as source-controlled deployment assets.
 - Preserve `lineageTag`, `sourceLineageTag`, `annotation`, and `partition` blocks when updating TMDL artifacts.
 - Only certified KPI content should propagate into semantic-model grounding surfaces.
 

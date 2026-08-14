@@ -1,6 +1,6 @@
-﻿# Semantic Model Annotations
+# Semantic Model Annotations
 
-Source: fabric/BrookfieldEnercare.SemanticModel/definition/model.tmdl
+Source: BrookfieldEnercare.SemanticModel/definition/model.tmdl
 Generated: 2026-08-10 11:41:10 -07:00
 
 Total annotations: 5

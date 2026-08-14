@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 
-NOTEBOOK = Path("fabric/nb_09_lineage_and_labels_stage.Notebook/notebook-content.py")
+NOTEBOOK = Path("nb_09_lineage_and_labels_stage.Notebook/notebook-content.py")
 
 
 def _read_config_value(name: str):

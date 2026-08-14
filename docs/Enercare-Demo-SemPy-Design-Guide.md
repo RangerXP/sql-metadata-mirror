@@ -580,7 +580,7 @@ Seed data for all 4 (status `PendingApproval`) is in `sql/10_seed_gated_governan
 - `GLOSSARY_TERM_DEFINITION` → insert/update `governance_glossary_terms` (definition, `approved_by`/`approved_at`, `previous_definition`).
 
 Then stamps `applied_at = now()`, `status='Applied'`, and prints the downstream chain to run next: `nb_04_sempy_writeback` → `nb_05_push_qa_verified_answers` → `nb_07_publish_to_purview` (+ `nb_08`/`nb_09` as relevant) → `nb_10_purview_stewardship_ai` re-score (full auto-trigger of that chain is scoped to G13-5, deferred).
-**Build & Deploy Status:** 🟡 Partial — built and pushed live 2026-08-09 as `fabric/nb_11_gated_governance_sync.Notebook/`; reads directly from the `sub2` SQL source (not the lakehouse mirror copy) to avoid acting on stale Approved status, dispatches all 4 request types, defaults to `DEMO_MODE=True`. Not yet run against a live Approved request — see G14-4..G14-7.
+**Build & Deploy Status:** 🟡 Partial — built and pushed live 2026-08-09 as `nb_11_gated_governance_sync.Notebook/`; reads directly from the `sub2` SQL source (not the lakehouse mirror copy) to avoid acting on stale Approved status, dispatches all 4 request types, defaults to `DEMO_MODE=True`. Not yet run against a live Approved request — see G14-4..G14-7.
 
 #### Milestone P4-5 — Phase 4 closeout gate
 **Goal:** certify all 4 gate types run end-to-end live (SQL request → approval → semantic-model/Purview write-back → scorecard re-confirmation) at least once.

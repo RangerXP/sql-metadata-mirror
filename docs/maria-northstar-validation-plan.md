@@ -184,7 +184,7 @@ Prove the semantic model is the source-of-truth business layer used by both the 
 
 - `docs/semantic-model-annotations.md`
 - `docs/purview-maria-north-star-scenario.md`
-- `fabric/BrookfieldEnercare.SemanticModel/`
+- `BrookfieldEnercare.SemanticModel/`
 
 ---
 
