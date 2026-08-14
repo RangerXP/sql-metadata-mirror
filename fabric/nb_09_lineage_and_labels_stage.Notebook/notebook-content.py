@@ -54,9 +54,9 @@ PURVIEW_BASE_URL = (
     if PURVIEW_API_BASE_URL
     else f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
 )
-APPLY_CHANGES = False
-SQL_MIRROR_ONLY_DEPLOYMENT = True
-PURVIEW_PUBLISH_OVERRIDE = False
+APPLY_CHANGES = True
+SQL_MIRROR_ONLY_DEPLOYMENT = False
+PURVIEW_PUBLISH_OVERRIDE = True
 OUTPUT_ROOT = "/lakehouse/default/Files/purview_publish/phase_06_07_labels_lineage"
 PURVIEW_HTTP_TIMEOUT_SECONDS = 60
 MAX_ENTITY_RESOLUTION_SECONDS = 120
@@ -2373,12 +2373,12 @@ print(
     f"manual_token_supplied={bool(_safe_text(globals().get('MANUAL_PURVIEW_BEARER_TOKEN', '')))}"
 )
 
-if publish_guard_active:
-    print("[GUARD] SQL-mirror-only deployment is active. Set PURVIEW_PUBLISH_OVERRIDE=True for live Purview publish.")
-elif DISABLE_LIVE_PURVIEW_PUBLISH:
+if DISABLE_LIVE_PURVIEW_PUBLISH:
     print("[DRY RUN] DISABLE_LIVE_PURVIEW_PUBLISH=True. Skipping token acquisition and Purview API calls.")
 elif not APPLY_CHANGES:
     print("[DRY RUN] APPLY_CHANGES=False. Skipping Purview API calls.")
+elif SQL_MIRROR_ONLY_DEPLOYMENT and not PURVIEW_PUBLISH_OVERRIDE:
+    print("[GUARD] SQL-mirror-only deployment is active. Set PURVIEW_PUBLISH_OVERRIDE=True for live Purview publish.")
 else:
     token = None
     unresolved_edges = []
