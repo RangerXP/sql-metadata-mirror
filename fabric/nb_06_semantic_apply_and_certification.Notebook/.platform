@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
   "metadata": {
     "type": "Notebook",
-    "displayName": "nb_04_sempy_writeback",
-    "description": "G3: Reads curated metadata from lh_metadata, uses SemPy for model inventory, and applies write-back through SemPy Labs. DEMO_MODE=True for dry-run."
+    "displayName": "nb_06_semantic_apply_and_certification",
+    "description": "Stage 6: Reads curated metadata from lh_metadata and applies approved semantic model updates through SemPy Labs."
   },
   "config": {
     "version": "2.0",

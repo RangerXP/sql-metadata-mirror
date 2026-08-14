@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_04_metadata_discovery_and_stewardship",
+    "description": "Stage 4: Discovers SQL @tag metadata and surfaces it for stewardship review as the governance intake queue."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "8bfb8b15-7313-9de6-4175-8f056e6e4b9e"
+  }
+}

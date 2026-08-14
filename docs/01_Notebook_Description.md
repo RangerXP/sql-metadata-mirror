@@ -3,6 +3,14 @@
 **Purpose:** One-page-per-glance reference for the first full end-to-end demo pass. Each entry
 covers what the notebook does, how it fits the Maria Castellanos north-star scenario
 (`docs/purview-maria-north-star-scenario.md`), and the talking points to use live.
+
+**Central tenant:** Metadata management is governance-first. SQL metadata definitions are the
+customer-authored source-of-truth, stewardship and approval are required before adoption,
+lineage is preserved through every step, and downstream Fabric/Purview surfaces are consumers of
+approved metadata rather than independent authors. The repo is being organized around the
+10-stage lifecycle in `docs/ten-notebook-governance-reorg-plan.md` and the standard contract in
+`docs/sql-metadata-governance-standard.md`.
+
 **DEMO_MODE** shown is the CURRENT COMMITTED default in `main` — check before running live.
 
 > **Read this first:** notebooks marked `DEMO_MODE = False` will execute real writes the

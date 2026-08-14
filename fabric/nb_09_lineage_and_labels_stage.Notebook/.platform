@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
   "metadata": {
     "type": "Notebook",
-    "displayName": "nb_09_purview_labels_lineage",
-    "description": "Builds Purview sensitivity classification payloads and validates SQL-to-Fabric lineage stage gates"
+    "displayName": "nb_09_lineage_and_labels_stage",
+    "description": "Stage 9: Builds sensitivity labels, asset classifications, and lineage edges to prove the SQL-to-Fabric-to-semantic-model chain."
   },
   "config": {
     "version": "2.0",

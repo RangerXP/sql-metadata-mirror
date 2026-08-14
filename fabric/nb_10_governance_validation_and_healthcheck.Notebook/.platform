@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
   "metadata": {
     "type": "Notebook",
-    "displayName": "nb_10_purview_stewardship_ai",
-    "description": "Validates stewardship, certification, DLP readiness, and governed AI consumption readiness"
+    "displayName": "nb_10_governance_validation_and_healthcheck",
+    "description": "Stage 10: Validates stewardship coverage, certification gating, and governance health before the proof chain is considered complete."
   },
   "config": {
     "version": "2.0",

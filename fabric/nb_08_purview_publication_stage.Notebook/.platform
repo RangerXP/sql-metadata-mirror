@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
   "metadata": {
     "type": "Notebook",
-    "displayName": "nb_07_publish_to_purview",
-    "description": "Publishes Day 2 governance domains and data products to Purview Atlas with dry-run by default"
+    "displayName": "nb_08_purview_publication_stage",
+    "description": "Stage 8: Publishes approved governance domains and data products to Purview as the catalog publication stage."
   },
   "config": {
     "version": "2.0",

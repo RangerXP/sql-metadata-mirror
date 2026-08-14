@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
   "metadata": {
     "type": "Notebook",
-    "displayName": "nb_04a_extend_metadata_schema",
-    "description": "G1+G2: Extends lh_metadata schema (ALTER TABLE kpi_metadata + 3 new tables) and seeds 17 KPIs + Copilot verified answers. Run after nb_02."
+    "displayName": "nb_05_metadata_staging_and_schema",
+    "description": "Stage 5: Extends the metadata schema and stages approved governance content into the working lh_metadata layer."
   },
   "config": {
     "version": "2.0",
