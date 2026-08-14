@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -7,7 +8,12 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-BASE = "https://Purview-West3.purview.azure.com"
+BASE = (
+    os.getenv("PURVIEW_API_BASE_URL", "").strip()
+    or os.getenv("PURVIEW_PRIVATE_ENDPOINT_URL", "").strip()
+    or os.getenv("PURVIEW_PRIVATE_BASE_URL", "").strip()
+    or "https://Purview-West3.purview.azure.com"
+)
 API = "2023-09-01"
 AZ_FALLBACK = r"C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd"
 

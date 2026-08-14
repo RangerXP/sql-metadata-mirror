@@ -43,8 +43,17 @@ spark = SparkSession.builder.getOrCreate()
 
 METADATA_LAKEHOUSE = "lh_metadata"
 METADATA_SCHEMA = "metadata"
-PURVIEW_ACCOUNT_NAME = "Purview-West3"
-PURVIEW_BASE_URL = f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
+PURVIEW_ACCOUNT_NAME = os.getenv("PURVIEW_ACCOUNT_NAME", "Purview-West3")
+PURVIEW_API_BASE_URL = (
+    os.getenv("PURVIEW_API_BASE_URL", "").strip()
+    or os.getenv("PURVIEW_PRIVATE_ENDPOINT_URL", "").strip()
+    or os.getenv("PURVIEW_PRIVATE_BASE_URL", "").strip()
+)
+PURVIEW_BASE_URL = (
+    PURVIEW_API_BASE_URL.rstrip("/")
+    if PURVIEW_API_BASE_URL
+    else f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
+)
 APPLY_CHANGES = False
 SQL_MIRROR_ONLY_DEPLOYMENT = True
 PURVIEW_PUBLISH_OVERRIDE = False
@@ -769,19 +778,55 @@ for item in sorted({d.get("name", "") for d in classification_defs if d.get("nam
 # Outputs: lineage_edges list with process qualified names, source/target references, and data product context.
 
 
+def _canonical_sql_qname(raw_qn: str):
+    qn = _safe_text(raw_qn)
+    if not qn or not qn.lower().startswith("mssql://"):
+        return qn
+    if qn.lower().startswith("mssql://" + SQL_SERVER_FQDN.lower()):
+        return qn
+    if qn.lower().startswith("mssql://sqldemo/"):
+        suffix = qn[len("mssql://sqldemo/") :]
+        return f"mssql://{SQL_SERVER_FQDN}/sqldemo/{suffix}"
+    return qn
+
+
+def _canonical_fabric_qname(raw_qn: str):
+    qn = _safe_text(raw_qn)
+    if not qn:
+        return qn
+    lowered = qn.lower()
+    if lowered.startswith("fabric://"):
+        suffix = qn[len("fabric://") :]
+        if "/lakehouses/" in suffix:
+            lakehouse_prefix, table_name = suffix.split("/lakehouses/", 1)
+            if "/tables/" in table_name:
+                lakehouse_name, table_part = table_name.split("/tables/", 1)
+                if lakehouse_name.lower() == "lh_enercare_demo":
+                    return f"https://app.fabric.microsoft.com/groups/{WORKSPACE_ID}/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/{table_part}"
+                return f"https://app.fabric.microsoft.com/groups/{WORKSPACE_ID}/lakehouses/{lakehouse_name}/tables/{table_part}"
+        if "/tables/" in suffix:
+            lakehouse_name, table_name = suffix.split("/tables/", 1)
+            return f"https://app.fabric.microsoft.com/groups/{WORKSPACE_ID}/lakehouses/{lakehouse_name}/tables/{table_name}"
+    if lowered.startswith("https://app.fabric.microsoft.com/"):
+        return qn
+    return qn
+
+
 def _table_ref_from_sql_asset(asset_ref: str):
     parts = asset_ref.split(".")
     if len(parts) >= 2 and parts[0].lower() == "dbo":
-        return f"mssql://sqldemo/dbo/{parts[1]}"
+        qn = f"mssql://{SQL_SERVER_FQDN}/sqldemo/dbo/{parts[1]}"
+        return _canonical_sql_qname(qn)
     return None
 
 
 def _fabric_ref_from_asset(asset_ref: str):
     if asset_ref.startswith("lh_enercare_demo."):
         _, table_name = asset_ref.split(".", 1)
-        return f"fabric://{WORKSPACE_ID}/lakehouses/lh_enercare_demo/tables/{table_name}"
+        return f"https://app.fabric.microsoft.com/groups/{WORKSPACE_ID}/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/{table_name}"
     if asset_ref.startswith(f"{SEMANTIC_MODEL_NAME}/"):
-        return f"fabric://{WORKSPACE_ID}/semanticModels/{SEMANTIC_MODEL_NAME}/{asset_ref.split('/', 1)[1]}"
+        asset_name = asset_ref.split('/', 1)[1]
+        return f"https://app.fabric.microsoft.com/groups/{WORKSPACE_ID}/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/{asset_name}"
     return None
 
 
@@ -2126,21 +2171,29 @@ def _entity_lookup_candidates(qualified_name: str, role: str):
     if role == "source" and qn.startswith("mssql://"):
         parts = qn[len("mssql://") :].split("/")
         if len(parts) >= 3:
-            db_name = parts[0]
-            schema_name = parts[1]
-            table_name = parts[2]
-            candidates.append(f"mssql://{SQL_SERVER_FQDN}/{db_name}/{schema_name}/{table_name}")
-            if schema_name.lower() == "dbo":
-                candidates.append(f"mssql://{SQL_SERVER_FQDN}/{db_name}/demo/{table_name}")
-                candidates.append(f"mssql://{db_name}/demo/{table_name}")
+            host = parts[0]
+            db_name = parts[1]
+            schema_name = parts[2]
+            table_name = parts[3] if len(parts) >= 4 else ""
+            if table_name:
+                candidates.append(f"mssql://{SQL_SERVER_FQDN}/{db_name}/{schema_name}/{table_name}")
+                if schema_name.lower() == "dbo":
+                    candidates.append(f"mssql://{SQL_SERVER_FQDN}/{db_name}/demo/{table_name}")
+                    candidates.append(f"mssql://{db_name}/demo/{table_name}")
 
-    if role == "target" and qn.startswith("fabric://") and "/semanticModels/" in qn:
-        parts = qn.split("/")
-        if len(parts) >= 6:
-            workspace_id = parts[2]
-            asset_name = parts[-1]
-            candidates.append(f"fabric://{workspace_id}/semanticModels/{SEMANTIC_MODEL_LOGICAL_ID}/{asset_name}")
-            candidates.append(f"fabric://{workspace_id}/semanticModels/{SEMANTIC_MODEL_NAME}/{asset_name}")
+    if role == "target":
+        canon_qn = _canonical_fabric_qname(qn)
+        if canon_qn != qn:
+            candidates.append(canon_qn)
+        if qn.startswith("fabric://") and "/semanticModels/" in qn:
+            parts = qn.split("/")
+            if len(parts) >= 6:
+                workspace_id = parts[2]
+                asset_name = parts[-1]
+                candidates.append(f"fabric://{workspace_id}/semanticModels/{SEMANTIC_MODEL_LOGICAL_ID}/{asset_name}")
+                candidates.append(f"fabric://{workspace_id}/semanticModels/{SEMANTIC_MODEL_NAME}/{asset_name}")
+        if qn.startswith("https://app.fabric.microsoft.com/"):
+            candidates.append(qn.replace("/lakehouses/" + qn.split("/lakehouses/",1)[1].split("/tables/",1)[0], "/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555"))
 
     seen = set()
     unique = []

@@ -29,7 +29,7 @@ GO
 
 CREATE OR ALTER VIEW dbo.vw_technician_utilization_summary
 AS
-/* @tag: domain=DOM-SVCDEL owner=shruthi.srinivas@enercare.ca sensitivity=Internal semantic_role=CandidateFact business_use=Daily field-ops technician utilization and workload distribution */
+/* @tag: domain=DOM-SVCDEL owner=ranbir.singh@enercare.ca sensitivity=Internal semantic_role=CandidateFact business_use=Daily field-ops technician utilization and workload distribution */
 SELECT
     e.employee_id,
     e.upn,
@@ -39,7 +39,7 @@ SELECT
     SUM(CASE WHEN sr.no_show_reason_code IS NOT NULL THEN 1 ELSE 0 END)     AS no_show_count
 FROM dbo.employees e
 LEFT JOIN dbo.service_requests sr ON sr.technician_id = e.employee_id
-WHERE e.role = 'Field Technician' AND e.is_active = 1
+WHERE e.role IN ('Service Technician', 'Field Technician') AND e.is_active = 1
 GROUP BY e.employee_id, e.upn, e.department;
 GO
 

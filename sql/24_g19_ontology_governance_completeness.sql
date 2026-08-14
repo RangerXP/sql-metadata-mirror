@@ -597,6 +597,7 @@ GO
 --    each edge with its own real receipt.
 ------------------------------------------------------------------------------
 CREATE OR ALTER VIEW dbo.vw_ontology_evidence_graph AS
+/* @tag: domain=DOM-GOV owner=ci.zhu@enercare.ca sensitivity=Internal semantic_role=Reference business_use=Governance evidence graph and domain/OKR lineage verification */
 SELECT
     o.okr_id, o.okr_name, o.status AS objective_status, o.is_certified,
     kr.key_result_id, kr.result_name,

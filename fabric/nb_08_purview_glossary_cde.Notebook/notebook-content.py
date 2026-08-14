@@ -47,7 +47,11 @@ METADATA_LAKEHOUSE = "lh_metadata"
 METADATA_SCHEMA = "metadata"
 SEMANTIC_MODEL_NAME = "BrookfieldEnercare"
 PURVIEW_ACCOUNT_NAME = os.getenv("PURVIEW_ACCOUNT_NAME", "Purview-West3")
-PURVIEW_API_BASE_URL = os.getenv("PURVIEW_API_BASE_URL", "").strip()
+PURVIEW_API_BASE_URL = (
+    os.getenv("PURVIEW_API_BASE_URL", "").strip()
+    or os.getenv("PURVIEW_PRIVATE_ENDPOINT_URL", "").strip()
+    or os.getenv("PURVIEW_PRIVATE_BASE_URL", "").strip()
+)
 PURVIEW_ACCESS_TOKEN = os.getenv("PURVIEW_ACCESS_TOKEN", "").strip()
 PURVIEW_TENANT_ID = "b7e47691-9726-4f67-a302-e567815f3522"
 PURVIEW_TOKEN_CACHE_PATH = "Files/purview_publish/.purview_token_cache.json"

@@ -1,0 +1,3556 @@
+{
+  "account": "Purview-West2",
+  "tenantId": "b7e47691-9726-4f67-a302-e567815f3522",
+  "generatedAtUtc": "2026-08-14T17:10:21Z",
+  "queryCount": 31,
+  "itemCount": 184,
+  "queryKeywords": [
+    "Brookfield",
+    "BrookfieldEnercare",
+    "Enercare",
+    "governance_domains",
+    "governance_requests",
+    "governance_object_mappings",
+    "governed_object_versions",
+    "governance_change_requests",
+    "governance_role_assignments",
+    "vw_technician_utilization_summary",
+    "service_requests",
+    "fct_service_request",
+    "Service Delivery",
+    "DOM-SVCDEL",
+    "GT-SLA",
+    "DP-SVCPERF",
+    "dp-svcperf",
+    "data product",
+    "semantic model",
+    "lineage",
+    "Purview-West2",
+    "governance",
+    "fabric_workspace",
+    "powerbi_dataset",
+    "governance_domains",
+    "governance_requests",
+    "governed_object_versions",
+    "service_accounts",
+    "domains",
+    "brookfieldenercare",
+    "enercare demo"
+  ],
+  "entityTypeSummary": {
+    "EnercareGovernanceDomainProbe": 1,
+    "azure_sql_table": 28,
+    "fabric_data_warehouse": 2,
+    "fabric_kusto_database": 1,
+    "fabric_lake_warehouse": 11,
+    "fabric_lakehouse": 5,
+    "fabric_lakehouse_path": 16,
+    "fabric_lakehouse_table": 47,
+    "fabric_ml_experiment": 2,
+    "fabric_ml_model": 1,
+    "fabric_pipeline": 5,
+    "fabric_synapse_notebook": 35,
+    "fabric_workspace": 7,
+    "powerbi_dataflow": 1,
+    "powerbi_dataset": 13,
+    "powerbi_report": 9
+  },
+  "items": [
+    {
+      "id": "913e8f63-33ef-475f-b5ba-c45e2fd8d81d",
+      "name": null,
+      "displayText": "enercare://governance/domain/probe-domain-001",
+      "entityType": "EnercareGovernanceDomainProbe",
+      "objectType": null,
+      "qualifiedName": "enercare://governance/domain/probe-domain-001",
+      "description": null,
+      "domainId": null,
+      "collectionId": null,
+      "assetType": [
+        "EnercareGovernanceDomainProbe"
+      ],
+      "createBy": "47a147a5-ce27-46e9-be8c-ccb9f0d4f9ff",
+      "updateBy": "47a147a5-ce27-46e9-be8c-ccb9f0d4f9ff",
+      "createTime": 1786725550468,
+      "updateTime": 1786725550468,
+      "sourceQuery": "BrookfieldEnercare"
+    },
+    {
+      "id": "19414755-5da4-4234-8368-8bf6f6f60000",
+      "name": "audit_data_access",
+      "displayText": "audit_data_access",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/audit_data_access",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726756,
+      "updateTime": 1786477999068,
+      "sourceQuery": "governance_object_mappings"
+    },
+    {
+      "id": "94b3da86-8850-4a05-b8e0-44f6f6f60000",
+      "name": "billing_transactions",
+      "displayText": "billing_transactions",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726756,
+      "updateTime": 1786477999068,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "d12d7ac0-1234-4f79-b5a5-c4f6f6f60000",
+      "name": "contracts",
+      "displayText": "contracts",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/contracts",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726756,
+      "updateTime": 1786477999085,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "738df67c-3c16-45dc-85f7-56f6f6f60000",
+      "name": "customer_complaints",
+      "displayText": "customer_complaints",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customer_complaints",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726756,
+      "updateTime": 1786477999089,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "7dc3a39c-668e-4070-8977-77f6f6f60000",
+      "name": "customer_consents",
+      "displayText": "customer_consents",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customer_consents",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726620,
+      "updateTime": 1786477999085,
+      "sourceQuery": "Purview-West2"
+    },
+    {
+      "id": "f54e543e-b1b5-4471-b2e8-5df6f6f60000",
+      "name": "customers",
+      "displayText": "customers",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726756,
+      "updateTime": 1786477999090,
+      "sourceQuery": "Purview-West2"
+    },
+    {
+      "id": "49fdc1b6-bebc-49c0-8b03-4bf6f6f60000",
+      "name": "data_owners_directory",
+      "displayText": "data_owners_directory",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/data_owners_directory",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726756,
+      "updateTime": 1786477999090,
+      "sourceQuery": "governance_object_mappings"
+    },
+    {
+      "id": "1b3cff9b-38ae-4ae8-80b1-93f6f6f60000",
+      "name": "employees",
+      "displayText": "employees",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/employees",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726753,
+      "updateTime": 1786477999924,
+      "sourceQuery": "governance_role_assignments"
+    },
+    {
+      "id": "444e4b6a-17fb-42ca-9778-53f6f6f60000",
+      "name": "equipment_registry",
+      "displayText": "equipment_registry",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/equipment_registry",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726620,
+      "updateTime": 1786477999085,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "f5ac7cb0-7e8f-40e5-8034-80f6f6f60000",
+      "name": "governance_cdes",
+      "displayText": "governance_cdes",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_cdes",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726650,
+      "updateTime": 1786477999090,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "ae92acf9-adbf-4a95-a8a9-36f6f6f60000",
+      "name": "governance_change_requests",
+      "displayText": "governance_change_requests",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_change_requests",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726650,
+      "updateTime": 1786477999068,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "a9c1a0dd-040e-4904-98ea-a3f6f6f60000",
+      "name": "governance_data_products",
+      "displayText": "governance_data_products",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_data_products",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726753,
+      "updateTime": 1786478007940,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "e3b2f04c-d028-4363-a006-55f6f6f60000",
+      "name": "governance_domains",
+      "displayText": "governance_domains",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_domains",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726756,
+      "updateTime": 1786477999115,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "7f93345a-2537-4c8f-af38-95f6f6f60000",
+      "name": "governance_events",
+      "displayText": "governance_events",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_events",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786477999115,
+      "updateTime": 1786477999115,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "def0a3a5-2576-4950-8bc9-0ff6f6f60000",
+      "name": "governance_glossary_terms",
+      "displayText": "governance_glossary_terms",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_glossary_terms",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726620,
+      "updateTime": 1786477999089,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "314fbddc-1efc-4f8a-bea2-09f6f6f60000",
+      "name": "governance_label_assignments",
+      "displayText": "governance_label_assignments",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_label_assignments",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726650,
+      "updateTime": 1786477999089,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "c9530466-75d0-463c-8e34-1df6f6f60000",
+      "name": "governance_object_mappings",
+      "displayText": "governance_object_mappings",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_object_mappings",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786477999115,
+      "updateTime": 1786477999115,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "0377353e-7599-4d46-b556-50f6f6f60000",
+      "name": "governance_okr_data_products",
+      "displayText": "governance_okr_data_products",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_okr_data_products",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726650,
+      "updateTime": 1786477999085,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "36885445-5c41-486d-b91e-b1f6f6f60000",
+      "name": "governance_okr_key_results",
+      "displayText": "governance_okr_key_results",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_okr_key_results",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726756,
+      "updateTime": 1786477999089,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "f717b26c-8258-458c-9156-e3f6f6f60000",
+      "name": "governance_okrs",
+      "displayText": "governance_okrs",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_okrs",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726650,
+      "updateTime": 1786477999068,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "55c28424-a040-43b4-887e-45f6f6f60000",
+      "name": "governance_requests",
+      "displayText": "governance_requests",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_requests",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786477999115,
+      "updateTime": 1786477999115,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "184a00af-ba48-4e24-a6f4-c9f6f6f60000",
+      "name": "governance_role_assignments",
+      "displayText": "governance_role_assignments",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_role_assignments",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726753,
+      "updateTime": 1786477999090,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "f8661e8d-9eb1-414f-a6f5-edf6f6f60000",
+      "name": "governance_target_receipts",
+      "displayText": "governance_target_receipts",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_target_receipts",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786477999090,
+      "updateTime": 1786477999090,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "08fb6b2c-8d2a-4a8b-a6e6-7ef6f6f60000",
+      "name": "governed_object_versions",
+      "displayText": "governed_object_versions",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governed_object_versions",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786477999115,
+      "updateTime": 1786477999115,
+      "sourceQuery": "governance_object_mappings"
+    },
+    {
+      "id": "98ae7ff1-8c6a-4c1d-b030-b1f6f6f60000",
+      "name": "products",
+      "displayText": "products",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/products",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726753,
+      "updateTime": 1786477999068,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "26ad3c2e-0a82-47ec-aa4c-85f6f6f60000",
+      "name": "service_accounts",
+      "displayText": "service_accounts",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726756,
+      "updateTime": 1786477999085,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "df87a5a0-1133-420d-baac-a8f6f6f60000",
+      "name": "service_requests",
+      "displayText": "service_requests",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_requests",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726753,
+      "updateTime": 1786477999924,
+      "sourceQuery": "governance_requests"
+    },
+    {
+      "id": "78cfdfcd-15b8-43f8-ad1f-16f6f6f60000",
+      "name": "service_zones",
+      "displayText": "service_zones",
+      "entityType": "azure_sql_table",
+      "objectType": "Tables",
+      "qualifiedName": "mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_zones",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Azure SQL Database"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786410726756,
+      "updateTime": 1786477999089,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "25cccd83-eac3-454d-ad6a-5c79f4a395b7",
+      "name": "DataflowsStagingWarehouse",
+      "displayText": "DataflowsStagingWarehouse",
+      "entityType": "fabric_data_warehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/datawarehouses/72716552-3a68-42b2-8530-04be2a2b8205",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779916,
+      "updateTime": 1786427779916,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "ab3bf68e-4905-4dad-85e5-8e509fc5a7b0",
+      "name": "warehouse-06",
+      "displayText": "warehouse-06",
+      "entityType": "fabric_data_warehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/datawarehouses/648f7016-41e8-4351-8cd5-734c5836d93d",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779916,
+      "updateTime": 1786427779916,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "6ebab7a6-df1b-41b5-92b6-e2d8f6a1384a",
+      "name": "Eventhouse-module7",
+      "displayText": "Eventhouse-module7",
+      "entityType": "fabric_kusto_database",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/databases/08a029eb-8e60-49d0-836a-96f5b5ee48cf",
+      "description": "Eventhouse-module7",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427784957,
+      "updateTime": 1786427784957,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "3e9efad8-875e-4138-877b-0f7a48318275",
+      "name": "DP600_Lakehouse_module2",
+      "displayText": "DP600_Lakehouse_module2",
+      "entityType": "fabric_lake_warehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/lakewarehouses/3efecbe6-8e92-437a-a9a6-0000c1246844",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779983,
+      "updateTime": 1786427784370,
+      "sourceQuery": "DP-SVCPERF"
+    },
+    {
+      "id": "7f3e056b-a3bc-49d6-a08d-944bbeea02b3",
+      "name": "DataflowsStagingLakehouse",
+      "displayText": "DataflowsStagingLakehouse",
+      "entityType": "fabric_lake_warehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/lakewarehouses/a1e144f4-eded-4437-9687-60f8f08b4caf",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779983,
+      "updateTime": 1786427784370,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "dce8e54b-0985-490a-afd3-0521fdade8d9",
+      "name": "Lakehouse_module3",
+      "displayText": "Lakehouse_module3",
+      "entityType": "fabric_lake_warehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/lakewarehouses/f4771420-97ca-48fb-b31b-00bf77253c4d",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779983,
+      "updateTime": 1786427784370,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "def8a82e-7df8-4feb-b13f-ba8ce3cb9683",
+      "name": "Lakehouse_module4",
+      "displayText": "Lakehouse_module4",
+      "entityType": "fabric_lake_warehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/lakewarehouses/c2307de7-3be6-4489-8a78-623f978ffe59",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779983,
+      "updateTime": 1786427784370,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "f137254c-5960-4ad4-94bc-2f5112e6e98a",
+      "name": "Lakehouse_module5",
+      "displayText": "Lakehouse_module5",
+      "entityType": "fabric_lake_warehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/lakewarehouses/142e6a91-9334-44f7-9178-b06758ad9f78",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779963,
+      "updateTime": 1786427783457,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "0502d8ae-ab9f-4997-8a52-4ee4be800091",
+      "name": "azureml_lakehouse",
+      "displayText": "azureml_lakehouse",
+      "entityType": "fabric_lake_warehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/e0309580-62d5-47b5-9ee3-df70a145e72c/lakewarehouses/19c095ad-c75c-4836-897d-a991bd0d09c3",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779963,
+      "updateTime": 1786427783457,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "8af26f7f-a03e-42e8-bb07-cda6b1b1d990",
+      "name": "lh_enercare_demo",
+      "displayText": "lh_enercare_demo",
+      "entityType": "fabric_lake_warehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/lakewarehouses/e8af18fd-e9b9-4c0e-9102-06b7d1d3aa12",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779963,
+      "updateTime": 1786427783457,
+      "sourceQuery": "BrookfieldEnercare"
+    },
+    {
+      "id": "019fc18c-855d-4b21-9af6-085a75b21c11",
+      "name": "lh_enercare_demo",
+      "displayText": "lh_enercare_demo",
+      "entityType": "fabric_lake_warehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakewarehouses/adea2c98-c565-4648-873f-dd0db11f6234",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779963,
+      "updateTime": 1786588676974,
+      "sourceQuery": "BrookfieldEnercare"
+    },
+    {
+      "id": "fde32aef-76c1-4772-939c-183835c9b4b1",
+      "name": "lh_metadata",
+      "displayText": "lh_metadata",
+      "entityType": "fabric_lake_warehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/lakewarehouses/595a4488-0f92-41b6-9cdb-f7e09337c2de",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779963,
+      "updateTime": 1786427783457,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "9eb70a82-cc50-4438-9be7-50d7040776a3",
+      "name": "lh_metadata",
+      "displayText": "lh_metadata",
+      "entityType": "fabric_lake_warehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakewarehouses/9c91b3bf-838a-41da-b876-2cc77c30f604",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427780067,
+      "updateTime": 1786501839665,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "c9d02728-f36c-49a9-89e1-61c0373d0e7e",
+      "name": "sqldemo",
+      "displayText": "sqldemo",
+      "entityType": "fabric_lake_warehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakewarehouses/3d54cc3a-d51e-40c4-89ee-2e5e65be6fde",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427780067,
+      "updateTime": 1786588676974,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "74731a07-161d-40c4-9388-fbd1ef274005",
+      "name": "DP600_Lakehouse_module2",
+      "displayText": "DP600_Lakehouse_module2",
+      "entityType": "fabric_lakehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/lakehouses/ecc603f3-fe95-4246-963e-d270bb00e209",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787077,
+      "updateTime": 1786427787077,
+      "sourceQuery": "DP-SVCPERF"
+    },
+    {
+      "id": "9ceee835-3bf0-405c-81d3-830526a09f59",
+      "name": "lh_enercare_demo",
+      "displayText": "lh_enercare_demo",
+      "entityType": "fabric_lakehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/lakehouses/0ee837e4-2fd3-40d9-b228-1f167b504b7d",
+      "description": "Demo transactional Delta tables: customers, service_accounts, equipment_registry, contracts, billing_transactions, service_requests, products",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787067,
+      "updateTime": 1786427787067,
+      "sourceQuery": "BrookfieldEnercare"
+    },
+    {
+      "id": "5007d27e-b0a5-4a81-a6bd-426b3f363931",
+      "name": "lh_enercare_demo",
+      "displayText": "lh_enercare_demo",
+      "entityType": "fabric_lakehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555",
+      "description": "Demo transactional Delta tables: customers, service_accounts, equipment_registry, contracts, billing_transactions, service_requests, products",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787067,
+      "updateTime": 1786675103089,
+      "sourceQuery": "BrookfieldEnercare"
+    },
+    {
+      "id": "2e6ef101-96b0-4b9d-9881-f6b496816de4",
+      "name": "lh_metadata",
+      "displayText": "lh_metadata",
+      "entityType": "fabric_lakehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/lakehouses/d4ba455b-9b80-46dd-afe8-d0b877b3a5d2",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787067,
+      "updateTime": 1786427787067,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "1b2803ac-04a1-4ab8-9c6a-b00395e0e2a9",
+      "name": "lh_metadata",
+      "displayText": "lh_metadata",
+      "entityType": "fabric_lakehouse",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787002,
+      "updateTime": 1786675103089,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "d51fb453-2d65-430b-9998-06a33e29a32e",
+      "name": "debug",
+      "displayText": "debug",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Folders",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/debug",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497935845,
+      "updateTime": 1786675083370,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "158fe083-5ba8-4687-b173-f7e576f2e12d",
+      "name": "g18a_kpi_metadata_safety_check.txt",
+      "displayText": "g18a_kpi_metadata_safety_check.txt",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Files",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/debug/g18a_kpi_metadata_safety_check.txt",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786675109077,
+      "updateTime": 1786675109077,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "657c6d73-758e-4021-acd8-00549133a566",
+      "name": "g18a_nb02_check.txt",
+      "displayText": "g18a_nb02_check.txt",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Files",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/debug/g18a_nb02_check.txt",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786675109077,
+      "updateTime": 1786675109077,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "820ffa3b-9b3a-43d9-bbd5-996d1c2c7458",
+      "name": "g19_4_cleanup_verify.txt",
+      "displayText": "g19_4_cleanup_verify.txt",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Files",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/debug/g19_4_cleanup_verify.txt",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786675109077,
+      "updateTime": 1786675109077,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "ae4ee7c1-531c-45cb-98e0-bec81fa6f5cd",
+      "name": "g19_6_completion_verify.txt",
+      "displayText": "g19_6_completion_verify.txt",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Files",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/debug/g19_6_completion_verify.txt",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786675124055,
+      "updateTime": 1786675124055,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "b331de48-c4ff-403d-9da5-925233de6e79",
+      "name": "nb05_last_run.txt",
+      "displayText": "nb05_last_run.txt",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Files",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/debug/nb05_last_run.txt",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786675108395,
+      "updateTime": 1786675108395,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "02d707aa-b888-4adb-a39d-79e82347e04b",
+      "name": "nb11_g19_4_ai_instruction_lifecycle_check.txt",
+      "displayText": "nb11_g19_4_ai_instruction_lifecycle_check.txt",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Files",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/debug/nb11_g19_4_ai_instruction_lifecycle_check.txt",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786675109077,
+      "updateTime": 1786675109077,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "334b9fb1-82a4-4fe5-96d3-a37206581c91",
+      "name": "nb17_diag.txt",
+      "displayText": "nb17_diag.txt",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Files",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/debug/nb17_diag.txt",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786675124055,
+      "updateTime": 1786675124055,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "c444689e-20dc-4a52-855f-c7c6221ee5cb",
+      "name": "nb17_full_diag.txt",
+      "displayText": "nb17_full_diag.txt",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Files",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/debug/nb17_full_diag.txt",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786675124055,
+      "updateTime": 1786675124055,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "78477b3b-0b36-4b7b-bc90-ed3d4f17873c",
+      "name": "nb17_model_state.txt",
+      "displayText": "nb17_model_state.txt",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Files",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/debug/nb17_model_state.txt",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786675108395,
+      "updateTime": 1786675108395,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "5d4e273f-f536-4fb3-9597-ceee9027d127",
+      "name": "phase_04_05_glossary_cde",
+      "displayText": "phase_04_05_glossary_cde",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Folders",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/purview_publish/phase_04_05_glossary_cde",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497984340,
+      "updateTime": 1786501859960,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "e5b13b1b-8e46-4430-bb0a-cc3e73e7d93f",
+      "name": "phase_06_07_labels_lineage",
+      "displayText": "phase_06_07_labels_lineage",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Folders",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/purview_publish/phase_06_07_labels_lineage",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497966349,
+      "updateTime": 1786501860074,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "2a7236e7-7a66-488a-bb39-8e93b0952b9d",
+      "name": "phase_08_10_stewardship_ai",
+      "displayText": "phase_08_10_stewardship_ai",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Folders",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/purview_publish/phase_08_10_stewardship_ai",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497966349,
+      "updateTime": 1786501859960,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "e275f10a-8628-4499-8e72-bfd746746b78",
+      "name": "purview_publish",
+      "displayText": "purview_publish",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Folders",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/purview_publish",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497940928,
+      "updateTime": 1786501870806,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "d6eb90ea-b38b-4adc-95d0-46f12da4fe94",
+      "name": "r6_check.txt",
+      "displayText": "r6_check.txt",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Files",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/debug/r6_check.txt",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786675108395,
+      "updateTime": 1786675108395,
+      "sourceQuery": "governance_requests"
+    },
+    {
+      "id": "b5c4d6a5-15ce-43a2-9df8-b99ee97cea9b",
+      "name": "verify_certification.txt",
+      "displayText": "verify_certification.txt",
+      "entityType": "fabric_lakehouse_path",
+      "objectType": "Files",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/files/debug/verify_certification.txt",
+      "description": "OneLake metadata hub: asset_metadata, column_metadata, kpi_metadata Delta tables + vw_business_metadata_current SQL endpoint view",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786675124055,
+      "updateTime": 1786675124055,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "f8bb4b10-ccd8-411b-b683-aaf6f6f60000",
+      "name": "ai_metadata",
+      "displayText": "ai_metadata",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/ai_metadata",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946944,
+      "updateTime": 1786675103077,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "413355a1-1241-4833-9264-20f6f6f60000",
+      "name": "asset_metadata",
+      "displayText": "asset_metadata",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/asset_metadata",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946944,
+      "updateTime": 1786501859960,
+      "sourceQuery": "governance_object_mappings"
+    },
+    {
+      "id": "2f491977-3617-44cf-bfdf-75f6f6f60000",
+      "name": "billing_transactions",
+      "displayText": "billing_transactions",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/billing_transactions",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941980,
+      "updateTime": 1786501859968,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "9e69d2b9-0fd6-4af2-b5f3-eef6f6f60000",
+      "name": "cc_agents",
+      "displayText": "cc_agents",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/cc_agents",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941980,
+      "updateTime": 1786501860036,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "700b26ea-c593-4529-8be7-a1f6f6f60000",
+      "name": "cdes",
+      "displayText": "cdes",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/cdes",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946884,
+      "updateTime": 1786501859955,
+      "sourceQuery": "governance_role_assignments"
+    },
+    {
+      "id": "007138f4-75ed-44bf-bbfb-96f6f6f60000",
+      "name": "column_metadata",
+      "displayText": "column_metadata",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/column_metadata",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946884,
+      "updateTime": 1786501860074,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "b0e7fd3f-90a3-4fef-97fb-4bf6f6f60000",
+      "name": "contracts",
+      "displayText": "contracts",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/contracts",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941982,
+      "updateTime": 1786501860036,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "52d1ee53-9f08-4baf-8d80-49f6f6f60000",
+      "name": "customers",
+      "displayText": "customers",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/customers",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941982,
+      "updateTime": 1786501860036,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "5b263340-ef5c-41df-84dd-fcf6f6f60000",
+      "name": "data_owners",
+      "displayText": "data_owners",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/data_owners",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946875,
+      "updateTime": 1786501859949,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "eeebd1d0-1b88-414a-a688-53f6f6f60000",
+      "name": "data_products",
+      "displayText": "data_products",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/data_products",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946884,
+      "updateTime": 1786501859960,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "0cbec1cc-bc1c-451e-8c5c-f4f6f6f60000",
+      "name": "dim_cc_agent",
+      "displayText": "dim_cc_agent",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/dim_cc_agent",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941982,
+      "updateTime": 1786501860176,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "99862548-a1b5-4228-a42c-78f6f6f60000",
+      "name": "dim_cc_billing_adj",
+      "displayText": "dim_cc_billing_adj",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/dim_cc_billing_adj",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941910,
+      "updateTime": 1786501859997,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "2bd8a4b3-c3ff-4da4-a80d-33f6f6f60000",
+      "name": "dim_customer",
+      "displayText": "dim_customer",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/dim_customer",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941910,
+      "updateTime": 1786501860036,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "dbc94a02-0892-4a00-afb7-b7f6f6f60000",
+      "name": "dim_date",
+      "displayText": "dim_date",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/dim_date",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941972,
+      "updateTime": 1786501859997,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "f70d6186-1e90-437e-a03d-41f6f6f60000",
+      "name": "dim_equipment",
+      "displayText": "dim_equipment",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/dim_equipment",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941972,
+      "updateTime": 1786501859997,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "8ff5b06d-b833-416d-bb40-6bf6f6f60000",
+      "name": "dim_product",
+      "displayText": "dim_product",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/dim_product",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941972,
+      "updateTime": 1786501860176,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "9b3af664-0445-46ce-8254-24f6f6f60000",
+      "name": "dim_service_account",
+      "displayText": "dim_service_account",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/dim_service_account",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941982,
+      "updateTime": 1786501860176,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "92b725d3-b442-43ab-bb81-ddf6f6f60000",
+      "name": "domains",
+      "displayText": "domains",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/domains",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946875,
+      "updateTime": 1786501860074,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "14ca3cf6-5012-4398-ab8c-aef6f6f60000",
+      "name": "equipment_registry",
+      "displayText": "equipment_registry",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/equipment_registry",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941972,
+      "updateTime": 1786501860036,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "dde6f1f6-e592-4e75-8e4e-8af6f6f60000",
+      "name": "fct_billing",
+      "displayText": "fct_billing",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/fct_billing",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941910,
+      "updateTime": 1786501859997,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "20d841fa-f27c-4053-b843-23f6f6f60000",
+      "name": "fct_cc_interactions",
+      "displayText": "fct_cc_interactions",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/fct_cc_interactions",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941955,
+      "updateTime": 1786501860176,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "6fc618b9-a272-44d6-b34b-6ef6f6f60000",
+      "name": "fct_cc_transcript_turns",
+      "displayText": "fct_cc_transcript_turns",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/fct_cc_transcript_turns",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941982,
+      "updateTime": 1786501859997,
+      "sourceQuery": "fct_service_request"
+    },
+    {
+      "id": "6ea45315-7352-4c18-9781-c1f6f6f60000",
+      "name": "fct_contract_month",
+      "displayText": "fct_contract_month",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/fct_contract_month",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941910,
+      "updateTime": 1786501859969,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "513d0b44-a149-404e-b602-42f6f6f60000",
+      "name": "fct_service_request",
+      "displayText": "fct_service_request",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/fct_service_request",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941972,
+      "updateTime": 1786501859969,
+      "sourceQuery": "vw_technician_utilization_summary"
+    },
+    {
+      "id": "00292229-565f-4941-bb87-7af6f6f60000",
+      "name": "glossary_terms",
+      "displayText": "glossary_terms",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/glossary_terms",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946944,
+      "updateTime": 1786501859960,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "57d9e237-8f34-40aa-a509-abf6f6f60000",
+      "name": "governance_change_requests",
+      "displayText": "governance_change_requests",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/governance_change_requests",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946910,
+      "updateTime": 1786501859960,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "91daaca4-9ced-4e08-b4e6-47f6f6f60000",
+      "name": "kpi_metadata",
+      "displayText": "kpi_metadata",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/kpi_metadata",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946910,
+      "updateTime": 1786501859960,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "51cb7d62-a54f-403b-920f-3bf6f6f60000",
+      "name": "label_assignments",
+      "displayText": "label_assignments",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/label_assignments",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946944,
+      "updateTime": 1786501859960,
+      "sourceQuery": "governance_role_assignments"
+    },
+    {
+      "id": "5cfe1162-9b1f-4e1f-b6c0-92f6f6f60000",
+      "name": "lineage_edges",
+      "displayText": "lineage_edges",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/lineage_edges",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946884,
+      "updateTime": 1786501859949,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "7829ac83-d5e7-4081-bc10-39f6f6f60000",
+      "name": "nb08_diagnostics_log",
+      "displayText": "nb08_diagnostics_log",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/nb08_diagnostics_log",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946915,
+      "updateTime": 1786501859949,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "34a2965a-ace5-49e0-a0b0-89f6f6f60000",
+      "name": "nb11_diagnostics_log",
+      "displayText": "nb11_diagnostics_log",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/nb11_diagnostics_log",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946853,
+      "updateTime": 1786501859960,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "93528129-6661-406a-a488-0df6f6f60000",
+      "name": "okr_data_products",
+      "displayText": "okr_data_products",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/okr_data_products",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946910,
+      "updateTime": 1786501859949,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "f667adc0-adb4-42b8-83f6-c3f6f6f60000",
+      "name": "okrs",
+      "displayText": "okrs",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/okrs",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946915,
+      "updateTime": 1786501859955,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "8a3fae1a-c6db-493d-9d3a-08f6f6f60000",
+      "name": "products",
+      "displayText": "products",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/products",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941910,
+      "updateTime": 1786501860176,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "7faecf51-bbae-4ae3-8624-13f6f6f60000",
+      "name": "purview_phase_04_05_validation",
+      "displayText": "purview_phase_04_05_validation",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/purview_phase_04_05_validation",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946853,
+      "updateTime": 1786501859949,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "580a362d-bf1d-4f62-907d-67f6f6f60000",
+      "name": "purview_phase_06_07_validation",
+      "displayText": "purview_phase_06_07_validation",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/purview_phase_06_07_validation",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946910,
+      "updateTime": 1786501859968,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "da2a0db9-d8b6-4b2c-8581-caf6f6f60000",
+      "name": "purview_phase_08_10_closeout",
+      "displayText": "purview_phase_08_10_closeout",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/purview_phase_08_10_closeout",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946910,
+      "updateTime": 1786501859955,
+      "sourceQuery": "Purview-West2"
+    },
+    {
+      "id": "a3077d97-a3df-4d98-b3c8-c1f6f6f60000",
+      "name": "purview_phase_08_stewardship_scorecard",
+      "displayText": "purview_phase_08_stewardship_scorecard",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/purview_phase_08_stewardship_scorecard",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946853,
+      "updateTime": 1786501860074,
+      "sourceQuery": "governance_object_mappings"
+    },
+    {
+      "id": "f0671ff6-a44d-456c-9331-e2f6f6f60000",
+      "name": "purview_phase_09_controls_validation",
+      "displayText": "purview_phase_09_controls_validation",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/purview_phase_09_controls_validation",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946875,
+      "updateTime": 1786501860074,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "cb4ca082-4a2f-4a60-a3c3-ddf6f6f60000",
+      "name": "purview_phase_10_ai_readiness_validation",
+      "displayText": "purview_phase_10_ai_readiness_validation",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/purview_phase_10_ai_readiness_validation",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946875,
+      "updateTime": 1786501859955,
+      "sourceQuery": "Purview-West2"
+    },
+    {
+      "id": "e2a3f9f0-608f-46f9-9fb8-a1f6f6f60000",
+      "name": "purview_phase_11_ontology_validation",
+      "displayText": "purview_phase_11_ontology_validation",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/purview_phase_11_ontology_validation",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946853,
+      "updateTime": 1786501859968,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "3f0a8f79-1e13-459c-9097-d1f6f6f60000",
+      "name": "ref_cc_billing_adj_category",
+      "displayText": "ref_cc_billing_adj_category",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/ref_cc_billing_adj_category",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941955,
+      "updateTime": 1786501859969,
+      "sourceQuery": "Purview-West2"
+    },
+    {
+      "id": "0ef9687f-7d9d-4253-bcd4-55f6f6f60000",
+      "name": "role_assignments",
+      "displayText": "role_assignments",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/role_assignments",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946884,
+      "updateTime": 1786501859955,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "36b1a65e-68c5-4722-831b-f6f6f6f60000",
+      "name": "service_accounts",
+      "displayText": "service_accounts",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/service_accounts",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941955,
+      "updateTime": 1786501859969,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "ea1c4521-91f0-429b-b2ac-26f6f6f60000",
+      "name": "service_requests",
+      "displayText": "service_requests",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/e9b09e4e-b7b9-4208-b9ec-bb3433154555/tables/service_requests",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497941955,
+      "updateTime": 1786501859969,
+      "sourceQuery": "governance_requests"
+    },
+    {
+      "id": "c869a842-cfce-4ea9-b754-daf6f6f60000",
+      "name": "sm_annotations",
+      "displayText": "sm_annotations",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/sm_annotations",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786497946875,
+      "updateTime": 1786501859968,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "97ccfcda-58bd-439d-bec4-e3f6f6f60000",
+      "name": "source_tag_detections",
+      "displayText": "source_tag_detections",
+      "entityType": "fabric_lakehouse_table",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakehouses/824f4a52-baa0-4c3f-88dc-203c1d85c89a/tables/source_tag_detections",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786675103083,
+      "updateTime": 1786675106705,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "445c5139-86e6-4b1d-ba66-af79ab33b351",
+      "name": "diabetes-classification",
+      "displayText": "diabetes-classification",
+      "entityType": "fabric_ml_experiment",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/mlexperiments/3036a7af-5bbc-4fca-99ad-47e78155551c",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427780067,
+      "updateTime": 1786427783948,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "23db1348-74d7-49a2-ab31-39d431dd13ca",
+      "name": "diabetes-regression",
+      "displayText": "diabetes-regression",
+      "entityType": "fabric_ml_experiment",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/mlexperiments/4dce35f5-e765-4ac9-b3c3-218d2995e123",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427780067,
+      "updateTime": 1786427783948,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "6710d713-8c9f-4ba3-bdd1-2ed8b0a178d9",
+      "name": "diabetes-classification",
+      "displayText": "diabetes-classification",
+      "entityType": "fabric_ml_model",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/mlmodels/5e51c689-6d3d-43da-ad7d-fbef3bad7822",
+      "description": "",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779916,
+      "updateTime": 1786427779916,
+      "sourceQuery": "semantic model"
+    },
+    {
+      "id": "0caf811a-1ab5-48eb-908e-6420e54d0620",
+      "name": "Ingest Sales Data",
+      "displayText": "Ingest Sales Data",
+      "entityType": "fabric_pipeline",
+      "objectType": "Data pipelines",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/pipelines/8333a7fe-3628-4022-91ed-fd7456344218",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427785172,
+      "updateTime": 1786427785172,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "43fd8b06-71ba-43ab-b873-8d19427e17d6",
+      "name": "Load data",
+      "displayText": "Load data",
+      "entityType": "fabric_pipeline",
+      "objectType": "Data pipelines",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/pipelines/489e3b89-1dc0-4b90-8276-a24f5a3a43d6",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427785172,
+      "updateTime": 1786427785172,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "8959903d-61e9-48a1-aa06-3395db25e25b",
+      "name": "Variable_LastBizDay_Pipeline",
+      "displayText": "Variable_LastBizDay_Pipeline",
+      "entityType": "fabric_pipeline",
+      "objectType": "Data pipelines",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/e0309580-62d5-47b5-9ee3-df70a145e72c/pipelines/639f37cd-23b1-4212-a42a-0dd6503e95de",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779871,
+      "updateTime": 1786427784563,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "e2e089f4-8c32-48ac-88fc-4b3304de476e",
+      "name": "Variable_test",
+      "displayText": "Variable_test",
+      "entityType": "fabric_pipeline",
+      "objectType": "Data pipelines",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/e0309580-62d5-47b5-9ee3-df70a145e72c/pipelines/818cf7e0-103e-435d-9340-1888eac8186c",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779983,
+      "updateTime": 1786427784370,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "12f3df6f-eec1-4d45-906c-d6b98d2e56d9",
+      "name": "azureml_pipeline",
+      "displayText": "azureml_pipeline",
+      "entityType": "fabric_pipeline",
+      "objectType": "Data pipelines",
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/e0309580-62d5-47b5-9ee3-df70a145e72c/pipelines/5eeb9194-8ca5-462f-ba6a-4838392cbf40",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779871,
+      "updateTime": 1786427784563,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "5b6f2618-67fe-438d-874b-24a638c7436f",
+      "name": "Load Sales",
+      "displayText": "Load Sales",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/synapsenotebooks/ad1cb45f-c3d8-4c79-b97c-3f123bcbdfca",
+      "description": "New notebook",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427788636,
+      "updateTime": 1786427788636,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "7d8ba854-099d-4593-876d-1a2ae45a00c8",
+      "name": "Notebook - module 2",
+      "displayText": "Notebook - module 2",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/synapsenotebooks/e9f34632-d782-442b-9ae7-287cb6924dba",
+      "description": "New notebook",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427788636,
+      "updateTime": 1786427788636,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "761ee275-a25a-4361-a032-a8ec2beebeda",
+      "name": "Notebook - module 3",
+      "displayText": "Notebook - module 3",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/synapsenotebooks/3b05fc8b-7afb-4fa8-bfe1-6fae7c0a0d8d",
+      "description": "New notebook",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427788636,
+      "updateTime": 1786427788636,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "3b094ac6-b396-48c6-99ad-efc120de81c1",
+      "name": "Notebook 1",
+      "displayText": "Notebook 1",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/e0309580-62d5-47b5-9ee3-df70a145e72c/synapsenotebooks/18c744d1-2d72-4410-8d84-23180a7533c8",
+      "description": "New notebook",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787612,
+      "updateTime": 1786427787612,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "ab6ece4d-e1c1-46b2-9c7d-e8e80e6c81ec",
+      "name": "Notebook_module8",
+      "displayText": "Notebook_module8",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/synapsenotebooks/70ef180f-7640-4125-9695-7f9276af5ec7",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787612,
+      "updateTime": 1786427787612,
+      "sourceQuery": "fabric_workspace"
+    },
+    {
+      "id": "5778f7a9-f49c-44c0-8305-1aff81e75e08",
+      "name": "nb_00_demo_walkthrough",
+      "displayText": "nb_00_demo_walkthrough",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/synapsenotebooks/139384b1-aee7-4742-b62f-13e4c3d94dae",
+      "description": "Sequential stakeholder demo walkthrough — 9 Acts covering: business problem, data foundation, metadata extraction, lh_metadata hub, certified KPI governance, TMDL write-back, Copilot grounding, Purview integration, and governance outcomes. Run after nb_01 through nb_05.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787612,
+      "updateTime": 1786427787612,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "e06317a6-9807-4941-9629-b2d9c61ce2da",
+      "name": "nb_01_setup_demo_environment",
+      "displayText": "nb_01_setup_demo_environment",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/synapsenotebooks/ce1ac64d-ba52-4a59-9afd-3cbe98a7d988",
+      "description": "Step 1: Creates Delta tables in lh_enercare_demo from Ontario energy company sample data (50 customers, 56 service accounts, 38 equipment, 68 contracts). Run before nb_02.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787612,
+      "updateTime": 1786427787612,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "07803e63-e6ea-4cbb-a221-cf0b6dee294d",
+      "name": "nb_01_setup_demo_environment",
+      "displayText": "nb_01_setup_demo_environment",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/72fcdfdf-cf7d-40b6-be03-fe76c877f2d9",
+      "description": "Step 1: Creates Delta tables in lh_enercare_demo from Ontario energy company sample data (50 customers, 56 service accounts, 38 equipment, 68 contracts). Run before nb_02.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787487,
+      "updateTime": 1786501840711,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "6bdfde0d-6721-48c1-9352-41d1c4a2ac4d",
+      "name": "nb_02_metadata_pipeline_demo",
+      "displayText": "nb_02_metadata_pipeline_demo",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/synapsenotebooks/6e6e4b9e-8f05-4175-9de6-73138bfb8b15",
+      "description": "Full 5-phase metadata governance pipeline: extract SQL module headers, write meta.* Delta tables to lh_metadata, apply Delta column comments, preview Purview Atlas push. DEMO_MODE=True for dry-run; flip to False with SQL Server JDBC creds for production.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787612,
+      "updateTime": 1786427787612,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "96c00b08-ac0d-4cb2-865a-85c3f971e2fd",
+      "name": "nb_02_metadata_pipeline_demo",
+      "displayText": "nb_02_metadata_pipeline_demo",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/094eb79c-04ef-43f8-a85e-3481d3788bf9",
+      "description": "Full 5-phase metadata governance pipeline: extract SQL module headers, write meta.* Delta tables to lh_metadata, apply Delta column comments, preview Purview Atlas push. DEMO_MODE=True for dry-run; flip to False with SQL Server JDBC creds for production.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787487,
+      "updateTime": 1786501839799,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "fccadbfd-71bd-4b37-b623-6e927d1087eb",
+      "name": "nb_03_pbi_star_schema",
+      "displayText": "nb_03_pbi_star_schema",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/synapsenotebooks/0eaa3e30-5426-4e87-890f-73e12855a8c8",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787525,
+      "updateTime": 1786427787525,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "1c4d4506-233f-4460-8587-1993f6beb4fe",
+      "name": "nb_03_pbi_star_schema",
+      "displayText": "nb_03_pbi_star_schema",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/442a35eb-772a-42e3-9cb8-1586e3d58312",
+      "description": "West3 copy of the star-schema build notebook targeting lh_enercare_demo in Enercare-West3.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787487,
+      "updateTime": 1786501839799,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "b133fd3f-19bd-4529-a8c1-4ed62642a65c",
+      "name": "nb_04_generate_tmdl",
+      "displayText": "nb_04_generate_tmdl",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/synapsenotebooks/d3c3cd72-bb2d-4849-9319-4b964eae517c",
+      "description": "G3: Reads descriptions from lh_metadata, fetches live TMDL via Fabric REST API, injects descriptions/KPI defs/AI instructions, pushes back to semantic model. DEMO_MODE=True for dry-run.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787525,
+      "updateTime": 1786427787525,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "da7e1a03-e880-4a0a-a56b-7c1a8ee4210c",
+      "name": "nb_04_sempy_writeback",
+      "displayText": "nb_04_sempy_writeback",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/c13727bd-9c7c-4937-ae98-7233ab70b761",
+      "description": "G3: Reads curated metadata from lh_metadata, uses SemPy for model inventory, and applies write-back through SemPy Labs. DEMO_MODE=True for dry-run.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787487,
+      "updateTime": 1786501839799,
+      "sourceQuery": "semantic model"
+    },
+    {
+      "id": "b9313a9c-8c78-461e-a656-4a81820fbbaa",
+      "name": "nb_04a_extend_metadata_schema",
+      "displayText": "nb_04a_extend_metadata_schema",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/synapsenotebooks/7a9edd3c-349c-4527-a894-2626c3d90ed0",
+      "description": "G1+G2: Extends lh_metadata schema (ALTER TABLE kpi_metadata + 3 new tables) and seeds 17 KPIs + Copilot verified answers. Run after nb_02.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787525,
+      "updateTime": 1786427787525,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "33787651-14f7-4f80-917c-fc5e06abf323",
+      "name": "nb_04a_extend_metadata_schema",
+      "displayText": "nb_04a_extend_metadata_schema",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/039796d5-23a7-45b4-8150-2386a6f5943c",
+      "description": "G1+G2: Extends lh_metadata schema (ALTER TABLE kpi_metadata + 3 new tables) and seeds 17 KPIs + Copilot verified answers. Run after nb_02.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787428,
+      "updateTime": 1786501839799,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "1047ea3c-a801-4f55-82a3-68ea0b6735be",
+      "name": "nb_05_push_qa_verified_answers",
+      "displayText": "nb_05_push_qa_verified_answers",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/synapsenotebooks/5b9e8512-d991-470d-a746-dad324f60ff6",
+      "description": "Reads ai_instruction + verified_answer rows from lh_metadata.ai_metadata, builds enhanced PBI_AI_Instructions annotation (instructions + verified Q&A pairs), pushes to BrookfieldEnercare semantic model via Fabric REST API. DEMO_MODE=True for dry-run.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787525,
+      "updateTime": 1786427787525,
+      "sourceQuery": "BrookfieldEnercare"
+    },
+    {
+      "id": "7e162435-babc-454b-9362-a5e7b44db514",
+      "name": "nb_05_push_qa_verified_answers",
+      "displayText": "nb_05_push_qa_verified_answers",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/7b208da4-f4b9-4fb5-9c18-42c8c4244ad5",
+      "description": "Reads ai_instruction + verified_answer rows from lh_metadata.ai_metadata and publishes them as two distinct semantic-model annotations — PBI_AI_Instructions (ai_instruction rows) and PBI_AI_VerifiedAnswers (verified_answer rows) — via SemPy Labs. DEMO_MODE=True for dry-run.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787428,
+      "updateTime": 1786501839799,
+      "sourceQuery": "semantic model"
+    },
+    {
+      "id": "5bd4b7ed-d6f5-4b72-88bb-b4e712db5c7f",
+      "name": "nb_05a_publish_synthetic_data_to_sql",
+      "displayText": "nb_05a_publish_synthetic_data_to_sql",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/synapsenotebooks/f31974d8-ce98-4b0e-8467-860919b5f3a5",
+      "description": "Publishes the synthetic Enercare transactional source data from lh_enercare_demo into Azure SQL in sub2 so Fabric mirroring can use SQL as the authoritative demo source.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787525,
+      "updateTime": 1786427787525,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "fb8b3fb5-62f2-4ba9-8efd-e3b487e52d69",
+      "name": "nb_05a_publish_synthetic_data_to_sql",
+      "displayText": "nb_05a_publish_synthetic_data_to_sql",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/20f0c9b2-d49e-4106-8927-442beb90fcaa",
+      "description": "Publishes the synthetic Enercare transactional source data from lh_enercare_demo into Azure SQL in sub2 so Fabric mirroring can use SQL as the authoritative demo source.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787428,
+      "updateTime": 1786501840711,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "cddb7019-c5a4-42e2-9ac3-aee59e58bde6",
+      "name": "nb_05b_test_sql_connectivity",
+      "displayText": "nb_05b_test_sql_connectivity",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/synapsenotebooks/7b872902-61be-4b2b-9246-7f94308aced4",
+      "description": "Minimal Fabric notebook smoke test that validates JDBC connectivity from the Enercare workspace to sqlserver-sk2 through the approved managed private endpoint.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787487,
+      "updateTime": 1786427787487,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "fbe533c2-dc29-404d-baf4-96cec2d08c1b",
+      "name": "nb_07_publish_to_purview",
+      "displayText": "nb_07_publish_to_purview",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/9517ad54-7cee-408d-a96b-a19494437914",
+      "description": "Publishes Day 2 governance domains and data products to Purview Atlas with dry-run by default",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787428,
+      "updateTime": 1786501839712,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "0be9a4ff-b078-46db-9a82-40619fe7d85c",
+      "name": "nb_07a_ingest_customer_files",
+      "displayText": "nb_07a_ingest_customer_files",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/bc43b805-3635-4ad4-a790-bf62a55b36d2",
+      "description": "Ingests SQL-mirrored governance metadata tables and writes schema-validated Delta tables to lh_metadata.metadata.*",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787428,
+      "updateTime": 1786501839712,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "890790da-0252-4e11-97e9-107cd31b9669",
+      "name": "nb_07b_merge_customer_metadata",
+      "displayText": "nb_07b_merge_customer_metadata",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/a1951add-6e53-4d06-a214-ade67ba7f587",
+      "description": "Merges glossary/CDE/label/data-product metadata with BrookfieldEnercare semantic inventory and writes lh_metadata.metadata.sm_annotations",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787123,
+      "updateTime": 1786501839712,
+      "sourceQuery": "BrookfieldEnercare"
+    },
+    {
+      "id": "ff092111-60de-4170-8ecf-eb3478289d60",
+      "name": "nb_08_purview_glossary_cde",
+      "displayText": "nb_08_purview_glossary_cde",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/477d4c24-6e47-4780-9b97-949b069db872",
+      "description": "Publishes glossary terms and critical data elements to Purview Atlas with validation and dry-run payloads",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787123,
+      "updateTime": 1786501839712,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "ce53e7fb-202f-47ec-b595-03140d31b31c",
+      "name": "nb_09_purview_labels_lineage",
+      "displayText": "nb_09_purview_labels_lineage",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/32c2edb3-e04e-43d8-b01e-8e6edcf5c9e0",
+      "description": "Builds Purview sensitivity classification payloads and validates SQL-to-Fabric lineage stage gates",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787123,
+      "updateTime": 1786501839712,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "8608fd2e-b205-4587-a98e-e1f6ff8ad951",
+      "name": "nb_10_purview_stewardship_ai",
+      "displayText": "nb_10_purview_stewardship_ai",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/2d68bc63-fabf-4c17-ba19-9af57f7ec42a",
+      "description": "Validates stewardship, certification, DLP readiness, and governed AI consumption readiness",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787123,
+      "updateTime": 1786501839886,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "34239f08-ba96-4ec1-9bc4-97c88a98cd47",
+      "name": "nb_11_gated_governance_sync",
+      "displayText": "nb_11_gated_governance_sync",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/efba3724-9599-4fac-a3fb-b82e3f4dcc8e",
+      "description": "Phase 4 (P4-4): automated apply-on-approve step for gated governance change requests.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427787123,
+      "updateTime": 1786501839886,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "3317142d-9486-420e-bc42-661432e4a5cd",
+      "name": "nb_12_purview_workflow_sync",
+      "displayText": "nb_12_purview_workflow_sync",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/f92425dc-f384-4dba-b388-7a883c9d1441",
+      "description": "P1: observe one native Purview GT-SLA publication workflow and persist idempotent SQL ledger evidence.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786496250273,
+      "updateTime": 1786501839886,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "dff0f028-71cf-4932-ba2c-bc6d25da18a6",
+      "name": "nb_13_semantic_reconcile",
+      "displayText": "nb_13_semantic_reconcile",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/65c1aef3-e9ac-40fe-9cd6-625c21109985",
+      "description": "P2: reconcile approved GT-SLA metadata to the semantic model, verify read-back, and close the governance request.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786496250273,
+      "updateTime": 1786501839886,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "7c22b488-3f88-40e6-909f-2be1e316a0cc",
+      "name": "nb_14_purview_access_sync",
+      "displayText": "nb_14_purview_access_sync",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/eaff082f-da58-44d8-914c-3f5e469f34ee",
+      "description": "P3: bridge one native Purview Data Product access decision (DP-CUST360) into idempotent SQL ledger evidence. Audit-only; attested decision, no semantic mutation.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786588685492,
+      "updateTime": 1786588685492,
+      "sourceQuery": "DP-SVCPERF"
+    },
+    {
+      "id": "d6e0c59e-2a02-41f3-a09f-150a7ec30770",
+      "name": "nb_15_purview_dataproduct_sync",
+      "displayText": "nb_15_purview_dataproduct_sync",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/27a8ba2f-ff87-4f41-9862-4a564d381854",
+      "description": "P4: observe one native Purview Data Product publish workflow (DP-SVCPERF) and persist idempotent SQL ledger evidence.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786588677185,
+      "updateTime": 1786588681778,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "687dbccb-4fb9-4ec7-bffc-2410a4db1092",
+      "name": "nb_16_dataproduct_semantic_reconcile",
+      "displayText": "nb_16_dataproduct_semantic_reconcile",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/48727731-2196-44bc-bab9-872246a85e63",
+      "description": "P4 semantic reconciliation for an approved Purview Data Product publish (DP-SVCPERF).",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786588685492,
+      "updateTime": 1786588685492,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "3ff099e1-546e-4723-8985-c3565657c7ca",
+      "name": "nb_17_g18_semantic_promotion",
+      "displayText": "nb_17_g18_semantic_promotion",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/8e31e1f8-8a5a-472a-9a85-974412abcded",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786675085256,
+      "updateTime": 1786675089973,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "ae2fb272-aef3-4be8-940a-8dde3748b684",
+      "name": "nb_18_demo_reset",
+      "displayText": "nb_18_demo_reset",
+      "entityType": "fabric_synapse_notebook",
+      "objectType": null,
+      "qualifiedName": "https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/synapsenotebooks/2ffb2661-a6d1-4512-a0e6-1739bcecf903",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786675085181,
+      "updateTime": 1786675088823,
+      "sourceQuery": "Enercare"
+    },
+    {
+      "id": "4eadb15c-fab1-48af-a20c-f81587af990b",
+      "name": "Admin monitoring",
+      "displayText": "Admin monitoring",
+      "entityType": "fabric_workspace",
+      "objectType": null,
+      "qualifiedName": "https://app.powerbi.com/groups/2592d5fb-b4e3-4f72-899e-ed00ef267fed",
+      "description": "Admin monitoring",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427778603,
+      "updateTime": 1786427779922,
+      "sourceQuery": "powerbi_dataset"
+    },
+    {
+      "id": "3f169c87-52cc-46ab-963b-c9d9b09b0f75",
+      "name": "DP600_Workspace",
+      "displayText": "DP600_Workspace",
+      "entityType": "fabric_workspace",
+      "objectType": null,
+      "qualifiedName": "https://app.powerbi.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427778684,
+      "updateTime": 1786427779916,
+      "sourceQuery": "DP-SVCPERF"
+    },
+    {
+      "id": "b3c6e4e8-be1d-4379-9395-a883b6ccd43b",
+      "name": "Enercare",
+      "displayText": "Enercare",
+      "entityType": "fabric_workspace",
+      "objectType": null,
+      "qualifiedName": "https://app.powerbi.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4",
+      "description": "Brookfield Enercare Fabric and Purview governance solution",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427778486,
+      "updateTime": 1786427780066,
+      "sourceQuery": "Brookfield"
+    },
+    {
+      "id": "b8d1349d-d66f-4400-950a-eabd4192adc9",
+      "name": "Enercare-West3",
+      "displayText": "Enercare-West3",
+      "entityType": "fabric_workspace",
+      "objectType": null,
+      "qualifiedName": "https://app.powerbi.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427778486,
+      "updateTime": 1786675085151,
+      "sourceQuery": "BrookfieldEnercare"
+    },
+    {
+      "id": "adc17c5d-f349-4f07-a2dc-a7271d6eb3f0",
+      "name": "VISA",
+      "displayText": "VISA",
+      "entityType": "fabric_workspace",
+      "objectType": null,
+      "qualifiedName": "https://app.powerbi.com/groups/8dd24078-9814-4e5d-a26c-3713092564bd",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427778479,
+      "updateTime": 1786427780066,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "2d9a96dc-038a-4fc3-af5d-879ae5f08ee9",
+      "name": "VISA Commercial Spend Analytics",
+      "displayText": "VISA Commercial Spend Analytics",
+      "entityType": "fabric_workspace",
+      "objectType": null,
+      "qualifiedName": "https://app.powerbi.com/groups/b7055e05-e6b6-4ad4-90a6-a61ea3ef5ee4",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427778684,
+      "updateTime": 1786427780067,
+      "sourceQuery": "powerbi_dataset"
+    },
+    {
+      "id": "a1c15c36-302e-48dd-b1d3-c75ab93b83ae",
+      "name": "azureml_workspace",
+      "displayText": "azureml_workspace",
+      "entityType": "fabric_workspace",
+      "objectType": null,
+      "qualifiedName": "https://app.powerbi.com/groups/e0309580-62d5-47b5-9ee3-df70a145e72c",
+      "description": "Workspace for AzureML Datastore Connectivoity",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427778685,
+      "updateTime": 1786427780066,
+      "sourceQuery": "powerbi_dataset"
+    },
+    {
+      "id": "3ebf4b6a-79bd-4391-b939-fa7ee53d46d8",
+      "name": "Dataflow_Gen2",
+      "displayText": "Dataflow_Gen2",
+      "entityType": "powerbi_dataflow",
+      "objectType": "Data pipelines",
+      "qualifiedName": "https://app.powerbi.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/dataflows/07506f9e-06c3-4d96-9277-d7fff79d0c1e",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427784957,
+      "updateTime": 1786427784957,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "0579b754-5e6d-4481-8425-155bec4f5e5e",
+      "name": "BrookfieldEnercare",
+      "displayText": "BrookfieldEnercare",
+      "entityType": "powerbi_dataset",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.powerbi.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/datasets/983dfb0a-dafb-462b-9fde-ae22d19d7f14",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427780066,
+      "updateTime": 1786427784425,
+      "sourceQuery": "Brookfield"
+    },
+    {
+      "id": "ee8d1bdc-7fe6-44ee-9c24-92084538545d",
+      "name": "BrookfieldEnercare",
+      "displayText": "BrookfieldEnercare",
+      "entityType": "powerbi_dataset",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.powerbi.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/datasets/8cb6f6a6-6a9c-4560-9f28-17a1dc4a921c",
+      "description": "Certified KPI and business analytics semantic model for FCR, CSAT, AHT, MRR, PP renewal, and governed customer-story analysis. Not the primary standalone Copilot surface for service request IDs, work orders, dispatch status, or operational ticket lookups.",
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427780057,
+      "updateTime": 1786675091194,
+      "sourceQuery": "Brookfield"
+    },
+    {
+      "id": "2fa4add0-5476-4138-a668-35865b337ac8",
+      "name": "Commercial_Spend_Analytics",
+      "displayText": "Commercial_Spend_Analytics",
+      "entityType": "powerbi_dataset",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.powerbi.com/groups/b7055e05-e6b6-4ad4-90a6-a61ea3ef5ee4/datasets/ea32b1c1-ab24-4ca7-8530-e5792273b882",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427782503,
+      "updateTime": 1786427784957,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "b1c9b9b9-ae70-4ff1-bbf7-5de9eca8a18b",
+      "name": "Content Sharing",
+      "displayText": "Content Sharing",
+      "entityType": "powerbi_dataset",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.powerbi.com/groups/2592d5fb-b4e3-4f72-899e-ed00ef267fed/datasets/c00ca9e9-16ca-4068-b178-9bcbdb358af0",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779932,
+      "updateTime": 1786427786261,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "5d2e9388-d5a9-4e78-9112-e7a9514b9952",
+      "name": "DP600_Model5_Semantic_Model",
+      "displayText": "DP600_Model5_Semantic_Model",
+      "entityType": "powerbi_dataset",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.powerbi.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/datasets/23e62d02-7bf9-4dd8-8019-b190bec9f36b",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427786202,
+      "updateTime": 1786427786202,
+      "sourceQuery": "DP-SVCPERF"
+    },
+    {
+      "id": "9c00403c-708a-4003-a019-4e4b7cf14235",
+      "name": "DataflowsStagingWarehouse",
+      "displayText": "DataflowsStagingWarehouse",
+      "entityType": "powerbi_dataset",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.powerbi.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/datasets/38ef1906-d8d4-46a7-ba08-4ff12b9cc409",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427780935,
+      "updateTime": 1786427780935,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "19b37f46-8c88-4a95-8366-b7059b2b535e",
+      "name": "Feature Usage and Adoption",
+      "displayText": "Feature Usage and Adoption",
+      "entityType": "powerbi_dataset",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.powerbi.com/groups/2592d5fb-b4e3-4f72-899e-ed00ef267fed/datasets/fe0e75ab-4443-46eb-b107-dba5d8319852",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779932,
+      "updateTime": 1786427786261,
+      "sourceQuery": "governance_object_mappings"
+    },
+    {
+      "id": "91746fb5-bdb7-4935-af99-7454aa836928",
+      "name": "OneLake Catalog - Governance for Admins",
+      "displayText": "OneLake Catalog - Governance for Admins",
+      "entityType": "powerbi_dataset",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.powerbi.com/groups/2592d5fb-b4e3-4f72-899e-ed00ef267fed/datasets/7e353f27-1cf8-40fa-965d-a3e2b10c751f",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427780806,
+      "updateTime": 1786427785988,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "09974f63-c724-4cff-889f-e831604e3244",
+      "name": "Purview Hub",
+      "displayText": "Purview Hub",
+      "entityType": "powerbi_dataset",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.powerbi.com/groups/2592d5fb-b4e3-4f72-899e-ed00ef267fed/datasets/060a6019-64a3-48b5-b3e4-66e5977cf245",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427780806,
+      "updateTime": 1786427785988,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "be46b89d-e309-4c62-a07f-b9cf9e351bdf",
+      "name": "Semantec_Model_06",
+      "displayText": "Semantec_Model_06",
+      "entityType": "powerbi_dataset",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.powerbi.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/datasets/f5f2b491-1167-478d-bc35-07fc4a07a63a",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427786202,
+      "updateTime": 1786427786202,
+      "sourceQuery": "data product"
+    },
+    {
+      "id": "a7c7648c-6710-4e31-bcc0-efeba1d2efc5",
+      "name": "Visa Slicer Demo",
+      "displayText": "Visa Slicer Demo",
+      "entityType": "powerbi_dataset",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.powerbi.com/groups/8dd24078-9814-4e5d-a26c-3713092564bd/datasets/bcfdc1db-8c47-4033-9c5a-2c637c447891",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427780066,
+      "updateTime": 1786427784425,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "9b53873c-9e5e-4394-afc3-a52974615547",
+      "name": "Visa Slicer Demo v2",
+      "displayText": "Visa Slicer Demo v2",
+      "entityType": "powerbi_dataset",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.powerbi.com/groups/8dd24078-9814-4e5d-a26c-3713092564bd/datasets/5686371f-58c7-453f-89c8-26b0e2fb7f9d",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427780057,
+      "updateTime": 1786427785372,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "04a316bf-d535-44d6-a351-ed7341b687f4",
+      "name": "azureml_semantic_model",
+      "displayText": "azureml_semantic_model",
+      "entityType": "powerbi_dataset",
+      "objectType": "Tables",
+      "qualifiedName": "https://app.powerbi.com/groups/e0309580-62d5-47b5-9ee3-df70a145e72c/datasets/aee1212b-5e97-4af8-b548-656f2527c0da",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427780066,
+      "updateTime": 1786427780066,
+      "sourceQuery": "semantic model"
+    },
+    {
+      "id": "30f9e503-a3ea-4ff1-bd81-b4ec73f1d2a2",
+      "name": "BrookfieldEnercare",
+      "displayText": "BrookfieldEnercare",
+      "entityType": "powerbi_report",
+      "objectType": "Reports",
+      "qualifiedName": "https://app.powerbi.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/reports/ae564ce2-2674-486c-9206-5014af069923",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427780031,
+      "updateTime": 1786427784878,
+      "sourceQuery": "Brookfield"
+    },
+    {
+      "id": "8f89fee3-99b8-49d0-bf48-9df93f7918e6",
+      "name": "BrookfieldEnercare",
+      "displayText": "BrookfieldEnercare",
+      "entityType": "powerbi_report",
+      "objectType": "Reports",
+      "qualifiedName": "https://app.powerbi.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/reports/7c4f1103-e22c-4a8c-930d-9fe20b71b409",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779906,
+      "updateTime": 1786501839665,
+      "sourceQuery": "Brookfield"
+    },
+    {
+      "id": "0cc4cb8a-2a34-4e91-af17-3a24f2c53ab9",
+      "name": "Commercial_Spend_Analytics",
+      "displayText": "Commercial_Spend_Analytics",
+      "entityType": "powerbi_report",
+      "objectType": "Reports",
+      "qualifiedName": "https://app.powerbi.com/groups/b7055e05-e6b6-4ad4-90a6-a61ea3ef5ee4/reports/875838af-b3e7-4904-9c88-f459ca532219",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427780935,
+      "updateTime": 1786427780935,
+      "sourceQuery": "powerbi_dataset"
+    },
+    {
+      "id": "a5ed8796-bf95-4c32-a74e-3cda70c61d37",
+      "name": "Content Sharing",
+      "displayText": "Content Sharing",
+      "entityType": "powerbi_report",
+      "objectType": "Reports",
+      "qualifiedName": "https://app.powerbi.com/groups/2592d5fb-b4e3-4f72-899e-ed00ef267fed/reports/2556d657-c098-44f2-93a9-3af9f8b67c7e",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779922,
+      "updateTime": 1786427779922,
+      "sourceQuery": "powerbi_dataset"
+    },
+    {
+      "id": "65ad1037-d40f-4203-9994-44e4440483c8",
+      "name": "Feature Usage and Adoption",
+      "displayText": "Feature Usage and Adoption",
+      "entityType": "powerbi_report",
+      "objectType": "Reports",
+      "qualifiedName": "https://app.powerbi.com/groups/2592d5fb-b4e3-4f72-899e-ed00ef267fed/reports/ade35283-4e5a-437f-8f17-075f956f9563",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779922,
+      "updateTime": 1786427779922,
+      "sourceQuery": "powerbi_dataset"
+    },
+    {
+      "id": "a2347d25-bcbd-4504-aafd-42170089ccc8",
+      "name": "OneLake Catalog - Governance for Admins",
+      "displayText": "OneLake Catalog - Governance for Admins",
+      "entityType": "powerbi_report",
+      "objectType": "Reports",
+      "qualifiedName": "https://app.powerbi.com/groups/2592d5fb-b4e3-4f72-899e-ed00ef267fed/reports/66e39778-7afd-47dd-88b2-9528f394e1ed",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427780031,
+      "updateTime": 1786427784878,
+      "sourceQuery": "governance_domains"
+    },
+    {
+      "id": "0b43f5dc-e372-4619-9723-8a1a5f4baabe",
+      "name": "Purview Hub",
+      "displayText": "Purview Hub",
+      "entityType": "powerbi_report",
+      "objectType": "Reports",
+      "qualifiedName": "https://app.powerbi.com/groups/2592d5fb-b4e3-4f72-899e-ed00ef267fed/reports/d9d354b7-765e-4ecb-99cf-7ee02ad68df2",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779922,
+      "updateTime": 1786427779922,
+      "sourceQuery": "Purview-West2"
+    },
+    {
+      "id": "f68666d6-869b-4990-8501-79c23d09bab1",
+      "name": "Visa Slicer Demo",
+      "displayText": "Visa Slicer Demo",
+      "entityType": "powerbi_report",
+      "objectType": "Reports",
+      "qualifiedName": "https://app.powerbi.com/groups/8dd24078-9814-4e5d-a26c-3713092564bd/reports/366f4557-9e61-43ae-af8b-a5a5011be351",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779915,
+      "updateTime": 1786427783414,
+      "sourceQuery": "service_requests"
+    },
+    {
+      "id": "aa82d146-636d-4a60-b849-ad641dd3c349",
+      "name": "Visa Slicer Demo v2",
+      "displayText": "Visa Slicer Demo v2",
+      "entityType": "powerbi_report",
+      "objectType": "Reports",
+      "qualifiedName": "https://app.powerbi.com/groups/8dd24078-9814-4e5d-a26c-3713092564bd/reports/daed8d4d-2dc3-4708-ad82-5611c667498c",
+      "description": null,
+      "domainId": "purview-west2",
+      "collectionId": "purview-west2",
+      "assetType": [
+        "Fabric"
+      ],
+      "createBy": "ServiceAdmin",
+      "updateBy": "ServiceAdmin",
+      "createTime": 1786427779915,
+      "updateTime": 1786427783414,
+      "sourceQuery": "service_requests"
+    }
+  ]
+}

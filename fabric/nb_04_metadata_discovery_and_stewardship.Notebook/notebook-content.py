@@ -80,6 +80,57 @@ print(f"Detections table  : {DETECTIONS_TABLE}")
 ODBC_SQL_COPT_SS_ACCESS_TOKEN = 1256
 
 
+REQUIRED_TAG_KEYS = {"domain", "owner", "sensitivity", "semantic_role", "business_use"}
+CANONICAL_SENSITIVITY_LABELS = {
+    "general": "General",
+    "internal": "Internal",
+    "confidential": "Confidential",
+    "highly confidential": "Highly Confidential",
+    "pci restricted": "Highly Confidential",
+    "privacy restricted": "Highly Confidential",
+}
+
+
+def _safe_json_loads(payload):
+    if payload is None:
+        return {}
+    if isinstance(payload, dict):
+        return payload
+    try:
+        obj = json.loads(payload)
+        return obj if isinstance(obj, dict) else {}
+    except Exception:
+        print(f"[WARN] Invalid JSON payload encountered: {payload[:200] if isinstance(payload, str) else payload}")
+        return {}
+
+
+def _normalize_sensitivity_label(raw_value):
+    if raw_value is None:
+        return ""
+    text = str(raw_value).strip()
+    if not text:
+        return ""
+    return CANONICAL_SENSITIVITY_LABELS.get(text.lower(), text)
+
+
+def validate_tag_request_payload(payload):
+    payload_obj = _safe_json_loads(payload)
+    missing = sorted(REQUIRED_TAG_KEYS - set((str(k).lower() for k in payload_obj.keys())))
+    if missing:
+        raise ValueError(f"SourceTagAnnotationDetected payload missing required keys: {', '.join(missing)}")
+
+    sensitivity_value = payload_obj.get("sensitivity") or payload_obj.get("sensitivity_label")
+    normalized_sensitivity = _normalize_sensitivity_label(sensitivity_value)
+    if not normalized_sensitivity:
+        raise ValueError("SourceTagAnnotationDetected payload missing a valid Purview sensitivity label")
+    valid_labels = {value.lower() for value in CANONICAL_SENSITIVITY_LABELS.values()}
+    if normalized_sensitivity.lower() not in valid_labels:
+        raise ValueError(f"Unsupported sensitivity label '{normalized_sensitivity}' for Purview application")
+    payload_obj["sensitivity"] = normalized_sensitivity
+    payload_obj["sensitivity_label"] = normalized_sensitivity
+    return payload_obj
+
+
 def get_sql_connection():
     connection_string = (
         "Driver={ODBC Driver 18 for SQL Server};"
@@ -116,6 +167,16 @@ try:
 finally:
     cursor.close()
     connection.close()
+
+validated_pending_rows = []
+for row in pending_rows:
+    try:
+        validate_tag_request_payload(row.proposed_payload)
+        validated_pending_rows.append(row)
+    except Exception as exc:
+        print(f"[REJECTED] {row.request_id} invalid @tag payload: {exc}")
+
+pending_rows = validated_pending_rows
 
 print(f"Pending SOURCE_TAG_DETECTED rows: {len(pending_rows)}")
 for row in pending_rows:

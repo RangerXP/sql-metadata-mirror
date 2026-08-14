@@ -35,8 +35,17 @@ spark = SparkSession.builder.getOrCreate()
 
 METADATA_LAKEHOUSE = "lh_metadata"
 METADATA_SCHEMA = "metadata"
-PURVIEW_ACCOUNT_NAME = "Purview-West3"
-PURVIEW_BASE_URL = f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
+PURVIEW_ACCOUNT_NAME = os.getenv("PURVIEW_ACCOUNT_NAME", "Purview-West3")
+PURVIEW_API_BASE_URL = (
+    os.getenv("PURVIEW_API_BASE_URL", "").strip()
+    or os.getenv("PURVIEW_PRIVATE_ENDPOINT_URL", "").strip()
+    or os.getenv("PURVIEW_PRIVATE_BASE_URL", "").strip()
+)
+PURVIEW_BASE_URL = (
+    PURVIEW_API_BASE_URL.rstrip("/")
+    if PURVIEW_API_BASE_URL
+    else f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
+)
 PURVIEW_TENANT_ID = "b7e47691-9726-4f67-a302-e567815f3522"
 PURVIEW_TOKEN_CACHE_PATH = "Files/purview_publish/.purview_token_cache.json"
 SQL_MIRROR_ONLY_DEPLOYMENT = True

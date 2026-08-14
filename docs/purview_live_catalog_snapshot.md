@@ -1,0 +1,100 @@
+# Purview live catalog snapshot
+
+- Account: Purview-West2
+- Tenant ID: b7e47691-9726-4f67-a302-e567815f3522
+- Generated UTC: 2026-08-14T17:10:21Z
+- Item count: 184
+- Query count: 31
+
+## Entity type summary
+- EnercareGovernanceDomainProbe: 1
+- azure_sql_table: 28
+- fabric_data_warehouse: 2
+- fabric_kusto_database: 1
+- fabric_lake_warehouse: 11
+- fabric_lakehouse: 5
+- fabric_lakehouse_path: 16
+- fabric_lakehouse_table: 47
+- fabric_ml_experiment: 2
+- fabric_ml_model: 1
+- fabric_pipeline: 5
+- fabric_synapse_notebook: 35
+- fabric_workspace: 7
+- powerbi_dataflow: 1
+- powerbi_dataset: 13
+- powerbi_report: 9
+
+## Representative items
+- None | EnercareGovernanceDomainProbe | enercare://governance/domain/probe-domain-001
+- audit_data_access | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/audit_data_access
+- billing_transactions | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/billing_transactions
+- contracts | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/contracts
+- customer_complaints | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customer_complaints
+- customer_consents | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customer_consents
+- customers | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/customers
+- data_owners_directory | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/data_owners_directory
+- employees | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/employees
+- equipment_registry | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/equipment_registry
+- governance_cdes | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_cdes
+- governance_change_requests | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_change_requests
+- governance_data_products | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_data_products
+- governance_domains | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_domains
+- governance_events | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_events
+- governance_glossary_terms | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_glossary_terms
+- governance_label_assignments | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_label_assignments
+- governance_object_mappings | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_object_mappings
+- governance_okr_data_products | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_okr_data_products
+- governance_okr_key_results | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_okr_key_results
+- governance_okrs | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_okrs
+- governance_requests | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_requests
+- governance_role_assignments | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_role_assignments
+- governance_target_receipts | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governance_target_receipts
+- governed_object_versions | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/governed_object_versions
+- products | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/products
+- service_accounts | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_accounts
+- service_requests | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_requests
+- service_zones | azure_sql_table | mssql://sqlserver-sk2wus3.database.windows.net/sqldemo/dbo/service_zones
+- DataflowsStagingWarehouse | fabric_data_warehouse | https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/datawarehouses/72716552-3a68-42b2-8530-04be2a2b8205
+- warehouse-06 | fabric_data_warehouse | https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/datawarehouses/648f7016-41e8-4351-8cd5-734c5836d93d
+- Eventhouse-module7 | fabric_kusto_database | https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/databases/08a029eb-8e60-49d0-836a-96f5b5ee48cf
+- DP600_Lakehouse_module2 | fabric_lake_warehouse | https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/lakewarehouses/3efecbe6-8e92-437a-a9a6-0000c1246844
+- DataflowsStagingLakehouse | fabric_lake_warehouse | https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/lakewarehouses/a1e144f4-eded-4437-9687-60f8f08b4caf
+- Lakehouse_module3 | fabric_lake_warehouse | https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/lakewarehouses/f4771420-97ca-48fb-b31b-00bf77253c4d
+- Lakehouse_module4 | fabric_lake_warehouse | https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/lakewarehouses/c2307de7-3be6-4489-8a78-623f978ffe59
+- Lakehouse_module5 | fabric_lake_warehouse | https://app.fabric.microsoft.com/groups/f753dff7-5fc9-40dc-8c50-6decc597b13b/lakewarehouses/142e6a91-9334-44f7-9178-b06758ad9f78
+- azureml_lakehouse | fabric_lake_warehouse | https://app.fabric.microsoft.com/groups/e0309580-62d5-47b5-9ee3-df70a145e72c/lakewarehouses/19c095ad-c75c-4836-897d-a991bd0d09c3
+- lh_enercare_demo | fabric_lake_warehouse | https://app.fabric.microsoft.com/groups/795ce5db-7ea0-4a7c-ba64-e27c9fb568f4/lakewarehouses/e8af18fd-e9b9-4c0e-9102-06b7d1d3aa12
+- lh_enercare_demo | fabric_lake_warehouse | https://app.fabric.microsoft.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/lakewarehouses/adea2c98-c565-4648-873f-dd0db11f6234
+
+## Query keywords
+- Brookfield
+- BrookfieldEnercare
+- Enercare
+- governance_domains
+- governance_requests
+- governance_object_mappings
+- governed_object_versions
+- governance_change_requests
+- governance_role_assignments
+- vw_technician_utilization_summary
+- service_requests
+- fct_service_request
+- Service Delivery
+- DOM-SVCDEL
+- GT-SLA
+- DP-SVCPERF
+- dp-svcperf
+- data product
+- semantic model
+- lineage
+- Purview-West2
+- governance
+- fabric_workspace
+- powerbi_dataset
+- governance_domains
+- governance_requests
+- governed_object_versions
+- service_accounts
+- domains
+- brookfieldenercare
+- enercare demo

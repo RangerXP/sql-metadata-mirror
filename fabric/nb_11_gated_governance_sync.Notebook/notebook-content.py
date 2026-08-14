@@ -156,6 +156,54 @@ def _log_nb11_diagnostic(stage: str, error: Exception) -> None:
     except Exception as log_exc:
         print(f"[diagnostic-logging-failed] {log_exc}")
 
+REQUIRED_APPROVED_TAG_KEYS = {"domain", "owner", "sensitivity", "semantic_role", "business_use"}
+CANONICAL_SENSITIVITY_LABELS = {
+    "general": "General",
+    "internal": "Internal",
+    "confidential": "Confidential",
+    "highly confidential": "Highly Confidential",
+    "pci restricted": "Highly Confidential",
+    "privacy restricted": "Highly Confidential",
+}
+
+
+def _safe_json_loads(payload):
+    if payload is None:
+        return {}
+    if isinstance(payload, dict):
+        return payload
+    try:
+        obj = json.loads(payload)
+        return obj if isinstance(obj, dict) else {}
+    except Exception:
+        return {}
+
+
+def _normalize_sensitivity_label(raw_value):
+    if raw_value is None:
+        return ""
+    text = str(raw_value).strip()
+    if not text:
+        return ""
+    return CANONICAL_SENSITIVITY_LABELS.get(text.lower(), text)
+
+
+def _validate_approved_request(row):
+    payload_obj = _safe_json_loads(row.get("proposed_payload"))
+    missing = sorted(REQUIRED_APPROVED_TAG_KEYS - set(str(k).lower() for k in payload_obj.keys()))
+    if missing:
+        raise ValueError(f"Approved request lacks required tag fields: {', '.join(missing)}")
+
+    sensitivity_value = payload_obj.get("sensitivity") or payload_obj.get("sensitivity_label")
+    normalized_sensitivity = _normalize_sensitivity_label(sensitivity_value)
+    valid_labels = {value.lower() for value in CANONICAL_SENSITIVITY_LABELS.values()}
+    if not normalized_sensitivity or normalized_sensitivity.lower() not in valid_labels:
+        raise ValueError(f"Approved request has no valid Purview sensitivity label: {sensitivity_value}")
+    payload_obj["sensitivity"] = normalized_sensitivity
+    payload_obj["sensitivity_label"] = normalized_sensitivity
+    return payload_obj
+
+
 if DEMO_MODE:
     print("[DEMO_MODE] Would execute:\n")
     print(sql_select_pending_apply)
@@ -182,7 +230,17 @@ else:
     import pandas as pd
     pending_df = pd.DataFrame(rows, columns=columns)
 
-print(f"Pending apply: {len(pending_df)} request(s)")
+valid_pending_rows = []
+for _, row in pending_df.iterrows():
+    try:
+        _validate_approved_request(row)
+        valid_pending_rows.append(row)
+    except Exception as exc:
+        print(f"[SKIP] {row.get('request_id')} rejected before apply: {exc}")
+
+pending_df = pd.DataFrame(valid_pending_rows)
+
+print(f"Pending apply: {len(pending_df)} valid request(s)")
 if len(pending_df) > 0:
     print(pending_df[["request_id", "request_type", "target_object_label"]].to_string(index=False))
 
