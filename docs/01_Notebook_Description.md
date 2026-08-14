@@ -22,7 +22,7 @@ approved metadata rather than independent authors. The repo is being organized a
 
 ## Phase 0 — Environment & Source Data (architectural, run once per environment)
 
-### `nb_01_setup_demo_environment`
+### `nb_01_environment_and_source_baseline`
 **What it does:** Creates the 7 transactional source tables (products, customers, service
 accounts, equipment, contracts, service requests, billing) directly in `lh_enercare_demo` via
 PySpark — no SQL Server dependency. Pure synthetic seed data (50 Ontario customers, Maria
@@ -32,7 +32,7 @@ the curtain" step.
 **Talking points:** "This is the synthetic Enercare universe — real Ontario geography, real
 FSAs, a realistic customer/contract/service mix, entirely synthetic data."
 
-### `nb_05a_publish_synthetic_data_to_sql` — `DEMO_MODE = False`
+### `nb_02_sql_source_publish_and_mirror` — `DEMO_MODE = False`
 **What it does:** Publishes the 7 source tables from `lh_enercare_demo` into Azure SQL
 (`sqldemo`), making SQL the authoritative mirrored source. Handles Phase B child tables
 (`customer_complaints`, `customer_consents`) too.
@@ -41,7 +41,7 @@ table, is now the system of record Purview scans.
 **Talking points:** "From here forward, Azure SQL is the authoritative source — Fabric
 Mirroring picks this up automatically, no manual export/import step."
 
-### `nb_03_pbi_star_schema`
+### `nb_03_star_schema_and_source_model`
 **What it does:** Builds the Power BI-ready dimensional star schema (`dim_customer`,
 `dim_equipment`, `fct_service_request`, etc.) on top of the Fabric-mirrored SQL source. Falls
 back to the demo lakehouse if the mirror is temporarily unreadable.
@@ -54,7 +54,7 @@ tables or an executive looking at a Power BI report."
 
 ## Phase 1 — Metadata Foundation & Semantic Writeback
 
-### `nb_02_metadata_pipeline_demo` — `DEMO_MODE = True`
+### `nb_04_metadata_discovery_and_stewardship` — `DEMO_MODE = True`
 **What it does:** Thin reader only (rebuilt 2026-08-13, G18-A). Reads `Draft`/`Submitted`
 `SOURCE_TAG_DETECTED` governance requests (fed by a native SQL DDL trigger, not this notebook)
 and surfaces them into `lh_metadata.source_tag_detections` for steward review.
@@ -63,7 +63,7 @@ onboarding narrative — a steward-facing worklist, not itself a decision-maker.
 **Talking points:** "A new SQL view gets tagged in T-SQL comments; this notebook is how it
 surfaces for a steward to see it's waiting for review — nothing here approves anything."
 
-### `nb_04a_extend_metadata_schema` — `DEMO_MODE = False`
+### `nb_05_metadata_staging_and_schema` — `DEMO_MODE = False`
 **What it does:** Schema migration + seed notebook. Adds certification columns to
 `kpi_metadata`/`ai_metadata`, seeds 29 KPIs (5 certified, the rest not), and reseeds the
 baseline AI instruction / verified-answer content (Maria's source story, KPI definitions,
@@ -75,7 +75,7 @@ authority and Victoria's dashboard both use.
 notice the reseed logic explicitly protects any row a real governance approval already
 touched; a schema refresh can never silently undo an approved change."
 
-### `nb_04_sempy_writeback` — `DEMO_MODE = False`
+### `nb_06_semantic_apply_and_certification` — `DEMO_MODE = False`
 **What it does:** Writes table/column/measure descriptions and AI instructions into the
 `BrookfieldEnercare` semantic model via SemPy Labs. KPI descriptions are correctly gated —
 `WHERE IsCertified = 1` — only certified KPIs get written.
@@ -86,7 +86,7 @@ writes measure metadata, and it only writes certified ones.
 reaches the semantic model through this path. That's what makes KPI drift structurally
 impossible, not just a policy."
 
-### `nb_05_push_qa_verified_answers` — `DEMO_MODE = False`
+### `nb_07_ai_grounding_and_verified_answers` — `DEMO_MODE = False`
 **What it does:** Writes `ai_instruction` and `verified_answer` rows from `ai_metadata` into
 two separate semantic-model annotations (`PBI_AI_Instructions`, `PBI_AI_VerifiedAnswers`) that
 the Fabric Data Agent reads for grounding.
@@ -95,7 +95,7 @@ a grounded answer (Act 1 / Acceptance Criterion 7).
 **Talking points:** "Two independent annotations — instructions and verified answers — so they
 can be audited and regenerated independently."
 **⚠️ Governance finding (see below):** this notebook filters only on `IsDraft = 0`, not
-`IsCertified = 1` — unlike `nb_04`'s KPI path, an uncertified `ai_instruction`/`verified_answer`
+`IsCertified = 1` — unlike `nb_06`'s KPI path, an uncertified `ai_instruction`/`verified_answer`
 row would still reach the Data Agent's live grounding surface. See **Governance Review
 Findings** at the end of this document.
 
@@ -120,7 +120,7 @@ actually resolve to real semantic model objects, not stale names.
 **Talking points:** "This is the reconciliation step that keeps metadata bindings honest as the
 semantic model evolves."
 
-### `nb_07_publish_to_purview`
+### `nb_08_purview_publication_stage`
 **What it does:** Publishes governance Domains and Data Products to Purview via Atlas typedefs
 + entity bulk API. `SQL_MIRROR_ONLY_DEPLOYMENT`/`APPLY_CHANGES` guard live publish.
 **Demo fit:** This is literally "Customer Operations", "Service Delivery", "Revenue and
@@ -137,7 +137,7 @@ GT-CONSENT, CDE-CONTRACTAMT, CDE-CONSENTSTATE, etc.
 **Talking points:** "GT-SLA is the term that ties Tom's credit calculation, Victoria's MTTR
 dashboard, and Ci Zhu's audit answer to one published definition."
 
-### `nb_09_purview_labels_lineage`
+### `nb_09_lineage_and_labels_stage`
 **What it does:** Publishes sensitivity labels, CDE classifications, and custom Atlas lineage
 edges (SQL → Fabric → semantic model) since native scans only establish asset identity, not
 cross-system process lineage.
@@ -146,7 +146,7 @@ BI visual back to source SQL.
 **Talking points:** "Native scans tell Purview an asset exists; this notebook tells Purview how
 assets connect across systems — that's the answer to 'where did this number come from?'"
 
-### `nb_10_purview_stewardship_ai`
+### `nb_10_governance_validation_and_healthcheck`
 **What it does:** Read-only scorecard — checks steward coverage, control completeness, AI
 readiness, and (Phase 11) OKR/ontology graph integrity. No writes; pure validation.
 **Demo fit:** The "proof it all worked" notebook — run this after any publish chain to confirm
