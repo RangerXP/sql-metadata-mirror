@@ -26,14 +26,16 @@ Primary repo surface is `fabric/`. Do not recreate duplicate notebook mirrors el
 |  |- ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/   (Enercare Data Agent — operational request/SLA lookup)
 |  |- lh_enercare_demo.Lakehouse/
 |  |- lh_metadata.Lakehouse/
-|  |- nb_01_setup_demo_environment.Notebook/
-|  |- nb_02_metadata_pipeline_demo.Notebook/
-|  |- nb_03_pbi_star_schema.Notebook/
-|  |- nb_04a_extend_metadata_schema.Notebook/
-|  |- nb_04_sempy_writeback.Notebook/
-|  |- nb_05a_publish_synthetic_data_to_sql.Notebook/
-|  |- nb_05b_test_sql_connectivity.Notebook/
-|  \- nb_05_push_qa_verified_answers.Notebook/
+|  |- nb_01_environment_and_source_baseline.Notebook/
+|  |- nb_02_sql_source_publish_and_mirror.Notebook/
+|  |- nb_03_star_schema_and_source_model.Notebook/
+|  |- nb_04_metadata_discovery_and_stewardship.Notebook/
+|  |- nb_05_metadata_staging_and_schema.Notebook/
+|  |- nb_06_semantic_apply_and_certification.Notebook/
+|  |- nb_07_ai_grounding_and_verified_answers.Notebook/
+|  |- nb_08_purview_publication_stage.Notebook/
+|  |- nb_09_lineage_and_labels_stage.Notebook/
+|  \- nb_10_governance_validation_and_healthcheck.Notebook/
 |- sql/
 |  \- 02_sub2_sql_source_schema.sql
 |- sql-private-dns-vnet-link.bicep
@@ -50,12 +52,13 @@ Primary repo surface is `fabric/`. Do not recreate duplicate notebook mirrors el
 
 ## Current Execution Path
 
-1. `nb_01_setup_demo_environment` seeds the Fabric baseline.
-2. `nb_05a_publish_synthetic_data_to_sql` publishes the authoritative seven-table source into Azure SQL in `sub2`.
+1. `nb_01_environment_and_source_baseline` seeds the Fabric baseline.
+2. `nb_02_sql_source_publish_and_mirror` publishes the authoritative seven-table source into Azure SQL in `sub2`.
 3. Fabric mirroring ingests that source into `sqldemo`.
-4. `nb_03_pbi_star_schema` rebuilds the DirectLake star schema from the mirrored source.
-5. `nb_02_metadata_pipeline_demo`, `nb_04a_extend_metadata_schema`, `nb_04_sempy_writeback`, and `nb_05_push_qa_verified_answers` maintain metadata and Copilot grounding using SemPy and SemPy Labs.
-6. `nb_05b_test_sql_connectivity` remains the smoke test for private SQL access.
+4. `nb_03_star_schema_and_source_model` rebuilds the DirectLake star schema from the mirrored source.
+5. `nb_04_metadata_discovery_and_stewardship`, `nb_05_metadata_staging_and_schema`, `nb_06_semantic_apply_and_certification`, and `nb_07_ai_grounding_and_verified_answers` maintain metadata and Copilot grounding using SemPy and SemPy Labs.
+6. `nb_08_purview_publication_stage` and `nb_09_lineage_and_labels_stage` publish the governed catalog and lineage state.
+7. `nb_10_governance_validation_and_healthcheck` remains the proof and health-check phase.
 
 ## Notebook Conventions
 
