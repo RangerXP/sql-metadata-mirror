@@ -272,27 +272,30 @@ The run is accepted only when all of the following are true:
 
 ## Archive Preservation Gate
 
-The pre-consolidation sources are preserved on remote branch
-`archive/pre-10-notebook-consolidation` at commit
-`7a45cb7b0f0fcba618e0426938a1cdb2f344d759`.
+The pre-consolidation sources are preserved only in the local `archive/`
+directory. That directory is excluded through the repository's local
+`.git/info/exclude` file and must not be pushed to a public remote.
 
 Verified archive inventory:
 
-- exactly 21 legacy `.Notebook` items
+- exactly 21 legacy `.Notebook` source directories
 - 21 `notebook-content.py` files
-- 21 `.platform` files
-- zero incomplete notebook items
-- both pre-consolidation commits `22f57b2` and `57229b0` are ancestors of the archive branch
+- zero `.platform` files; Fabric item metadata is intentionally omitted from the
+    local code archive
+- zero missing notebook source files
+- all 21 notebook source files matched their source Git blob hashes before the
+    temporary remote archive branch was deleted
 
-The `main` branch intentionally contains zero tracked paths under `archive/` or
-`fabric/`. Fabric workspace folders are independent workspace objects, not Git
-archive definitions. Do not recreate an `archive` or `fabric` folder on `main`.
+All public remote branch tips intentionally contain zero tracked paths under
+`archive/` or `fabric/archive/`. Fabric workspace folders are independent
+workspace objects, not Git archive definitions. Do not recreate an `archive` or
+`fabric` folder on `main`.
 
 ## Current Synchronization State
 
 Fabric Git is connected to `RangerXP/sql-metadata-mirror`, branch `main`, at the
-repository root. After the consolidated notebook format repairs, local `main` and
-`origin/main` matched commit `7f14768ac19e6c0ea21dd185fd51eaeaef18cc40`.
+repository root. Local `main` and `origin/main` must match before each Fabric
+Source Control update.
 
 Refresh Source Control and update from Git before submitting the first job. The
 workspace inventory must show the ten consolidated notebooks and no legacy
