@@ -16,10 +16,6 @@
 # META           "id": "824f4a52-baa0-4c3f-88dc-203c1d85c89a"
 # META         }
 # META       ]
-# META     },
-# META     "environment": {
-# META       "environmentId": "7380ddbb-a87b-8113-489c-049cb1998b35",
-# META       "workspaceId": "00000000-0000-0000-0000-000000000000"
 # META     }
 # META   }
 # META }
@@ -594,29 +590,6 @@ if not DEMO_MODE:
 # META   "language_group": "synapse_pyspark"
 # META }
 
-
-
-
-# METADATA ********************
-
-# META {
-# META   "kernel_info": {
-# META     "name": "synapse_pyspark"
-# META   },
-# META   "dependencies": {
-# META     "lakehouse": {
-# META       "default_lakehouse": "824f4a52-baa0-4c3f-88dc-203c1d85c89a",
-# META       "default_lakehouse_name": "lh_metadata",
-# META       "default_lakehouse_workspace_id": "b976cac2-7754-4061-88c2-61c0ac016a99",
-# META       "known_lakehouses": [
-# META         {
-# META           "id": "824f4a52-baa0-4c3f-88dc-203c1d85c89a"
-# META         }
-# META       ]
-# META     }
-# META   }
-# META }
-
 # CELL ********************
 
 # Fabric Notebook: nb_14_purview_access_sync
@@ -1100,29 +1073,6 @@ print(
 # META {
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
-# META }
-
-
-
-
-# METADATA ********************
-
-# META {
-# META   "kernel_info": {
-# META     "name": "synapse_pyspark"
-# META   },
-# META   "dependencies": {
-# META     "lakehouse": {
-# META       "default_lakehouse": "824f4a52-baa0-4c3f-88dc-203c1d85c89a",
-# META       "default_lakehouse_name": "lh_metadata",
-# META       "default_lakehouse_workspace_id": "b976cac2-7754-4061-88c2-61c0ac016a99",
-# META       "known_lakehouses": [
-# META         {
-# META           "id": "824f4a52-baa0-4c3f-88dc-203c1d85c89a"
-# META         }
-# META       ]
-# META     }
-# META   }
 # META }
 
 # CELL ********************
@@ -1621,33 +1571,6 @@ print(
 # META {
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
-# META }
-
-
-
-
-# METADATA ********************
-
-# META {
-# META   "kernel_info": {
-# META     "name": "synapse_pyspark"
-# META   },
-# META   "dependencies": {
-# META     "lakehouse": {
-# META       "default_lakehouse": "824f4a52-baa0-4c3f-88dc-203c1d85c89a",
-# META       "default_lakehouse_name": "lh_metadata",
-# META       "default_lakehouse_workspace_id": "b976cac2-7754-4061-88c2-61c0ac016a99",
-# META       "known_lakehouses": [
-# META         {
-# META           "id": "824f4a52-baa0-4c3f-88dc-203c1d85c89a"
-# META         }
-# META       ]
-# META     },
-# META     "environment": {
-# META       "environmentId": "7380ddbb-a87b-8113-489c-049cb1998b35",
-# META       "workspaceId": "00000000-0000-0000-0000-000000000000"
-# META     }
-# META   }
 # META }
 
 # CELL ********************
@@ -2158,29 +2081,6 @@ if not DEMO_MODE:
 # META   "language_group": "synapse_pyspark"
 # META }
 
-
-
-
-# METADATA ********************
-
-# META {
-# META   "kernel_info": {
-# META     "name": "synapse_pyspark"
-# META   },
-# META   "dependencies": {
-# META     "lakehouse": {
-# META       "default_lakehouse": "824f4a52-baa0-4c3f-88dc-203c1d85c89a",
-# META       "default_lakehouse_name": "lh_metadata",
-# META       "default_lakehouse_workspace_id": "b976cac2-7754-4061-88c2-61c0ac016a99",
-# META       "known_lakehouses": [
-# META         {
-# META           "id": "824f4a52-baa0-4c3f-88dc-203c1d85c89a"
-# META         }
-# META       ]
-# META     }
-# META   }
-# META }
-
 # CELL ********************
 
 # Fabric Notebook: nb_17_g18_semantic_promotion
@@ -2492,5 +2392,3 @@ else:
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
-
-

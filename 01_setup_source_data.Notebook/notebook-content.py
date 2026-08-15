@@ -10,7 +10,12 @@
 # META     "lakehouse": {
 # META       "default_lakehouse": "e9b09e4e-b7b9-4208-b9ec-bb3433154555",
 # META       "default_lakehouse_name": "lh_enercare_demo",
-# META       "default_lakehouse_workspace_id": "b976cac2-7754-4061-88c2-61c0ac016a99"
+# META       "default_lakehouse_workspace_id": "b976cac2-7754-4061-88c2-61c0ac016a99",
+# META       "known_lakehouses": [
+# META         {
+# META           "id": "e9b09e4e-b7b9-4208-b9ec-bb3433154555"
+# META         }
+# META       ]
 # META     }
 # META   }
 # META }
@@ -1079,29 +1084,6 @@ print("Orphaned note is informational only and does not block nb_04_sempy_writeb
 
 # MARKDOWN ********************
 
-
-
-
-
-# METADATA ********************
-
-# META {
-# META   "kernel_info": {
-# META     "name": "synapse_pyspark"
-# META   },
-# META   "dependencies": {
-# META     "lakehouse": {
-# META       "default_lakehouse": "e9b09e4e-b7b9-4208-b9ec-bb3433154555",
-# META       "default_lakehouse_name": "lh_enercare_demo",
-# META       "default_lakehouse_workspace_id": "b976cac2-7754-4061-88c2-61c0ac016a99",
-# META       "known_lakehouses": [
-# META         {
-# META           "id": "e9b09e4e-b7b9-4208-b9ec-bb3433154555"
-# META         }
-# META       ]
-# META     }
-# META   }
-# META }
 
 # CELL ********************
 
@@ -2408,4 +2390,3 @@ else:
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
-

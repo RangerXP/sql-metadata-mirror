@@ -14,14 +14,8 @@
 # META       "known_lakehouses": [
 # META         {
 # META           "id": "824f4a52-baa0-4c3f-88dc-203c1d85c89a"
-# META         },
-# META         {
-# META           "id": "e9b09e4e-b7b9-4208-b9ec-bb3433154555"
 # META         }
 # META       ]
-# META     },
-# META     "warehouse": {
-# META       "known_warehouses": []
 # META     }
 # META   }
 # META }
@@ -229,30 +223,6 @@ else:
 # META {
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
-# META }
-
-
-
-
-
-# METADATA ********************
-
-# META {
-# META   "kernel_info": {
-# META     "name": "synapse_pyspark"
-# META   },
-# META   "dependencies": {
-# META     "lakehouse": {
-# META       "default_lakehouse": "824f4a52-baa0-4c3f-88dc-203c1d85c89a",
-# META       "default_lakehouse_name": "lh_metadata",
-# META       "default_lakehouse_workspace_id": "b976cac2-7754-4061-88c2-61c0ac016a99",
-# META       "known_lakehouses": [
-# META         {
-# META           "id": "824f4a52-baa0-4c3f-88dc-203c1d85c89a"
-# META         }
-# META       ]
-# META     }
-# META   }
 # META }
 
 # CELL ********************
@@ -1193,29 +1163,6 @@ Gaps closed: G1-3 [done]  G1-4 [done]  G1-5 [done]  G1-7 [done]  G2-1 [done]  G2
 # META   "language_group": "synapse_pyspark"
 # META }
 
-
-
-
-# METADATA ********************
-
-# META {
-# META   "kernel_info": {
-# META     "name": "synapse_pyspark"
-# META   },
-# META   "dependencies": {
-# META     "lakehouse": {
-# META       "default_lakehouse": "824f4a52-baa0-4c3f-88dc-203c1d85c89a",
-# META       "default_lakehouse_name": "lh_metadata",
-# META       "default_lakehouse_workspace_id": "b976cac2-7754-4061-88c2-61c0ac016a99",
-# META       "known_lakehouses": [
-# META         {
-# META           "id": "824f4a52-baa0-4c3f-88dc-203c1d85c89a"
-# META         }
-# META       ]
-# META     }
-# META   }
-# META }
-
 # CELL ********************
 
 # Cell 1: Config and imports
@@ -1745,29 +1692,6 @@ display(summary_df)
 # META {
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
-# META }
-
-
-
-
-# METADATA ********************
-
-# META {
-# META   "kernel_info": {
-# META     "name": "synapse_pyspark"
-# META   },
-# META   "dependencies": {
-# META     "lakehouse": {
-# META       "default_lakehouse": "824f4a52-baa0-4c3f-88dc-203c1d85c89a",
-# META       "default_lakehouse_name": "lh_metadata",
-# META       "default_lakehouse_workspace_id": "b976cac2-7754-4061-88c2-61c0ac016a99",
-# META       "known_lakehouses": [
-# META         {
-# META           "id": "824f4a52-baa0-4c3f-88dc-203c1d85c89a"
-# META         }
-# META       ]
-# META     }
-# META   }
 # META }
 
 # CELL ********************
@@ -2340,4 +2264,3 @@ display(summary_df)
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
-
