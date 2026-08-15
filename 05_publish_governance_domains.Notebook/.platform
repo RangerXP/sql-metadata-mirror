@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
   "metadata": {
     "type": "Notebook",
-    "displayName": "nb_08_purview_publication_stage",
+    "displayName": "05_publish_governance_domains",
     "description": "Stage 8: Publishes approved governance domains and data products to Purview as the catalog publication stage."
   },
   "config": {
