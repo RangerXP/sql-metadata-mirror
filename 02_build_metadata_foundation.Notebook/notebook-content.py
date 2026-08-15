@@ -232,9 +232,7 @@ else:
 # META }
 
 
-# ===== END SOURCE: archive/nb_04_metadata_discovery_and_stewardship.Notebook =====
 
-# ===== BEGIN SOURCE: archive/nb_05_metadata_staging_and_schema.Notebook =====
 
 
 # METADATA ********************
@@ -1195,9 +1193,7 @@ Gaps closed: G1-3 [done]  G1-4 [done]  G1-5 [done]  G1-7 [done]  G2-1 [done]  G2
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_05_metadata_staging_and_schema.Notebook =====
 
-# ===== BEGIN SOURCE: archive/nb_07a_ingest_customer_files.Notebook =====
 
 
 # METADATA ********************
@@ -1751,9 +1747,7 @@ display(summary_df)
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_07a_ingest_customer_files.Notebook =====
 
-# ===== BEGIN SOURCE: archive/nb_07b_merge_customer_metadata.Notebook =====
 
 
 # METADATA ********************
@@ -2347,4 +2341,3 @@ display(summary_df)
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_07b_merge_customer_metadata.Notebook =====

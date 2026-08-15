@@ -378,4 +378,3 @@ print("  - All other resets (OKR/DataProduct/CDE/ontology-mapping edits) apply d
 print("    small SQL UPDATE once Approved -- the original sql/24, sql/26, sql/27 scripts will")
 print("    NOT reapply them (they're guarded by request_id existence, not status).")
 
-# ===== END SOURCE: archive/nb_18_demo_reset.Notebook =====

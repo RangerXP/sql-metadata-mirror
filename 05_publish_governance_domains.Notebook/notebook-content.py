@@ -753,4 +753,3 @@ display(summary_df)
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_08_purview_publication_stage.Notebook =====

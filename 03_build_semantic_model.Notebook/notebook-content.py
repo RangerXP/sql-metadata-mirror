@@ -530,4 +530,3 @@ print("Session cache cleared.")
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_03_star_schema_and_source_model.Notebook =====

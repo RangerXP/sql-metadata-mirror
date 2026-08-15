@@ -582,4 +582,3 @@ if not DEMO_MODE:
     mssparkutils.fs.put("Files/debug/nb11_g19_4_ai_instruction_lifecycle_check.txt", _verify_df.to_string(index=False), True)
     print("Debug file written: Files/debug/nb11_g19_4_ai_instruction_lifecycle_check.txt")
 
-# ===== END SOURCE: archive/nb_11_gated_governance_sync.Notebook =====

@@ -1080,9 +1080,7 @@ print("Orphaned note is informational only and does not block nb_04_sempy_writeb
 # MARKDOWN ********************
 
 
-# ===== END SOURCE: archive/nb_01_environment_and_source_baseline.Notebook =====
 
-# ===== BEGIN SOURCE: archive/nb_02_sql_source_publish_and_mirror.Notebook =====
 
 
 # METADATA ********************
@@ -2411,4 +2409,3 @@ else:
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_02_sql_source_publish_and_mirror.Notebook =====

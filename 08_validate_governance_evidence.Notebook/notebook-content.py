@@ -423,9 +423,7 @@ display(summary_df.orderBy("stage"))
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_10_governance_validation_and_healthcheck.Notebook =====
 
-# ===== BEGIN SOURCE: archive/nb_12_purview_workflow_sync.Notebook =====
 
 
 # METADATA ********************
@@ -947,4 +945,3 @@ print(
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_12_purview_workflow_sync.Notebook =====

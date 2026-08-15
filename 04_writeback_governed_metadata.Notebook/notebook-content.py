@@ -1240,9 +1240,7 @@ display(verify_df.orderBy("metric"))
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_06_semantic_apply_and_certification.Notebook =====
 
-# ===== BEGIN SOURCE: archive/nb_07_ai_grounding_and_verified_answers.Notebook =====
 
 
 # METADATA ********************
@@ -1693,4 +1691,3 @@ print("\nTo verify: ask Copilot 'what is our FCR?' or 'what is our CSAT score?'"
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_07_ai_grounding_and_verified_answers.Notebook =====

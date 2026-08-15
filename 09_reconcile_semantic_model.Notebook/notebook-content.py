@@ -594,9 +594,7 @@ if not DEMO_MODE:
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_13_semantic_reconcile.Notebook =====
 
-# ===== BEGIN SOURCE: archive/nb_14_purview_access_sync.Notebook =====
 
 
 # METADATA ********************
@@ -1104,9 +1102,7 @@ print(
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_14_purview_access_sync.Notebook =====
 
-# ===== BEGIN SOURCE: archive/nb_15_purview_dataproduct_sync.Notebook =====
 
 
 # METADATA ********************
@@ -1627,9 +1623,7 @@ print(
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_15_purview_dataproduct_sync.Notebook =====
 
-# ===== BEGIN SOURCE: archive/nb_16_dataproduct_semantic_reconcile.Notebook =====
 
 
 # METADATA ********************
@@ -2164,9 +2158,7 @@ if not DEMO_MODE:
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_16_dataproduct_semantic_reconcile.Notebook =====
 
-# ===== BEGIN SOURCE: archive/nb_17_g18_semantic_promotion.Notebook =====
 
 
 # METADATA ********************
@@ -2502,4 +2494,3 @@ else:
 # META }
 
 
-# ===== END SOURCE: archive/nb_17_g18_semantic_promotion.Notebook =====

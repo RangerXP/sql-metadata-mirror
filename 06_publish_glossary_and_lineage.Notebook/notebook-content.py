@@ -1307,9 +1307,7 @@ else:
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_08_purview_glossary_cde.Notebook =====
 
-# ===== BEGIN SOURCE: archive/nb_09_lineage_and_labels_stage.Notebook =====
 
 
 # METADATA ********************
@@ -4392,4 +4390,3 @@ else:
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# ===== END SOURCE: archive/nb_09_lineage_and_labels_stage.Notebook =====
