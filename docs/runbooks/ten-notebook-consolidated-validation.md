@@ -270,13 +270,30 @@ The run is accepted only when all of the following are true:
 - the final scorecard has no unexplained `ACTION_REQUIRED` results
 - reset returns the demo to a known repeatable baseline
 
-## Current Execution Blocker
+## Archive Preservation Gate
 
-At the time this runbook was authored, the live workspace inventory still returned 21 legacy `nb_01` through `nb_18` items and zero consolidated items. Fabric Git reported:
+The pre-consolidation sources are preserved on remote branch
+`archive/pre-10-notebook-consolidation` at commit
+`7a45cb7b0f0fcba618e0426938a1cdb2f344d759`.
 
-- workspace Git head: `57229b001a26fdc3d0d2305e5d3c0e3a866c15af`
-- current `main` commit: `176828426c1a8a289c4b2331d2c6f48c2fa5695d`
-- workspace branch: `main`
-- repository directory: `/`
+Verified archive inventory:
 
-The Fabric `updateFromGit` endpoint was also probed using the official request shape and returned a service-side schema error rejecting the commit hash fields as numeric. Do not substitute legacy item IDs for the consolidated sequence. Refresh Source Control from `RangerXP/sql-metadata-mirror` branch `main`, resolve conflicts in favor of the remote, and rerun the inventory precondition before submitting the first job.
+- exactly 21 legacy `.Notebook` items
+- 21 `notebook-content.py` files
+- 21 `.platform` files
+- zero incomplete notebook items
+- both pre-consolidation commits `22f57b2` and `57229b0` are ancestors of the archive branch
+
+The `main` branch intentionally contains zero tracked paths under `archive/` or
+`fabric/`. Fabric workspace folders are independent workspace objects, not Git
+archive definitions. Do not recreate an `archive` or `fabric` folder on `main`.
+
+## Current Synchronization State
+
+Fabric Git is connected to `RangerXP/sql-metadata-mirror`, branch `main`, at the
+repository root. After the consolidated notebook format repairs, local `main` and
+`origin/main` matched commit `7f14768ac19e6c0ea21dd185fd51eaeaef18cc40`.
+
+Refresh Source Control and update from Git before submitting the first job. The
+workspace inventory must show the ten consolidated notebooks and no legacy
+notebooks or legacy workspace folders.
