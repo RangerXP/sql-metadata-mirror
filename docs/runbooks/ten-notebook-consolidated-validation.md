@@ -272,4 +272,11 @@ The run is accepted only when all of the following are true:
 
 ## Current Execution Blocker
 
-At the time this runbook was authored, the live workspace inventory still returned the legacy `nb_01` through `nb_18` items. The new ten items are committed to `main` but have not yet been materialized in Fabric. Refresh Source Control from `RangerXP/sql-metadata-mirror` branch `main` before submitting the first job. Re-run the inventory precondition and do not substitute legacy item IDs for the consolidated sequence.
+At the time this runbook was authored, the live workspace inventory still returned 21 legacy `nb_01` through `nb_18` items and zero consolidated items. Fabric Git reported:
+
+- workspace Git head: `57229b001a26fdc3d0d2305e5d3c0e3a866c15af`
+- current `main` commit: `176828426c1a8a289c4b2331d2c6f48c2fa5695d`
+- workspace branch: `main`
+- repository directory: `/`
+
+The Fabric `updateFromGit` endpoint was also probed using the official request shape and returned a service-side schema error rejecting the commit hash fields as numeric. Do not substitute legacy item IDs for the consolidated sequence. Refresh Source Control from `RangerXP/sql-metadata-mirror` branch `main`, resolve conflicts in favor of the remote, and rerun the inventory precondition before submitting the first job.
