@@ -1,9 +1,9 @@
+# Fabric notebook source
 # Consolidated notebook stage: 06_publish_glossary_and_lineage.Notebook
 # Source sections are retained in lifecycle order.
 
 # ===== BEGIN SOURCE: archive/nb_08_purview_glossary_cde.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 
@@ -1316,7 +1316,6 @@ else:
 
 # ===== BEGIN SOURCE: archive/nb_09_lineage_and_labels_stage.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 

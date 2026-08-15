@@ -1,9 +1,9 @@
+# Fabric notebook source
 # Consolidated notebook stage: 04_writeback_governed_metadata.Notebook
 # Source sections are retained in lifecycle order.
 
 # ===== BEGIN SOURCE: archive/nb_06_semantic_apply_and_certification.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 
@@ -1249,7 +1249,6 @@ display(verify_df.orderBy("metric"))
 
 # ===== BEGIN SOURCE: archive/nb_07_ai_grounding_and_verified_answers.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 

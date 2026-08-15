@@ -1,9 +1,9 @@
+# Fabric notebook source
 # Consolidated notebook stage: 02_build_metadata_foundation.Notebook
 # Source sections are retained in lifecycle order.
 
 # ===== BEGIN SOURCE: archive/nb_04_metadata_discovery_and_stewardship.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 
@@ -241,7 +241,6 @@ else:
 
 # ===== BEGIN SOURCE: archive/nb_05_metadata_staging_and_schema.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 
@@ -1205,7 +1204,6 @@ Gaps closed: G1-3 [done]  G1-4 [done]  G1-5 [done]  G1-7 [done]  G2-1 [done]  G2
 
 # ===== BEGIN SOURCE: archive/nb_07a_ingest_customer_files.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 
@@ -1762,7 +1760,6 @@ display(summary_df)
 
 # ===== BEGIN SOURCE: archive/nb_07b_merge_customer_metadata.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 

@@ -1,9 +1,9 @@
+# Fabric notebook source
 # Consolidated notebook stage: 09_reconcile_semantic_model.Notebook
 # Source sections are retained in lifecycle order.
 
 # ===== BEGIN SOURCE: archive/nb_13_semantic_reconcile.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 
@@ -603,7 +603,6 @@ if not DEMO_MODE:
 
 # ===== BEGIN SOURCE: archive/nb_14_purview_access_sync.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 
@@ -1114,7 +1113,6 @@ print(
 
 # ===== BEGIN SOURCE: archive/nb_15_purview_dataproduct_sync.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 
@@ -1638,7 +1636,6 @@ print(
 
 # ===== BEGIN SOURCE: archive/nb_16_dataproduct_semantic_reconcile.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 
@@ -2176,7 +2173,6 @@ if not DEMO_MODE:
 
 # ===== BEGIN SOURCE: archive/nb_17_g18_semantic_promotion.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 

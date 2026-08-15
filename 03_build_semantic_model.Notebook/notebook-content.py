@@ -1,9 +1,9 @@
+# Fabric notebook source
 # Consolidated notebook stage: 03_build_semantic_model.Notebook
 # Source sections are retained in lifecycle order.
 
 # ===== BEGIN SOURCE: archive/nb_03_star_schema_and_source_model.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 

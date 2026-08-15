@@ -1,9 +1,9 @@
+# Fabric notebook source
 # Consolidated notebook stage: 08_validate_governance_evidence.Notebook
 # Source sections are retained in lifecycle order.
 
 # ===== BEGIN SOURCE: archive/nb_10_governance_validation_and_healthcheck.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 
@@ -432,7 +432,6 @@ display(summary_df.orderBy("stage"))
 
 # ===== BEGIN SOURCE: archive/nb_12_purview_workflow_sync.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 

@@ -1,9 +1,9 @@
+# Fabric notebook source
 # Consolidated notebook stage: 01_setup_source_data.Notebook
 # Source sections are retained in lifecycle order.
 
 # ===== BEGIN SOURCE: archive/nb_01_environment_and_source_baseline.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 
@@ -1089,7 +1089,6 @@ print("Orphaned note is informational only and does not block nb_04_sempy_writeb
 
 # ===== BEGIN SOURCE: archive/nb_02_sql_source_publish_and_mirror.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 

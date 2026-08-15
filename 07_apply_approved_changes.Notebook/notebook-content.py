@@ -1,9 +1,9 @@
+# Fabric notebook source
 # Consolidated notebook stage: 07_apply_approved_changes.Notebook
 # Source sections are retained in lifecycle order.
 
 # ===== BEGIN SOURCE: archive/nb_11_gated_governance_sync.Notebook =====
 
-# Fabric notebook source
 
 # METADATA ********************
 
