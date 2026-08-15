@@ -1,9 +1,4 @@
 # Fabric notebook source
-# Consolidated notebook stage: 09_reconcile_semantic_model.Notebook
-# Source sections are retained in lifecycle order.
-
-# ===== BEGIN SOURCE: archive/nb_13_semantic_reconcile.Notebook =====
-
 
 # METADATA ********************
 

@@ -1,9 +1,4 @@
 # Fabric notebook source
-# Consolidated notebook stage: 04_writeback_governed_metadata.Notebook
-# Source sections are retained in lifecycle order.
-
-# ===== BEGIN SOURCE: archive/nb_06_semantic_apply_and_certification.Notebook =====
-
 
 # METADATA ********************
 

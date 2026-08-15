@@ -1,9 +1,4 @@
 # Fabric notebook source
-# Consolidated notebook stage: 05_publish_governance_domains.Notebook
-# Source sections are retained in lifecycle order.
-
-# ===== BEGIN SOURCE: archive/nb_08_purview_publication_stage.Notebook =====
-
 
 # METADATA ********************
 

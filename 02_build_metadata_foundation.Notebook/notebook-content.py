@@ -1,9 +1,4 @@
 # Fabric notebook source
-# Consolidated notebook stage: 02_build_metadata_foundation.Notebook
-# Source sections are retained in lifecycle order.
-
-# ===== BEGIN SOURCE: archive/nb_04_metadata_discovery_and_stewardship.Notebook =====
-
 
 # METADATA ********************
 

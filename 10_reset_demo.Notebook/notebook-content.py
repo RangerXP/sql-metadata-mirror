@@ -1,9 +1,4 @@
 # Fabric notebook source
-# Consolidated notebook stage: 10_reset_demo.Notebook
-# Source sections are retained in lifecycle order.
-
-# ===== BEGIN SOURCE: archive/nb_18_demo_reset.Notebook =====
-
 
 # METADATA ********************
 

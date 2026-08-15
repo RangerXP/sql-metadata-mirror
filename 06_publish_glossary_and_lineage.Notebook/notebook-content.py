@@ -1,9 +1,4 @@
 # Fabric notebook source
-# Consolidated notebook stage: 06_publish_glossary_and_lineage.Notebook
-# Source sections are retained in lifecycle order.
-
-# ===== BEGIN SOURCE: archive/nb_08_purview_glossary_cde.Notebook =====
-
 
 # METADATA ********************
 
