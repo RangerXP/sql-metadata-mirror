@@ -82,9 +82,8 @@ Purpose:
 - provision the source tables and baseline workspace
 - establish the environment for the governance lifecycle
 
-Current repo inputs:
-- [nb_01_environment_and_source_baseline.Notebook](../nb_01_environment_and_source_baseline.Notebook)
-- [nb_02_sql_source_publish_and_mirror.Notebook](../nb_02_sql_source_publish_and_mirror.Notebook)
+Current repo input:
+- [01_setup_source_data.Notebook](../01_setup_source_data.Notebook)
 
 Outcome:
 - source data exists in SQL and is mirrored into Fabric
@@ -97,8 +96,8 @@ Purpose:
 - detect changed or newly managed SQL objects
 - route any @tag metadata to the governance ledger
 
-Current repo inputs:
-- [nb_04_metadata_discovery_and_stewardship.Notebook](../nb_04_metadata_discovery_and_stewardship.Notebook)
+Current repo input:
+- [02_build_metadata_foundation.Notebook](../02_build_metadata_foundation.Notebook)
 - [sql/19_tag_annotation_extraction.sql](../sql/19_tag_annotation_extraction.sql)
 - [sql/20_g18a_demo_views.sql](../sql/20_g18a_demo_views.sql)
 
@@ -114,9 +113,8 @@ Purpose:
 - allow stewardship to triage, approve, reject, or defer
 - record the decision in the governance ledger
 
-Current repo inputs:
-- [nb_04_metadata_discovery_and_stewardship.Notebook](../nb_04_metadata_discovery_and_stewardship.Notebook)
-- [nb_10_governance_validation_and_healthcheck.Notebook](../nb_10_governance_validation_and_healthcheck.Notebook)
+Current repo input:
+- [03_build_semantic_model.Notebook](../03_build_semantic_model.Notebook)
 
 Outcome:
 - one steward-facing queue of pending metadata requests
@@ -130,10 +128,8 @@ Purpose:
 - merge managed metadata with customer-supplied governance records
 - create the canonical metadata working tables
 
-Current repo inputs:
-- [nb_05_metadata_staging_and_schema.Notebook](../nb_05_metadata_staging_and_schema.Notebook)
-- [nb_07a_ingest_customer_files.Notebook](../nb_07a_ingest_customer_files.Notebook)
-- [nb_07b_merge_customer_metadata.Notebook](../nb_07b_merge_customer_metadata.Notebook)
+Current repo input:
+- [04_writeback_governed_metadata.Notebook](../04_writeback_governed_metadata.Notebook)
 
 Outcome:
 - approved metadata exists in the lakehouse working layer
@@ -146,9 +142,8 @@ Purpose:
 - apply approved descriptions, certifications, and annotations to the semantic model
 - keep model writeback constrained to approved metadata only
 
-Current repo inputs:
-- [nb_06_semantic_apply_and_certification.Notebook](../nb_06_semantic_apply_and_certification.Notebook)
-- [nb_07_ai_grounding_and_verified_answers.Notebook](../nb_07_ai_grounding_and_verified_answers.Notebook)
+Current repo input:
+- [05_publish_governance_domains.Notebook](../05_publish_governance_domains.Notebook)
 
 Outcome:
 - the semantic model reflects only approved metadata
@@ -162,9 +157,8 @@ Purpose:
 - separate draft content from approved content
 - maintain a clear evidence trail for business answers
 
-Current repo inputs:
-- [nb_07_ai_grounding_and_verified_answers.Notebook](../nb_07_ai_grounding_and_verified_answers.Notebook)
-- [nb_11_gated_governance_sync.Notebook](../nb_11_gated_governance_sync.Notebook)
+Current repo input:
+- [06_publish_glossary_and_lineage.Notebook](../06_publish_glossary_and_lineage.Notebook)
 
 Outcome:
 - AI grounding is tied to approved governance decisions
@@ -177,9 +171,8 @@ Purpose:
 - publish governed catalog objects to Purview
 - keep catalog publication aligned to approved business metadata
 
-Current repo inputs:
-- [nb_08_purview_publication_stage.Notebook](../nb_08_purview_publication_stage.Notebook)
-- [nb_08_purview_glossary_cde.Notebook](../nb_08_purview_glossary_cde.Notebook)
+Current repo input:
+- [07_apply_approved_changes.Notebook](../07_apply_approved_changes.Notebook)
 
 Outcome:
 - domains, products, terms, and CDEs are published from approved metadata state
@@ -191,8 +184,8 @@ Purpose:
 - publish lineage and sensitivity labels
 - connect SQL → mirror → lakehouse → semantic model evidence into a single lineage story
 
-Current repo inputs:
-- [nb_09_lineage_and_labels_stage.Notebook](../nb_09_lineage_and_labels_stage.Notebook)
+Current repo input:
+- [08_validate_governance_evidence.Notebook](../08_validate_governance_evidence.Notebook)
 
 Outcome:
 - lineage is explicit and traceable across the stack
@@ -204,8 +197,8 @@ Purpose:
 - validate that all required stewardship and governance checks pass
 - confirm no action required before the demo is considered live
 
-Current repo inputs:
-- [nb_10_governance_validation_and_healthcheck.Notebook](../nb_10_governance_validation_and_healthcheck.Notebook)
+Current repo input:
+- [09_reconcile_semantic_model.Notebook](../09_reconcile_semantic_model.Notebook)
 
 Outcome:
 - health check confirms the system is ready and evidence-backed
@@ -217,10 +210,8 @@ Purpose:
 - demonstrate the full chain from SQL metadata definition to approval to semantic-model usage and governance evidence
 - provide the final demo proof for Maria / Victoria / Ci Zhu
 
-Current repo inputs:
-- [docs/maria-northstar-validation-plan.md](../docs/maria-northstar-validation-plan.md)
-- [docs/closed-loop-governance-reference-model.md](../docs/closed-loop-governance-reference-model.md)
-- [docs/purview-maria-north-star-scenario.md](../docs/purview-maria-north-star-scenario.md)
+Current repo input:
+- [10_reset_demo.Notebook](../10_reset_demo.Notebook)
 
 Outcome:
 - a single authoritative proof narrative for the customer
@@ -231,26 +222,16 @@ Outcome:
 
 | Current notebook | Target lifecycle stage |
 |---|---|
-| [nb_01_environment_and_source_baseline.Notebook](../nb_01_environment_and_source_baseline.Notebook) | 1 |
-| [nb_02_sql_source_publish_and_mirror.Notebook](../nb_02_sql_source_publish_and_mirror.Notebook) | 1 |
-| [nb_03_star_schema_and_source_model.Notebook](../nb_03_star_schema_and_source_model.Notebook) | 1 / 2 |
-| [nb_04_metadata_discovery_and_stewardship.Notebook](../nb_04_metadata_discovery_and_stewardship.Notebook) | 2 / 3 |
-| [nb_05_metadata_staging_and_schema.Notebook](../nb_05_metadata_staging_and_schema.Notebook) | 4 |
-| [nb_07a_ingest_customer_files.Notebook](../nb_07a_ingest_customer_files.Notebook) | 4 |
-| [nb_07b_merge_customer_metadata.Notebook](../nb_07b_merge_customer_metadata.Notebook) | 4 |
-| [nb_06_semantic_apply_and_certification.Notebook](../nb_06_semantic_apply_and_certification.Notebook) | 5 |
-| [nb_07_ai_grounding_and_verified_answers.Notebook](../nb_07_ai_grounding_and_verified_answers.Notebook) | 5 / 6 |
-| [nb_08_purview_publication_stage.Notebook](../nb_08_purview_publication_stage.Notebook) | 7 |
-| [nb_08_purview_glossary_cde.Notebook](../nb_08_purview_glossary_cde.Notebook) | 7 |
-| [nb_09_lineage_and_labels_stage.Notebook](../nb_09_lineage_and_labels_stage.Notebook) | 8 |
-| [nb_10_governance_validation_and_healthcheck.Notebook](../nb_10_governance_validation_and_healthcheck.Notebook) | 9 |
-| [nb_11_gated_governance_sync.Notebook](../nb_11_gated_governance_sync.Notebook) | 3 / 6 |
-| [nb_12_purview_workflow_sync.Notebook](../nb_12_purview_workflow_sync.Notebook) | 10 |
-| [nb_13_semantic_reconcile.Notebook](../nb_13_semantic_reconcile.Notebook) | 10 |
-| [nb_14_purview_access_sync.Notebook](../nb_14_purview_access_sync.Notebook) | 10 |
-| [nb_15_purview_dataproduct_sync.Notebook](../nb_15_purview_dataproduct_sync.Notebook) | 10 |
-| [nb_16_dataproduct_semantic_reconcile.Notebook](../nb_16_dataproduct_semantic_reconcile.Notebook) | 10 |
-| [nb_17_g18_semantic_promotion.Notebook](../nb_17_g18_semantic_promotion.Notebook) | 10 |
+| [01_setup_source_data.Notebook](../01_setup_source_data.Notebook) | 1 |
+| [02_build_metadata_foundation.Notebook](../02_build_metadata_foundation.Notebook) | 2 |
+| [03_build_semantic_model.Notebook](../03_build_semantic_model.Notebook) | 3 |
+| [04_writeback_governed_metadata.Notebook](../04_writeback_governed_metadata.Notebook) | 4 |
+| [05_publish_governance_domains.Notebook](../05_publish_governance_domains.Notebook) | 5 |
+| [06_publish_glossary_and_lineage.Notebook](../06_publish_glossary_and_lineage.Notebook) | 6 |
+| [07_apply_approved_changes.Notebook](../07_apply_approved_changes.Notebook) | 7 |
+| [08_validate_governance_evidence.Notebook](../08_validate_governance_evidence.Notebook) | 8 |
+| [09_reconcile_semantic_model.Notebook](../09_reconcile_semantic_model.Notebook) | 9 |
+| [10_reset_demo.Notebook](../10_reset_demo.Notebook) | 10 |
 
 ---
 
