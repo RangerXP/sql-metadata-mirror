@@ -102,6 +102,7 @@ SEMANTIC_MEASURE_METADATA_ALIASES = {
         "Escalation Rate": ["Escalation", "ESCALATION_RATE", "KPI_ESCALATION_RATE"],
         "FCR Rate": ["FCR", "FIRST_CALL_RESOLUTION", "KPI_FCR"],
         "Avg CSAT": ["CSAT", "CUSTOMER_SATISFACTION", "KPI_CSAT"],
+        "PP Renewal Rate": ["PP_RNW_RATE", "Protection Plan Renewal Rate", "KPI_PP_RNW_RATE"],
     },
 }
 
@@ -1187,9 +1188,25 @@ def _annotation_text(value):
 
 ontology_by_kpi_code = {}
 try:
-    okr_rows = [r.asDict(recursive=True) for r in spark.table("okrs").collect()]
-    key_result_rows = [r.asDict(recursive=True) for r in spark.table("okr_key_results").collect()]
-    okr_product_rows = [r.asDict(recursive=True) for r in spark.table("okr_data_products").collect()]
+    def _read_governance_rows(table_name):
+        errors = []
+        for candidate in [
+            f"{METADATA_LH}.metadata.{table_name}",
+            f"metadata.{table_name}",
+            f"{METADATA_LH}.{table_name}",
+            table_name,
+        ]:
+            try:
+                rows = [r.asDict(recursive=True) for r in spark.table(candidate).collect()]
+                print(f"Cell 8 status: resolved {table_name} from {candidate} ({len(rows)} row(s))")
+                return rows
+            except Exception as ex:
+                errors.append(f"{candidate}: {ex}")
+        raise RuntimeError(" | ".join(errors))
+
+    okr_rows = _read_governance_rows("okrs")
+    key_result_rows = _read_governance_rows("okr_key_results")
+    okr_product_rows = _read_governance_rows("okr_data_products")
 
     okr_domain = {str(r.get("okr_id")): _annotation_text(r.get("domain_id")) for r in okr_rows}
     products_by_okr = {}
