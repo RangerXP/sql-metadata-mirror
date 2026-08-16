@@ -47,10 +47,10 @@ def _resolve_purview_base_url():
     if configured_base:
         return configured_base.rstrip("/")
 
-    # Default to the live private endpoint for this environment. The public host is
-    # not resolvable from the private-network Fabric runtime and should only be used
-    # when a public endpoint is explicitly configured.
-    return f"https://{PURVIEW_ACCOUNT_NAME.lower()}.privatelink.purview.azure.com"
+    # The Purview service certificate is valid for the account's public host, not the
+    # private-link alias. Use the account public hostname unless an explicit internal
+    # override is required for a custom DNS configuration.
+    return f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
 
 
 PURVIEW_BASE_URL = _resolve_purview_base_url()
