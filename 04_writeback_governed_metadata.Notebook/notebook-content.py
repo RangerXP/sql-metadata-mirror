@@ -1166,10 +1166,18 @@ def _set_object_annotation_via_tom(table_name: str, object_type: str, object_nam
                 return True, "tom.object.Annotation.update"
 
             try:
-                annotations.Add(key, value)
+                # Annotations.Add(str, str) has no matching .NET overload; a new annotation
+                # requires a real Annotation object (CLR type only importable once a TOM
+                # connection is active).
+                from Microsoft.AnalysisServices.Tabular import Annotation as TomAnnotation
+
+                ann = TomAnnotation()
+                ann.Name = key
+                ann.Value = value
+                annotations.Add(ann)
                 return True, "tom.object.Annotation.add"
-            except Exception:
-                return False, "tom_annotation_add_failed"
+            except Exception as add_ex:
+                return False, f"tom_annotation_add_failed:{add_ex}"
 
     except Exception as ex:
         return False, f"tom_annotation_write_failed:{ex}"
