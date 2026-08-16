@@ -123,7 +123,7 @@ table fct_service_request
 
 		annotation SummarizationSetBy = Automatic
 
-	/// Identifies the dispatched technician for the service request. Governed definition (DP-SVCPERF): <div>Field service performance product covering service requests, technician utilization, equipment failure rates, SLA attainment, and call-center first call resolution - used for daily field-ops dashboards and quarterly SLA reviews.</div>
+	/// Assigned technician; NULL if unassigned
 	column TechnicianId
 		dataType: int64
 		formatString: 0
@@ -151,7 +151,7 @@ table fct_service_request
 
 		annotation SummarizationSetBy = Automatic
 
-	/// Indicates whether the service request breached the governed service-level target. Governed definition (GT-SLA): <div>The contracted or policy-defined response and resolution targets per service-request priority and service zone. Targets are governed by the Service Delivery domain and require approval before publication.</div>
+	/// 1 if age_hours > sla_target_hours and request not yet completed
 	column IsSlaBreachFlag
 		dataType: int64
 		formatString: 0
