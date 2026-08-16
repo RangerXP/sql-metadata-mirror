@@ -1054,14 +1054,30 @@ sm_annotations = []
 glossary_definitions = {}
 
 try:
-    sm_df = spark.table(f"{METADATA_LH}.metadata.sm_annotations")
+    sm_df = spark.table("sm_annotations")
     sm_annotations = [r.asDict(recursive=True) for r in sm_df.collect()]
-    print(f"Cell 8 status: loaded {len(sm_annotations)} row(s) from {METADATA_LH}.metadata.sm_annotations")
+    if not sm_annotations:
+        raise RuntimeError("sm_annotations is empty")
+    refreshed_sm_df = spark.createDataFrame(sm_annotations, schema=sm_df.schema)
+    (
+        refreshed_sm_df.write
+        .mode("overwrite")
+        .option("overwriteSchema", "true")
+        .format("delta")
+        .saveAsTable("sm_annotations")
+    )
+    spark.catalog.refreshTable("sm_annotations")
+    refreshed_count = spark.table("sm_annotations").count()
+    if refreshed_count != len(sm_annotations):
+        raise RuntimeError(
+            f"sm_annotations refresh mismatch: expected={len(sm_annotations)}, actual={refreshed_count}"
+        )
+    print(f"Cell 8 status: refreshed and verified {refreshed_count} sm_annotations row(s)")
 except Exception as ex:
-    print(f"[WARN] metadata.sm_annotations not found or unreadable: {ex}")
+    raise RuntimeError(f"sm_annotations refresh failed: {ex}") from ex
 
 try:
-    glossary_rows = spark.table(f"{METADATA_LH}.metadata.glossary_terms").collect()
+    glossary_rows = spark.table("glossary_terms").collect()
     for row in glossary_rows:
         term_code = getattr(row, "term_code", None)
         term_name = getattr(row, "term_name", None)
@@ -1073,7 +1089,7 @@ try:
         if term_name:
             glossary_definitions[_norm(str(term_name))] = definition
 except Exception as ex:
-    print(f"[WARN] metadata.glossary_terms unavailable for description join: {ex}")
+    raise RuntimeError(f"glossary_terms unavailable for description join: {ex}") from ex
 
 
 def _parse_glossary_reference(value: str):

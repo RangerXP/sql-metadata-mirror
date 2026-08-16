@@ -1717,6 +1717,13 @@ summary_df = spark.sql(summary_query).withColumn(
 
 display(summary_df)
 
+non_green_checks = summary_df.where(F.col("status") != "GREEN").count()
+if non_green_checks:
+    raise RuntimeError(f"Metadata foundation validation failed: {non_green_checks} non-GREEN check(s).")
+
+print("NB_02 metadata foundation complete; semantic annotation refresh runs in NB_04.")
+mssparkutils.notebook.exit("NB_02 metadata foundation complete")
+
 # METADATA ********************
 
 # META {
