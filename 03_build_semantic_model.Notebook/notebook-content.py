@@ -503,6 +503,32 @@ print("  CC Facts:")
 for t in cc_facts:
     print(f"    {t:<30} {spark.table(f'{DEMO_LAKEHOUSE}.{t}').count():>6} rows")
 
+expected_row_counts = {
+    "dim_date": 4748,
+    "dim_customer": 51,
+    "dim_product": 10,
+    "dim_service_account": 57,
+    "dim_equipment": 39,
+    "fct_billing": 587,
+    "fct_service_request": 31,
+    "fct_contract_month": 1250,
+    "dim_cc_agent": 15,
+    "dim_cc_billing_adj": 12,
+    "fct_cc_interactions": 300,
+    "fct_cc_transcript_turns": 3479,
+}
+count_mismatches = []
+for table_name, expected_count in expected_row_counts.items():
+    actual_count = spark.table(f"{DEMO_LAKEHOUSE}.{table_name}").count()
+    if actual_count != expected_count:
+        count_mismatches.append(
+            f"{table_name}: expected={expected_count}, actual={actual_count}"
+        )
+
+if count_mismatches:
+    raise RuntimeError("Star-schema validation failed: " + "; ".join(count_mismatches))
+
+print(f"Validated {len(expected_row_counts)} star-schema and call-center row-count gates.")
 print("\nCall center extension ready.")
 # ===== CELL 12 END =====
 
