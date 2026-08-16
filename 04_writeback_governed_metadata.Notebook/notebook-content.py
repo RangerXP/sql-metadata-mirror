@@ -114,6 +114,28 @@ SEMANTIC_FALLBACK_TABLE_DESCRIPTIONS = {
     "fct_billing": "Billing transactions used for revenue and payment-status analysis.",
     "fct_contract_month": "Contract month spine used for MRR, new business, and churn analysis.",
     "fct_service_request": "Service-request fact table with SLA, completion, and operational workflow attributes.",
+    "_Measures": "Governed business measures for customer, contract, revenue, equipment, service, and contact-center performance.",
+    "dim_cc_agent": "Contact-center agent dimension used to analyze queue assignment, team performance, and interaction ownership.",
+    "dim_cc_billing_adj": "Billing-adjustment dimension used to classify credits, corrections, and dispute outcomes for contact-center interactions.",
+    "fct_cc_interactions": "Contact-center interaction fact table used for first-contact resolution, satisfaction, handle-time, renewal, and escalation analysis.",
+    "fct_cc_transcript_turns": "Contact-center transcript-turn fact table used for governed conversation analysis and interaction-level evidence.",
+}
+
+SEMANTIC_FALLBACK_MEASURE_DESCRIPTIONS = {
+    "Technician Utilization Rate": "Distinct assigned technicians divided by service requests in the selected period. Use this operational coverage indicator to assess dispatch workload distribution; higher values indicate requests are spread across more technicians.",
+    "Total MRR": "Posted monthly recurring revenue from customer contracts in the selected period, based on billing transactions classified as MonthlyCharge.",
+    "New MRR": "Monthly recurring revenue added by contracts marked as new in the selected period.",
+    "Churned MRR": "Monthly recurring revenue lost from contracts marked as churned in the selected period.",
+    "Net MRR Change": "New monthly recurring revenue minus churned monthly recurring revenue in the selected period.",
+    "Active Customer Count": "Count of customer records whose current status is Active.",
+    "Active Contract Count": "Count of contract-month records whose contract status is Active.",
+    "Avg Lifetime Value": "Average posted billing value per customer across the customer population in the selected context.",
+    "Avg Tenure Months": "Average number of months from each customer's created date through the current date.",
+    "SLA Breach Count": "Count of service requests that missed the governed service-level target in the selected period.",
+    "SLA Compliance Rate": "Percentage of service requests that met the governed service-level target in the selected period, calculated as non-breached requests divided by total requests.",
+    "Warranty Coverage Rate": "Percentage of registered equipment assets currently marked as under warranty.",
+    "Avg Equipment Age Years": "Average age in years of registered equipment assets in the selected context.",
+    "Escalation Rate": "Percentage of contact-center interactions marked as escalated in the selected period.",
 }
 
 print(f"nb_04_sempy_writeback | DEMO_MODE={DEMO_MODE}")
@@ -221,7 +243,9 @@ for r in rows:
 try:
     kpi_df = spark.sql(
         f"""
-        SELECT KpiName, KPICode, Description
+        SELECT KpiName, KPICode, Description, Domain, Owner, Version,
+               CertifiedBy, CertifiedDate, TargetValue, WarningThreshold,
+               CriticalThreshold, UnitType
         FROM kpi_metadata
         WHERE IsCertified = 1
         """
@@ -230,6 +254,11 @@ try:
     # Build a robust lookup so semantic measures can match by KPI name or KPI code.
     kpi_descs = {}
     kpi_rows = [r for r in kpi_df.collect() if r.Description]
+    certified_kpi_metadata = {
+        str(r.KPICode): r.asDict(recursive=True)
+        for r in kpi_rows
+        if r.KPICode
+    }
     for r in kpi_rows:
         if r.KpiName:
             kpi_descs[r.KpiName] = r.Description
@@ -239,12 +268,13 @@ try:
             kpi_descs[_norm_measure_key(r.KPICode)] = r.Description
 except Exception:
     kpi_descs = {}
+    certified_kpi_metadata = {}
     print("[WARN] kpi_metadata missing IsCertified/Description")
 
 try:
     ai_df = spark.sql(
         "SELECT ResponseText FROM ai_metadata"
-        f" WHERE IsDraft = 0 AND RecordType = 'ai_instruction'"
+        f" WHERE IsDraft = 0 AND IsCertified = 1 AND RecordType = 'ai_instruction'"
     )
     ai_instructions = [r.ResponseText for r in ai_df.collect() if r.ResponseText]
 except Exception:
@@ -344,8 +374,8 @@ semantic_columns = sorted({
 })
 
 semantic_measures = sorted({
-    ("fct_service_request", "SLA Breach Count"),
-    ("_Measures", "Technician Utilization Rate"),
+    ("_Measures", "SLA Breach Count"),
+    ("fct_service_request", "Technician Utilization Rate"),
     ("_Measures", "Total MRR"),
     ("_Measures", "New MRR"),
     ("_Measures", "Churned MRR"),
@@ -363,6 +393,20 @@ semantic_measures = sorted({
     ("_Measures", "Avg Handle Time (sec)"),
     ("_Measures", "Escalation Rate"),
 })
+
+CERTIFIED_KPI_MEASURE_MAP = {
+    "FCR": ("_Measures", "FCR Rate"),
+    "CSAT": ("_Measures", "Avg CSAT"),
+    "PP_RNW_RATE": ("_Measures", "PP Renewal Rate"),
+    "AHT": ("_Measures", "Avg Handle Time (sec)"),
+}
+
+UNRESOLVED_CERTIFIED_KPI_MAPPINGS = {
+    "SLA_BRCH_RATE": (
+        "No like-for-like runtime measure exists. SLA Compliance Rate is the complement "
+        "and uses fct_service_request rather than the certified field-service-visit formula."
+    ),
+}
 
 print(
     "MCP-verified inventory: "
@@ -469,6 +513,10 @@ def resolve_measure_description(table_name: str, measure_name: str):
         if len(unique_descriptions) == 1 and fuzzy_descriptions:
             source_key, only_desc = fuzzy_descriptions[0]
             return only_desc, source_key, "fuzzy_single"
+
+    fallback = SEMANTIC_FALLBACK_MEASURE_DESCRIPTIONS.get(measure_name)
+    if fallback:
+        return fallback, "fallback", "business_use_fallback"
 
     return None, None, None
 
@@ -1115,6 +1163,11 @@ for row in sm_annotations:
 
     if key == "Glossary_Term_References" and value:
         object_key = (table_name, object_type, object_name)
+        if object_type == "Measure" and any(
+            planned_table == table_name and planned_measure == object_name
+            for planned_table, planned_measure, _ in planned_measure_updates
+        ):
+            continue
         for token in _parse_glossary_reference(str(value)):
             definition = glossary_definitions.get(_norm(token))
             if definition and object_key not in description_intents:
@@ -1122,6 +1175,77 @@ for row in sm_annotations:
 
 print(f"Cell 8 status: annotation intents={len(annotation_intents)}")
 print(f"Cell 8 status: description intents={len(description_intents)}")
+
+
+def _annotation_text(value):
+    if value is None:
+        return None
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value).strip()
+
+
+ontology_by_kpi_code = {}
+try:
+    okr_rows = [r.asDict(recursive=True) for r in spark.table("okrs").collect()]
+    key_result_rows = [r.asDict(recursive=True) for r in spark.table("okr_key_results").collect()]
+    okr_product_rows = [r.asDict(recursive=True) for r in spark.table("okr_data_products").collect()]
+
+    okr_domain = {str(r.get("okr_id")): _annotation_text(r.get("domain_id")) for r in okr_rows}
+    products_by_okr = {}
+    for row in okr_product_rows:
+        products_by_okr.setdefault(str(row.get("okr_id")), []).append(str(row.get("data_product_id")))
+
+    for row in key_result_rows:
+        metric_source = _annotation_text(row.get("metric_source")) or ""
+        if not metric_source.lower().startswith("kpi_metadata."):
+            continue
+        kpi_code = metric_source.split(".", 1)[1]
+        okr_id = _annotation_text(row.get("okr_id"))
+        ontology_by_kpi_code[kpi_code] = {
+            "Governance_Key_Result_Id": _annotation_text(row.get("key_result_id")),
+            "Governance_Objective_Id": okr_id,
+            "Governance_Data_Product_Id": ";".join(sorted(products_by_okr.get(okr_id, []))),
+            "Governance_Domain_Id": okr_domain.get(okr_id),
+        }
+except Exception as ex:
+    print(f"[WARN] Ontology metadata unavailable for semantic annotations: {ex}")
+
+certification_annotation_intents = []
+for kpi_code, (table_name, measure_name) in CERTIFIED_KPI_MEASURE_MAP.items():
+    metadata = certified_kpi_metadata.get(kpi_code)
+    if not metadata:
+        raise RuntimeError(f"Certified KPI metadata missing for exact runtime mapping: {kpi_code}")
+
+    annotation_values = {
+        "Governance_KPI_Code": kpi_code,
+        "Governance_Certification_Status": "Certified",
+        "Governance_KPI_Owner": _annotation_text(metadata.get("Owner")),
+        "Governance_Certified_By": _annotation_text(metadata.get("CertifiedBy")),
+        "Governance_Certified_Date": _annotation_text(metadata.get("CertifiedDate")),
+        "Governance_KPI_Domain": _annotation_text(metadata.get("Domain")),
+        "Governance_KPI_Version": _annotation_text(metadata.get("Version")),
+        "Governance_Target_Value": _annotation_text(metadata.get("TargetValue")),
+        "Governance_Warning_Threshold": _annotation_text(metadata.get("WarningThreshold")),
+        "Governance_Critical_Threshold": _annotation_text(metadata.get("CriticalThreshold")),
+        "Governance_Unit_Type": _annotation_text(metadata.get("UnitType")),
+        **ontology_by_kpi_code.get(kpi_code, {}),
+    }
+    for key, value in annotation_values.items():
+        if value:
+            certification_annotation_intents.append(
+                {
+                    "table": table_name,
+                    "object_type": "Measure",
+                    "object_name": measure_name,
+                    "annotation_key": key,
+                    "annotation_value": value,
+                }
+            )
+
+print(f"Cell 8 status: certification/ontology intents={len(certification_annotation_intents)}")
+for kpi_code, reason in UNRESOLVED_CERTIFIED_KPI_MAPPINGS.items():
+    print(f"Cell 8 status: certified KPI mapping unresolved: {kpi_code} | {reason}")
 
 
 # METADATA ********************
@@ -1169,8 +1293,53 @@ def _set_object_annotation_via_tom(table_name: str, object_type: str, object_nam
         return False, f"tom_annotation_write_failed:{ex}"
 
 
+def _apply_object_annotations_via_tom(intents):
+    if TOM_CONNECTOR is None:
+        return [(intent, False, "tom_connect_semantic_model:missing") for intent in intents]
+
+    results = []
+    try:
+        with TOM_CONNECTOR(dataset=MODEL_NAME, readonly=False) as tom:
+            for intent in intents:
+                table_name = intent["table"]
+                object_type = intent["object_type"]
+                object_name = intent["object_name"]
+                table_obj = _find_collection_item_by_name(tom.model.Tables, table_name)
+                if table_obj is None:
+                    results.append((intent, False, f"tom_table_missing:{table_name}"))
+                    continue
+
+                if object_type == "Column":
+                    target_obj = _find_collection_item_by_name(table_obj.Columns, object_name)
+                elif object_type == "Measure":
+                    target_obj = _find_collection_item_by_name(table_obj.Measures, object_name)
+                else:
+                    results.append((intent, False, f"unsupported_object_type:{object_type}"))
+                    continue
+
+                if target_obj is None:
+                    results.append((intent, False, f"tom_object_missing:{table_name}.{object_name}"))
+                    continue
+
+                try:
+                    tom.set_annotation(
+                        object=target_obj,
+                        name=intent["annotation_key"],
+                        value=intent["annotation_value"],
+                    )
+                    results.append((intent, True, "tom.set_annotation(batch)"))
+                except Exception as ex:
+                    results.append((intent, False, f"tom_annotation_add_failed:{ex}"))
+    except Exception as ex:
+        return [(intent, False, f"tom_annotation_write_failed:{ex}") for intent in intents]
+
+    return results
+
+
 applied_ann = 0
 skipped_ann = 0
+applied_certification_ann = 0
+skipped_certification_ann = 0
 applied_desc_from_glossary = 0
 skipped_desc_from_glossary = 0
 _cell9_debug_lines = []
@@ -1178,20 +1347,19 @@ _cell9_debug_lines = []
 if EFFECTIVE_DEMO_MODE:
     print("[DRY RUN] sm_annotations writes skipped")
 else:
-    for intent in annotation_intents:
-        ok, detail = _set_object_annotation_via_tom(
-            table_name=intent["table"],
-            object_type=intent["object_type"],
-            object_name=intent["object_name"],
-            key=intent["annotation_key"],
-            value=intent["annotation_value"],
-        )
+    all_object_annotation_intents = annotation_intents + certification_annotation_intents
+    for intent, ok, detail in _apply_object_annotations_via_tom(all_object_annotation_intents):
         _cell9_debug_lines.append(
             f"{intent['table']}.{intent['object_name']} [{intent['annotation_key']}] "
             f"ok={ok} detail={detail}"
         )
-        if ok:
+        is_certification = intent in certification_annotation_intents
+        if ok and is_certification:
+            applied_certification_ann += 1
+        elif ok:
             applied_ann += 1
+        elif is_certification:
+            skipped_certification_ann += 1
         else:
             skipped_ann += 1
             print(
@@ -1220,6 +1388,10 @@ else:
 
 print(f"Cell 9 status: annotations applied={applied_ann}, skipped={skipped_ann}")
 print(
+    "Cell 9 status: certification/ontology annotations applied="
+    f"{applied_certification_ann}, skipped={skipped_certification_ann}"
+)
+print(
     "Cell 9 status: glossary descriptions applied="
     f"{applied_desc_from_glossary}, skipped={skipped_desc_from_glossary}"
 )
@@ -1238,12 +1410,78 @@ print(
 
 verify_counts = {
     "annotations_requested": len(annotation_intents),
+    "certification_annotations_requested": len(certification_annotation_intents),
     "description_updates_requested": len(description_intents),
     "effective_demo_mode": int(EFFECTIVE_DEMO_MODE),
+    "unresolved_certified_kpi_mappings": len(UNRESOLVED_CERTIFIED_KPI_MAPPINGS),
 }
 
 verify_df = spark.createDataFrame([(k, int(v)) for k, v in verify_counts.items()], ["metric", "value"])
 display(verify_df.orderBy("metric"))
+
+
+def _read_annotation_value(target_obj, annotation_name):
+    annotations = getattr(target_obj, "Annotations", None)
+    if annotations is None:
+        return None
+    annotation = _find_collection_item_by_name(annotations, annotation_name)
+    return None if annotation is None else str(annotation.Value)
+
+
+def _description_quality_error(description):
+    value = str(description or "").strip()
+    lowered = value.lower()
+    if not value:
+        return "empty"
+    if "notebook-owned governance term definition" in lowered:
+        return "placeholder"
+    if "<div" in lowered or "</div>" in lowered:
+        return "html_markup"
+    if "@enercare.ca" in lowered or "@microsoft.com" in lowered:
+        return "owner_email"
+    return None
+
+
+readback_failures = []
+if not EFFECTIVE_DEMO_MODE:
+    with TOM_CONNECTOR(dataset=MODEL_NAME, readonly=True) as tom:
+        for table_name, _, _ in planned_table_updates:
+            table_obj = _find_collection_item_by_name(tom.model.Tables, table_name)
+            error = "missing_object" if table_obj is None else _description_quality_error(table_obj.Description)
+            if error:
+                readback_failures.append(f"Table {table_name}: {error}")
+
+        for table_name, measure_name, _ in planned_measure_updates:
+            table_obj = _find_collection_item_by_name(tom.model.Tables, table_name)
+            measure_obj = None if table_obj is None else _find_collection_item_by_name(table_obj.Measures, measure_name)
+            error = "missing_object" if measure_obj is None else _description_quality_error(measure_obj.Description)
+            if error:
+                readback_failures.append(f"Measure {table_name}.{measure_name}: {error}")
+
+        for intent in annotation_intents + certification_annotation_intents:
+            table_obj = _find_collection_item_by_name(tom.model.Tables, intent["table"])
+            collection = None
+            if table_obj is not None and intent["object_type"] == "Column":
+                collection = table_obj.Columns
+            elif table_obj is not None and intent["object_type"] == "Measure":
+                collection = table_obj.Measures
+            target_obj = None if collection is None else _find_collection_item_by_name(collection, intent["object_name"])
+            actual = None if target_obj is None else _read_annotation_value(target_obj, intent["annotation_key"])
+            if actual != intent["annotation_value"]:
+                readback_failures.append(
+                    f"Annotation {intent['table']}.{intent['object_name']}[{intent['annotation_key']}]: "
+                    f"expected={intent['annotation_value']!r}, actual={actual!r}"
+                )
+
+if readback_failures:
+    raise RuntimeError("Notebook 4 TOM readback validation failed:\n" + "\n".join(readback_failures))
+
+print(
+    "Cell 10 status: TOM readback passed for "
+    f"{len(planned_table_updates)} table descriptions, "
+    f"{len(planned_measure_updates)} measure descriptions, and "
+    f"{len(annotation_intents) + len(certification_annotation_intents)} object annotations"
+)
 
 
 # METADATA ********************
@@ -1356,11 +1594,10 @@ def _safe(text: str) -> str:
 def _truncate(payload: str, label: str) -> str:
     if len(payload) <= MAX_ANNOTATION_CHARS:
         return payload
-    truncated = payload[:MAX_ANNOTATION_CHARS]
-    last_sep = truncated.rfind(" | ")
-    truncated = truncated[:last_sep] if last_sep > 0 else truncated
-    print(f"[WARN] {label} truncated to {len(truncated)} chars")
-    return truncated
+    raise RuntimeError(
+        f"{label} is {len(payload)} chars and exceeds MAX_ANNOTATION_CHARS={MAX_ANNOTATION_CHARS}; "
+        "refusing to truncate governed runtime content"
+    )
 
 
 instr_block = " | ".join(_safe(t) for t in ai_instructions)
@@ -1629,6 +1866,43 @@ else:
             print(f"       Detail: {detail}")
             print("       Annotation preview (first 500 chars):")
             print(annotation_value[:500])
+
+    failed_annotations = [
+        name for name, (applied, _) in annotation_results.items() if not applied
+    ]
+    if failed_annotations:
+        raise RuntimeError(
+            "Governed model annotation writes failed: " + ", ".join(failed_annotations)
+        )
+
+    connector_name, connector = _discover_tom_connector(labs)
+    if connector is None:
+        raise RuntimeError("SemPy Labs TOM connector unavailable for model annotation readback")
+
+    model_annotation_readback = {}
+    with connector(dataset=MODEL_NAME, workspace=_resolve_model_workspace_id(), readonly=True) as tom:
+        model_annotations = getattr(tom.model, "Annotations", None)
+        for annotation_name in annotations_to_publish:
+            annotation = _find_collection_item_by_name(model_annotations, annotation_name)
+            model_annotation_readback[annotation_name] = None if annotation is None else str(annotation.Value)
+
+    readback_mismatches = [
+        name
+        for name, expected in annotations_to_publish.items()
+        if model_annotation_readback.get(name) != expected
+    ]
+    if readback_mismatches:
+        raise RuntimeError(
+            "Governed model annotation readback mismatch: " + ", ".join(readback_mismatches)
+        )
+    if model_annotation_readback["PBI_AI_Instructions"] == model_annotation_readback["PBI_AI_VerifiedAnswers"]:
+        raise RuntimeError("AI instructions and verified answers must remain distinct model annotations")
+
+    print(
+        "Model annotation readback passed: "
+        f"PBI_AI_Instructions={len(model_annotation_readback['PBI_AI_Instructions'])} chars, "
+        f"PBI_AI_VerifiedAnswers={len(model_annotation_readback['PBI_AI_VerifiedAnswers'])} chars"
+    )
 
     # Operational debug log: records applied/failed status + detail per annotation
     # so a live run's outcome can be inspected without a separate readback notebook.
