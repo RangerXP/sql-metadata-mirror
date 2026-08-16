@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run one Fabric notebook job with separate startup and execution deadlines."""
+"""Submit and observe one Fabric notebook job without claiming Spark-session control."""
 
 from __future__ import annotations
 
@@ -83,11 +83,6 @@ def list_jobs(token: str, workspace_id: str, item_id: str) -> list[dict]:
     return payload.get("value", [])
 
 
-def cancel_job(token: str, workspace_id: str, item_id: str, job_id: str) -> None:
-    url = f"{FABRIC_API}/workspaces/{workspace_id}/items/{item_id}/jobs/instances/{job_id}/cancel"
-    request_json(token, "POST", url, {})
-
-
 def run(args: argparse.Namespace) -> int:
     token = get_token()
     item_id = resolve_notebook(token, args.workspace_id, args.notebook)
@@ -138,15 +133,13 @@ def run(args: argparse.Namespace) -> int:
             execution_started = now
 
         if execution_started is None and now - submitted > args.startup_timeout * 60:
-            cancel_job(token, args.workspace_id, item_id, job_id)
             raise RuntimeError(
-                f"Startup exceeded {args.startup_timeout} minutes; cancellation requested for {job_id}."
+                f"Startup exceeded {args.startup_timeout} minutes; job {job_id} remains Fabric-managed."
             )
 
         if execution_started is not None and now - execution_started > args.execution_timeout * 60:
-            cancel_job(token, args.workspace_id, item_id, job_id)
             raise RuntimeError(
-                f"Execution exceeded {args.execution_timeout} minutes; cancellation requested for {job_id}."
+                f"Execution exceeded {args.execution_timeout} minutes; job {job_id} remains Fabric-managed."
             )
 
         time.sleep(args.poll_seconds)
