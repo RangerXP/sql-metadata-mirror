@@ -75,11 +75,8 @@ def _read_table(table_name: str, required=True):
 
 
 def _write_table(df, table_name: str, mode: str = "overwrite"):
-    candidates = [
-        f"{METADATA_SCHEMA}.{table_name}",
-        f"{METADATA_LAKEHOUSE}.{METADATA_SCHEMA}.{table_name}",
-        table_name,
-    ]
+    candidates = [table_name]
+    expected_count = int(df.count())
     last_error = None
     for candidate in candidates:
         try:
@@ -87,6 +84,13 @@ def _write_table(df, table_name: str, mode: str = "overwrite"):
             if mode == "overwrite":
                 writer = writer.option("overwriteSchema", "true")
             writer.saveAsTable(candidate)
+            spark.catalog.refreshTable(candidate)
+            actual_count = int(spark.table(candidate).count())
+            if actual_count != expected_count:
+                raise RuntimeError(
+                    f"Post-write count mismatch for {candidate}: "
+                    f"expected={expected_count}, actual={actual_count}"
+                )
             return candidate
         except Exception as ex:
             last_error = ex

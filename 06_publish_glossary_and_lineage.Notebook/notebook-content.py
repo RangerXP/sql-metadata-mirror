@@ -389,16 +389,16 @@ try:
     ]
     validation_df = spark.createDataFrame(validation_rows, ["check_name", "check_value", "status"])
 
-    validation_table_candidates = []
-    if METADATA_SCHEMA:
-        validation_table_candidates.append(f"{METADATA_SCHEMA}.purview_phase_04_05_validation")
-    validation_table_candidates.append("purview_phase_04_05_validation")
+    validation_table_candidates = ["purview_phase_04_05_validation"]
 
     validation_table_written = None
     last_validation_error = None
     for table_name in validation_table_candidates:
         try:
             validation_df.write.mode("overwrite").format("delta").saveAsTable(table_name)
+            spark.catalog.refreshTable(table_name)
+            if spark.table(table_name).count() != validation_df.count():
+                raise RuntimeError(f"Post-write count mismatch for {table_name}")
             validation_table_written = table_name
             break
         except Exception as ex:
@@ -2242,15 +2242,15 @@ validation_rows = [
 ]
 validation_df = spark.createDataFrame(validation_rows, ["check_name", "check_value", "status"])
 
-validation_table_candidates = [
-    f"{METADATA_SCHEMA}.purview_phase_06_07_validation",
-    "purview_phase_06_07_validation",
-]
+validation_table_candidates = ["purview_phase_06_07_validation"]
 validation_table_name = None
 last_validation_error = None
 for candidate in validation_table_candidates:
     try:
         validation_df.write.mode("overwrite").format("delta").saveAsTable(candidate)
+        spark.catalog.refreshTable(candidate)
+        if spark.table(candidate).count() != validation_df.count():
+            raise RuntimeError(f"Post-write count mismatch for {candidate}")
         validation_table_name = candidate
         break
     except Exception as ex:
