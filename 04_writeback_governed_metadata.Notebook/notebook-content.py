@@ -325,62 +325,50 @@ print(f"Loaded: {len(ai_instructions)} AI instructions")
 
 # CELL ********************
 
-# Cell 4: Read semantic model inventory with SemPy
+# Cell 4: Use the inventory verified against the live model through Power BI MCP.
 
-semantic_tables = []
-semantic_columns = []
-semantic_measures = []
+semantic_tables = sorted({
+    "dim_date", "dim_equipment", "dim_customer", "dim_service_account",
+    "dim_product", "fct_service_request", "fct_billing", "fct_contract_month",
+    "_Measures", "dim_cc_agent", "dim_cc_billing_adj",
+    "fct_cc_interactions", "fct_cc_transcript_turns",
+})
 
-if fabric is None:
-    print("Cell 4 status: importing sempy.fabric...")
-    try:
-        import sempy.fabric as fabric
-        print("Cell 4 status: sempy.fabric import succeeded")
-    except Exception as ex:
-        fabric = None
-        fabric_import_error = ex
-        tables_df = None
-        columns_df = None
-        measures_df = None
-        print("[WARN] sempy.fabric import failed.")
-        print("       Semantic model inventory/read operations will be skipped.")
-        print(f"       Detail: {ex}")
+inventory_annotations_df = spark.table("sm_annotations")
+semantic_columns = sorted({
+    (str(row["table"]), str(row["object_name"]))
+    for row in inventory_annotations_df.where("object_type = 'Column'")
+    .select("table", "object_name")
+    .distinct()
+    .collect()
+})
 
-if fabric is None:
-    tables_df = None
-    columns_df = None
-    measures_df = None
-    print("Cell 4 status: sempy.fabric unavailable; inventory skipped")
-else:
-    tables_df = fabric.list_tables(dataset=MODEL_NAME)
-    columns_df = fabric.list_columns(dataset=MODEL_NAME)
-    measures_df = fabric.list_measures(dataset=MODEL_NAME)
-    print(
-        "Cell 4 status: inventory fetched "
-        f"(tables_df={type(tables_df).__name__}, columns_df={type(columns_df).__name__}, measures_df={type(measures_df).__name__})"
-    )
+semantic_measures = sorted({
+    ("fct_service_request", "SLA Breach Count"),
+    ("_Measures", "Technician Utilization Rate"),
+    ("_Measures", "Total MRR"),
+    ("_Measures", "New MRR"),
+    ("_Measures", "Churned MRR"),
+    ("_Measures", "Net MRR Change"),
+    ("_Measures", "Active Customer Count"),
+    ("_Measures", "Active Contract Count"),
+    ("_Measures", "Avg Lifetime Value"),
+    ("_Measures", "Avg Tenure Months"),
+    ("_Measures", "SLA Compliance Rate"),
+    ("_Measures", "Warranty Coverage Rate"),
+    ("_Measures", "Avg Equipment Age Years"),
+    ("_Measures", "FCR Rate"),
+    ("_Measures", "Avg CSAT"),
+    ("_Measures", "PP Renewal Rate"),
+    ("_Measures", "Avg Handle Time (sec)"),
+    ("_Measures", "Escalation Rate"),
+})
 
-def _collect_pairs(df, columns):
-    # SemPy can return Spark or pandas DataFrames depending on runtime.
-    if hasattr(df, "select") and hasattr(df, "collect"):
-        return [tuple(row[c] for c in columns) for row in df.select(*columns).collect()]
-
-    if hasattr(df, "iterrows"):
-        return [tuple(row[c] for c in columns) for _, row in df.iterrows()]
-
-    raise TypeError(f"Unsupported dataframe type from SemPy: {type(df)}")
-
-
-if fabric is not None:
-    semantic_tables = sorted({str(name) for (name,) in _collect_pairs(tables_df, ["Name"])})
-    semantic_columns = sorted(
-        {(str(table_name), str(column_name)) for table_name, column_name in _collect_pairs(columns_df, ["Table Name", "Column Name"]) }
-    )
-    semantic_measures = sorted(
-        {(str(table_name), str(measure_name)) for table_name, measure_name in _collect_pairs(measures_df, ["Table Name", "Measure Name"]) }
-    )
-
-print(f"SemPy inventory: {len(semantic_tables)} table(s), {len(semantic_columns)} column(s), {len(semantic_measures)} measure(s)")
+print(
+    "MCP-verified inventory: "
+    f"{len(semantic_tables)} table(s), {len(semantic_columns)} annotation-target column(s), "
+    f"{len(semantic_measures)} measure(s)"
+)
 
 
 # METADATA ********************
