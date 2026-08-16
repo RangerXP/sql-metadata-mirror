@@ -1370,6 +1370,8 @@ def write_table_from_pandas(df: pd.DataFrame, table_name: str) -> int:
     last_error = None
     for full_table in table_candidates:
         try:
+            if table_name == "okr_key_results":
+                spark.sql(f"DROP TABLE IF EXISTS {full_table}")
             (
                 sdf.write
                 .mode("overwrite")
@@ -1377,6 +1379,9 @@ def write_table_from_pandas(df: pd.DataFrame, table_name: str) -> int:
                 .format("delta")
                 .saveAsTable(full_table)
             )
+            delta_log_path = f"Tables/{table_name}/_delta_log"
+            if not mssparkutils.fs.exists(delta_log_path):
+                raise RuntimeError(f"Physical Delta log is missing for {full_table}: {delta_log_path}")
             spark.catalog.refreshTable(full_table)
             actual_count = int(spark.table(full_table).count())
             if actual_count != expected_count:
