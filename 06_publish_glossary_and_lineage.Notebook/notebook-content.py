@@ -58,12 +58,10 @@ def _resolve_purview_base_url():
     if configured_base:
         return configured_base.rstrip("/")
 
-    raise RuntimeError(
-        "PURVIEW_API_BASE_URL/PURVIEW_PRIVATE_ENDPOINT_URL/PURVIEW_PRIVATE_BASE_URL is not set. "
-        "Set it to the reachable Purview endpoint in this runtime, typically a private endpoint such as "
-        "https://<account-name>.privatelink.purview.azure.com. The public hostname "
-        f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com will fail in private-network Fabric runtimes."
-    )
+    # Default to the live private endpoint for this environment. The public host is
+    # not resolvable from the private-network Fabric runtime and should only be used
+    # when a public endpoint is explicitly configured.
+    return f"https://{PURVIEW_ACCOUNT_NAME.lower()}.privatelink.purview.azure.com"
 
 
 PURVIEW_ACCESS_TOKEN = os.getenv("PURVIEW_ACCESS_TOKEN", "").strip()
