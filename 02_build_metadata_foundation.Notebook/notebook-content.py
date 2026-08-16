@@ -1283,15 +1283,8 @@ def try_load_sql_dataset(dataset_name: str) -> tuple[pd.DataFrame | None, str | 
         except Exception:
             return None
 
-    for catalog in SQL_MIRROR_CATALOGS:
-        for schema_name in SQL_MIRROR_SCHEMAS:
-            for table_name in table_candidates:
-                for full_name in _identifier_variants(catalog, schema_name, table_name):
-                    loaded = _try_table(full_name)
-                    if loaded is not None:
-                        return loaded
-
-    # Mirror tables may be readable only via Delta paths, depending on Spark catalog registration.
+    # Read physical mirror Delta paths first. The Spark catalog can return stale data
+    # after a source refresh even when refreshTable succeeds.
     for host in MIRROR_DFS_HOSTS:
         for item_id in MIRROR_ITEM_IDS:
             for schema_name in SQL_MIRROR_SCHEMAS:
@@ -1307,6 +1300,15 @@ def try_load_sql_dataset(dataset_name: str) -> tuple[pd.DataFrame | None, str | 
                         return sdf.toPandas(), source_name
                     except Exception:
                         continue
+
+    # Fall back to registered mirror catalog names when direct paths are unavailable.
+    for catalog in SQL_MIRROR_CATALOGS:
+        for schema_name in SQL_MIRROR_SCHEMAS:
+            for table_name in table_candidates:
+                for full_name in _identifier_variants(catalog, schema_name, table_name):
+                    loaded = _try_table(full_name)
+                    if loaded is not None:
+                        return loaded
 
     print(
         f"[Cell 2] SQL lookup miss for '{dataset_name}'. Attempted: {attempted_names}",
@@ -1335,7 +1337,8 @@ WRITTEN_TABLE_NAMES: dict[str, str] = {}
 
 def write_table_from_pandas(df: pd.DataFrame, table_name: str) -> int:
     sdf = spark.createDataFrame(df)
-    table_candidates = [f"{SCHEMA}.{table_name}", table_name]
+    expected_count = int(sdf.count())
+    table_candidates = [table_name]
     last_error = None
     for full_table in table_candidates:
         try:
@@ -1355,8 +1358,15 @@ def write_table_from_pandas(df: pd.DataFrame, table_name: str) -> int:
                 .format("delta")
                 .saveAsTable(full_table)
             )
+            spark.catalog.refreshTable(full_table)
+            actual_count = int(spark.table(full_table).count())
+            if actual_count != expected_count:
+                raise RuntimeError(
+                    f"Post-write count mismatch for {full_table}: "
+                    f"expected={expected_count}, actual={actual_count}"
+                )
             WRITTEN_TABLE_NAMES[table_name] = full_table
-            return int(sdf.count())
+            return actual_count
         except Exception as ex:
             last_error = ex
             continue
@@ -1806,10 +1816,11 @@ WRITTEN_TABLE_NAMES: dict[str, str] = {}
 
 
 def _write_table_candidates(table_name: str):
-    return [f"{METADATA_SCHEMA}.{table_name}", table_name]
+    return [table_name]
 
 
 def _write_with_fallback(sdf, table_name: str):
+    expected_count = int(sdf.count())
     last_error = None
     for candidate in _write_table_candidates(table_name):
         try:
@@ -1819,6 +1830,13 @@ def _write_with_fallback(sdf, table_name: str):
                 .format("delta")
                 .saveAsTable(candidate)
             )
+            spark.catalog.refreshTable(candidate)
+            actual_count = int(spark.table(candidate).count())
+            if actual_count != expected_count:
+                raise RuntimeError(
+                    f"Post-write count mismatch for {candidate}: "
+                    f"expected={expected_count}, actual={actual_count}"
+                )
             WRITTEN_TABLE_NAMES[table_name] = candidate
             return candidate
         except Exception as ex:
