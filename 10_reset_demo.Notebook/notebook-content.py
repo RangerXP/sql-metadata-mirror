@@ -48,7 +48,7 @@
 # DEMO_MODE = True  -> print every planned reset; no SQL/Delta/TOM writes
 # DEMO_MODE = False -> execute the reset live
 
-DEMO_MODE = True
+DEMO_MODE = False
 
 METADATA_LAKEHOUSE = "lh_metadata"
 MODEL_NAME = "BrookfieldEnercare"

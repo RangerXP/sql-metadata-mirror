@@ -434,9 +434,9 @@ display(summary_df.orderBy("stage"))
 # future supported response provides them. A Published observation is accepted as
 # approval evidence only after this run correlation was previously observed Draft.
 
-DEMO_MODE = True
-WORKFLOW_CONFIGURED = False
-RUN_CORRELATION_ID = ""  # Example: GT-SLA-2026-08-11-A; local correlation, not a Purview workflow ID.
+DEMO_MODE = False
+WORKFLOW_CONFIGURED = True
+RUN_CORRELATION_ID = "GT-SLA-P1-A"  # Existing correlated Draft -> Published evidence chain.
 
 PURVIEW_TENANT_ID = "b7e47691-9726-4f67-a302-e567815f3522"
 PURVIEW_CATALOG_BASE_URL = (
@@ -666,7 +666,7 @@ if not DEMO_MODE:
         existing_status = existing_row[0] if existing_row else None
         existing_payload = json.loads(existing_row[1]) if existing_row and existing_row[1] else None
 
-        if term_snapshot["status"] == "Published" and existing_status not in ("Draft", "Approved"):
+        if term_snapshot["status"] == "Published" and existing_status not in ("Draft", "Approved", "Completed"):
             raise RuntimeError(
                 "Refusing to record Published as approval evidence because this correlation "
                 "has no prior Draft observation. Unpublish/edit GT-SLA, run this notebook once "
@@ -679,7 +679,14 @@ if not DEMO_MODE:
                 expected_hash = publication_content_hash(existing_payload["term"])
         else:
             expected_hash = content_hash
-        normalized_status = "Approved" if term_snapshot["status"] == "Published" else "Draft"
+        normalized_status = (
+            "Completed"
+            if term_snapshot["status"] == "Published" and existing_status == "Completed"
+            else "Approved"
+            if term_snapshot["status"] == "Published"
+            else "Draft"
+        )
+        event_status = "Approved" if term_snapshot["status"] == "Published" else "Draft"
 
         if existing_row:
             cursor.execute(
@@ -725,8 +732,8 @@ if not DEMO_MODE:
             """,
             source_event_id,
             request_id,
-            "TermPublishedObserved" if normalized_status == "Approved" else "TermDraftObserved",
-            normalized_status,
+            "TermPublishedObserved" if term_snapshot["status"] == "Published" else "TermDraftObserved",
+            event_status,
             source_event_id,
             observed_at,
             observed_at,
@@ -758,7 +765,7 @@ if not DEMO_MODE:
             observed_at,
         )
 
-        if normalized_status == "Approved":
+        if term_snapshot["status"] == "Published":
             validation_status = "Passed" if content_hash == expected_hash else "Failed"
             evidence = canonical_json(
                 {
@@ -878,8 +885,8 @@ if not DEMO_MODE:
         )
         publication_receipt = cursor.fetchone()
 
-        if not request_evidence or request_evidence[0] != "Approved":
-            raise RuntimeError("P1 verification failed: request is not Approved.")
+        if not request_evidence or request_evidence[0] not in ("Approved", "Completed"):
+            raise RuntimeError("P1 verification failed: request is not Approved or Completed.")
         if any(request_evidence[index] is not None for index in range(1, 4)):
             raise RuntimeError("P1 verification failed: unsupported workflow fields must remain NULL.")
         if event_counts.get("TermDraftObserved") != 1 or event_counts.get("TermPublishedObserved") != 1:
@@ -892,7 +899,7 @@ if not DEMO_MODE:
             raise RuntimeError("P1 verification failed: publication receipt hashes differ.")
 
         print(
-            f"[VERIFIED] request={request_id} status=Approved "
+            f"[VERIFIED] request={request_id} status={request_evidence[0]} "
             f"events={event_counts} versions={version_counts} receipt=Passed"
         )
     finally:

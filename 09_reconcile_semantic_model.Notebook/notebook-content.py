@@ -29,8 +29,8 @@
 # changes metadata only, verifies a fresh semantic-model read-back, and marks the
 # request Completed only after both required receipts pass.
 
-DEMO_MODE = True
-RUN_REQUEST_ID = ""  # Example: PV-GT-SLA-0359C207890E4EB1B8AB
+DEMO_MODE = False
+RUN_REQUEST_ID = "PV-GT-SLA-0359C207890E4EB1B8AB"
 
 MODEL_NAME = "BrookfieldEnercare"
 PURVIEW_TERM_ID = "b3b54277-3b36-47d8-831c-a2b9a5f02634"

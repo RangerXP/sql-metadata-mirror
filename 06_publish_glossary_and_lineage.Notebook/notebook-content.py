@@ -61,13 +61,13 @@ PURVIEW_BASE_URL = (
     else f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
 )
 
-# Dry-run is the committed default; live publish requires explicit runtime opt-in.
-DEFAULT_LIVE_PUBLISH = _env_bool("PURVIEW_DEFAULT_LIVE_PUBLISH", False)
+# Demo validation publishes and reads back every governed payload.
+DEFAULT_LIVE_PUBLISH = True
 PURVIEW_GLOSSARY_GUID = os.getenv("PURVIEW_GLOSSARY_GUID", "").strip()
 PURVIEW_GLOSSARY_NAME = os.getenv("PURVIEW_GLOSSARY_NAME", "Enercare Glossary").strip()
-SQL_MIRROR_ONLY_DEPLOYMENT = _env_bool("SQL_MIRROR_ONLY_DEPLOYMENT", not DEFAULT_LIVE_PUBLISH)
-PURVIEW_PUBLISH_OVERRIDE = _env_bool("PURVIEW_PUBLISH_OVERRIDE", DEFAULT_LIVE_PUBLISH)
-APPLY_CHANGES = _env_bool("PURVIEW_APPLY_CHANGES", DEFAULT_LIVE_PUBLISH)
+SQL_MIRROR_ONLY_DEPLOYMENT = False
+PURVIEW_PUBLISH_OVERRIDE = True
+APPLY_CHANGES = True
 OUTPUT_ROOT = "Files/purview_publish/phase_04_05_glossary_cde"
 
 # Explicit aliases for shorthand semantic measure bindings used in source metadata.
@@ -1348,7 +1348,7 @@ OUTPUT_ROOT = "/lakehouse/default/Files/purview_publish/phase_06_07_labels_linea
 PURVIEW_HTTP_TIMEOUT_SECONDS = 60
 MAX_ENTITY_RESOLUTION_SECONDS = 120
 MAX_EDGES_TO_RESOLVE = 50
-FAIL_ON_TOKEN_ACQUISITION_ERROR = False
+FAIL_ON_TOKEN_ACQUISITION_ERROR = True
 TOKEN_RESOURCE_CANDIDATES = ["https://purview.azure.net"]
 TOKEN_OUTER_RETRY_ATTEMPTS = 1
 DISABLE_LIVE_PURVIEW_PUBLISH = False

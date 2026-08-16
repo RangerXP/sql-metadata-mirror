@@ -48,9 +48,9 @@ PURVIEW_BASE_URL = (
 )
 PURVIEW_TENANT_ID = "b7e47691-9726-4f67-a302-e567815f3522"
 PURVIEW_TOKEN_CACHE_PATH = "Files/purview_publish/.purview_token_cache.json"
-SQL_MIRROR_ONLY_DEPLOYMENT = True
-PURVIEW_PUBLISH_OVERRIDE = False
-APPLY_CHANGES = False
+SQL_MIRROR_ONLY_DEPLOYMENT = False
+PURVIEW_PUBLISH_OVERRIDE = True
+APPLY_CHANGES = True
 # Optional manual bearer token fallback for when Fabric's TokenLibrary call to the
 # Purview audience is unavailable. Capture with:
 #   az account get-access-token --resource https://purview.azure.net --query accessToken -o tsv
