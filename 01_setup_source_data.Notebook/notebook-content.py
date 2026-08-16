@@ -1532,6 +1532,17 @@ else:
     print("Publish complete.")
     display(results_df)
 
+    under_target = [
+        f"{name}: source={source}, target={target}"
+        for name, source, target, ok in write_results
+        if not ok
+    ]
+    if under_target:
+        raise RuntimeError(
+            "Base-table publication failed: target row count below source for "
+            + "; ".join(under_target)
+        )
+
 
 # METADATA ********************
 
