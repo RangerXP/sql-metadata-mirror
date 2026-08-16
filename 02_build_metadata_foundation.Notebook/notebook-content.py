@@ -1958,6 +1958,8 @@ print("[Cell 2] Metadata source reads completed.", flush=True)
 
 import sempy.fabric as fabric
 
+USE_SEMPY_INVENTORY = False
+
 
 def _collect_pairs(df, columns):
     if hasattr(df, "select") and hasattr(df, "collect"):
@@ -1968,6 +1970,8 @@ def _collect_pairs(df, columns):
 
 
 try:
+    if not USE_SEMPY_INVENTORY:
+        raise RuntimeError("SemPy inventory disabled; use MCP-verified sm_annotations targets.")
     tables_df = fabric.list_tables(dataset=SEMANTIC_MODEL)
     columns_df = fabric.list_columns(dataset=SEMANTIC_MODEL)
     measures_df = fabric.list_measures(dataset=SEMANTIC_MODEL)
