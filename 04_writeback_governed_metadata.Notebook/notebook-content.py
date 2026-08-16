@@ -1156,26 +1156,12 @@ def _set_object_annotation_via_tom(table_name: str, object_type: str, object_nam
             if target_obj is None:
                 return False, f"tom_object_missing:{table_name}.{object_name}"
 
-            annotations = getattr(target_obj, "Annotations", None)
-            if annotations is None:
-                return False, "tom_annotations_missing"
-
-            existing = _find_collection_item_by_name(annotations, key)
-            if existing is not None:
-                existing.Value = value
-                return True, "tom.object.Annotation.update"
-
+            # Use the TOMWrapper's own set_annotation (rather than a hand-rolled
+            # Annotations.Add) since its close()/SaveChanges path is the proven one
+            # that already persists Description writes in this same notebook.
             try:
-                # Annotations.Add(str, str) has no matching .NET overload; a new annotation
-                # requires a real Annotation object (CLR type only importable once a TOM
-                # connection is active).
-                from Microsoft.AnalysisServices.Tabular import Annotation as TomAnnotation
-
-                ann = TomAnnotation()
-                ann.Name = key
-                ann.Value = value
-                annotations.Add(ann)
-                return True, "tom.object.Annotation.add"
+                tom.set_annotation(object=target_obj, name=key, value=value)
+                return True, "tom.set_annotation"
             except Exception as add_ex:
                 return False, f"tom_annotation_add_failed:{add_ex}"
 
