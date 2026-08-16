@@ -1065,7 +1065,9 @@ except Exception as ex:
     raise RuntimeError(f"sm_annotations refresh failed: {ex}") from ex
 
 try:
-    glossary_rows = spark.table("glossary_terms").collect()
+    # explicit column-select avoids collecting schema-declared-but-not-physically-materialized
+    # columns (e.g. parent_term_code) that raise IllegalStateException on a full-row collect
+    glossary_rows = spark.table("glossary_terms").select("term_code", "term_name", "definition").collect()
     for row in glossary_rows:
         term_code = getattr(row, "term_code", None)
         term_name = getattr(row, "term_name", None)
