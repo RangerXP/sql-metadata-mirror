@@ -1956,9 +1956,10 @@ print("[Cell 2] Metadata source reads completed.", flush=True)
 
 # Cell 3: Read semantic inventory with SemPy
 
-import sempy.fabric as fabric
-
 USE_SEMPY_INVENTORY = False
+fabric = None
+if USE_SEMPY_INVENTORY:
+    import sempy.fabric as fabric
 
 
 def _collect_pairs(df, columns):
