@@ -1365,20 +1365,11 @@ WRITTEN_TABLE_NAMES: dict[str, str] = {}
 
 def write_table_from_pandas(df: pd.DataFrame, table_name: str) -> int:
     sdf = spark.createDataFrame(df)
-    expected_count = int(sdf.count())
+    expected_count = int(len(df.index))
     table_candidates = [table_name]
     last_error = None
     for full_table in table_candidates:
         try:
-            # A plain overwrite (even with overwriteSchema=true) reuses the existing
-            # table's Delta column-mapping ID history. If a column was ever created
-            # as all-NULL (inferred NullType/void on a prior run), its stale physical
-            # column-mapping ID can persist across later overwrites even once real
-            # data is written, causing Spark reads to fail with
-            # "Couldn't find <col>#<id> in [...]" while the SQL analytics endpoint
-            # (which resolves the table differently) shows the data as fine. A full
-            # DROP TABLE before writing forces a clean column-mapping ID space.
-            spark.sql(f"DROP TABLE IF EXISTS {full_table}")
             (
                 sdf.write
                 .mode("overwrite")

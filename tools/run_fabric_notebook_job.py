@@ -157,7 +157,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workspace-id", required=True)
     parser.add_argument("--notebook", required=True)
     parser.add_argument("--startup-timeout", type=float, default=5.0)
-    parser.add_argument("--execution-timeout", type=float, default=5.0)
+    parser.add_argument("--execution-timeout", type=float, default=4.0)
     parser.add_argument("--poll-seconds", type=float, default=15.0)
     return parser.parse_args()
 
