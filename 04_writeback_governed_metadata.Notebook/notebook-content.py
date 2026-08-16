@@ -169,9 +169,9 @@ print(f"Cell 2 status: sempy_fabric_loaded={fabric is not None}")
 
 # Cell 3: Read curated metadata from lh_metadata
 
-meta_df = spark.sql(f"SELECT * FROM {METADATA_LH}.vw_business_metadata_current")
+meta_df = spark.sql("SELECT * FROM vw_business_metadata_current")
 rows = meta_df.collect()
-print(f"Cell 3 status: loaded {len(rows)} row(s) from {METADATA_LH}.vw_business_metadata_current")
+print(f"Cell 3 status: loaded {len(rows)} row(s) from vw_business_metadata_current")
 
 
 def _norm(value: str) -> str:
@@ -222,7 +222,7 @@ try:
     kpi_df = spark.sql(
         f"""
         SELECT KpiName, KPICode, Description
-        FROM {METADATA_LH}.kpi_metadata
+        FROM kpi_metadata
         WHERE IsCertified = 1
         """
     )
@@ -243,7 +243,7 @@ except Exception:
 
 try:
     ai_df = spark.sql(
-        f"SELECT ResponseText FROM {METADATA_LH}.ai_metadata"
+        "SELECT ResponseText FROM ai_metadata"
         f" WHERE IsDraft = 0 AND RecordType = 'ai_instruction'"
     )
     ai_instructions = [r.ResponseText for r in ai_df.collect() if r.ResponseText]
@@ -1306,7 +1306,7 @@ print(f"Max annotation chars: {MAX_ANNOTATION_CHARS}")
 
 ai_df = spark.sql(f"""
     SELECT RecordType, TriggerText, ResponseText, LinkedKPICode
-    FROM {METADATA_LH}.ai_metadata
+    FROM ai_metadata
     WHERE IsDraft = 0 AND IsCertified = 1
     ORDER BY RecordType, RecordID
 """)
