@@ -1018,9 +1018,6 @@ else:
 BUSINESS_METADATA_TABLE = "vw_business_metadata_current"
 
 sql_view = f"""
-CREATE OR REPLACE TABLE {BUSINESS_METADATA_TABLE}
-USING DELTA AS
-
 SELECT
     'asset'          AS RecordCategory,
     'asset_metadata' AS SourceTable,
@@ -1107,7 +1104,22 @@ if DEMO_MODE:
     print("\nFirst 500 chars of SQL:\n")
     print(sql_view[:500])
 else:
-    spark.sql(sql_view)
+    materialized_df = spark.sql(sql_view)
+    try:
+        spark.sql(f"DROP VIEW IF EXISTS {BUSINESS_METADATA_TABLE}")
+    except Exception:
+        pass
+    try:
+        spark.sql(f"DROP TABLE IF EXISTS {BUSINESS_METADATA_TABLE}")
+    except Exception:
+        pass
+    (
+        materialized_df.write
+        .mode("overwrite")
+        .option("overwriteSchema", "true")
+        .format("delta")
+        .saveAsTable(BUSINESS_METADATA_TABLE)
+    )
     spark.catalog.refreshTable(BUSINESS_METADATA_TABLE)
     counts = spark.sql(
         f"SELECT SourceTable, COUNT(*) AS rows "
