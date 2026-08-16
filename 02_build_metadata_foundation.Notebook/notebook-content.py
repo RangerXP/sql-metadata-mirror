@@ -57,7 +57,7 @@ DATABASE_NAME = "sqldemo"
 SQL_PORT = 1433
 SQL_LOGIN_TIMEOUT_SECONDS = 30
 
-DEMO_MODE = True  # default safe mode; set False only for a live read + upsert run
+DEMO_MODE = False  # live run refreshes the current steward-review queue
 
 print(f"DEMO_MODE         : {DEMO_MODE}")
 print(f"Metadata lakehouse: {META_LAKEHOUSE}")
