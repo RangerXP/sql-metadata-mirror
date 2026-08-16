@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 import time
@@ -18,8 +19,11 @@ ACTIVE_STATES = {"NotStarted", "InProgress"}
 
 
 def get_token() -> str:
+    az_executable = shutil.which("az") or shutil.which("az.cmd")
+    if not az_executable:
+        raise RuntimeError("Azure CLI executable (az or az.cmd) was not found on PATH.")
     command = [
-        "az",
+        az_executable,
         "account",
         "get-access-token",
         "--resource",
