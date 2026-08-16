@@ -1967,13 +1967,24 @@ def _collect_pairs(df, columns):
     raise TypeError(f"Unsupported DataFrame type returned by SemPy: {type(df)}")
 
 
-tables_df = fabric.list_tables(dataset=SEMANTIC_MODEL)
-columns_df = fabric.list_columns(dataset=SEMANTIC_MODEL)
-measures_df = fabric.list_measures(dataset=SEMANTIC_MODEL)
+try:
+    tables_df = fabric.list_tables(dataset=SEMANTIC_MODEL)
+    columns_df = fabric.list_columns(dataset=SEMANTIC_MODEL)
+    measures_df = fabric.list_measures(dataset=SEMANTIC_MODEL)
 
-semantic_tables = sorted({str(name) for (name,) in _collect_pairs(tables_df, ["Name"])})
-semantic_columns = sorted({(str(t), str(c)) for t, c in _collect_pairs(columns_df, ["Table Name", "Column Name"])})
-semantic_measures = sorted({(str(t), str(m)) for t, m in _collect_pairs(measures_df, ["Table Name", "Measure Name"])})
+    semantic_tables = sorted({str(name) for (name,) in _collect_pairs(tables_df, ["Name"])})
+    semantic_columns = sorted({(str(t), str(c)) for t, c in _collect_pairs(columns_df, ["Table Name", "Column Name"])})
+    semantic_measures = sorted({(str(t), str(m)) for t, m in _collect_pairs(measures_df, ["Table Name", "Measure Name"])})
+except Exception:
+    import traceback
+
+    mssparkutils.fs.mkdirs("Files/debug")
+    mssparkutils.fs.put(
+        "Files/debug/nb02_semantic_inventory_error.txt",
+        traceback.format_exc(),
+        True,
+    )
+    raise
 
 print(f"SemPy inventory: {len(semantic_tables)} table(s), {len(semantic_columns)} column(s), {len(semantic_measures)} measure(s)")
 
