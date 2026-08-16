@@ -1887,6 +1887,12 @@ IF OBJECT_ID(N'dbo.governance_role_assignments', N'U') IS NULL CREATE TABLE dbo.
 GO
 IF OBJECT_ID(N'dbo.governance_label_assignments', N'U') IS NULL CREATE TABLE dbo.governance_label_assignments (label_id VARCHAR(64) NOT NULL, label_name NVARCHAR(200) NOT NULL, sensitivity_tier VARCHAR(64) NOT NULL, protection_policy NVARCHAR(MAX) NULL, applies_to_asset_ids NVARCHAR(MAX) NULL, scope VARCHAR(128) NOT NULL, CONSTRAINT PK_governance_label_assignments PRIMARY KEY CLUSTERED (label_id));
 GO
+IF OBJECT_ID(N'dbo.governance_okrs', N'U') IS NULL CREATE TABLE dbo.governance_okrs (okr_id VARCHAR(64) NOT NULL, okr_name NVARCHAR(200) NOT NULL, domain_id VARCHAR(64) NOT NULL, definition NVARCHAR(MAX) NOT NULL, owner_upn VARCHAR(255) NOT NULL, target_date DATE NULL, status VARCHAR(32) NOT NULL, is_certified BIT NOT NULL CONSTRAINT DF_governance_okrs_is_certified DEFAULT 0, certified_by VARCHAR(255) NULL, certified_date DATETIME2(7) NULL, recertification_due DATE NULL, retired_at DATETIME2(7) NULL, retired_by VARCHAR(255) NULL, retirement_reason NVARCHAR(500) NULL, CONSTRAINT PK_governance_okrs PRIMARY KEY CLUSTERED (okr_id), CONSTRAINT FK_governance_okrs_domain FOREIGN KEY (domain_id) REFERENCES dbo.governance_domains (domain_id));
+GO
+IF OBJECT_ID(N'dbo.governance_okr_key_results', N'U') IS NULL CREATE TABLE dbo.governance_okr_key_results (key_result_id VARCHAR(64) NOT NULL, okr_id VARCHAR(64) NOT NULL, result_name NVARCHAR(200) NOT NULL, metric_source VARCHAR(255) NOT NULL, goal_amount DECIMAL(18,4) NOT NULL, progress_amount DECIMAL(18,4) NULL, max_amount DECIMAL(18,4) NOT NULL, progress_status VARCHAR(32) NOT NULL, CONSTRAINT PK_governance_okr_key_results PRIMARY KEY CLUSTERED (key_result_id), CONSTRAINT FK_governance_okr_key_results_okr FOREIGN KEY (okr_id) REFERENCES dbo.governance_okrs (okr_id));
+GO
+IF OBJECT_ID(N'dbo.governance_okr_data_products', N'U') IS NULL CREATE TABLE dbo.governance_okr_data_products (okr_id VARCHAR(64) NOT NULL, data_product_id VARCHAR(64) NOT NULL, CONSTRAINT PK_governance_okr_data_products PRIMARY KEY CLUSTERED (okr_id, data_product_id), CONSTRAINT FK_governance_okr_data_products_okr FOREIGN KEY (okr_id) REFERENCES dbo.governance_okrs (okr_id), CONSTRAINT FK_governance_okr_data_products_product FOREIGN KEY (data_product_id) REFERENCES dbo.governance_data_products (data_product_id));
+GO
 PRINT 'Purview metadata schema tables are ready.';
 GO
 """
@@ -1919,6 +1925,23 @@ GO
 ;WITH n AS (SELECT TOP (9) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn FROM sys.objects)
 INSERT INTO dbo.governance_label_assignments (label_id, label_name, sensitivity_tier, protection_policy, applies_to_asset_ids, scope)
 SELECT CONCAT('LBL-', RIGHT(CONCAT('000', rn), 3)), CASE rn WHEN 1 THEN 'General' WHEN 2 THEN 'Internal' WHEN 3 THEN 'Confidential' WHEN 4 THEN 'Highly Confidential' WHEN 5 THEN 'PCI Restricted' WHEN 6 THEN 'Privacy Restricted' WHEN 7 THEN 'Operations Sensitive' WHEN 8 THEN 'Executive KPI' ELSE 'Governance Admin' END, CASE WHEN rn IN (4,5,6) THEN 'Highly Confidential' WHEN rn IN (3,7,9) THEN 'Confidential' WHEN rn = 1 THEN 'General' ELSE 'Internal' END, 'Notebook-owned policy seed.', CASE rn WHEN 4 THEN 'dbo.employees.sin_full;dbo.customers.sin_last_4' WHEN 5 THEN 'dbo.billing_transactions.card_pan_last_4' ELSE 'dbo.customers;BrookfieldEnercare.SemanticModel' END, 'Tenant' FROM n;
+GO
+INSERT INTO dbo.governance_okrs (okr_id, okr_name, domain_id, definition, owner_upn, target_date, status) VALUES
+('OKR-SVCDEL-SLA','Protect SLA Attainment In Field Service Delivery','DOM-SVCDEL','Hold SLA breach exposure at or below target across all service-request queues, closing the auto-suppression dispatch gap surfaced in Act 2 of the Maria northstar scenario.','ranbir.singh@enercare.ca','2026-12-31','Published'),
+('OKR-CUSTOPS-CX','Improve Call-Center Customer Experience','DOM-CUSTOPS','Raise first-contact resolution and customer satisfaction for call-center interactions to their certified target thresholds.','Victoria.Tan@enercare.ca','2026-12-31','Published'),
+('OKR-REVCON-RETAIN','Protect Renewal Revenue And Reduce Repeat Billing Complaints','DOM-REVCON','Sustain protection-plan renewal rate at target while reducing the rate of customers filing more than one billing complaint per period.','Ci.Zhu@enercare.ca','2026-12-31','Published');
+GO
+INSERT INTO dbo.governance_okr_key_results (key_result_id, okr_id, result_name, metric_source, goal_amount, progress_amount, max_amount, progress_status) VALUES
+('KR-SLA-BREACH','OKR-SVCDEL-SLA','SLA Breach Rate At Or Below Target','kpi_metadata.SLA_BRCH_RATE',5.00,3.80,100.00,'OnTrack'),
+('KR-FCR-RATE','OKR-CUSTOPS-CX','First Contact Resolution At Or Above Target','kpi_metadata.FCR',78.00,81.50,100.00,'OnTrack'),
+('KR-CSAT-SCORE','OKR-CUSTOPS-CX','Customer Satisfaction At Or Above Target','kpi_metadata.CSAT',4.20,4.35,5.00,'OnTrack'),
+('KR-PP-RENEWAL','OKR-REVCON-RETAIN','Protection Plan Renewal Rate At Or Above Target','kpi_metadata.PP_RNW_RATE',82.00,84.00,100.00,'OnTrack'),
+('KR-REPEAT-COMPLAINT','OKR-REVCON-RETAIN','Repeat Billing Complaint Rate Reduced','BrookfieldEnercare/_Measures/RepeatComplaintRate',10.00,14.50,100.00,'AtRisk');
+GO
+INSERT INTO dbo.governance_okr_data_products (okr_id, data_product_id) VALUES
+('OKR-SVCDEL-SLA','DP-SVCPERF'),
+('OKR-CUSTOPS-CX','DP-CUST360'),
+('OKR-REVCON-RETAIN','DP-BILLHEALTH');
 GO
 PRINT 'Purview SQL-first metadata seed complete.';
 GO
