@@ -35,17 +35,27 @@ spark = SparkSession.builder.getOrCreate()
 
 METADATA_LAKEHOUSE = "lh_metadata"
 METADATA_SCHEMA = "metadata"
-PURVIEW_ACCOUNT_NAME = os.getenv("PURVIEW_ACCOUNT_NAME", "Purview-West3")
-PURVIEW_API_BASE_URL = (
-    os.getenv("PURVIEW_API_BASE_URL", "").strip()
-    or os.getenv("PURVIEW_PRIVATE_ENDPOINT_URL", "").strip()
-    or os.getenv("PURVIEW_PRIVATE_BASE_URL", "").strip()
-)
-PURVIEW_BASE_URL = (
-    PURVIEW_API_BASE_URL.rstrip("/")
-    if PURVIEW_API_BASE_URL
-    else f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
-)
+PURVIEW_ACCOUNT_NAME = os.getenv("PURVIEW_ACCOUNT_NAME", "Purview-West2")
+
+
+def _resolve_purview_base_url():
+    configured_base = (
+        os.getenv("PURVIEW_API_BASE_URL", "").strip()
+        or os.getenv("PURVIEW_PRIVATE_ENDPOINT_URL", "").strip()
+        or os.getenv("PURVIEW_PRIVATE_BASE_URL", "").strip()
+    )
+    if configured_base:
+        return configured_base.rstrip("/")
+
+    raise RuntimeError(
+        "PURVIEW_API_BASE_URL/PURVIEW_PRIVATE_ENDPOINT_URL/PURVIEW_PRIVATE_BASE_URL is not set. "
+        "Set it to the reachable Purview endpoint in this runtime, typically a private endpoint such as "
+        "https://<account-name>.privatelink.purview.azure.com. The public hostname "
+        f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com will fail in private-network Fabric runtimes."
+    )
+
+
+PURVIEW_BASE_URL = _resolve_purview_base_url()
 PURVIEW_TENANT_ID = "b7e47691-9726-4f67-a302-e567815f3522"
 PURVIEW_TOKEN_CACHE_PATH = "Files/purview_publish/.purview_token_cache.json"
 SQL_MIRROR_ONLY_DEPLOYMENT = False
