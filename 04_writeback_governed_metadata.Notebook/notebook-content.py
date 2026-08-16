@@ -1187,6 +1187,7 @@ applied_ann = 0
 skipped_ann = 0
 applied_desc_from_glossary = 0
 skipped_desc_from_glossary = 0
+_cell9_debug_lines = []
 
 if EFFECTIVE_DEMO_MODE:
     print("[DRY RUN] sm_annotations writes skipped")
@@ -1198,6 +1199,10 @@ else:
             object_name=intent["object_name"],
             key=intent["annotation_key"],
             value=intent["annotation_value"],
+        )
+        _cell9_debug_lines.append(
+            f"{intent['table']}.{intent['object_name']} [{intent['annotation_key']}] "
+            f"ok={ok} detail={detail}"
         )
         if ok:
             applied_ann += 1
@@ -1218,6 +1223,14 @@ else:
                 f"  [WARN] skipped glossary description {table_name}.{object_name}"
                 f" ({object_type}) | {detail}"
             )
+
+    # Job status API exposes no cell-level stdout; persist per-intent detail so a run's
+    # real failure reason can be read back independent of any interactive session.
+    try:
+        mssparkutils.fs.mkdirs("Files/debug")
+        mssparkutils.fs.put("Files/debug/nb04_cell9_last_run.txt", "\n".join(_cell9_debug_lines), True)
+    except Exception as debug_ex:
+        print(f"[WARN] Could not write Cell 9 debug log: {debug_ex}")
 
 print(f"Cell 9 status: annotations applied={applied_ann}, skipped={skipped_ann}")
 print(
