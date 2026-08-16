@@ -1016,7 +1016,8 @@ else:
 # Extends existing view to include ai_metadata with SourceTable discriminator
 
 sql_view = f"""
-CREATE OR REPLACE VIEW {METADATA_LAKEHOUSE}.vw_business_metadata_current AS
+CREATE OR REPLACE TABLE {METADATA_LAKEHOUSE}.vw_business_metadata_current
+USING DELTA AS
 
 SELECT
     'asset'          AS RecordCategory,
@@ -1105,11 +1106,24 @@ if DEMO_MODE:
     print(sql_view[:500])
 else:
     spark.sql(sql_view)
+    spark.catalog.refreshTable(f"{METADATA_LAKEHOUSE}.vw_business_metadata_current")
     counts = spark.sql(
         f"SELECT SourceTable, COUNT(*) AS rows "
         f"FROM {METADATA_LAKEHOUSE}.vw_business_metadata_current "
         f"GROUP BY SourceTable ORDER BY SourceTable"
     )
+    materialized_count = spark.table(f"{METADATA_LAKEHOUSE}.vw_business_metadata_current").count()
+    expected_materialized_count = (
+        spark.table(f"{METADATA_LAKEHOUSE}.asset_metadata").count()
+        + spark.table(f"{METADATA_LAKEHOUSE}.column_metadata").count()
+        + spark.table(f"{METADATA_LAKEHOUSE}.kpi_metadata").count()
+        + spark.table(f"{METADATA_LAKEHOUSE}.ai_metadata").count()
+    )
+    if materialized_count != expected_materialized_count:
+        raise RuntimeError(
+            "vw_business_metadata_current count mismatch: "
+            f"expected={expected_materialized_count}, actual={materialized_count}"
+        )
     print("vw_business_metadata_current rebuilt:")
     counts.show()
 
