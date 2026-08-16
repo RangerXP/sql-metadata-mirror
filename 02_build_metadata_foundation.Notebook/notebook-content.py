@@ -1978,13 +1978,39 @@ try:
 except Exception:
     import traceback
 
-    mssparkutils.fs.mkdirs("Files/debug")
-    mssparkutils.fs.put(
-        "Files/debug/nb02_semantic_inventory_error.txt",
-        traceback.format_exc(),
-        True,
+    inventory_error = traceback.format_exc()
+    print("[WARN] SemPy inventory failed; using verified sm_annotations targets.")
+    print(inventory_error[-2000:])
+    existing_annotations = spark.table("sm_annotations")
+    semantic_tables = sorted(
+        {
+            str(row["table"])
+            for row in existing_annotations.select("table").distinct().collect()
+            if row["table"]
+        }
     )
-    raise
+    semantic_columns = sorted(
+        {
+            (str(row["table"]), str(row["object_name"]))
+            for row in existing_annotations.where(F.col("object_type") == "Column")
+            .select("table", "object_name")
+            .distinct()
+            .collect()
+        }
+    )
+    semantic_measures = sorted(
+        {
+            (str(row["table"]), str(row["object_name"]))
+            for row in existing_annotations.where(F.col("object_type") == "Measure")
+            .select("table", "object_name")
+            .distinct()
+            .collect()
+        }
+    )
+    if not semantic_tables or not semantic_columns:
+        raise RuntimeError(
+            "SemPy inventory failed and sm_annotations did not contain a usable fallback inventory."
+        )
 
 print(f"SemPy inventory: {len(semantic_tables)} table(s), {len(semantic_columns)} column(s), {len(semantic_measures)} measure(s)")
 
