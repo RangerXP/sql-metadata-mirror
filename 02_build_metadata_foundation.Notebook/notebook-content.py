@@ -1395,8 +1395,15 @@ def write_table_from_pandas(df: pd.DataFrame, table_name: str) -> int:
     last_error = None
     for full_table in table_candidates:
         try:
-            if table_name == "okr_key_results":
-                spark.sql(f"DROP TABLE IF EXISTS {full_table}")
+            # DROP before overwrite for every table (not just okr_key_results, the one
+            # table this was previously scoped to): Delta's column-mapping ID history can
+            # leave stale physical-schema references from an earlier column add/rename
+            # that persist across overwrite+refreshTable, surfacing later as a downstream
+            # reader's "Couldn't find <phantom_column>#<id>" IllegalStateException even
+            # though the table's current declared schema looks fine. Confirmed recurrence
+            # in glossary_terms (2026-08-17, notebook 06) after the original 2026-08-10 fix
+            # only covered okr_key_results.
+            spark.sql(f"DROP TABLE IF EXISTS {full_table}")
             (
                 sdf.write
                 .mode("overwrite")
