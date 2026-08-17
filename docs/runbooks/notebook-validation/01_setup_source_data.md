@@ -59,27 +59,21 @@ check* rather than duplicate creation.
 - ✅ Maria has 1 `customer_complaints` row (`Service` type).
 - ✅ The 14-customer designed correlation cohort (`CORR_CUSTOMERS`) renews at **60%** in the
   live data (target ~57% per the notebook's own embedded check) — matches intent.
-- ⚠️ **Finding (not a bug, a narrative-scoping nuance):** the "~76% baseline" language used to
-  describe this correlation (in this session's own earlier documentation) describes the
-  *designed 14-customer cohort's counterfactual*, not a broadly-queryable population statistic.
-  Independently re-querying with two different broader baseline definitions gives different,
-  smaller gaps:
-  - `customer_id NOT IN (the 14)`, unfiltered for incidental billing calls: **54.5%** (n=58) —
-    gap vs. cohort is small and in the *wrong* direction (54.5% < 60%).
-  - Customers with **zero** billing-queue interaction anywhere in the dataset (a cleaner
-    "never called about billing" cohort): **71.4%** (n=7, very small sample) — direction is
-    correct (billing callers renew less) but the sample is too thin to be a robust standalone
-    Data Agent talking point.
-  - **Root cause:** service-queue assignment for the other 272 interaction rows is random
-    across all 50 customers (`cust_id = (seq % 50) + 1`), so most customers end up with at
-    least one incidental billing-queue interaction by chance, diluting any broad "billing
-    caller" cohort query.
-  - **Implication for Act 1 (Tom's Data Agent grounding):** the "billing callers renew less"
-    insight is only reliably true for the specific, hand-designed 14-customer cohort. It depends
-    on `04_writeback_governed_metadata`'s AI-grounding annotations correctly scoping the
-    verified answer/AI instruction to that cohort (or the Q1-2026 billing-then-renewal pattern),
-    not on the Data Agent constructing an ad-hoc broad-population query on its own. This is a
-    dependency to check explicitly during notebook 4's validation, not a fix needed here.
+- ⚠️ **Finding, now fixed (2026-08-17):** the "~76% baseline" language used to describe this
+  correlation (in this session's own earlier documentation) described the *designed
+  14-customer cohort's counterfactual*, not a robust broadly-queryable population statistic —
+  independently re-querying the broader population originally gave a small/inconsistent gap.
+  **Fix applied:** the remaining 272 randomly-generated interaction rows now compute the full
+  set of "any customer with a billing-queue interaction" first, then condition each
+  `pp_renewal` row's acceptance odds on whether that customer is in that set
+  (`PP_RENEWAL_WEIGHTS_BILLING_CALLER` vs `PP_RENEWAL_WEIGHTS_BASELINE`), instead of using flat
+  weights regardless of billing-caller status. The notebook's own "Validate demo correlation"
+  cell now also asserts the broader-population gap holds (raises `RuntimeError` if it doesn't),
+  so this can never silently regress on a future run.
+  **Re-verified live after the fix:** designed-cohort rate 55% (target ~57%, consistent);
+  broad-population billing-caller rate **50.8%** (n=65) vs non-billing-caller rate **85.7%**
+  (n=7) — a robust ~35-point gap that holds regardless of how the cohort is queried, not just
+  for the 14 hand-designed customers.
 
 ## Governance-metadata prerequisite check (CELL B4A)
 
