@@ -42,6 +42,31 @@ print(f"Semantic model: {SEMANTIC_MODEL}")
 print(f"Output root: {OUTPUT_ROOT}")
 
 
+import traceback
+
+
+def _log_nb08val_diagnostic(stage: str, error: Exception) -> None:
+    try:
+        from pyspark.sql import Row
+        from pyspark.sql.types import StructType, StructField, StringType
+        diag_schema = StructType([
+            StructField("stage", StringType(), True),
+            StructField("error_type", StringType(), True),
+            StructField("error_message", StringType(), True),
+            StructField("traceback", StringType(), True),
+        ])
+        diag_row = Row(
+            stage=stage,
+            error_type=type(error).__name__,
+            error_message=str(error)[:4000],
+            traceback=traceback.format_exc()[:8000],
+        )
+        spark.createDataFrame([diag_row], schema=diag_schema).write.format("delta").mode("append") \
+            .saveAsTable(f"{METADATA_LAKEHOUSE}.nb08val_diagnostics_log")
+    except Exception as log_exc:
+        print(f"[diagnostic-logging-failed] {log_exc}")
+
+
 # METADATA ********************
 
 # META {
@@ -105,29 +130,33 @@ def _write_table(df, table_name: str, mode: str = "overwrite"):
     raise RuntimeError(f"Could not write table '{table_name}'. Last error: {last_error}")
 
 
-domains_df, domains_source = _read_table("domains")
-data_products_df, data_products_source = _read_table("data_products")
-glossary_df, glossary_source = _read_table("glossary_terms")
-cde_df, cde_source = _read_table("cdes")
-roles_df, roles_source = _read_table("role_assignments", required=False)
-labels_df, labels_source = _read_table("label_assignments", required=False)
-# Try semantic_annotation_plan first, then sm_annotations as the production write target
-semantic_annotations_df, semantic_annotations_source = _read_table("semantic_annotation_plan", required=False)
-if semantic_annotations_df is None:
-    semantic_annotations_df, semantic_annotations_source = _read_table("sm_annotations", required=False)
-    if semantic_annotations_df is not None:
-        print(f"[Cell 2] semantic_annotation_plan not found; using sm_annotations ({semantic_annotations_source}).")
+try:
+    domains_df, domains_source = _read_table("domains")
+    data_products_df, data_products_source = _read_table("data_products")
+    glossary_df, glossary_source = _read_table("glossary_terms")
+    cde_df, cde_source = _read_table("cdes")
+    roles_df, roles_source = _read_table("role_assignments", required=False)
+    labels_df, labels_source = _read_table("label_assignments", required=False)
+    # Try semantic_annotation_plan first, then sm_annotations as the production write target
+    semantic_annotations_df, semantic_annotations_source = _read_table("semantic_annotation_plan", required=False)
+    if semantic_annotations_df is None:
+        semantic_annotations_df, semantic_annotations_source = _read_table("sm_annotations", required=False)
+        if semantic_annotations_df is not None:
+            print(f"[Cell 2] semantic_annotation_plan not found; using sm_annotations ({semantic_annotations_source}).")
 
-print(f"domains rows: {domains_df.count()} (source={domains_source})")
-print(f"data_products rows: {data_products_df.count()} (source={data_products_source})")
-print(f"glossary_terms rows: {glossary_df.count()} (source={glossary_source})")
-print(f"cdes rows: {cde_df.count()} (source={cde_source})")
-if roles_df is not None:
-    print(f"role_assignments rows: {roles_df.count()} (source={roles_source})")
-if labels_df is not None:
-    print(f"label_assignments rows: {labels_df.count()} (source={labels_source})")
-if semantic_annotations_df is not None:
-    print(f"semantic_annotation_plan rows: {semantic_annotations_df.count()} (source={semantic_annotations_source})")
+    print(f"domains rows: {domains_df.count()} (source={domains_source})")
+    print(f"data_products rows: {data_products_df.count()} (source={data_products_source})")
+    print(f"glossary_terms rows: {glossary_df.count()} (source={glossary_source})")
+    print(f"cdes rows: {cde_df.count()} (source={cde_source})")
+    if roles_df is not None:
+        print(f"role_assignments rows: {roles_df.count()} (source={roles_source})")
+    if labels_df is not None:
+        print(f"label_assignments rows: {labels_df.count()} (source={labels_source})")
+    if semantic_annotations_df is not None:
+        print(f"semantic_annotation_plan rows: {semantic_annotations_df.count()} (source={semantic_annotations_source})")
+except Exception as ex:
+    _log_nb08val_diagnostic("cell2_read_metadata", ex)
+    raise
 
 
 # METADATA ********************
@@ -174,54 +203,58 @@ def _id_column(df, candidates):
     return F.lit(None)
 
 
-domain_score = domains_df.select(
-    F.lit("Domain").alias("object_type"),
-    _id_column(domains_df, ["domain_id", "domain_code"]).alias("object_id"),
-    F.col("domain_name").alias("object_name"),
-    _owner_column(domains_df).alias("owner"),
-    _steward_column(domains_df).alias("steward"),
-    _status_column(domains_df).alias("status"),
-)
+try:
+    domain_score = domains_df.select(
+        F.lit("Domain").alias("object_type"),
+        _id_column(domains_df, ["domain_id", "domain_code"]).alias("object_id"),
+        F.col("domain_name").alias("object_name"),
+        _owner_column(domains_df).alias("owner"),
+        _steward_column(domains_df).alias("steward"),
+        _status_column(domains_df).alias("status"),
+    )
 
-product_name_col = "data_product_name" if "data_product_name" in data_products_df.columns else "product_name"
-product_score = data_products_df.select(
-    F.lit("DataProduct").alias("object_type"),
-    _id_column(data_products_df, ["data_product_id", "product_code"]).alias("object_id"),
-    F.col(product_name_col).alias("object_name"),
-    _owner_column(data_products_df).alias("owner"),
-    _steward_column(data_products_df).alias("steward"),
-    _status_column(data_products_df).alias("status"),
-)
+    product_name_col = "data_product_name" if "data_product_name" in data_products_df.columns else "product_name"
+    product_score = data_products_df.select(
+        F.lit("DataProduct").alias("object_type"),
+        _id_column(data_products_df, ["data_product_id", "product_code"]).alias("object_id"),
+        F.col(product_name_col).alias("object_name"),
+        _owner_column(data_products_df).alias("owner"),
+        _steward_column(data_products_df).alias("steward"),
+        _status_column(data_products_df).alias("status"),
+    )
 
-cde_score = cde_df.select(
-    F.lit("CDE").alias("object_type"),
-    _id_column(cde_df, ["cde_id", "cde_code"]).alias("object_id"),
-    F.col("cde_name").alias("object_name"),
-    _owner_column(cde_df).alias("owner"),
-    _steward_column(cde_df).alias("steward"),
-    _status_column(cde_df).alias("status"),
-)
+    cde_score = cde_df.select(
+        F.lit("CDE").alias("object_type"),
+        _id_column(cde_df, ["cde_id", "cde_code"]).alias("object_id"),
+        F.col("cde_name").alias("object_name"),
+        _owner_column(cde_df).alias("owner"),
+        _steward_column(cde_df).alias("steward"),
+        _status_column(cde_df).alias("status"),
+    )
 
-scorecard_df = domain_score.unionByName(product_score).unionByName(cde_score)
-# Steward gate: all object types now carry a steward UPN sourced from governance_domain_stewards
-# (domains), stewards (data products), and steward_upn (CDEs) added to the SQL-first schema.
-scorecard_df = scorecard_df.withColumn(
-    "has_steward",
-    F.length(F.trim(F.coalesce(F.col("steward"), F.lit("")))) > 0
-)
-scorecard_df = scorecard_df.withColumn(
-    "has_owner",
-    F.length(F.trim(F.coalesce(F.col("owner"), F.lit("")))) > 0
-)
-scorecard_df = scorecard_df.withColumn("is_certified_or_published", F.col("status").isin(CERTIFICATION_STATUSES))
-scorecard_df = scorecard_df.withColumn(
-    "stage_status",
-    F.when(F.col("has_owner") & F.col("has_steward") & F.col("is_certified_or_published"), F.lit("PASS")).otherwise(F.lit("ACTION_REQUIRED")),
-)
+    scorecard_df = domain_score.unionByName(product_score).unionByName(cde_score)
+    # Steward gate: all object types now carry a steward UPN sourced from governance_domain_stewards
+    # (domains), stewards (data products), and steward_upn (CDEs) added to the SQL-first schema.
+    scorecard_df = scorecard_df.withColumn(
+        "has_steward",
+        F.length(F.trim(F.coalesce(F.col("steward"), F.lit("")))) > 0
+    )
+    scorecard_df = scorecard_df.withColumn(
+        "has_owner",
+        F.length(F.trim(F.coalesce(F.col("owner"), F.lit("")))) > 0
+    )
+    scorecard_df = scorecard_df.withColumn("is_certified_or_published", F.col("status").isin(CERTIFICATION_STATUSES))
+    scorecard_df = scorecard_df.withColumn(
+        "stage_status",
+        F.when(F.col("has_owner") & F.col("has_steward") & F.col("is_certified_or_published"), F.lit("PASS")).otherwise(F.lit("ACTION_REQUIRED")),
+    )
 
-phase_08_scorecard_table = _write_table(scorecard_df, "purview_phase_08_stewardship_scorecard")
-print(f"[Cell 3] Wrote stewardship scorecard to: {phase_08_scorecard_table}")
-display(scorecard_df.orderBy("object_type", "object_name"))
+    phase_08_scorecard_table = _write_table(scorecard_df, "purview_phase_08_stewardship_scorecard")
+    print(f"[Cell 3] Wrote stewardship scorecard to: {phase_08_scorecard_table}")
+    display(scorecard_df.orderBy("object_type", "object_name"))
+except Exception as ex:
+    _log_nb08val_diagnostic("cell3_stewardship_scorecard", ex)
+    raise
 
 
 # METADATA ********************
