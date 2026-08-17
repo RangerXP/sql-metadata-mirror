@@ -761,8 +761,9 @@ verified_answers = [
      "Use PP_RNW_RATE. Renewals can happen via inbound call, outbound retention call, online portal, or "
      "direct mail. Target: 82% renewal rate."),
     ("PP_RNW_RATE", "renewal rate",
-     "PP Renewal Rate target is 82%. Customers calling the billing queue before renewal date and not renewing "
-     "often signals billing confusion — cross-reference with AHT on billing queue."),
+     "PP Renewal Rate target is 82%. Customers who contacted the billing queue before their renewal date renew "
+     "at roughly 51%, versus about 86% for customers who did not contact the billing queue — a ~35-point gap "
+     "signaling billing confusion as a churn driver. Cross-reference with AHT on billing queue."),
     ("PP_RNW_RATE", "contract renewal",
      "Contract renewal performance is tracked by PP_RNW_RATE. Renewal window: "
      "30 days before to 15 days after the contract end date."),

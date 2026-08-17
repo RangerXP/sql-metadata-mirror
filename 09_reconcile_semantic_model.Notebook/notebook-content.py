@@ -649,13 +649,47 @@ print(
 
 import hashlib
 import json
+import os
 import struct
+import time
 from datetime import datetime, timezone
 
 import pyodbc
 import requests
 
 ODBC_SQL_COPT_SS_ACCESS_TOKEN = 1256
+
+# Shared with 05/06/08's Purview sign-in: if another notebook already cached a
+# valid token in this run window, reuse it instead of blocking on interactive sign-in.
+PURVIEW_TOKEN_CACHE_PATH = "Files/purview_publish/.purview_token_cache.json"
+
+
+def _read_shared_purview_token_cache():
+    try:
+        raw = mssparkutils.fs.head(PURVIEW_TOKEN_CACHE_PATH, 65536)
+    except Exception:
+        return ""
+    try:
+        cached = json.loads(raw)
+        cached_token = (cached.get("access_token") or "").strip()
+        expires_on = float(cached.get("expires_on", 0))
+    except Exception:
+        return ""
+    if not cached_token or expires_on <= time.time() + 120:
+        return ""
+    return cached_token
+
+
+def _write_shared_purview_token_cache(token: str, expires_on: float):
+    try:
+        mssparkutils.fs.mkdirs("Files/purview_publish")
+        mssparkutils.fs.put(
+            PURVIEW_TOKEN_CACHE_PATH,
+            json.dumps({"access_token": token, "expires_on": expires_on}),
+            True,
+        )
+    except Exception as exc:
+        print(f"[AUTH][WARN] Could not write shared Purview token cache: {exc}")
 
 
 def _get_fabric_token(scopes):
@@ -669,6 +703,16 @@ def _get_fabric_token(scopes):
 
 
 def get_purview_token():
+    manual_token = os.getenv("PURVIEW_ACCESS_TOKEN", "").strip()
+    if manual_token:
+        print("[AUTH] Using PURVIEW_ACCESS_TOKEN environment override.")
+        return manual_token
+
+    cached_token = _read_shared_purview_token_cache()
+    if cached_token:
+        print("[AUTH] Reusing cached Purview token acquired from another notebook/session.")
+        return cached_token
+
     try:
         from azure.identity import DeviceCodeCredential
     except ImportError:
@@ -687,12 +731,15 @@ def get_purview_token():
             f"code {user_code}. Sign in as the Sean account in tenant {PURVIEW_TENANT_ID}."
         )
 
+    print("[AUTH] No cached token or override found; starting device-code sign-in.")
     credential = DeviceCodeCredential(
         client_id="04b07795-8ddb-461a-bbee-02f9e1bf7b46",
         tenant_id=PURVIEW_TENANT_ID,
         prompt_callback=show_device_code,
     )
-    return credential.get_token("https://purview.azure.net/.default").token
+    token_result = credential.get_token("https://purview.azure.net/.default")
+    _write_shared_purview_token_cache(token_result.token, token_result.expires_on)
+    return token_result.token
 
 
 def get_sql_connection():
@@ -1122,13 +1169,47 @@ print(
 
 import hashlib
 import json
+import os
 import struct
+import time
 from datetime import datetime, timezone
 
 import pyodbc
 import requests
 
 ODBC_SQL_COPT_SS_ACCESS_TOKEN = 1256
+
+# Shared with 05/06/08's Purview sign-in: if another notebook already cached a
+# valid token in this run window, reuse it instead of blocking on interactive sign-in.
+PURVIEW_TOKEN_CACHE_PATH = "Files/purview_publish/.purview_token_cache.json"
+
+
+def _read_shared_purview_token_cache():
+    try:
+        raw = mssparkutils.fs.head(PURVIEW_TOKEN_CACHE_PATH, 65536)
+    except Exception:
+        return ""
+    try:
+        cached = json.loads(raw)
+        cached_token = (cached.get("access_token") or "").strip()
+        expires_on = float(cached.get("expires_on", 0))
+    except Exception:
+        return ""
+    if not cached_token or expires_on <= time.time() + 120:
+        return ""
+    return cached_token
+
+
+def _write_shared_purview_token_cache(token: str, expires_on: float):
+    try:
+        mssparkutils.fs.mkdirs("Files/purview_publish")
+        mssparkutils.fs.put(
+            PURVIEW_TOKEN_CACHE_PATH,
+            json.dumps({"access_token": token, "expires_on": expires_on}),
+            True,
+        )
+    except Exception as exc:
+        print(f"[AUTH][WARN] Could not write shared Purview token cache: {exc}")
 
 
 def _get_fabric_token(scopes):
@@ -1142,6 +1223,16 @@ def _get_fabric_token(scopes):
 
 
 def get_purview_token():
+    manual_token = os.getenv("PURVIEW_ACCESS_TOKEN", "").strip()
+    if manual_token:
+        print("[AUTH] Using PURVIEW_ACCESS_TOKEN environment override.")
+        return manual_token
+
+    cached_token = _read_shared_purview_token_cache()
+    if cached_token:
+        print("[AUTH] Reusing cached Purview token acquired from another notebook/session.")
+        return cached_token
+
     try:
         from azure.identity import DeviceCodeCredential
     except ImportError:
@@ -1160,12 +1251,15 @@ def get_purview_token():
             f"code {user_code}. Sign in as the Sean account in tenant {PURVIEW_TENANT_ID}."
         )
 
+    print("[AUTH] No cached token or override found; starting device-code sign-in.")
     credential = DeviceCodeCredential(
         client_id="04b07795-8ddb-461a-bbee-02f9e1bf7b46",
         tenant_id=PURVIEW_TENANT_ID,
         prompt_callback=show_device_code,
     )
-    return credential.get_token("https://purview.azure.net/.default").token
+    token_result = credential.get_token("https://purview.azure.net/.default")
+    _write_shared_purview_token_cache(token_result.token, token_result.expires_on)
+    return token_result.token
 
 
 def get_sql_connection():
