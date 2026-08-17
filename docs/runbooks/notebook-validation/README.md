@@ -4,9 +4,9 @@
 notebooks, built by actually running each notebook end-to-end (not by reading the code).
 Distinct from the two documents it complements:
 
-- [`docs/01_Notebook_Description.md`](../../01_Notebook_Description.md), [`docs/02_Notebook_Description.md`](../../02_Notebook_Description.md), [`docs/03_Notebook_Description.md`](../../03_Notebook_Description.md), [`docs/04_Notebook_Description.md`](../../04_Notebook_Description.md), [`docs/05_Notebook_Description.md`](../../05_Notebook_Description.md) — static, code-grounded
+- [`docs/01_Notebook_Description.md`](../../01_Notebook_Description.md), [`docs/02_Notebook_Description.md`](../../02_Notebook_Description.md), [`docs/03_Notebook_Description.md`](../../03_Notebook_Description.md), [`docs/04_Notebook_Description.md`](../../04_Notebook_Description.md), [`docs/05_Notebook_Description.md`](../../05_Notebook_Description.md), [`docs/06_Notebook_Description.md`](../../06_Notebook_Description.md) — static, code-grounded
   reference, one file per notebook (split out as each is validated; see
-  [`docs/06-10_Notebook_Description_pending.md`](../../06-10_Notebook_Description_pending.md)
+  [`docs/07-10_Notebook_Description_pending.md`](../../07-10_Notebook_Description_pending.md)
   for notebooks not yet split). Not updated by a live run on its own, but each notebook's file
   now also carries a "Live-validation findings" section maintained alongside this folder.
 - [`docs/runbooks/ten-notebook-consolidated-validation.md`](../ten-notebook-consolidated-validation.md) —
@@ -55,7 +55,7 @@ with `--job-id <jobId>` printed at submission time.
 | 3 | `03_build_semantic_model` | ✅ Completed | [03_build_semantic_model.md](./03_build_semantic_model.md) |
 | 4 | `04_writeback_governed_metadata` | ✅ Completed | [04_writeback_governed_metadata.md](./04_writeback_governed_metadata.md) |
 | 5 | `05_publish_governance_domains` | ✅ Completed (real bug found + fixed) | [05_publish_governance_domains.md](./05_publish_governance_domains.md) |
-| 6 | `06_publish_glossary_and_lineage` | ⬜ Not started | — |
+| 6 | `06_publish_glossary_and_lineage` | ✅ Completed (four real bugs found + fixed) | [06_publish_glossary_and_lineage.md](./06_publish_glossary_and_lineage.md) |
 | 7 | `07_apply_approved_changes` | ⬜ Not started | — |
 | 8 | `08_validate_governance_evidence` | ⬜ Not started | — |
 | 9 | `09_reconcile_semantic_model` | ⬜ Not started | — |

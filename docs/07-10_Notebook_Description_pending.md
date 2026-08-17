@@ -1,15 +1,15 @@
-# Notebooks 06–10 — Pending Individual-File Split
+# Notebooks 07–10 — Pending Individual-File Split
 
 **Status:** Temporary holding document. `docs/01_Notebook_Description.md` through
-`docs/05_Notebook_Description.md` have been split into individual per-notebook files (one
+`docs/06_Notebook_Description.md` have been split into individual per-notebook files (one
 file per notebook, matching the naming convention `NN_Notebook_Description.md`), each enriched
 with artifact cataloging and live-validation findings as that notebook is worked through the
 validation sequence (`docs/runbooks/notebook-validation/`).
 
-The content below for notebooks 06–10 has not yet been split out or enriched with live-run
+The content below for notebooks 07–10 has not yet been split out or enriched with live-run
 evidence — it's preserved verbatim from the prior consolidated `01_Notebook_Description.md` so
 nothing is lost. As each notebook is reached in the validation sequence, its section here will
-be extracted into its own `0N_Notebook_Description.md` (matching the pattern of 01–05) and
+be extracted into its own `0N_Notebook_Description.md` (matching the pattern of 01–06) and
 removed from this file.
 
 ---
@@ -30,27 +30,6 @@ For cross-referencing older dated docs that still cite the pre-consolidation nam
 | `08_validate_governance_evidence` | `nb_10_purview_stewardship_ai`, `nb_12_purview_workflow_sync` (P1) |
 | `09_reconcile_semantic_model` | `nb_13_semantic_reconcile` (P2), `nb_14_purview_access_sync` (P3), `nb_15_purview_dataproduct_sync` (P4 publish), `nb_16_dataproduct_semantic_reconcile` (P4 reconcile), `nb_17_g18_semantic_promotion` (G19 semantic promotion) |
 | `10_reset_demo` | `nb_18_demo_reset` |
-
----
-
-## Phase 2 — Purview Publication (SQL-controlled, native scans + custom Atlas)
-
-### `06_publish_glossary_and_lineage.Notebook` — no top-level `DEMO_MODE` gate
-**What it does:** Two originally-separate notebooks merged into one file, sharing one Purview
-token cache:
-- **Cells 1–5 — glossary/CDE publish** (formerly `nb_08_purview_glossary_cde`): publishes ~35
-  glossary terms and 12 CDEs to Purview, associates each CDE to its parent glossary term, and
-  self-heals stale term `shortDescription` values on every run.
-- **Cells 6–11 — labels & lineage** (formerly `nb_09_purview_labels_lineage`): publishes
-  sensitivity labels, CDE classifications, and custom Atlas lineage edges (SQL → Fabric →
-  semantic model) since native scans only establish asset identity, not cross-system process
-  lineage.
-**Demo fit:** This is every `GT-*`/`CDE-*` reference throughout Maria's scenario (GT-SLA,
-GT-CONSENT, CDE-CONTRACTAMT, CDE-CONSENTSTATE, etc.) plus the "click View lineage" moment in
-Act 3.6 — the 8-edge chain from Power BI visual back to source SQL.
-**Talking points:** "GT-SLA is the term that ties Tom's credit calculation, Victoria's MTTR
-dashboard, and Ci Zhu's audit answer to one published definition — and native scans tell
-Purview an asset exists, while this notebook tells Purview how assets connect across systems."
 
 ---
 

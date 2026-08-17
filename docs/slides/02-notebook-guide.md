@@ -1,5 +1,13 @@
 # Notebook Reference Guide
 
+> **Superseded (2026-08-17):** this file documents the pre-consolidation **13-notebook**
+> structure (`nb_01_setup_demo_environment`, `nb_05a_publish_synthetic_data_to_sql`, etc.). The
+> build has since consolidated to **10 notebooks** (`01_setup_source_data` … `10_reset_demo`).
+> For current, artifact-cataloging demo-prep content (what each notebook produces, how those
+> artifacts map to build requirements, and how they support the Maria Castellanos scenario), see
+> [`nb_01_demo_prep.md`](./nb_01_demo_prep.md) through [`nb_06_demo_prep.md`](./nb_06_demo_prep.md)
+> (07–10 to follow as each is validated). This file is kept for historical reference only.
+
 ## Overview
 
 This demo runs through **13 notebooks** organized into five functional phases. Each notebook is designed to be re-runnable and serves a specific role in the data-to-governance pipeline.
