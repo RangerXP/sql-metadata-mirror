@@ -512,7 +512,7 @@ print(" - entities_day2.json")
 # CELL ********************
 
 # Cell 4a: Acquire a Purview bearer token, reusing a cached one if another notebook
-# (nb_07/nb_08/nb_09) already signed in recently, otherwise via interactive
+# (06_publish_glossary_and_lineage) already signed in recently, otherwise via interactive
 # device-code sign-in. No terminal or copy-pasting a token needed: if a sign-in is
 # required, running this cell prints a URL and a short one-time code. Open the URL
 # in any browser tab, enter the code, approve the sign-in, and the token is captured
