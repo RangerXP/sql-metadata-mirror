@@ -99,3 +99,14 @@ merge-header cleanup, stale cross-reference correction).
 - **Actionable runbooks:** `docs/runbooks/phase4-gated-governance-workflow.md` and `docs/runbooks/p1-native-term-publication.md` (the only two runbooks with literal `:r sql/...` / "run sql/..." executable instructions) updated to the new paths.
 - **Historical logs left untouched:** dated build-progress documents (`docs/build-scorecard.md`, `docs/design-gap-analysis.md`, `docs/Enercare-Demo-SemPy-Design-Guide.md`, and similar point-in-time records) were intentionally **not** edited — their `sql/NN` citations describe what was true at the time and remain historically accurate; this document is the current authoritative index going forward.
 - **No live database changes:** this was a source-control and documentation repack only. No script was executed against `sqldemo` as part of this work.
+
+## Addendum (2026-08-16) — notebook 1 governance-metadata duplication removed
+
+After this repack, `01_setup_source_data.Notebook` was found to still carry its own embedded
+copy of the governance-metadata schema/seed SQL (the same content as `06_purview_metadata_schema.sql`
+/ `07_seed_purview_metadata.sql` / `11_ontology_okr_schema.sql` / `12_seed_ontology_okrs.sql`
+above), and that copy had drifted behind — it was missing a `governance_domain_stewards` column
+the real script already had. The duplicate create/seed logic was removed from the notebook; it
+now only verifies `dbo.governance_domains` is populated and raises a `RuntimeError` naming these
+four scripts if it isn't. `06`/`07`/`11`/`12` are now the sole source of this metadata — see
+`docs/01_Notebook_Description.md` for the updated notebook description.

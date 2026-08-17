@@ -1,5 +1,16 @@
 # Ten-Notebook Governance Reorganization Plan
 
+> **Status (2026-08-16): Complete.** All four phases below have been executed — the repo's 18
+> `nb_XX_name.Notebook` items are consolidated into the 10 notebooks this plan called for
+> (`01_setup_source_data` … `10_reset_demo`), each with a cell-numbering/annotation cleanup
+> pass, and the companion `sql/` folder was repacked to mirror the same 10-notebook alignment.
+> See `docs/01_Notebook_Description.md` for the current per-notebook reference (with a full
+> `nb_XX` → current-name mapping table) and `docs/sql-prep-catalog.md` for the SQL-side catalog.
+> One open item remains from the consolidation: `02_build_metadata_foundation`'s merged
+> reconciliation section is currently unreachable dead code behind an unconditional
+> `mssparkutils.notebook.exit()` — flagged in `01_Notebook_Description.md`'s Governance Review
+> Findings, not yet fixed.
+
 ## Objective
 
 Reorganize the repo around a single governance-first lifecycle while standardizing the SQL @tag workflow as the metadata intake mechanism.

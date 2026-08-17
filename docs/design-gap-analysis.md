@@ -1,12 +1,35 @@
 # Enercare - Build Gap Analysis (vNext)
 
-**Last updated:** 2026-08-11 (G11-1 ontology/OKR layer built)
+**Last updated:** 2026-08-16 (notebook/SQL structural cleanup)
 **Branch:** `main` | **File:** `docs/design-gap-analysis.md`
 **Owner:** Sean Kelley (Microsoft) — sole accountable owner for all build tasks
 **Enercare stakeholders (demo scope):** Victoria Tan (CCO — Domain Owner DOM-CUSTOPS), Ranbir Singh (Domain Owner DOM-SVCDEL), Ci Zhu (Domain Owner DOM-REVCON; Glossary / Label Policy / Tenant Governance Admin), Rupal Solanki (Data Steward DOM-CUSTOPS), Shruthi Srinivas (Data Steward DOM-SVCDEL)
 **Out of demo scope:** Christopher Dingle (VP Data Analytics & Governance at Enercare — intentional exclusion; his real-world governance authoring functions are represented in the demo by Ci Zhu)
 
-> **What changed in this version (2026-08-11, G11-1 built):**
+> **Naming note:** this document's entries below cite the pre-consolidation `nb_XX_name` notebook
+> names as a dated historical log and are intentionally left as-is (see `docs/sql-prep-catalog.md`
+> §"Validation performed" for the rationale). For the current 10-notebook names and a full
+> `nb_XX` → current-name mapping table, see `docs/01_Notebook_Description.md`.
+>
+> **What changed in this version (2026-08-16, structural cleanup):**
+> Completed the notebook consolidation from 18 `nb_XX_name.Notebook` items down to the 10
+> current notebooks (`01_setup_source_data` … `10_reset_demo`), with a full cell-numbering and
+> stale-cross-reference cleanup pass across all 10. Repacked `sql/` from a single flat,
+> chronologically-numbered folder into 3 notebook-aligned folders (`01_source_data/`,
+> `02_metadata_foundation/`, `07_governance_gates/`), preserving file numbers, with every
+> `tools/*.py` and notebook cross-reference updated (see `docs/sql-prep-catalog.md` for the full
+> artifact-to-notebook-to-narrative map). Removed a real duplication/drift bug found during the
+> repack: `01_setup_source_data` had its own embedded copy of the governance-metadata
+> schema/seed SQL (domains, data products, glossary, CDEs, roles, labels, OKRs) that had drifted
+> behind the authoritative `sql/02_metadata_foundation/06_purview_metadata_schema.sql` (missing
+> a `governance_domain_stewards` column) — the duplicate was removed and replaced with a
+> prerequisite check that fails closed with a clear error naming the scripts to run first. Also
+> confirmed and documented (not yet fixed) a real dead-code bug in `02_build_metadata_foundation`:
+> an unconditional `mssparkutils.notebook.exit()` mid-file leaves its final merged section
+> (`sm_annotations` reconciliation) unreachable — see `docs/01_Notebook_Description.md`'s
+> Governance Review Findings.
+>
+> **Previous version (2026-08-11, G11-1 built):**
 > Corrected a stale claim that Purview Unified Catalog typed relationships (Domain hierarchy, OKRs, CDE-to-Term links) were "not yet GA" — Microsoft Learn research confirmed these features are available now (OKRs and CDEs in Preview). Built the business-objective (OKR) layer end-to-end: `sql/11_ontology_okr_schema.sql` + `sql/12_seed_ontology_okrs.sql` (3 OKRs, 5 key results tied to real certified KPICodes, 3 OKR→DataProduct links), `purview/okr-catalog.csv`, `nb_07a` ingestion (Cell 8c), `nb_07` publish of `EnercareOKR`/`EnercareOKRKeyResult` Atlas entities with reference-attribute links to Data Products, and a surgical fix in `nb_08` that assigns each CDE's own Atlas entity to its parent glossary term (previously only `bound_assets` were linked, not the CDE entity itself). Added `nb_10` Cell 5a (`purview_phase_11_ontology_validation`). Not yet live-applied — see G11 detailed section for the live-apply sequence. This directly supports the B2C customer chatbot end-state (G11-3): a real relationship graph from Data Product → OKR → Key Result → certified KPI that a future chatbot can traverse instead of relying on free-text search.
 >
 > **Previous version (2026-08-10, Phase 4 closed):**

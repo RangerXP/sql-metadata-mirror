@@ -4,6 +4,13 @@
 
 **Source:** Teams thread with Alison Pouw, April–May 2026.
 
+> **Naming note (2026-08-16):** this document cites the pre-consolidation `nb_XX_name` notebook
+> names as a dated historical log and is intentionally left as-is. Those 18 notebooks were
+> consolidated into the 10 current notebooks (`01_setup_source_data` … `10_reset_demo`); for the
+> current names, current cell-level structure, and a full `nb_XX` → current-name mapping table,
+> see `docs/01_Notebook_Description.md`. The `sql/` folder referenced throughout was also
+> repacked into 3 notebook-aligned folders — see `docs/sql-prep-catalog.md`.
+
 ---
 
 ## 0. Build Verification Summary (2026-08-07)
