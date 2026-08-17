@@ -3686,44 +3686,21 @@ elif not APPLY_CHANGES:
 elif SQL_MIRROR_ONLY_DEPLOYMENT and not PURVIEW_PUBLISH_OVERRIDE:
     print("[GUARD] SQL-mirror-only deployment is active. Set PURVIEW_PUBLISH_OVERRIDE=True for live Purview publish.")
 else:
-    token = None
-    unresolved_edges = []
     try:
-        token = _get_purview_token_with_retry()
-    except Exception as ex:
-        if fail_on_token_error:
-            raise
-
-        print(f"[WARN] Token acquisition failed; skipping live publish. Error: {ex}")
-        print("[DRY RUN FALLBACK] Payloads are ready from Cell 5. Retry Cell 6 later or publish outside Fabric runtime.")
+        token = None
+        unresolved_edges = []
         try:
-            if "output_root" in globals():
-                marker = {
-                    "event": "purview_token_acquisition_failed",
-                    "error": str(ex),
-                    "timestamp_utc": int(time.time()),
-                }
-                mssparkutils.fs.put(
-                    f"{output_root}/publish_blocked_token_error.json",
-                    json.dumps(marker, indent=2),
-                    True,
-                )
-        except Exception:
-            pass
-
-    if token:
-        try:
-            token = _ensure_valid_token(token)
+            token = _get_purview_token_with_retry()
         except Exception as ex:
             if fail_on_token_error:
                 raise
 
-            print(f"[WARN] Token validation failed; skipping live publish. Error: {ex}")
+            print(f"[WARN] Token acquisition failed; skipping live publish. Error: {ex}")
             print("[DRY RUN FALLBACK] Payloads are ready from Cell 5. Retry Cell 6 later or publish outside Fabric runtime.")
             try:
                 if "output_root" in globals():
                     marker = {
-                        "event": "purview_token_validation_failed",
+                        "event": "purview_token_acquisition_failed",
                         "error": str(ex),
                         "timestamp_utc": int(time.time()),
                     }
@@ -3734,646 +3711,673 @@ else:
                     )
             except Exception:
                 pass
-            token = None
 
-    if token:
-
-        measure_resolution_map = {}
-        semantic_anchor = _resolve_semantic_model_anchor(token)
-        if semantic_anchor:
-            print(
-                "[Cell 6] Semantic-model anchor resolved for first-class metadata attachment: "
-                f"{semantic_anchor.get('qualifiedName', '')} ({semantic_anchor.get('guid', '')})"
-            )
-        else:
-            print("[Cell 6][WARN] Semantic-model anchor not resolved; metadata will only attach to resolved source assets.")
-
-        if measure_entity_manifest:
-            print(f"[Cell 6] Publishing semantic measure typedef ({MEASURE_ENTITY_TYPENAME})...")
-            measure_typedef_payload = {"entityDefs": [_build_measure_entity_type_def()]}
-            measure_type_status, measure_type_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, measure_typedef_payload)
-            if measure_type_status not in (200, 201):
-                body_lower = _safe_text(measure_type_body).lower()
-                if (
-                    "already exists" in body_lower
-                    or "atlas-409" in body_lower
-                    or measure_type_status == 409
-                ):
-                    print(f"[Cell 6] Measure typedef already exists (HTTP {measure_type_status}).")
-                else:
-                    print(
-                        f"[Cell 6][WARN] Measure typedef publish failed: HTTP {measure_type_status} | "
-                        f"{_safe_text(measure_type_body)[:220]}"
-                    )
-            else:
-                print(f"[Cell 6] Measure typedef publish result: HTTP {measure_type_status}")
-
-            print(f"[Cell 6] Publishing semantic measure entities from manifest ({len(measure_entity_manifest)} rows)...")
-            measure_stats, measure_resolution_map = _publish_measure_entities(token, measure_entity_manifest)
-            print(
-                "[Cell 6] Semantic measure entity summary: "
-                f"created={measure_stats['created']} existing={measure_stats['existing']} failed={measure_stats['failed']}"
-            )
-        else:
-            print("[Cell 6] No semantic measure entities to publish from manifest.")
-
-        asset_resolution_cache = {}
-
-        def _resolve_asset_cached(asset_ref: str):
-            key = _safe_text(asset_ref).lower()
-            if not key:
-                return None
-            if key in measure_resolution_map:
-                return measure_resolution_map[key]
-            if key not in asset_resolution_cache:
-                asset_resolution_cache[key] = _resolve_asset_for_classification(token, asset_ref)
-            return asset_resolution_cache[key]
-
-        print("[Cell 6] Applying sensitivity labels from manifest...")
-        label_assigned = 0
-        label_existing = 0
-        label_failed = []
-        label_unresolved = []
-        anchor_label_assigned = 0
-        anchor_label_existing = 0
-        anchor_label_failed = []
-
-        label_dedupe = set()
-        label_rows = []
-        anchor_label_dedupe = set()
-        semantic_field_label_assigned = 0
-        semantic_field_label_existing = 0
-        semantic_field_label_failed = []
-        for row in sensitivity_label_manifest:
-            asset_ref = _safe_text(row.get("asset_ref", ""))
-            label_name = _safe_text(row.get("label_name", ""))
-            sensitivity_tier = _safe_text(row.get("sensitivity_tier", ""))
-            protection_policy = _safe_text(row.get("protection_policy", ""))
-            assignment_source = _safe_text(row.get("assignment_source", ""))
-            rule = _safe_text(row.get("rule", ""))
-
-            key = (asset_ref.lower(), label_name.lower())
-            if not asset_ref or not label_name or key in label_dedupe:
-                continue
-            label_dedupe.add(key)
-            anchor_label_dedupe.add(label_name.lower())
-
-            label_rows.append(
-                {
-                    "asset_ref": asset_ref,
-                    "label_name": label_name,
-                    "sensitivity_tier": sensitivity_tier,
-                    "protection_policy": protection_policy,
-                    "assignment_source": assignment_source,
-                    "rule": rule,
-                }
-            )
-
-        total_label_rows = len(label_rows)
-
-        if PURGE_BEFORE_REWRITE:
-            print("[Cell 6] Purging managed sensitivity labels before rewrite...")
-            label_purged = 0
-            label_already_absent = 0
-            label_purge_failed = []
-            for row in label_rows:
-                asset_ref = row["asset_ref"]
-                label_name = row["label_name"]
-                resolved = _resolve_asset_cached(asset_ref)
-                if not resolved:
-                    continue
-
-                purge_outcome, purge_details = _purge_sensitivity_label(token, resolved["guid"], label_name)
-                if purge_outcome == "purged":
-                    label_purged += 1
-                elif purge_outcome == "absent":
-                    label_already_absent += 1
-                else:
-                    label_purge_failed.append((asset_ref, label_name, purge_details))
-
-            print(
-                "[Cell 6] Sensitivity label purge summary: "
-                f"purged={label_purged} absent={label_already_absent} failed={len(label_purge_failed)}"
-            )
-            if label_purge_failed:
-                print(f"[Cell 6][WARN] First sensitivity label purge failure: {label_purge_failed[0]}")
-
-        print(f"[Cell 6] Sensitivity label rows to process: {total_label_rows}")
-        for index, row in enumerate(label_rows, start=1):
-            asset_ref = row["asset_ref"]
-            label_name = row["label_name"]
-
-            if index == 1 or index % 10 == 0 or index == total_label_rows:
-                print(
-                    f"[Cell 6] Sensitivity label progress: {index}/{total_label_rows} | "
-                    f"assigned={label_assigned} existing={label_existing} "
-                    f"unresolved={len(label_unresolved)} failed={len(label_failed)}"
-                )
-
-            resolved = _resolve_asset_cached(asset_ref)
-            semantic_field_targets = _resolve_semantic_model_field_targets(token, asset_ref)
-            target_entities = []
-            seen_target_guids = set()
-            if resolved:
-                target_entities.append(resolved)
-                seen_target_guids.add(_safe_text(resolved.get("guid", "")))
-            for semantic_target in semantic_field_targets:
-                semantic_guid = _safe_text(semantic_target.get("guid", ""))
-                if semantic_guid and semantic_guid not in seen_target_guids:
-                    target_entities.append(semantic_target)
-                    seen_target_guids.add(semantic_guid)
-            if not target_entities and semantic_anchor:
-                target_entities.append(semantic_anchor)
-
-            if not target_entities:
-                if len(label_unresolved) < 25:
-                    label_unresolved.append(asset_ref)
-                continue
-
-            primary_guid = _safe_text(target_entities[0].get("guid", ""))
-            for target in target_entities:
-                outcome, details = _apply_sensitivity_label(token, target["guid"], label_name)
-                target_guid = _safe_text(target.get("guid", ""))
-                if target_guid == primary_guid:
-                    if outcome == "assigned":
-                        label_assigned += 1
-                    elif outcome == "existing":
-                        label_existing += 1
-                    else:
-                        label_failed.append((asset_ref, label_name, details))
-                else:
-                    if outcome == "assigned":
-                        semantic_field_label_assigned += 1
-                    elif outcome == "existing":
-                        semantic_field_label_existing += 1
-                    else:
-                        semantic_field_label_failed.append((asset_ref, label_name, details))
-
-        if semantic_anchor:
-            for label_name_lower in sorted(anchor_label_dedupe):
-                outcome, details = _apply_sensitivity_label(token, semantic_anchor["guid"], label_name_lower)
-                if outcome == "assigned":
-                    anchor_label_assigned += 1
-                elif outcome == "existing":
-                    anchor_label_existing += 1
-                else:
-                    anchor_label_failed.append((label_name_lower, details))
-
-        print(
-            "[Cell 6] Sensitivity label summary: "
-            f"assigned={label_assigned} existing={label_existing} "
-            f"unresolved={len(label_unresolved)} failed={len(label_failed)} "
-            f"anchor_assigned={anchor_label_assigned} anchor_existing={anchor_label_existing} "
-            f"anchor_failed={len(anchor_label_failed)} "
-            f"semantic_field_assigned={semantic_field_label_assigned} "
-            f"semantic_field_existing={semantic_field_label_existing} "
-            f"semantic_field_failed={len(semantic_field_label_failed)}"
-        )
-        if label_unresolved:
-            print(f"[Cell 6][WARN] Unresolved sensitivity label asset samples: {label_unresolved[:10]}")
-        if label_failed:
-            print(f"[Cell 6][WARN] First sensitivity label failure: {label_failed[0]}")
-
-        print("[Cell 6] Publishing CDE classification typedefs...")
-        typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
-        if typedef_status == 401:
-            print("[Cell 6][WARN] Typedef publish returned 401; refreshing token and retrying once.")
+        if token:
             try:
                 token = _ensure_valid_token(token)
-                typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
             except Exception as ex:
                 if fail_on_token_error:
                     raise
-                print(f"[WARN] Token refresh failed during typedef publish; skipping remaining live publish. Error: {ex}")
+
+                print(f"[WARN] Token validation failed; skipping live publish. Error: {ex}")
                 print("[DRY RUN FALLBACK] Payloads are ready from Cell 5. Retry Cell 6 later or publish outside Fabric runtime.")
-                typedef_status = 401
-                typedef_body = f"token refresh failed: {ex}"
-        if typedef_status not in (200, 201) and "already exists" not in typedef_body.lower():
-            if fail_on_token_error:
-                raise RuntimeError(f"Classification typedef publish failed: HTTP {typedef_status} | {typedef_body[:500]}")
+                try:
+                    if "output_root" in globals():
+                        marker = {
+                            "event": "purview_token_validation_failed",
+                            "error": str(ex),
+                            "timestamp_utc": int(time.time()),
+                        }
+                        mssparkutils.fs.put(
+                            f"{output_root}/publish_blocked_token_error.json",
+                            json.dumps(marker, indent=2),
+                            True,
+                        )
+                except Exception:
+                    pass
+                token = None
+
+        if token:
+
+            measure_resolution_map = {}
+            semantic_anchor = _resolve_semantic_model_anchor(token)
+            if semantic_anchor:
+                print(
+                    "[Cell 6] Semantic-model anchor resolved for first-class metadata attachment: "
+                    f"{semantic_anchor.get('qualifiedName', '')} ({semantic_anchor.get('guid', '')})"
+                )
+            else:
+                print("[Cell 6][WARN] Semantic-model anchor not resolved; metadata will only attach to resolved source assets.")
+
+            if measure_entity_manifest:
+                print(f"[Cell 6] Publishing semantic measure typedef ({MEASURE_ENTITY_TYPENAME})...")
+                measure_typedef_payload = {"entityDefs": [_build_measure_entity_type_def()]}
+                measure_type_status, measure_type_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, measure_typedef_payload)
+                if measure_type_status not in (200, 201):
+                    body_lower = _safe_text(measure_type_body).lower()
+                    if (
+                        "already exists" in body_lower
+                        or "atlas-409" in body_lower
+                        or measure_type_status == 409
+                    ):
+                        print(f"[Cell 6] Measure typedef already exists (HTTP {measure_type_status}).")
+                    else:
+                        print(
+                            f"[Cell 6][WARN] Measure typedef publish failed: HTTP {measure_type_status} | "
+                            f"{_safe_text(measure_type_body)[:220]}"
+                        )
+                else:
+                    print(f"[Cell 6] Measure typedef publish result: HTTP {measure_type_status}")
+
+                print(f"[Cell 6] Publishing semantic measure entities from manifest ({len(measure_entity_manifest)} rows)...")
+                measure_stats, measure_resolution_map = _publish_measure_entities(token, measure_entity_manifest)
+                print(
+                    "[Cell 6] Semantic measure entity summary: "
+                    f"created={measure_stats['created']} existing={measure_stats['existing']} failed={measure_stats['failed']}"
+                )
+            else:
+                print("[Cell 6] No semantic measure entities to publish from manifest.")
+
+            asset_resolution_cache = {}
+
+            def _resolve_asset_cached(asset_ref: str):
+                key = _safe_text(asset_ref).lower()
+                if not key:
+                    return None
+                if key in measure_resolution_map:
+                    return measure_resolution_map[key]
+                if key not in asset_resolution_cache:
+                    asset_resolution_cache[key] = _resolve_asset_for_classification(token, asset_ref)
+                return asset_resolution_cache[key]
+
+            print("[Cell 6] Applying sensitivity labels from manifest...")
+            label_assigned = 0
+            label_existing = 0
+            label_failed = []
+            label_unresolved = []
+            anchor_label_assigned = 0
+            anchor_label_existing = 0
+            anchor_label_failed = []
+
+            label_dedupe = set()
+            label_rows = []
+            anchor_label_dedupe = set()
+            semantic_field_label_assigned = 0
+            semantic_field_label_existing = 0
+            semantic_field_label_failed = []
+            for row in sensitivity_label_manifest:
+                asset_ref = _safe_text(row.get("asset_ref", ""))
+                label_name = _safe_text(row.get("label_name", ""))
+                sensitivity_tier = _safe_text(row.get("sensitivity_tier", ""))
+                protection_policy = _safe_text(row.get("protection_policy", ""))
+                assignment_source = _safe_text(row.get("assignment_source", ""))
+                rule = _safe_text(row.get("rule", ""))
+
+                key = (asset_ref.lower(), label_name.lower())
+                if not asset_ref or not label_name or key in label_dedupe:
+                    continue
+                label_dedupe.add(key)
+                anchor_label_dedupe.add(label_name.lower())
+
+                label_rows.append(
+                    {
+                        "asset_ref": asset_ref,
+                        "label_name": label_name,
+                        "sensitivity_tier": sensitivity_tier,
+                        "protection_policy": protection_policy,
+                        "assignment_source": assignment_source,
+                        "rule": rule,
+                    }
+                )
+
+            total_label_rows = len(label_rows)
+
+            if PURGE_BEFORE_REWRITE:
+                print("[Cell 6] Purging managed sensitivity labels before rewrite...")
+                label_purged = 0
+                label_already_absent = 0
+                label_purge_failed = []
+                for row in label_rows:
+                    asset_ref = row["asset_ref"]
+                    label_name = row["label_name"]
+                    resolved = _resolve_asset_cached(asset_ref)
+                    if not resolved:
+                        continue
+
+                    purge_outcome, purge_details = _purge_sensitivity_label(token, resolved["guid"], label_name)
+                    if purge_outcome == "purged":
+                        label_purged += 1
+                    elif purge_outcome == "absent":
+                        label_already_absent += 1
+                    else:
+                        label_purge_failed.append((asset_ref, label_name, purge_details))
+
+                print(
+                    "[Cell 6] Sensitivity label purge summary: "
+                    f"purged={label_purged} absent={label_already_absent} failed={len(label_purge_failed)}"
+                )
+                if label_purge_failed:
+                    print(f"[Cell 6][WARN] First sensitivity label purge failure: {label_purge_failed[0]}")
+
+            print(f"[Cell 6] Sensitivity label rows to process: {total_label_rows}")
+            for index, row in enumerate(label_rows, start=1):
+                asset_ref = row["asset_ref"]
+                label_name = row["label_name"]
+
+                if index == 1 or index % 10 == 0 or index == total_label_rows:
+                    print(
+                        f"[Cell 6] Sensitivity label progress: {index}/{total_label_rows} | "
+                        f"assigned={label_assigned} existing={label_existing} "
+                        f"unresolved={len(label_unresolved)} failed={len(label_failed)}"
+                    )
+
+                resolved = _resolve_asset_cached(asset_ref)
+                semantic_field_targets = _resolve_semantic_model_field_targets(token, asset_ref)
+                target_entities = []
+                seen_target_guids = set()
+                if resolved:
+                    target_entities.append(resolved)
+                    seen_target_guids.add(_safe_text(resolved.get("guid", "")))
+                for semantic_target in semantic_field_targets:
+                    semantic_guid = _safe_text(semantic_target.get("guid", ""))
+                    if semantic_guid and semantic_guid not in seen_target_guids:
+                        target_entities.append(semantic_target)
+                        seen_target_guids.add(semantic_guid)
+                if not target_entities and semantic_anchor:
+                    target_entities.append(semantic_anchor)
+
+                if not target_entities:
+                    if len(label_unresolved) < 25:
+                        label_unresolved.append(asset_ref)
+                    continue
+
+                primary_guid = _safe_text(target_entities[0].get("guid", ""))
+                for target in target_entities:
+                    outcome, details = _apply_sensitivity_label(token, target["guid"], label_name)
+                    target_guid = _safe_text(target.get("guid", ""))
+                    if target_guid == primary_guid:
+                        if outcome == "assigned":
+                            label_assigned += 1
+                        elif outcome == "existing":
+                            label_existing += 1
+                        else:
+                            label_failed.append((asset_ref, label_name, details))
+                    else:
+                        if outcome == "assigned":
+                            semantic_field_label_assigned += 1
+                        elif outcome == "existing":
+                            semantic_field_label_existing += 1
+                        else:
+                            semantic_field_label_failed.append((asset_ref, label_name, details))
+
+            if semantic_anchor:
+                for label_name_lower in sorted(anchor_label_dedupe):
+                    outcome, details = _apply_sensitivity_label(token, semantic_anchor["guid"], label_name_lower)
+                    if outcome == "assigned":
+                        anchor_label_assigned += 1
+                    elif outcome == "existing":
+                        anchor_label_existing += 1
+                    else:
+                        anchor_label_failed.append((label_name_lower, details))
+
             print(
-                f"[WARN] Classification typedef publish failed (HTTP {typedef_status}); "
-                "skipping CDE classification apply for this run."
+                "[Cell 6] Sensitivity label summary: "
+                f"assigned={label_assigned} existing={label_existing} "
+                f"unresolved={len(label_unresolved)} failed={len(label_failed)} "
+                f"anchor_assigned={anchor_label_assigned} anchor_existing={anchor_label_existing} "
+                f"anchor_failed={len(anchor_label_failed)} "
+                f"semantic_field_assigned={semantic_field_label_assigned} "
+                f"semantic_field_existing={semantic_field_label_existing} "
+                f"semantic_field_failed={len(semantic_field_label_failed)}"
             )
-            classification_manifest = []
-        print(f"Classification typedef publish result: HTTP {typedef_status}")
+            if label_unresolved:
+                print(f"[Cell 6][WARN] Unresolved sensitivity label asset samples: {label_unresolved[:10]}")
+            if label_failed:
+                print(f"[Cell 6][WARN] First sensitivity label failure: {label_failed[0]}")
 
-        print("[Cell 6] Applying CDE classifications from manifest...")
-        classification_assigned = 0
-        classification_existing = 0
-        classification_failed = []
-        classification_unresolved = []
-        anchor_classification_assigned = 0
-        anchor_classification_existing = 0
-        anchor_classification_failed = []
+            print("[Cell 6] Publishing CDE classification typedefs...")
+            typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
+            if typedef_status == 401:
+                print("[Cell 6][WARN] Typedef publish returned 401; refreshing token and retrying once.")
+                try:
+                    token = _ensure_valid_token(token)
+                    typedef_status, typedef_body = _post_json("/catalog/api/atlas/v2/types/typedefs", token, typedef_payload)
+                except Exception as ex:
+                    if fail_on_token_error:
+                        raise
+                    print(f"[WARN] Token refresh failed during typedef publish; skipping remaining live publish. Error: {ex}")
+                    print("[DRY RUN FALLBACK] Payloads are ready from Cell 5. Retry Cell 6 later or publish outside Fabric runtime.")
+                    typedef_status = 401
+                    typedef_body = f"token refresh failed: {ex}"
+            if typedef_status not in (200, 201) and "already exists" not in typedef_body.lower():
+                if fail_on_token_error:
+                    raise RuntimeError(f"Classification typedef publish failed: HTTP {typedef_status} | {typedef_body[:500]}")
+                print(
+                    f"[WARN] Classification typedef publish failed (HTTP {typedef_status}); "
+                    "skipping CDE classification apply for this run."
+                )
+                classification_manifest = []
+            print(f"Classification typedef publish result: HTTP {typedef_status}")
 
-        dedupe = set()
-        classification_rows = []
-        anchor_classification_dedupe = set()
-        semantic_field_class_assigned = 0
-        semantic_field_class_existing = 0
-        semantic_field_class_failed = []
-        for row in classification_manifest:
-            asset_ref = _safe_text(row.get("asset_ref", ""))
-            classification_name = _safe_text(row.get("classification", ""))
-            assignment_source = _safe_text(row.get("assignment_source", ""))
-            rule = _safe_text(row.get("rule", ""))
-            cde_id = _safe_text(row.get("cde_id", ""))
-            cde_name = _safe_text(row.get("cde_name", ""))
+            print("[Cell 6] Applying CDE classifications from manifest...")
+            classification_assigned = 0
+            classification_existing = 0
+            classification_failed = []
+            classification_unresolved = []
+            anchor_classification_assigned = 0
+            anchor_classification_existing = 0
+            anchor_classification_failed = []
 
-            key = (asset_ref.lower(), classification_name.lower(), cde_id.lower())
-            if not asset_ref or not classification_name or key in dedupe:
-                continue
-            dedupe.add(key)
-            # Keep canonical classification casing for Atlas typeName matching.
-            anchor_classification_dedupe.add((classification_name, cde_id, cde_name, assignment_source, rule))
+            dedupe = set()
+            classification_rows = []
+            anchor_classification_dedupe = set()
+            semantic_field_class_assigned = 0
+            semantic_field_class_existing = 0
+            semantic_field_class_failed = []
+            for row in classification_manifest:
+                asset_ref = _safe_text(row.get("asset_ref", ""))
+                classification_name = _safe_text(row.get("classification", ""))
+                assignment_source = _safe_text(row.get("assignment_source", ""))
+                rule = _safe_text(row.get("rule", ""))
+                cde_id = _safe_text(row.get("cde_id", ""))
+                cde_name = _safe_text(row.get("cde_name", ""))
 
-            classification_rows.append(
-                {
-                    "asset_ref": asset_ref,
-                    "classification_name": classification_name,
-                    "assignment_source": assignment_source,
-                    "rule": rule,
-                    "cde_id": cde_id,
-                    "cde_name": cde_name,
-                }
-            )
+                key = (asset_ref.lower(), classification_name.lower(), cde_id.lower())
+                if not asset_ref or not classification_name or key in dedupe:
+                    continue
+                dedupe.add(key)
+                # Keep canonical classification casing for Atlas typeName matching.
+                anchor_classification_dedupe.add((classification_name, cde_id, cde_name, assignment_source, rule))
 
-        total_classification_rows = len(classification_rows)
+                classification_rows.append(
+                    {
+                        "asset_ref": asset_ref,
+                        "classification_name": classification_name,
+                        "assignment_source": assignment_source,
+                        "rule": rule,
+                        "cde_id": cde_id,
+                        "cde_name": cde_name,
+                    }
+                )
 
-        if PURGE_BEFORE_REWRITE:
-            print("[Cell 6] Purging managed classifications before rewrite...")
-            class_purged = 0
-            class_already_absent = 0
-            class_purge_failed = []
-            for row in classification_rows:
+            total_classification_rows = len(classification_rows)
+
+            if PURGE_BEFORE_REWRITE:
+                print("[Cell 6] Purging managed classifications before rewrite...")
+                class_purged = 0
+                class_already_absent = 0
+                class_purge_failed = []
+                for row in classification_rows:
+                    asset_ref = row["asset_ref"]
+                    classification_name = row["classification_name"]
+                    resolved = _resolve_asset_cached(asset_ref)
+                    if not resolved:
+                        continue
+
+                    purge_outcome, purge_details = _purge_classification(token, resolved["guid"], classification_name)
+                    if purge_outcome == "purged":
+                        class_purged += 1
+                    elif purge_outcome == "absent":
+                        class_already_absent += 1
+                    else:
+                        class_purge_failed.append((asset_ref, classification_name, purge_details))
+
+                print(
+                    "[Cell 6] Classification purge summary: "
+                    f"purged={class_purged} absent={class_already_absent} failed={len(class_purge_failed)}"
+                )
+                if class_purge_failed:
+                    print(f"[Cell 6][WARN] First classification purge failure: {class_purge_failed[0]}")
+
+            print(f"[Cell 6] CDE classification rows to process: {total_classification_rows}")
+            for index, row in enumerate(classification_rows, start=1):
                 asset_ref = row["asset_ref"]
                 classification_name = row["classification_name"]
+                assignment_source = row["assignment_source"]
+                rule = row["rule"]
+                cde_id = row["cde_id"]
+                cde_name = row["cde_name"]
+                column_asset_ref = _is_column_asset_ref(asset_ref)
+
+                if index == 1 or index % 10 == 0 or index == total_classification_rows:
+                    print(
+                        f"[Cell 6] CDE classification progress: {index}/{total_classification_rows} | "
+                        f"assigned={classification_assigned} existing={classification_existing} "
+                        f"unresolved={len(classification_unresolved)} failed={len(classification_failed)}"
+                    )
+
                 resolved = _resolve_asset_cached(asset_ref)
-                if not resolved:
+                semantic_field_targets = _resolve_semantic_model_field_targets(token, asset_ref)
+                target_entities = []
+                seen_target_guids = set()
+
+                # For column-like refs, prioritize semantic field entities so schema grid fields are updated first.
+                for semantic_target in semantic_field_targets:
+                    semantic_guid = _safe_text(semantic_target.get("guid", ""))
+                    if semantic_guid and semantic_guid not in seen_target_guids:
+                        target_entities.append(semantic_target)
+                        seen_target_guids.add(semantic_guid)
+
+                if resolved:
+                    resolved_guid = _safe_text(resolved.get("guid", ""))
+                    resolved_type = _safe_text(resolved.get("entityType", "")).lower()
+                    include_resolved = True
+                    if column_asset_ref and "column" not in resolved_type and semantic_field_targets:
+                        # Avoid counting table-level binds as success when a field target was found.
+                        include_resolved = False
+                    if include_resolved and resolved_guid and resolved_guid not in seen_target_guids:
+                        target_entities.append(resolved)
+                        seen_target_guids.add(resolved_guid)
+
+                if not target_entities and semantic_anchor:
+                    target_entities.append(semantic_anchor)
+                if not target_entities:
+                    if len(classification_unresolved) < 25:
+                        classification_unresolved.append(asset_ref)
                     continue
 
-                purge_outcome, purge_details = _purge_classification(token, resolved["guid"], classification_name)
-                if purge_outcome == "purged":
-                    class_purged += 1
-                elif purge_outcome == "absent":
-                    class_already_absent += 1
-                else:
-                    class_purge_failed.append((asset_ref, classification_name, purge_details))
+                primary_guid = _safe_text(target_entities[0].get("guid", ""))
+                for target in target_entities:
+                    outcome, details = _apply_classification(
+                        token,
+                        target["guid"],
+                        classification_name,
+                        "",
+                        assignment_source,
+                        rule,
+                        cde_id=cde_id,
+                        cde_name=cde_name,
+                    )
+
+                    target_guid = _safe_text(target.get("guid", ""))
+                    if target_guid == primary_guid:
+                        if outcome == "assigned":
+                            classification_assigned += 1
+                        elif outcome == "existing":
+                            classification_existing += 1
+                        else:
+                            classification_failed.append((asset_ref, classification_name, details))
+                    else:
+                        if outcome == "assigned":
+                            semantic_field_class_assigned += 1
+                        elif outcome == "existing":
+                            semantic_field_class_existing += 1
+                        else:
+                            semantic_field_class_failed.append((asset_ref, classification_name, details))
+
+            if semantic_anchor:
+                for class_key in sorted(anchor_classification_dedupe):
+                    class_name = class_key[0]
+                    class_cde_id = class_key[1]
+                    class_cde_name = class_key[2]
+                    class_assignment_source = class_key[3]
+                    class_rule = class_key[4]
+                    outcome, details = _apply_classification(
+                        token,
+                        semantic_anchor["guid"],
+                        class_name,
+                        "",
+                        class_assignment_source,
+                        class_rule,
+                        cde_id=class_cde_id,
+                        cde_name=class_cde_name,
+                    )
+                    if outcome == "assigned":
+                        anchor_classification_assigned += 1
+                    elif outcome == "existing":
+                        anchor_classification_existing += 1
+                    else:
+                        anchor_classification_failed.append((class_name, details))
 
             print(
-                "[Cell 6] Classification purge summary: "
-                f"purged={class_purged} absent={class_already_absent} failed={len(class_purge_failed)}"
+                "[Cell 6] CDE classification summary: "
+                f"assigned={classification_assigned} existing={classification_existing} "
+                f"unresolved={len(classification_unresolved)} failed={len(classification_failed)} "
+                f"anchor_assigned={anchor_classification_assigned} "
+                f"anchor_existing={anchor_classification_existing} "
+                f"anchor_failed={len(anchor_classification_failed)} "
+                f"semantic_field_assigned={semantic_field_class_assigned} "
+                f"semantic_field_existing={semantic_field_class_existing} "
+                f"semantic_field_failed={len(semantic_field_class_failed)}"
             )
-            if class_purge_failed:
-                print(f"[Cell 6][WARN] First classification purge failure: {class_purge_failed[0]}")
+            if classification_unresolved:
+                print(f"[Cell 6][WARN] Unresolved CDE classification asset samples: {classification_unresolved[:10]}")
+            if classification_failed:
+                print(f"[Cell 6][WARN] First CDE classification failure: {classification_failed[0]}")
 
-        print(f"[Cell 6] CDE classification rows to process: {total_classification_rows}")
-        for index, row in enumerate(classification_rows, start=1):
-            asset_ref = row["asset_ref"]
-            classification_name = row["classification_name"]
-            assignment_source = row["assignment_source"]
-            rule = row["rule"]
-            cde_id = row["cde_id"]
-            cde_name = row["cde_name"]
-            column_asset_ref = _is_column_asset_ref(asset_ref)
+            print("[Cell 6] Applying glossary terms from manifest...")
+            glossary_assigned = 0
+            glossary_existing = 0
+            glossary_failed = []
+            glossary_unresolved_assets = []
+            glossary_unresolved_terms = []
 
-            if index == 1 or index % 10 == 0 or index == total_classification_rows:
-                print(
-                    f"[Cell 6] CDE classification progress: {index}/{total_classification_rows} | "
-                    f"assigned={classification_assigned} existing={classification_existing} "
-                    f"unresolved={len(classification_unresolved)} failed={len(classification_failed)}"
+            glossary_rows = []
+            glossary_dedupe = set()
+            anchor_glossary_dedupe = set()
+            semantic_field_glossary_assigned = 0
+            semantic_field_glossary_existing = 0
+            semantic_field_glossary_failed = []
+            for row in glossary_term_manifest:
+                asset_ref = _safe_text(row.get("asset_ref", ""))
+                term_name = _safe_text(row.get("term_name", ""))
+                assignment_source = _safe_text(row.get("assignment_source", ""))
+                rule = _safe_text(row.get("rule", ""))
+                key = (asset_ref.lower(), term_name.lower())
+                if not asset_ref or not term_name or key in glossary_dedupe:
+                    continue
+                glossary_dedupe.add(key)
+                anchor_glossary_dedupe.add(term_name.lower())
+                glossary_rows.append(
+                    {
+                        "asset_ref": asset_ref,
+                        "term_name": term_name,
+                        "assignment_source": assignment_source,
+                        "rule": rule,
+                    }
                 )
 
-            resolved = _resolve_asset_cached(asset_ref)
-            semantic_field_targets = _resolve_semantic_model_field_targets(token, asset_ref)
-            target_entities = []
-            seen_target_guids = set()
+            term_guid_cache = {}
+            total_glossary_rows = len(glossary_rows)
+            print(f"[Cell 6] Glossary term rows to process: {total_glossary_rows}")
+            for index, row in enumerate(glossary_rows, start=1):
+                asset_ref = row["asset_ref"]
+                term_name = row["term_name"]
 
-            # For column-like refs, prioritize semantic field entities so schema grid fields are updated first.
-            for semantic_target in semantic_field_targets:
-                semantic_guid = _safe_text(semantic_target.get("guid", ""))
-                if semantic_guid and semantic_guid not in seen_target_guids:
-                    target_entities.append(semantic_target)
-                    seen_target_guids.add(semantic_guid)
+                if index == 1 or index % 10 == 0 or index == total_glossary_rows:
+                    print(
+                        f"[Cell 6] Glossary term progress: {index}/{total_glossary_rows} | "
+                        f"assigned={glossary_assigned} existing={glossary_existing} "
+                        f"unresolved_assets={len(glossary_unresolved_assets)} "
+                        f"unresolved_terms={len(glossary_unresolved_terms)} failed={len(glossary_failed)}"
+                    )
 
-            if resolved:
-                resolved_guid = _safe_text(resolved.get("guid", ""))
-                resolved_type = _safe_text(resolved.get("entityType", "")).lower()
-                include_resolved = True
-                if column_asset_ref and "column" not in resolved_type and semantic_field_targets:
-                    # Avoid counting table-level binds as success when a field target was found.
-                    include_resolved = False
-                if include_resolved and resolved_guid and resolved_guid not in seen_target_guids:
+                resolved = _resolve_asset_cached(asset_ref)
+                semantic_field_targets = _resolve_semantic_model_field_targets(token, asset_ref)
+                target_entities = []
+                seen_target_guids = set()
+                if resolved:
                     target_entities.append(resolved)
-                    seen_target_guids.add(resolved_guid)
-
-            if not target_entities and semantic_anchor:
-                target_entities.append(semantic_anchor)
-            if not target_entities:
-                if len(classification_unresolved) < 25:
-                    classification_unresolved.append(asset_ref)
-                continue
-
-            primary_guid = _safe_text(target_entities[0].get("guid", ""))
-            for target in target_entities:
-                outcome, details = _apply_classification(
-                    token,
-                    target["guid"],
-                    classification_name,
-                    "",
-                    assignment_source,
-                    rule,
-                    cde_id=cde_id,
-                    cde_name=cde_name,
-                )
-
-                target_guid = _safe_text(target.get("guid", ""))
-                if target_guid == primary_guid:
-                    if outcome == "assigned":
-                        classification_assigned += 1
-                    elif outcome == "existing":
-                        classification_existing += 1
-                    else:
-                        classification_failed.append((asset_ref, classification_name, details))
-                else:
-                    if outcome == "assigned":
-                        semantic_field_class_assigned += 1
-                    elif outcome == "existing":
-                        semantic_field_class_existing += 1
-                    else:
-                        semantic_field_class_failed.append((asset_ref, classification_name, details))
-
-        if semantic_anchor:
-            for class_key in sorted(anchor_classification_dedupe):
-                class_name = class_key[0]
-                class_cde_id = class_key[1]
-                class_cde_name = class_key[2]
-                class_assignment_source = class_key[3]
-                class_rule = class_key[4]
-                outcome, details = _apply_classification(
-                    token,
-                    semantic_anchor["guid"],
-                    class_name,
-                    "",
-                    class_assignment_source,
-                    class_rule,
-                    cde_id=class_cde_id,
-                    cde_name=class_cde_name,
-                )
-                if outcome == "assigned":
-                    anchor_classification_assigned += 1
-                elif outcome == "existing":
-                    anchor_classification_existing += 1
-                else:
-                    anchor_classification_failed.append((class_name, details))
-
-        print(
-            "[Cell 6] CDE classification summary: "
-            f"assigned={classification_assigned} existing={classification_existing} "
-            f"unresolved={len(classification_unresolved)} failed={len(classification_failed)} "
-            f"anchor_assigned={anchor_classification_assigned} "
-            f"anchor_existing={anchor_classification_existing} "
-            f"anchor_failed={len(anchor_classification_failed)} "
-            f"semantic_field_assigned={semantic_field_class_assigned} "
-            f"semantic_field_existing={semantic_field_class_existing} "
-            f"semantic_field_failed={len(semantic_field_class_failed)}"
-        )
-        if classification_unresolved:
-            print(f"[Cell 6][WARN] Unresolved CDE classification asset samples: {classification_unresolved[:10]}")
-        if classification_failed:
-            print(f"[Cell 6][WARN] First CDE classification failure: {classification_failed[0]}")
-
-        print("[Cell 6] Applying glossary terms from manifest...")
-        glossary_assigned = 0
-        glossary_existing = 0
-        glossary_failed = []
-        glossary_unresolved_assets = []
-        glossary_unresolved_terms = []
-
-        glossary_rows = []
-        glossary_dedupe = set()
-        anchor_glossary_dedupe = set()
-        semantic_field_glossary_assigned = 0
-        semantic_field_glossary_existing = 0
-        semantic_field_glossary_failed = []
-        for row in glossary_term_manifest:
-            asset_ref = _safe_text(row.get("asset_ref", ""))
-            term_name = _safe_text(row.get("term_name", ""))
-            assignment_source = _safe_text(row.get("assignment_source", ""))
-            rule = _safe_text(row.get("rule", ""))
-            key = (asset_ref.lower(), term_name.lower())
-            if not asset_ref or not term_name or key in glossary_dedupe:
-                continue
-            glossary_dedupe.add(key)
-            anchor_glossary_dedupe.add(term_name.lower())
-            glossary_rows.append(
-                {
-                    "asset_ref": asset_ref,
-                    "term_name": term_name,
-                    "assignment_source": assignment_source,
-                    "rule": rule,
-                }
-            )
-
-        term_guid_cache = {}
-        total_glossary_rows = len(glossary_rows)
-        print(f"[Cell 6] Glossary term rows to process: {total_glossary_rows}")
-        for index, row in enumerate(glossary_rows, start=1):
-            asset_ref = row["asset_ref"]
-            term_name = row["term_name"]
-
-            if index == 1 or index % 10 == 0 or index == total_glossary_rows:
-                print(
-                    f"[Cell 6] Glossary term progress: {index}/{total_glossary_rows} | "
-                    f"assigned={glossary_assigned} existing={glossary_existing} "
-                    f"unresolved_assets={len(glossary_unresolved_assets)} "
-                    f"unresolved_terms={len(glossary_unresolved_terms)} failed={len(glossary_failed)}"
-                )
-
-            resolved = _resolve_asset_cached(asset_ref)
-            semantic_field_targets = _resolve_semantic_model_field_targets(token, asset_ref)
-            target_entities = []
-            seen_target_guids = set()
-            if resolved:
-                target_entities.append(resolved)
-                seen_target_guids.add(_safe_text(resolved.get("guid", "")))
-            for semantic_target in semantic_field_targets:
-                semantic_guid = _safe_text(semantic_target.get("guid", ""))
-                if semantic_guid and semantic_guid not in seen_target_guids:
-                    target_entities.append(semantic_target)
-                    seen_target_guids.add(semantic_guid)
-            if not target_entities and semantic_anchor:
-                target_entities.append(semantic_anchor)
-            if not target_entities:
-                if len(glossary_unresolved_assets) < 25:
-                    glossary_unresolved_assets.append(asset_ref)
-                continue
-
-            term_key = term_name.lower()
-            term_guid = term_guid_cache.get(term_key, "")
-            if not term_guid:
-                term_guid = _resolve_glossary_term_guid(token, term_name)
-                term_guid_cache[term_key] = term_guid
-
-            if not term_guid:
-                if len(glossary_unresolved_terms) < 25:
-                    glossary_unresolved_terms.append(term_name)
-                continue
-
-            primary_guid = _safe_text(target_entities[0].get("guid", ""))
-            for target in target_entities:
-                outcome, details = _apply_glossary_term(
-                    token,
-                    target["guid"],
-                    term_guid,
-                    target.get("entityType", ""),
-                )
-                target_guid = _safe_text(target.get("guid", ""))
-                if target_guid == primary_guid:
-                    if outcome == "assigned":
-                        glossary_assigned += 1
-                    elif outcome == "existing":
-                        glossary_existing += 1
-                    else:
-                        glossary_failed.append((asset_ref, term_name, details))
-                else:
-                    if outcome == "assigned":
-                        semantic_field_glossary_assigned += 1
-                    elif outcome == "existing":
-                        semantic_field_glossary_existing += 1
-                    else:
-                        semantic_field_glossary_failed.append((asset_ref, term_name, details))
-
-        anchor_glossary_assigned = 0
-        anchor_glossary_existing = 0
-        anchor_glossary_failed = []
-        if semantic_anchor:
-            for term_name_lower in sorted(anchor_glossary_dedupe):
-                term_guid = term_guid_cache.get(term_name_lower, "")
-                if not term_guid:
-                    term_guid = _resolve_glossary_term_guid(token, term_name_lower)
-                    term_guid_cache[term_name_lower] = term_guid
-                if not term_guid:
+                    seen_target_guids.add(_safe_text(resolved.get("guid", "")))
+                for semantic_target in semantic_field_targets:
+                    semantic_guid = _safe_text(semantic_target.get("guid", ""))
+                    if semantic_guid and semantic_guid not in seen_target_guids:
+                        target_entities.append(semantic_target)
+                        seen_target_guids.add(semantic_guid)
+                if not target_entities and semantic_anchor:
+                    target_entities.append(semantic_anchor)
+                if not target_entities:
+                    if len(glossary_unresolved_assets) < 25:
+                        glossary_unresolved_assets.append(asset_ref)
                     continue
 
-                outcome, details = _apply_glossary_term(
-                    token,
-                    semantic_anchor["guid"],
-                    term_guid,
-                    semantic_anchor.get("entityType", ""),
-                )
-                if outcome == "assigned":
-                    anchor_glossary_assigned += 1
-                elif outcome == "existing":
-                    anchor_glossary_existing += 1
-                else:
-                    anchor_glossary_failed.append((term_name_lower, details))
+                term_key = term_name.lower()
+                term_guid = term_guid_cache.get(term_key, "")
+                if not term_guid:
+                    term_guid = _resolve_glossary_term_guid(token, term_name)
+                    term_guid_cache[term_key] = term_guid
 
-        print(
-            "[Cell 6] Glossary term summary: "
-            f"assigned={glossary_assigned} existing={glossary_existing} "
-            f"unresolved_assets={len(glossary_unresolved_assets)} "
-            f"unresolved_terms={len(glossary_unresolved_terms)} failed={len(glossary_failed)} "
-            f"anchor_assigned={anchor_glossary_assigned} "
-            f"anchor_existing={anchor_glossary_existing} "
-            f"anchor_failed={len(anchor_glossary_failed)} "
-            f"semantic_field_assigned={semantic_field_glossary_assigned} "
-            f"semantic_field_existing={semantic_field_glossary_existing} "
-            f"semantic_field_failed={len(semantic_field_glossary_failed)}"
-        )
-        if glossary_unresolved_assets:
-            print(f"[Cell 6][WARN] Unresolved glossary asset samples: {glossary_unresolved_assets[:10]}")
-        if glossary_unresolved_terms:
-            print(f"[Cell 6][WARN] Unresolved glossary term samples: {glossary_unresolved_terms[:10]}")
-        if glossary_failed:
-            print(f"[Cell 6][WARN] First glossary assignment failure: {glossary_failed[0]}")
+                if not term_guid:
+                    if len(glossary_unresolved_terms) < 25:
+                        glossary_unresolved_terms.append(term_name)
+                    continue
 
-        print("[Cell 6] Applying asset descriptions from manifest...")
-        description_assigned = 0
-        description_existing = 0
-        description_failed = []
-        description_unresolved = []
+                primary_guid = _safe_text(target_entities[0].get("guid", ""))
+                for target in target_entities:
+                    outcome, details = _apply_glossary_term(
+                        token,
+                        target["guid"],
+                        term_guid,
+                        target.get("entityType", ""),
+                    )
+                    target_guid = _safe_text(target.get("guid", ""))
+                    if target_guid == primary_guid:
+                        if outcome == "assigned":
+                            glossary_assigned += 1
+                        elif outcome == "existing":
+                            glossary_existing += 1
+                        else:
+                            glossary_failed.append((asset_ref, term_name, details))
+                    else:
+                        if outcome == "assigned":
+                            semantic_field_glossary_assigned += 1
+                        elif outcome == "existing":
+                            semantic_field_glossary_existing += 1
+                        else:
+                            semantic_field_glossary_failed.append((asset_ref, term_name, details))
 
-        description_rows = []
-        description_dedupe = set()
-        for row in asset_description_manifest:
-            asset_ref = _safe_text(row.get("asset_ref", ""))
-            description = _safe_text(row.get("description", ""))
-            normalized_asset_ref = _asset_ref_to_table_qualified_name(asset_ref) or asset_ref
-            key = normalized_asset_ref.lower()
-            if not normalized_asset_ref or not description or key in description_dedupe:
-                continue
-            description_dedupe.add(key)
-            description_rows.append(
-                {
-                    "asset_ref": normalized_asset_ref,
-                    "description": description,
-                }
+            anchor_glossary_assigned = 0
+            anchor_glossary_existing = 0
+            anchor_glossary_failed = []
+            if semantic_anchor:
+                for term_name_lower in sorted(anchor_glossary_dedupe):
+                    term_guid = term_guid_cache.get(term_name_lower, "")
+                    if not term_guid:
+                        term_guid = _resolve_glossary_term_guid(token, term_name_lower)
+                        term_guid_cache[term_name_lower] = term_guid
+                    if not term_guid:
+                        continue
+
+                    outcome, details = _apply_glossary_term(
+                        token,
+                        semantic_anchor["guid"],
+                        term_guid,
+                        semantic_anchor.get("entityType", ""),
+                    )
+                    if outcome == "assigned":
+                        anchor_glossary_assigned += 1
+                    elif outcome == "existing":
+                        anchor_glossary_existing += 1
+                    else:
+                        anchor_glossary_failed.append((term_name_lower, details))
+
+            print(
+                "[Cell 6] Glossary term summary: "
+                f"assigned={glossary_assigned} existing={glossary_existing} "
+                f"unresolved_assets={len(glossary_unresolved_assets)} "
+                f"unresolved_terms={len(glossary_unresolved_terms)} failed={len(glossary_failed)} "
+                f"anchor_assigned={anchor_glossary_assigned} "
+                f"anchor_existing={anchor_glossary_existing} "
+                f"anchor_failed={len(anchor_glossary_failed)} "
+                f"semantic_field_assigned={semantic_field_glossary_assigned} "
+                f"semantic_field_existing={semantic_field_glossary_existing} "
+                f"semantic_field_failed={len(semantic_field_glossary_failed)}"
             )
+            if glossary_unresolved_assets:
+                print(f"[Cell 6][WARN] Unresolved glossary asset samples: {glossary_unresolved_assets[:10]}")
+            if glossary_unresolved_terms:
+                print(f"[Cell 6][WARN] Unresolved glossary term samples: {glossary_unresolved_terms[:10]}")
+            if glossary_failed:
+                print(f"[Cell 6][WARN] First glossary assignment failure: {glossary_failed[0]}")
 
-        total_description_rows = len(description_rows)
-        print(f"[Cell 6] Asset description rows to process: {total_description_rows}")
-        for index, row in enumerate(description_rows, start=1):
-            asset_ref = row["asset_ref"]
-            description = row["description"]
+            print("[Cell 6] Applying asset descriptions from manifest...")
+            description_assigned = 0
+            description_existing = 0
+            description_failed = []
+            description_unresolved = []
 
-            if index == 1 or index % 10 == 0 or index == total_description_rows:
-                print(
-                    f"[Cell 6] Asset description progress: {index}/{total_description_rows} | "
-                    f"assigned={description_assigned} existing={description_existing} "
-                    f"unresolved={len(description_unresolved)} failed={len(description_failed)}"
+            description_rows = []
+            description_dedupe = set()
+            for row in asset_description_manifest:
+                asset_ref = _safe_text(row.get("asset_ref", ""))
+                description = _safe_text(row.get("description", ""))
+                normalized_asset_ref = _asset_ref_to_table_qualified_name(asset_ref) or asset_ref
+                key = normalized_asset_ref.lower()
+                if not normalized_asset_ref or not description or key in description_dedupe:
+                    continue
+                description_dedupe.add(key)
+                description_rows.append(
+                    {
+                        "asset_ref": normalized_asset_ref,
+                        "description": description,
+                    }
                 )
 
-            resolved = _resolve_asset_cached(asset_ref)
-            if not resolved:
-                if len(description_unresolved) < 25:
-                    description_unresolved.append(asset_ref)
-                continue
+            total_description_rows = len(description_rows)
+            print(f"[Cell 6] Asset description rows to process: {total_description_rows}")
+            for index, row in enumerate(description_rows, start=1):
+                asset_ref = row["asset_ref"]
+                description = row["description"]
 
-            outcome, details = _apply_asset_description(token, resolved["guid"], description)
-            if outcome == "assigned":
-                description_assigned += 1
-            elif outcome == "existing":
-                description_existing += 1
-            elif outcome == "skipped":
-                continue
+                if index == 1 or index % 10 == 0 or index == total_description_rows:
+                    print(
+                        f"[Cell 6] Asset description progress: {index}/{total_description_rows} | "
+                        f"assigned={description_assigned} existing={description_existing} "
+                        f"unresolved={len(description_unresolved)} failed={len(description_failed)}"
+                    )
+
+                resolved = _resolve_asset_cached(asset_ref)
+                if not resolved:
+                    if len(description_unresolved) < 25:
+                        description_unresolved.append(asset_ref)
+                    continue
+
+                outcome, details = _apply_asset_description(token, resolved["guid"], description)
+                if outcome == "assigned":
+                    description_assigned += 1
+                elif outcome == "existing":
+                    description_existing += 1
+                elif outcome == "skipped":
+                    continue
+                else:
+                    description_failed.append((asset_ref, details))
+
+            print(
+                "[Cell 6] Asset description summary: "
+                f"assigned={description_assigned} existing={description_existing} "
+                f"unresolved={len(description_unresolved)} failed={len(description_failed)}"
+            )
+            if description_unresolved:
+                print(f"[Cell 6][WARN] Unresolved asset description samples: {description_unresolved[:10]}")
+            if description_failed:
+                print(f"[Cell 6][WARN] First asset description failure: {description_failed[0]}")
+
+            process_entities, unresolved_edges = _build_lineage_process_entities(token)
+            if not process_entities:
+                print("[WARN] No lineage process entities were built. Verify qualifiedName patterns and scan freshness.")
             else:
-                description_failed.append((asset_ref, details))
+                # Atlas entity/bulk supports upsert by qualifiedName for entity types.
+                batch_size = 50
+                published = 0
+                total_batches = (len(process_entities) + batch_size - 1) // batch_size
+                for i in range(0, len(process_entities), batch_size):
+                    batch = process_entities[i : i + batch_size]
+                    batch_number = (i // batch_size) + 1
+                    print(f"[Cell 6] Publishing lineage batch {batch_number}/{total_batches} ({len(batch)} entities)...")
+                    payload = {"entities": batch}
+                    entity_status, entity_body = _post_json("/catalog/api/atlas/v2/entity/bulk", token, payload)
+                    if entity_status not in (200, 201):
+                        raise RuntimeError(f"Lineage process publish failed: HTTP {entity_status} | {entity_body[:500]}")
+                    published += len(batch)
+                print(f"Lineage processes published: {published}")
 
-        print(
-            "[Cell 6] Asset description summary: "
-            f"assigned={description_assigned} existing={description_existing} "
-            f"unresolved={len(description_unresolved)} failed={len(description_failed)}"
-        )
-        if description_unresolved:
-            print(f"[Cell 6][WARN] Unresolved asset description samples: {description_unresolved[:10]}")
-        if description_failed:
-            print(f"[Cell 6][WARN] First asset description failure: {description_failed[0]}")
-
-        process_entities, unresolved_edges = _build_lineage_process_entities(token)
-        if not process_entities:
-            print("[WARN] No lineage process entities were built. Verify qualifiedName patterns and scan freshness.")
-        else:
-            # Atlas entity/bulk supports upsert by qualifiedName for entity types.
-            batch_size = 50
-            published = 0
-            total_batches = (len(process_entities) + batch_size - 1) // batch_size
-            for i in range(0, len(process_entities), batch_size):
-                batch = process_entities[i : i + batch_size]
-                batch_number = (i // batch_size) + 1
-                print(f"[Cell 6] Publishing lineage batch {batch_number}/{total_batches} ({len(batch)} entities)...")
-                payload = {"entities": batch}
-                entity_status, entity_body = _post_json("/catalog/api/atlas/v2/entity/bulk", token, payload)
-                if entity_status not in (200, 201):
-                    raise RuntimeError(f"Lineage process publish failed: HTTP {entity_status} | {entity_body[:500]}")
-                published += len(batch)
-            print(f"Lineage processes published: {published}")
-
-        if unresolved_edges:
-            print(f"[WARN] Unresolved lineage edges: {len(unresolved_edges)}")
-            print("[WARN] First unresolved edge sample:")
-            print(json.dumps(unresolved_edges[0], indent=2))
+            if unresolved_edges:
+                print(f"[WARN] Unresolved lineage edges: {len(unresolved_edges)}")
+                print("[WARN] First unresolved edge sample:")
+                print(json.dumps(unresolved_edges[0], indent=2))
+    except Exception as ex:
+        _log_nb09_diagnostic("cell11_live_publish", ex)
+        raise
 
 # Cell 6 complete: Classification typedefs and lineage processes published (or dry-run executed)
 # G9-1 closure: Purview lineage graph modeling now has live Atlas publish step (no longer manifest-only)
