@@ -1263,6 +1263,23 @@ print(
     flush=True,
 )
 
+
+def _log_nb02_diagnostic(stage: str, error: Exception):
+    import traceback
+    diag_row = {
+        "stage": stage,
+        "error_type": type(error).__name__,
+        "error_message": str(error)[:4000],
+        "traceback": traceback.format_exc()[:8000],
+    }
+    try:
+        spark.createDataFrame([diag_row]).write.format("delta").mode("append").saveAsTable("nb02_diagnostics_log")
+        print(f"[DIAG] Logged failure at stage '{stage}' to nb02_diagnostics_log")
+    except Exception as log_ex:
+        print(f"[DIAG] Could not log diagnostic for stage '{stage}': {log_ex}")
+        print(f"[DIAG] Original error at stage '{stage}': {type(error).__name__}: {error}")
+
+
 def validate_csv(df: pd.DataFrame, required_cols: list[str], enum_cols: dict[str, set[str]] | None = None) -> None:
     actual_cols = set(df.columns)
     missing = [c for c in required_cols if c not in actual_cols]
@@ -1311,8 +1328,24 @@ def try_load_sql_dataset(dataset_name: str) -> tuple[pd.DataFrame | None, str | 
         except Exception:
             return None
 
-    # Read physical mirror Delta paths first. The Spark catalog can return stale data
-    # after a source refresh even when refreshTable succeeds.
+    # Try the registered mirror catalog first -- confirmed reliable via direct SQL analytics
+    # endpoint verification, and far cheaper than probing physical Delta paths. Probing
+    # dozens of nonexistent abfss:// paths per dataset (below) generates a large volume of
+    # failed low-level read attempts across a full ingestion run; Fabric's Spark session
+    # monitor can auto-cancel the whole session once enough statement failures accumulate,
+    # even though each individual failure here is caught in Python. Catalog-first ordering
+    # avoids that failure-volume problem in the common case.
+    for catalog in SQL_MIRROR_CATALOGS:
+        for schema_name in SQL_MIRROR_SCHEMAS:
+            for table_name in table_candidates:
+                for full_name in _identifier_variants(catalog, schema_name, table_name):
+                    loaded = _try_table(full_name)
+                    if loaded is not None:
+                        return loaded
+
+    # Fall back to physical mirror Delta paths only if the catalog lookup didn't resolve --
+    # the Spark catalog can occasionally return stale data after a source refresh even when
+    # refreshTable succeeds, and a direct path read bypasses that staleness.
     for host in MIRROR_DFS_HOSTS:
         for item_id in MIRROR_ITEM_IDS:
             for schema_name in SQL_MIRROR_SCHEMAS:
@@ -1328,15 +1361,6 @@ def try_load_sql_dataset(dataset_name: str) -> tuple[pd.DataFrame | None, str | 
                         return sdf.toPandas(), source_name
                     except Exception:
                         continue
-
-    # Fall back to registered mirror catalog names when direct paths are unavailable.
-    for catalog in SQL_MIRROR_CATALOGS:
-        for schema_name in SQL_MIRROR_SCHEMAS:
-            for table_name in table_candidates:
-                for full_name in _identifier_variants(catalog, schema_name, table_name):
-                    loaded = _try_table(full_name)
-                    if loaded is not None:
-                        return loaded
 
     print(
         f"[Cell 2] SQL lookup miss for '{dataset_name}'. Attempted: {attempted_names}",
@@ -1439,29 +1463,33 @@ print(f"[Cell 2] Helpers ready. SQL dataset keys: {sorted(SQL_SOURCE_TABLES.keys
 
 # Cell 3: domain-charter.csv -> metadata.domains
 
-domains_required = [
-    "domain_id",
-    "domain_name",
-    "domain_type",
-    "description",
-    "parent_domain",
-    "status",
-    "governance_domain_owners",
-    "governance_domain_creators",
-]
+try:
+    domains_required = [
+        "domain_id",
+        "domain_name",
+        "domain_type",
+        "description",
+        "parent_domain",
+        "status",
+        "governance_domain_owners",
+        "governance_domain_creators",
+    ]
 
-domain_type_allowed = {
-    "Data domain",
-    "Functional unit",
-    "Line of business",
-    "Regulatory",
-    "Project",
-}
+    domain_type_allowed = {
+        "Data domain",
+        "Functional unit",
+        "Line of business",
+        "Regulatory",
+        "Project",
+    }
 
-domains_df, domains_source = load_metadata_dataset("domains")
-validate_csv(domains_df, domains_required, {"domain_type": domain_type_allowed})
-count_domains = write_table_from_pandas(domains_df, "domains")
-print(f"domains loaded: {count_domains} (source={domains_source})")
+    domains_df, domains_source = load_metadata_dataset("domains")
+    validate_csv(domains_df, domains_required, {"domain_type": domain_type_allowed})
+    count_domains = write_table_from_pandas(domains_df, "domains")
+    print(f"domains loaded: {count_domains} (source={domains_source})")
+except Exception as ex:
+    _log_nb02_diagnostic("cell3_domains", ex)
+    raise
 
 
 # METADATA ********************
@@ -1475,29 +1503,33 @@ print(f"domains loaded: {count_domains} (source={domains_source})")
 
 # Cell 4: data-product-catalog.csv -> metadata.data_products
 
-data_products_required = [
-    "data_product_id",
-    "data_product_name",
-    "product_type",
-    "business_use_case",
-    "audience",
-    "owners",
-    "attached_assets",
-    "access_policy",
-    "status",
-    "parent_domain_id",
-]
+try:
+    data_products_required = [
+        "data_product_id",
+        "data_product_name",
+        "product_type",
+        "business_use_case",
+        "audience",
+        "owners",
+        "attached_assets",
+        "access_policy",
+        "status",
+        "parent_domain_id",
+    ]
 
-product_type_allowed = {
-    "Dataset",
-    "Dashboards/Reports",
-    "Master and reference data",
-}
+    product_type_allowed = {
+        "Dataset",
+        "Dashboards/Reports",
+        "Master and reference data",
+    }
 
-data_products_df, data_products_source = load_metadata_dataset("data_products")
-validate_csv(data_products_df, data_products_required, {"product_type": product_type_allowed})
-count_data_products = write_table_from_pandas(data_products_df, "data_products")
-print(f"data_products loaded: {count_data_products} (source={data_products_source})")
+    data_products_df, data_products_source = load_metadata_dataset("data_products")
+    validate_csv(data_products_df, data_products_required, {"product_type": product_type_allowed})
+    count_data_products = write_table_from_pandas(data_products_df, "data_products")
+    print(f"data_products loaded: {count_data_products} (source={data_products_source})")
+except Exception as ex:
+    _log_nb02_diagnostic("cell4_data_products", ex)
+    raise
 
 
 # METADATA ********************
@@ -1511,26 +1543,30 @@ print(f"data_products loaded: {count_data_products} (source={data_products_sourc
 
 # Cell 5: glossary-master.csv -> metadata.glossary_terms
 
-glossary_required = [
-    "term_code",
-    "term_name",
-    "acronyms",
-    "parent_term_code",
-    "domain_code",
-    "owner_upn",
-    "additional_owners_upn",
-    "definition",
-    "status",
-    "is_cde",
-    "industry_origin",
-    "resources",
-    "bound_assets",
-]
+try:
+    glossary_required = [
+        "term_code",
+        "term_name",
+        "acronyms",
+        "parent_term_code",
+        "domain_code",
+        "owner_upn",
+        "additional_owners_upn",
+        "definition",
+        "status",
+        "is_cde",
+        "industry_origin",
+        "resources",
+        "bound_assets",
+    ]
 
-glossary_df, glossary_source = load_metadata_dataset("glossary_terms")
-validate_csv(glossary_df, glossary_required)
-count_glossary = write_table_from_pandas(glossary_df, "glossary_terms")
-print(f"glossary_terms loaded: {count_glossary} (source={glossary_source})")
+    glossary_df, glossary_source = load_metadata_dataset("glossary_terms")
+    validate_csv(glossary_df, glossary_required)
+    count_glossary = write_table_from_pandas(glossary_df, "glossary_terms")
+    print(f"glossary_terms loaded: {count_glossary} (source={glossary_source})")
+except Exception as ex:
+    _log_nb02_diagnostic("cell5_glossary_terms", ex)
+    raise
 
 
 # METADATA ********************
@@ -1544,23 +1580,27 @@ print(f"glossary_terms loaded: {count_glossary} (source={glossary_source})")
 
 # Cell 6: cde-catalog.csv -> metadata.cdes
 
-cde_required = [
-    "cde_id",
-    "cde_name",
-    "expected_data_type",
-    "business_definition",
-    "owner_role",
-    "status",
-    "parent_glossary_term",
-    "bound_columns",
-]
+try:
+    cde_required = [
+        "cde_id",
+        "cde_name",
+        "expected_data_type",
+        "business_definition",
+        "owner_role",
+        "status",
+        "parent_glossary_term",
+        "bound_columns",
+    ]
 
-expected_type_allowed = {"number", "text", "date", "Boolean"}
+    expected_type_allowed = {"number", "text", "date", "Boolean"}
 
-cde_df, cde_source = load_metadata_dataset("cdes")
-validate_csv(cde_df, cde_required, {"expected_data_type": expected_type_allowed})
-count_cdes = write_table_from_pandas(cde_df, "cdes")
-print(f"cdes loaded: {count_cdes} (source={cde_source})")
+    cde_df, cde_source = load_metadata_dataset("cdes")
+    validate_csv(cde_df, cde_required, {"expected_data_type": expected_type_allowed})
+    count_cdes = write_table_from_pandas(cde_df, "cdes")
+    print(f"cdes loaded: {count_cdes} (source={cde_source})")
+except Exception as ex:
+    _log_nb02_diagnostic("cell6_cdes", ex)
+    raise
 
 
 # METADATA ********************
@@ -1574,20 +1614,24 @@ print(f"cdes loaded: {count_cdes} (source={cde_source})")
 
 # Cell 7: role-directory.csv -> metadata.role_assignments
 
-roles_required = [
-    "role_id",
-    "principal_email",
-    "principal_display_name",
-    "role_type",
-    "scope_target",
-    "scope_target_type",
-    "governance_layer",
-]
+try:
+    roles_required = [
+        "role_id",
+        "principal_email",
+        "principal_display_name",
+        "role_type",
+        "scope_target",
+        "scope_target_type",
+        "governance_layer",
+    ]
 
-roles_df, roles_source = load_metadata_dataset("role_assignments")
-validate_csv(roles_df, roles_required)
-count_roles = write_table_from_pandas(roles_df, "role_assignments")
-print(f"role_assignments loaded: {count_roles} (source={roles_source})")
+    roles_df, roles_source = load_metadata_dataset("role_assignments")
+    validate_csv(roles_df, roles_required)
+    count_roles = write_table_from_pandas(roles_df, "role_assignments")
+    print(f"role_assignments loaded: {count_roles} (source={roles_source})")
+except Exception as ex:
+    _log_nb02_diagnostic("cell7_role_assignments", ex)
+    raise
 
 
 # METADATA ********************
@@ -1601,19 +1645,23 @@ print(f"role_assignments loaded: {count_roles} (source={roles_source})")
 
 # Cell 8: label-policy.csv -> metadata.label_assignments
 
-labels_required = [
-    "label_id",
-    "label_name",
-    "sensitivity_tier",
-    "protection_policy",
-    "applies_to_asset_ids",
-    "scope",
-]
+try:
+    labels_required = [
+        "label_id",
+        "label_name",
+        "sensitivity_tier",
+        "protection_policy",
+        "applies_to_asset_ids",
+        "scope",
+    ]
 
-labels_df, labels_source = load_metadata_dataset("label_assignments")
-validate_csv(labels_df, labels_required)
-count_labels = write_table_from_pandas(labels_df, "label_assignments")
-print(f"label_assignments loaded: {count_labels} (source={labels_source})")
+    labels_df, labels_source = load_metadata_dataset("label_assignments")
+    validate_csv(labels_df, labels_required)
+    count_labels = write_table_from_pandas(labels_df, "label_assignments")
+    print(f"label_assignments loaded: {count_labels} (source={labels_source})")
+except Exception as ex:
+    _log_nb02_diagnostic("cell8_label_assignments", ex)
+    raise
 
 
 # METADATA ********************
@@ -1641,10 +1689,14 @@ gcr_required = [
     "status",
 ]
 
-gcr_df, gcr_source = load_metadata_dataset("governance_change_requests")
-validate_csv(gcr_df, gcr_required)
-count_gcr = write_table_from_pandas(gcr_df, "governance_change_requests")
-print(f"governance_change_requests loaded: {count_gcr} (source={gcr_source})")
+try:
+    gcr_df, gcr_source = load_metadata_dataset("governance_change_requests")
+    validate_csv(gcr_df, gcr_required)
+    count_gcr = write_table_from_pandas(gcr_df, "governance_change_requests")
+    print(f"governance_change_requests loaded: {count_gcr} (source={gcr_source})")
+except Exception as ex:
+    _log_nb02_diagnostic("cell8b_governance_change_requests", ex)
+    raise
 
 
 # METADATA ********************
@@ -1671,35 +1723,39 @@ okrs_required = [
     "status",
 ]
 
-okrs_df, okrs_source = load_metadata_dataset("okrs")
-validate_csv(okrs_df, okrs_required)
-count_okrs = write_table_from_pandas(okrs_df, "okrs")
-print(f"okrs loaded: {count_okrs} (source={okrs_source})")
+try:
+    okrs_df, okrs_source = load_metadata_dataset("okrs")
+    validate_csv(okrs_df, okrs_required)
+    count_okrs = write_table_from_pandas(okrs_df, "okrs")
+    print(f"okrs loaded: {count_okrs} (source={okrs_source})")
 
-okr_key_results_required = [
-    "key_result_id",
-    "okr_id",
-    "result_name",
-    "metric_source",
-    "goal_amount",
-    "max_amount",
-    "progress_status",
-]
+    okr_key_results_required = [
+        "key_result_id",
+        "okr_id",
+        "result_name",
+        "metric_source",
+        "goal_amount",
+        "max_amount",
+        "progress_status",
+    ]
 
-okr_key_results_df, okr_key_results_source = load_metadata_dataset("okr_key_results")
-validate_csv(okr_key_results_df, okr_key_results_required)
-count_okr_key_results = write_table_from_pandas(okr_key_results_df, "okr_key_results")
-print(f"okr_key_results loaded: {count_okr_key_results} (source={okr_key_results_source})")
+    okr_key_results_df, okr_key_results_source = load_metadata_dataset("okr_key_results")
+    validate_csv(okr_key_results_df, okr_key_results_required)
+    count_okr_key_results = write_table_from_pandas(okr_key_results_df, "okr_key_results")
+    print(f"okr_key_results loaded: {count_okr_key_results} (source={okr_key_results_source})")
 
-okr_data_products_required = [
-    "okr_id",
-    "data_product_id",
-]
+    okr_data_products_required = [
+        "okr_id",
+        "data_product_id",
+    ]
 
-okr_data_products_df, okr_data_products_source = load_metadata_dataset("okr_data_products")
-validate_csv(okr_data_products_df, okr_data_products_required)
-count_okr_data_products = write_table_from_pandas(okr_data_products_df, "okr_data_products")
-print(f"okr_data_products loaded: {count_okr_data_products} (source={okr_data_products_source})")
+    okr_data_products_df, okr_data_products_source = load_metadata_dataset("okr_data_products")
+    validate_csv(okr_data_products_df, okr_data_products_required)
+    count_okr_data_products = write_table_from_pandas(okr_data_products_df, "okr_data_products")
+    print(f"okr_data_products loaded: {count_okr_data_products} (source={okr_data_products_source})")
+except Exception as ex:
+    _log_nb02_diagnostic("cell8c_okrs", ex)
+    raise
 
 
 # METADATA ********************
@@ -1713,20 +1769,24 @@ print(f"okr_data_products loaded: {count_okr_data_products} (source={okr_data_pr
 
 # Cell 9: Summary counts (expected vs actual)
 
-summary_query = build_summary_query()
+try:
+    summary_query = build_summary_query()
 
-summary_df = spark.sql(summary_query).withColumn(
-    "status",
-    F.when(F.col("actual") == F.col("expected"), F.lit("GREEN")).otherwise(F.lit("YELLOW")),
-)
+    summary_df = spark.sql(summary_query).withColumn(
+        "status",
+        F.when(F.col("actual") == F.col("expected"), F.lit("GREEN")).otherwise(F.lit("YELLOW")),
+    )
 
-display(summary_df)
+    display(summary_df)
 
-non_green_checks = summary_df.where(F.col("status") != "GREEN").count()
-if non_green_checks:
-    raise RuntimeError(f"Metadata foundation validation failed: {non_green_checks} non-GREEN check(s).")
+    non_green_checks = summary_df.where(F.col("status") != "GREEN").count()
+    if non_green_checks:
+        raise RuntimeError(f"Metadata foundation validation failed: {non_green_checks} non-GREEN check(s).")
 
-print("NB_02 metadata foundation complete; semantic annotation reconciliation runs next in this notebook.")
+    print("NB_02 metadata foundation complete; semantic annotation reconciliation runs next in this notebook.")
+except Exception as ex:
+    _log_nb02_diagnostic("cell9_summary_validation", ex)
+    raise
 
 # METADATA ********************
 
@@ -1897,20 +1957,7 @@ def _require_lakehouse_context():
         )
 
 
-def _log_nb02_diagnostic(stage: str, error: Exception):
-    import traceback
-    diag_row = {
-        "stage": stage,
-        "error_type": type(error).__name__,
-        "error_message": str(error)[:4000],
-        "traceback": traceback.format_exc()[:8000],
-    }
-    try:
-        spark.createDataFrame([diag_row]).write.format("delta").mode("append").saveAsTable("nb02_diagnostics_log")
-        print(f"[DIAG] Logged failure at stage '{stage}' to nb02_diagnostics_log")
-    except Exception as log_ex:
-        print(f"[DIAG] Could not log diagnostic for stage '{stage}': {log_ex}")
-        print(f"[DIAG] Original error at stage '{stage}': {type(error).__name__}: {error}")
+# _log_nb02_diagnostic is defined in Cell 2 so it's available to Cells 3-9 too.
 
 
 print(f"Required metadata tables: {REQUIRED_METADATA_TABLES}")
