@@ -91,6 +91,10 @@ def main() -> int:
         "remoteCommitHash": remote_hash,
         "workspaceHead": workspace_head,
         "options": {"allowOverrideItems": True},
+        "conflictResolution": {
+            "conflictResolutionType": "Workspace",
+            "conflictResolutionPolicy": "PreferRemote",
+        },
     }
     status, headers, payload = request_json(token, "POST", update_url, body)
     print(f"updateFromGit submitted: HTTP {status}")
