@@ -244,7 +244,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--notebook", required=True)
     parser.add_argument("--startup-timeout", type=float, default=3.0, help="Minutes to wait for the Spark session to start (default 3).")
     parser.add_argument("--execution-timeout", type=float, default=10.0, help="Minutes to wait after execution starts (default 10).")
-    parser.add_argument("--poll-seconds", type=float, default=15.0, help="Poll interval for the first --fast-poll-seconds of the run (default 15).")
+    parser.add_argument("--poll-seconds", type=float, default=30.0, help="Poll interval for the first --fast-poll-seconds of the run (default 30).")
     parser.add_argument("--fast-poll-seconds", type=float, default=150.0, help="How long (seconds) to use --poll-seconds before slowing down (default 150 = 2.5 min, roughly Spark cold-start time).")
     parser.add_argument("--post-startup-poll-seconds", type=float, default=30.0, help="Poll interval after --fast-poll-seconds has elapsed (default 30).")
     parser.add_argument("--job-id", default=None, help="Attach to and monitor an already-submitted job instead of submitting a new one.")
