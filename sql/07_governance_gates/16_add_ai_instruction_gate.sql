@@ -67,7 +67,12 @@ BEGIN
             "RecordType": "ai_instruction",
             "TriggerText": "escalation",
             "ResponseText": "Escalate to a human supervisor when: the customer explicitly requests a supervisor or manager; a service request has missed its committed SLA window and the customer expresses dissatisfaction; billing dispute exceeds standard credit authority; or safety/emergency language is detected (e.g. gas smell, no heat in freezing conditions). Do not attempt to resolve these categories with a scripted answer -- acknowledge the concern and hand off.",
-            "LinkedKPICode": null
+            "LinkedKPICode": null,
+            "domain": "DOM-CUSTOPS",
+            "owner": "rupal.solanki@MngEnvMCAP660444.onmicrosoft.com",
+            "sensitivity": "Internal",
+            "semantic_role": "ai_instruction",
+            "business_use": "Data Agent escalation guidance"
         }',
         NULL,
         'rupal.solanki@MngEnvMCAP660444.onmicrosoft.com',

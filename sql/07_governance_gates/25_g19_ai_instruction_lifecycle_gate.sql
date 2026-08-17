@@ -63,7 +63,10 @@ BEGIN
         SELECT 'ai_instruction' AS RecordType, 'weather_delay' AS TriggerText,
                'When a customer asks about a delayed technician visit during declared winter weather advisories, acknowledge the safety-driven schedule impact, confirm the new estimated arrival window from the dispatch system, and offer to notify them proactively if it shifts again. Do not commit to a specific time until dispatch confirms it.' AS ResponseText,
                CAST(NULL AS VARCHAR(64)) AS LinkedKPICode,
-               @effective_date AS EffectiveDate
+               @effective_date AS EffectiveDate,
+               'DOM-SVCDEL' AS domain, 'shruthi.srinivas@MngEnvMCAP660444.onmicrosoft.com' AS owner,
+               'Internal' AS sensitivity, 'ai_instruction' AS semantic_role,
+               'Seasonal weather-delay communication guidance' AS business_use
         FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
     );
 
@@ -96,7 +99,10 @@ BEGIN
     DECLARE @payload_003 NVARCHAR(MAX) = (
         SELECT 'ai_instruction' AS RecordType, 'escalation' AS TriggerText,
                'Escalate to a human supervisor when: the customer explicitly requests a supervisor or manager; a service request has missed its committed SLA window and the customer expresses dissatisfaction; billing dispute exceeds standard credit authority. Do not attempt to resolve these categories with a scripted answer -- acknowledge the concern and hand off.' AS ResponseText,
-               CAST(NULL AS VARCHAR(64)) AS LinkedKPICode
+               CAST(NULL AS VARCHAR(64)) AS LinkedKPICode,
+               'DOM-SVCDEL' AS domain, 'shruthi.srinivas@MngEnvMCAP660444.onmicrosoft.com' AS owner,
+               'Internal' AS sensitivity, 'ai_instruction' AS semantic_role,
+               'Escalation criteria simplification (flawed edit, intentional demo scenario)' AS business_use
         FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
     );
 
@@ -128,7 +134,10 @@ IF NOT EXISTS (SELECT 1 FROM dbo.governance_change_requests WHERE request_id = '
 BEGIN
     DECLARE @payload_004 NVARCHAR(MAX) = (
         SELECT 'ai_instruction' AS RecordType, 'escalation' AS TriggerText,
-               'Missing safety/emergency escalation clause (gas smell, no heat in freezing conditions) -- GCR-AII-003''s simplification introduced a real safety-governance risk and must be reverted.' AS RollbackReason
+               'Missing safety/emergency escalation clause (gas smell, no heat in freezing conditions) -- GCR-AII-003''s simplification introduced a real safety-governance risk and must be reverted.' AS RollbackReason,
+               'DOM-CUSTOPS' AS domain, 'ranbir.singh@MngEnvMCAP660444.onmicrosoft.com' AS owner,
+               'Internal' AS sensitivity, 'ai_instruction' AS semantic_role,
+               'Safety-critical escalation guidance restoration' AS business_use
         FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
     );
 
