@@ -111,3 +111,40 @@ governance_change_requests/okrs/okr_key_results/okr_data_products).
   diagnostic instrumentation since Fabric's REST API provides no cell-level detail. See
   "Root cause" above for the full investigation trail.
 
+## Follow-up (2026-08-17, later same day): quantified PP renewal / billing-caller correlation
+
+The `04_writeback_governed_metadata` validation doc flagged an open item: the semantic model's
+AI grounding referenced the billing-caller/PP-renewal correlation (the notebook-1 cohort-variance
+fix) only qualitatively ("often signals billing confusion"), not with the actual fixed numbers
+(~51% renewal for billing-queue callers vs. ~86% for everyone else, a ~35-point gap). Strengthened
+the `PP_RNW_RATE` / "renewal rate" `verified_answer` row in this notebook's seed data
+(`ai_metadata`) with the quantified gap so the Data Agent can surface it as a specific,
+governed, Tom-facing fact instead of a vague qualitative hint.
+
+| Attempt | Job ID | Start (UTC) | End (UTC) | Status | Note |
+|---|---|---|---|---|---|
+| 6 | `d817ce60-3405-4e6f-b07b-da8daacda8db` | 2026-08-17T07:22:19 | 2026-08-17T07:29:14 | ✅ `Completed` (misleading) | Ran against **stale Fabric code** — see pitfall below. `ai_metadata` content unchanged after this run. |
+| 7 (after git sync fix) | `8800f6f6-9986-47ab-8d7e-c42008f0be05` | 2026-08-17T07:35:28 | 2026-08-17T07:42:42 | ✅ `Completed` (verified) | `ai_metadata.RecordID=18` confirmed updated with the quantified-gap text. |
+
+**Pitfall discovered — local edits do not auto-propagate to Fabric:** editing
+`notebook-content.py` locally and even committing+pushing to git is **not enough** to change
+what Fabric actually executes. Fabric only picks up git history after its own workspace Git
+connection is explicitly synced (`POST /v1/workspaces/{id}/git/updateFromGit`). Attempt 6 above
+ran, reported `Completed`, and printed no error at all — but silently executed the **old**
+pre-edit code, because the Fabric workspace head (`5ada16a...`) was 4 commits behind the pushed
+remote head. There is no warning surfaced anywhere in the job API for this condition; the only
+way to catch it is to actually verify the data output changed as expected. Added
+`tools/sync_fabric_git.py` to make this an explicit, scripted step — **run it after every push
+of a `notebook-content.py` change and before re-running that notebook's job.**
+
+## Corrected data write-out confirmation (attempt 7)
+
+`dbo.ai_metadata` `RecordID=18` (`TriggerText='renewal rate'`, `LinkedKPICode='PP_RNW_RATE'`,
+`IsCertified=1`, `CertifiedBy='Victoria Tan'`):
+
+> PP Renewal Rate target is 82%. Customers who contacted the billing queue before their renewal
+> date renew at roughly 51%, versus about 86% for customers who did not contact the billing
+> queue — a ~35-point gap signaling billing confusion as a churn driver. Cross-reference with
+> AHT on billing queue.
+
+

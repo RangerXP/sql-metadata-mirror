@@ -53,7 +53,7 @@ Two originally-separate notebooks merged into one file:
 | Table descriptions (13 tables) | All carry real, substantive descriptions (e.g. `dim_customer`, `fct_service_request`) |
 | Measure descriptions (18 measures) | All carry real descriptions (`Technician Utilization Rate`, `Total MRR`/`New MRR`/`Churned MRR`, `SLA Breach Count`/`SLA Compliance Rate`, `Warranty Coverage Rate`, etc.) |
 | Model-level `PBI_AI_Instructions` annotation | Present, contains real Enercare business-context grounding (billing systems, call-center queue taxonomy, FCR terminology) |
-| Model-level `PBI_AI_VerifiedAnswers` annotation | Present (not independently re-verified this pass beyond confirming the write path completed without error) |
+| Model-level `PBI_AI_VerifiedAnswers` annotation | Present; confirmed 2026-08-17 to include the quantified billing-caller/PP-renewal correlation (see Live-validation findings) |
 
 ## Demo fit
 
@@ -74,7 +74,7 @@ That's what makes drift structurally impossible, not just a policy."
 | **`MAX_ANNOTATION_CHARS` too small** (historical, prior session) | A live run failed at the old 12000-char limit with a real certified payload of 12001 chars. | ✅ Fixed — raised to 32000. |
 | **AI grounding writeback was missing an `IsCertified` filter** (historical, prior session) | Originally filtered only `WHERE IsDraft = 0`, unlike the KPI writeback path. | ✅ Fixed 2026-08-13 — now filters `WHERE IsDraft = 0 AND IsCertified = 1`. |
 | **Proactive stale-schema hardening (2026-08-17)** | Same bug class root-caused live in `02_build_metadata_foundation` (`refreshTable()` missing before a full-row `.collect()`). Two locations in this notebook matched the vulnerable pattern (`measure_kpi_map` candidate-table lookup at the top of Cell 8, and `_read_governance_rows()` for OKR/ontology annotations). | ✅ Fixed proactively — neither had actually failed at runtime here, but both were hardened with `refreshTable()` before this notebook's live validation run (which then completed cleanly). |
-| **AI grounding content for the notebook-1 correlation fix** | Did not independently confirm the AI grounding annotation specifically encodes the fixed billing-caller/PP-renewal correlation as a Tom-facing insight. | ⚠️ Open — worth a targeted check before the live demo pass; see the validation doc. |
+| **AI grounding content for the notebook-1 correlation fix** | Did not independently confirm the AI grounding annotation specifically encodes the fixed billing-caller/PP-renewal correlation as a Tom-facing insight. | ✅ **Resolved 2026-08-17.** Confirmed present but only qualitative ("often signals billing confusion"); strengthened the source `ai_metadata` verified-answer with the quantified gap (~51% vs. ~86%, ~35 points) in `02_build_metadata_foundation`, then reran this notebook and confirmed the quantified text live in the semantic model's `PBI_AI_VerifiedAnswers` annotation via a fresh Power BI Modeling MCP connection. See `docs/runbooks/notebook-validation/02_build_metadata_foundation.md`. |
 
 ## Dependencies / downstream consumers
 
