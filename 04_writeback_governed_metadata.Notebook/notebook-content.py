@@ -300,6 +300,10 @@ for candidate_table in [
     f"{METADATA_LH}.kpi_measure_map",
 ]:
     try:
+        try:
+            spark.catalog.refreshTable(candidate_table)
+        except Exception:
+            pass
         mapping_rows = [r.asDict(recursive=True) for r in spark.table(candidate_table).collect()]
         _measure_alias_source_table = candidate_table
 
@@ -1220,6 +1224,10 @@ try:
             table_name,
         ]:
             try:
+                try:
+                    spark.catalog.refreshTable(candidate)
+                except Exception:
+                    pass
                 rows = [r.asDict(recursive=True) for r in spark.table(candidate).collect()]
                 print(f"Cell 8 status: resolved {table_name} from {candidate} ({len(rows)} row(s))")
                 return rows

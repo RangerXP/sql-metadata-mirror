@@ -66,6 +66,14 @@ def _read_table(table_name: str, required=True):
     last_error = None
     for candidate in _table_candidates(table_name):
         try:
+            # Spark's catalog can cache a stale schema (e.g. a dropped/renamed column)
+            # across sessions; refresh before reading to avoid collectToPython mismatches.
+            # Same root cause found and fixed in 02_build_metadata_foundation and already
+            # present in 05_publish_governance_domains / 06_publish_glossary_and_lineage.
+            try:
+                spark.catalog.refreshTable(candidate)
+            except Exception:
+                pass
             return spark.table(candidate), candidate
         except Exception as ex:
             last_error = ex

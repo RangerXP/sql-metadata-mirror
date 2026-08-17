@@ -197,7 +197,13 @@ def poll_job(token: str, args: argparse.Namespace, item_id: str, job_id: str, su
                 f"Fabric-managed. Resume with: --job-id {job_id}"
             )
 
-        time.sleep(args.poll_seconds)
+        # Poll at the requested cadence for the first --fast-poll-seconds (Spark cold start
+        # is typically ~3 minutes and status rarely changes faster than that); slow down to
+        # --post-startup-poll-seconds afterward to reduce API call volume while waiting out
+        # the remaining execution time.
+        elapsed = now - submitted
+        sleep_for = args.poll_seconds if elapsed < args.fast_poll_seconds else args.post_startup_poll_seconds
+        time.sleep(sleep_for)
 
 
 def run(args: argparse.Namespace) -> int:
@@ -238,7 +244,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--notebook", required=True)
     parser.add_argument("--startup-timeout", type=float, default=10.0, help="Minutes to wait for the Spark session to start (default 10).")
     parser.add_argument("--execution-timeout", type=float, default=30.0, help="Minutes to wait after execution starts (default 30 -- these are merged, multi-cell notebooks).")
-    parser.add_argument("--poll-seconds", type=float, default=15.0)
+    parser.add_argument("--poll-seconds", type=float, default=15.0, help="Poll interval for the first --fast-poll-seconds of the run (default 15).")
+    parser.add_argument("--fast-poll-seconds", type=float, default=150.0, help="How long (seconds) to use --poll-seconds before slowing down (default 150 = 2.5 min, roughly Spark cold-start time).")
+    parser.add_argument("--post-startup-poll-seconds", type=float, default=30.0, help="Poll interval after --fast-poll-seconds has elapsed (default 30).")
     parser.add_argument("--job-id", default=None, help="Attach to and monitor an already-submitted job instead of submitting a new one.")
     parser.add_argument("--json-log", default=None, help="Append a JSON-line evidence record to this file on terminal status.")
     return parser.parse_args()
