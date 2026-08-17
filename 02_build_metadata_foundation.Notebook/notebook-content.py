@@ -1897,6 +1897,22 @@ def _require_lakehouse_context():
         )
 
 
+def _log_nb02_diagnostic(stage: str, error: Exception):
+    import traceback
+    diag_row = {
+        "stage": stage,
+        "error_type": type(error).__name__,
+        "error_message": str(error)[:4000],
+        "traceback": traceback.format_exc()[:8000],
+    }
+    try:
+        spark.createDataFrame([diag_row]).write.format("delta").mode("append").saveAsTable("nb02_diagnostics_log")
+        print(f"[DIAG] Logged failure at stage '{stage}' to nb02_diagnostics_log")
+    except Exception as log_ex:
+        print(f"[DIAG] Could not log diagnostic for stage '{stage}': {log_ex}")
+        print(f"[DIAG] Original error at stage '{stage}': {type(error).__name__}: {error}")
+
+
 print(f"Required metadata tables: {REQUIRED_METADATA_TABLES}")
 
 
@@ -1911,43 +1927,47 @@ print(f"Required metadata tables: {REQUIRED_METADATA_TABLES}")
 
 # Cell 11: Read metadata source tables
 
-print("[Cell 2] Starting metadata source reads...", flush=True)
-_require_lakehouse_context()
-print("[Cell 2] Lakehouse context check passed.", flush=True)
-
-glossary_df, glossary_source = _read_table("glossary_terms")
-print(f"[Cell 2] Resolved glossary_terms source: {glossary_source}", flush=True)
-
-cde_df, cde_source = _read_table("cdes")
-print(f"[Cell 2] Resolved cdes source: {cde_source}", flush=True)
-
-data_products_df, data_products_source = _read_table("data_products")
-print(f"[Cell 2] Resolved data_products source: {data_products_source}", flush=True)
-
-# Optional table in case labels were ingested already.
 try:
-    labels_df, labels_source = _read_table("label_assignments")
-    print(f"[Cell 2] Resolved label_assignments source: {labels_source}", flush=True)
-except Exception:
-    labels_df = None
-    labels_source = None
-    print("[WARN] metadata.label_assignments not found; Sensitivity_Label rows will be sourced only from CDE metadata.", flush=True)
+    print("[Cell 2] Starting metadata source reads...", flush=True)
+    _require_lakehouse_context()
+    print("[Cell 2] Lakehouse context check passed.", flush=True)
 
+    glossary_df, glossary_source = _read_table("glossary_terms")
+    print(f"[Cell 2] Resolved glossary_terms source: {glossary_source}", flush=True)
 
-def _safe_count(name, df):
+    cde_df, cde_source = _read_table("cdes")
+    print(f"[Cell 2] Resolved cdes source: {cde_source}", flush=True)
+
+    data_products_df, data_products_source = _read_table("data_products")
+    print(f"[Cell 2] Resolved data_products source: {data_products_source}", flush=True)
+
+    # Optional table in case labels were ingested already.
     try:
-        return df.count()
-    except Exception as ex:
-        print(f"[WARN] Could not count {name}: {ex}", flush=True)
-        return None
+        labels_df, labels_source = _read_table("label_assignments")
+        print(f"[Cell 2] Resolved label_assignments source: {labels_source}", flush=True)
+    except Exception:
+        labels_df = None
+        labels_source = None
+        print("[WARN] metadata.label_assignments not found; Sensitivity_Label rows will be sourced only from CDE metadata.", flush=True)
 
-print(f"glossary_terms rows: {_safe_count('glossary_terms', glossary_df)} (source={glossary_source})", flush=True)
-print(f"cdes rows: {_safe_count('cdes', cde_df)} (source={cde_source})", flush=True)
-print(f"data_products rows: {_safe_count('data_products', data_products_df)} (source={data_products_source})", flush=True)
-if labels_df is not None:
-    print(f"label_assignments rows: {_safe_count('label_assignments', labels_df)} (source={labels_source})", flush=True)
 
-print("[Cell 2] Metadata source reads completed.", flush=True)
+    def _safe_count(name, df):
+        try:
+            return df.count()
+        except Exception as ex:
+            print(f"[WARN] Could not count {name}: {ex}", flush=True)
+            return None
+
+    print(f"glossary_terms rows: {_safe_count('glossary_terms', glossary_df)} (source={glossary_source})", flush=True)
+    print(f"cdes rows: {_safe_count('cdes', cde_df)} (source={cde_source})", flush=True)
+    print(f"data_products rows: {_safe_count('data_products', data_products_df)} (source={data_products_source})", flush=True)
+    if labels_df is not None:
+        print(f"label_assignments rows: {_safe_count('label_assignments', labels_df)} (source={labels_source})", flush=True)
+
+    print("[Cell 2] Metadata source reads completed.", flush=True)
+except Exception as ex:
+    _log_nb02_diagnostic("cell11_read_metadata_sources", ex)
+    raise
 
 
 # METADATA ********************
@@ -1991,36 +2011,40 @@ except Exception:
     inventory_error = traceback.format_exc()
     print("[WARN] SemPy inventory failed; using verified sm_annotations targets.")
     print(inventory_error[-2000:])
-    existing_annotations = spark.table("sm_annotations")
-    semantic_tables = sorted(
-        {
-            str(row["table"])
-            for row in existing_annotations.select("table").distinct().collect()
-            if row["table"]
-        }
-    )
-    semantic_columns = sorted(
-        {
-            (str(row["table"]), str(row["object_name"]))
-            for row in existing_annotations.where(F.col("object_type") == "Column")
-            .select("table", "object_name")
-            .distinct()
-            .collect()
-        }
-    )
-    semantic_measures = sorted(
-        {
-            (str(row["table"]), str(row["object_name"]))
-            for row in existing_annotations.where(F.col("object_type") == "Measure")
-            .select("table", "object_name")
-            .distinct()
-            .collect()
-        }
-    )
-    if not semantic_tables or not semantic_columns:
-        raise RuntimeError(
-            "SemPy inventory failed and sm_annotations did not contain a usable fallback inventory."
+    try:
+        existing_annotations = spark.table("sm_annotations")
+        semantic_tables = sorted(
+            {
+                str(row["table"])
+                for row in existing_annotations.select("table").distinct().collect()
+                if row["table"]
+            }
         )
+        semantic_columns = sorted(
+            {
+                (str(row["table"]), str(row["object_name"]))
+                for row in existing_annotations.where(F.col("object_type") == "Column")
+                .select("table", "object_name")
+                .distinct()
+                .collect()
+            }
+        )
+        semantic_measures = sorted(
+            {
+                (str(row["table"]), str(row["object_name"]))
+                for row in existing_annotations.where(F.col("object_type") == "Measure")
+                .select("table", "object_name")
+                .distinct()
+                .collect()
+            }
+        )
+        if not semantic_tables or not semantic_columns:
+            raise RuntimeError(
+                "SemPy inventory failed and sm_annotations did not contain a usable fallback inventory."
+            )
+    except Exception as fallback_ex:
+        _log_nb02_diagnostic("cell12_sm_annotations_fallback", fallback_ex)
+        raise
 
 print(f"SemPy inventory: {len(semantic_tables)} table(s), {len(semantic_columns)} column(s), {len(semantic_measures)} measure(s)")
 
@@ -2196,107 +2220,111 @@ print(
 
 # Cell 14: Build annotation rows
 
-annotation_rows = []
-binding_stats = {
-    "tokens_total": 0,
-    "tokens_resolved": 0,
-    "targets_total": 0,
-}
-unresolved_token_samples = set()
+try:
+    annotation_rows = []
+    binding_stats = {
+        "tokens_total": 0,
+        "tokens_resolved": 0,
+        "targets_total": 0,
+    }
+    unresolved_token_samples = set()
 
 
-def _append_annotation(targets, key_name, value):
-    if value is None:
-        return
-    value_text = str(value).strip()
-    if not value_text:
-        return
+    def _append_annotation(targets, key_name, value):
+        if value is None:
+            return
+        value_text = str(value).strip()
+        if not value_text:
+            return
 
-    for object_type, table_name, object_name in targets:
-        annotation_rows.append(
-            {
-                "model": SEMANTIC_MODEL,
-                "table": table_name,
-                "object_type": object_type,
-                "object_name": object_name,
-                "annotation_key": key_name,
-                "annotation_value": value_text,
-            }
-        )
-
-
-def _resolve_targets_with_stats(token: str):
-    binding_stats["tokens_total"] += 1
-    parsed = _parse_asset_ref(token)
-    targets = _resolve_targets(parsed)
-    if targets:
-        binding_stats["tokens_resolved"] += 1
-        binding_stats["targets_total"] += len(targets)
-    else:
-        if parsed.get("kind") == "Model":
-            return targets
-        if len(unresolved_token_samples) < 20:
-            unresolved_token_samples.add(token)
-    return targets
+        for object_type, table_name, object_name in targets:
+            annotation_rows.append(
+                {
+                    "model": SEMANTIC_MODEL,
+                    "table": table_name,
+                    "object_type": object_type,
+                    "object_name": object_name,
+                    "annotation_key": key_name,
+                    "annotation_value": value_text,
+                }
+            )
 
 
-for row in glossary_df.collect():
-    term_code = getattr(row, "term_code", None) or getattr(row, "term_name", None)
-    term_name = getattr(row, "term_name", None)
-    glossary_value = " | ".join([v for v in [term_code, term_name] if v])
-    for token in _split_bindings(getattr(row, "bound_assets", None)):
-        targets = _resolve_targets_with_stats(token)
-        _append_annotation(targets, ANNOTATION_KEYS["glossary"], glossary_value)
+    def _resolve_targets_with_stats(token: str):
+        binding_stats["tokens_total"] += 1
+        parsed = _parse_asset_ref(token)
+        targets = _resolve_targets(parsed)
+        if targets:
+            binding_stats["tokens_resolved"] += 1
+            binding_stats["targets_total"] += len(targets)
+        else:
+            if parsed.get("kind") == "Model":
+                return targets
+            if len(unresolved_token_samples) < 20:
+                unresolved_token_samples.add(token)
+        return targets
 
-for row in cde_df.collect():
-    cde_id = getattr(row, "cde_id", None) or getattr(row, "cde_code", None) or getattr(row, "cde_name", None)
-    cde_name = getattr(row, "cde_name", None)
-    cde_value = " | ".join([v for v in [cde_id, cde_name] if v])
-    sensitivity = getattr(row, "sensitivity_label", None)
 
-    for token in _split_bindings(getattr(row, "bound_columns", None)):
-        targets = _resolve_targets_with_stats(token)
-        _append_annotation(targets, ANNOTATION_KEYS["cde"], cde_value)
-        _append_annotation(targets, ANNOTATION_KEYS["label"], sensitivity)
-
-if labels_df is not None:
-    for row in labels_df.collect():
-        label_name = getattr(row, "label_name", None)
-        applies_to = getattr(row, "applies_to_asset_ids", None)
-        for token in _split_bindings(applies_to):
+    for row in glossary_df.collect():
+        term_code = getattr(row, "term_code", None) or getattr(row, "term_name", None)
+        term_name = getattr(row, "term_name", None)
+        glossary_value = " | ".join([v for v in [term_code, term_name] if v])
+        for token in _split_bindings(getattr(row, "bound_assets", None)):
             targets = _resolve_targets_with_stats(token)
-            _append_annotation(targets, ANNOTATION_KEYS["label"], label_name)
+            _append_annotation(targets, ANNOTATION_KEYS["glossary"], glossary_value)
 
-for row in data_products_df.collect():
-    product_id = getattr(row, "data_product_id", None) or getattr(row, "product_code", None)
-    owner = getattr(row, "owners", None) or getattr(row, "owner_upn", None) or getattr(row, "owner_name", None)
+    for row in cde_df.collect():
+        cde_id = getattr(row, "cde_id", None) or getattr(row, "cde_code", None) or getattr(row, "cde_name", None)
+        cde_name = getattr(row, "cde_name", None)
+        cde_value = " | ".join([v for v in [cde_id, cde_name] if v])
+        sensitivity = getattr(row, "sensitivity_label", None)
 
-    owner_value_parts = [v for v in [product_id, owner] if v]
-    owner_value = " | ".join(owner_value_parts)
+        for token in _split_bindings(getattr(row, "bound_columns", None)):
+            targets = _resolve_targets_with_stats(token)
+            _append_annotation(targets, ANNOTATION_KEYS["cde"], cde_value)
+            _append_annotation(targets, ANNOTATION_KEYS["label"], sensitivity)
 
-    binding_fields = [
-        getattr(row, "attached_assets", None),
-        getattr(row, "semantic_model_assets", None),
-        getattr(row, "fabric_assets", None),
-        getattr(row, "sql_assets", None),
-    ]
-    binding_tokens = []
-    for raw in binding_fields:
-        binding_tokens.extend(_split_bindings(raw))
+    if labels_df is not None:
+        for row in labels_df.collect():
+            label_name = getattr(row, "label_name", None)
+            applies_to = getattr(row, "applies_to_asset_ids", None)
+            for token in _split_bindings(applies_to):
+                targets = _resolve_targets_with_stats(token)
+                _append_annotation(targets, ANNOTATION_KEYS["label"], label_name)
 
-    for token in binding_tokens:
-        targets = _resolve_targets_with_stats(token)
-        _append_annotation(targets, ANNOTATION_KEYS["owner"], owner_value)
+    for row in data_products_df.collect():
+        product_id = getattr(row, "data_product_id", None) or getattr(row, "product_code", None)
+        owner = getattr(row, "owners", None) or getattr(row, "owner_upn", None) or getattr(row, "owner_name", None)
 
-print(f"Raw annotation rows created: {len(annotation_rows)}")
-print(
-    f"[Cell 5] Binding resolution stats: tokens_total={binding_stats['tokens_total']}, "
-    f"tokens_resolved={binding_stats['tokens_resolved']}, targets_total={binding_stats['targets_total']}",
-    flush=True,
-)
-if unresolved_token_samples:
-    sample = sorted(unresolved_token_samples)[:10]
-    print(f"[Cell 5][WARN] Unresolved binding token sample ({len(sample)} shown): {sample}", flush=True)
+        owner_value_parts = [v for v in [product_id, owner] if v]
+        owner_value = " | ".join(owner_value_parts)
+
+        binding_fields = [
+            getattr(row, "attached_assets", None),
+            getattr(row, "semantic_model_assets", None),
+            getattr(row, "fabric_assets", None),
+            getattr(row, "sql_assets", None),
+        ]
+        binding_tokens = []
+        for raw in binding_fields:
+            binding_tokens.extend(_split_bindings(raw))
+
+        for token in binding_tokens:
+            targets = _resolve_targets_with_stats(token)
+            _append_annotation(targets, ANNOTATION_KEYS["owner"], owner_value)
+
+    print(f"Raw annotation rows created: {len(annotation_rows)}")
+    print(
+        f"[Cell 5] Binding resolution stats: tokens_total={binding_stats['tokens_total']}, "
+        f"tokens_resolved={binding_stats['tokens_resolved']}, targets_total={binding_stats['targets_total']}",
+        flush=True,
+    )
+    if unresolved_token_samples:
+        sample = sorted(unresolved_token_samples)[:10]
+        print(f"[Cell 5][WARN] Unresolved binding token sample ({len(sample)} shown): {sample}", flush=True)
+except Exception as ex:
+    _log_nb02_diagnostic("cell14_build_annotation_rows", ex)
+    raise
 
 
 # METADATA ********************
@@ -2310,26 +2338,30 @@ if unresolved_token_samples:
 
 # Cell 15: Write sm_annotations (overwrite with schema fallback)
 
-annotation_schema = StructType(
-    [
-        StructField("model", StringType(), False),
-        StructField("table", StringType(), False),
-        StructField("object_type", StringType(), False),
-        StructField("object_name", StringType(), False),
-        StructField("annotation_key", StringType(), False),
-        StructField("annotation_value", StringType(), False),
-    ]
-)
+try:
+    annotation_schema = StructType(
+        [
+            StructField("model", StringType(), False),
+            StructField("table", StringType(), False),
+            StructField("object_type", StringType(), False),
+            StructField("object_name", StringType(), False),
+            StructField("annotation_key", StringType(), False),
+            StructField("annotation_value", StringType(), False),
+        ]
+    )
 
-annotations_sdf = spark.createDataFrame(annotation_rows, annotation_schema)
-annotations_sdf = annotations_sdf.dropDuplicates(
-    ["model", "table", "object_type", "object_name", "annotation_key", "annotation_value"]
-)
+    annotations_sdf = spark.createDataFrame(annotation_rows, annotation_schema)
+    annotations_sdf = annotations_sdf.dropDuplicates(
+        ["model", "table", "object_type", "object_name", "annotation_key", "annotation_value"]
+    )
 
-written_sm_annotations_table = _write_with_fallback(annotations_sdf, "sm_annotations")
+    written_sm_annotations_table = _write_with_fallback(annotations_sdf, "sm_annotations")
 
-print(f"sm_annotations rows written: {annotations_sdf.count()}")
-print(f"sm_annotations target table: {written_sm_annotations_table}")
+    print(f"sm_annotations rows written: {annotations_sdf.count()}")
+    print(f"sm_annotations target table: {written_sm_annotations_table}")
+except Exception as ex:
+    _log_nb02_diagnostic("cell15_write_sm_annotations", ex)
+    raise
 
 
 # METADATA ********************
@@ -2343,14 +2375,18 @@ print(f"sm_annotations target table: {written_sm_annotations_table}")
 
 # Cell 16: Summary by annotation key
 
-summary_df = (
-    spark.table(_resolve_written_table_name("sm_annotations"))
-    .groupBy("annotation_key")
-    .agg(F.count("*").alias("annotation_count"))
-    .orderBy("annotation_key")
-)
+try:
+    summary_df = (
+        spark.table(_resolve_written_table_name("sm_annotations"))
+        .groupBy("annotation_key")
+        .agg(F.count("*").alias("annotation_count"))
+        .orderBy("annotation_key")
+    )
 
-display(summary_df)
+    display(summary_df)
+except Exception as ex:
+    _log_nb02_diagnostic("cell16_summary", ex)
+    raise
 
 # METADATA ********************
 
