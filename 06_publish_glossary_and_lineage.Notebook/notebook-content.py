@@ -1024,287 +1024,291 @@ if publish_guard_active:
 elif not APPLY_CHANGES:
     print("[DRY RUN] APPLY_CHANGES=False. Skipping Purview API calls.")
 else:
-    token = _resolve_purview_token()
+    try:
+        token = _resolve_purview_token()
 
-    # Quick endpoint probe to fail fast when account/base URL is misconfigured.
-    probe_status, probe_body = _request("GET", "/catalog/api/atlas/v2/types/typedefs", token)
-    if probe_status not in (200, 401):
-        raise RuntimeError(
-            f"Purview endpoint probe failed: HTTP {probe_status}. "
-            f"Check PURVIEW_ACCOUNT_NAME/PURVIEW_API_BASE_URL. Body: {probe_body[:500]}"
-        )
-
-    resolved_glossary_guid = _resolve_glossary_guid(token)
-    if not resolved_glossary_guid:
-        raise RuntimeError("Could not resolve glossary GUID. Set PURVIEW_GLOSSARY_GUID or PURVIEW_GLOSSARY_NAME.")
-    print(f"Resolved glossary guid: {resolved_glossary_guid}")
-
-    # Register each entityDef individually: Atlas's bulk typedefs POST is atomic across
-    # the whole payload, so mixing an already-existing type with a new one can silently
-    # block the new type's creation even though the response looks like a benign "already exists".
-    for entity_def in typedef_payload.get("entityDefs", []):
-        def_name = entity_def.get("name", "<unknown>")
-        def_status, def_body = _request(
-            "POST", "/catalog/api/atlas/v2/types/typedefs", token, {"entityDefs": [entity_def]}
-        )
-        if def_status in (200, 201):
-            print(f"[APPLIED] typedef {def_name}: HTTP {def_status}")
-        elif def_status in (400, 409) and "already exists" in def_body.lower():
-            print(f"[INFO] typedef {def_name} already exists: HTTP {def_status}")
-        else:
-            raise RuntimeError(f"TypeDef publish failed for {def_name}: HTTP {def_status} | {def_body[:500]}")
-
-    entity_max_attempts = 4
-    entity_backoff_seconds = 10.0
-    entity_status, entity_body = None, ""
-    for attempt in range(1, entity_max_attempts + 1):
-        entity_status, entity_body = _request("POST", "/catalog/api/atlas/v2/entity/bulk", token, cde_payload)
-        if entity_status in (200, 201):
-            break
-        if entity_status == 400 and "ATLAS-400-00-014" in entity_body and "does not exist" in entity_body.lower():
-            print(f"[RETRY] entity/bulk attempt {attempt}/{entity_max_attempts} hit type-cache lag, retrying...")
-            time.sleep(entity_backoff_seconds)
-            continue
-        break
-    if entity_status not in (200, 201):
-        raise RuntimeError(f"CDE entity publish failed: HTTP {entity_status} | {entity_body[:500]}")
-    print(f"CDE entity publish result: HTTP {entity_status}")
-
-    created_terms = 0
-    existing_terms = 0
-    healed_terms = 0
-    failed_terms = []
-    term_guid_by_code = {}
-    total_terms = len(term_payloads)
-
-    # Build the name/code -> guid index up front so already-existing terms can be
-    # resolved and self-healed in the same pass, not just newly-created ones.
-    term_guid_index = _build_term_guid_index(resolved_glossary_guid, token)
-    print(f"Glossary term index loaded: {len(term_guid_index)} key(s)")
-
-    print(f"Starting glossary term publish for {total_terms} terms...")
-    for index, term in enumerate(term_payloads, start=1):
-        print(f"Publishing term {index}/{total_terms}: {term['term_code']}")
-        payload = dict(term["payload"])
-        payload["anchor"] = {"glossaryGuid": resolved_glossary_guid}
-        term_status, term_body = _request("POST", "/catalog/api/atlas/v2/glossary/term", token, payload)
-        if term_status in (200, 201):
-            created_terms += 1
-            try:
-                created_term = json.loads(term_body)
-                guid = _safe_text(created_term.get("guid", "") or created_term.get("id", ""))
-                if guid:
-                    term_guid_by_code[term["term_code"]] = guid
-            except Exception:
-                pass
-        elif term_status == 409 or "already exists" in term_body.lower():
-            existing_terms += 1
-            term_name = _safe_text(payload.get("name", ""))
-            existing_guid = _resolve_glossary_term_guid(term_name, term["term_code"], term_guid_index)
-            if existing_guid:
-                term_guid_by_code[term["term_code"]] = existing_guid
-                try:
-                    if _self_heal_term_short_description(existing_guid, term["term_code"], token):
-                        healed_terms += 1
-                except Exception:
-                    pass
-        else:
-            failed_terms.append((term["term_code"], term_status, term_body[:300]))
-        if index % 5 == 0 or index == total_terms:
-            print(
-                f"Progress: {index}/{total_terms} | "
-                f"created={created_terms} existing={existing_terms} healed={healed_terms} failed={len(failed_terms)}"
+        # Quick endpoint probe to fail fast when account/base URL is misconfigured.
+        probe_status, probe_body = _request("GET", "/catalog/api/atlas/v2/types/typedefs", token)
+        if probe_status not in (200, 401):
+            raise RuntimeError(
+                f"Purview endpoint probe failed: HTTP {probe_status}. "
+                f"Check PURVIEW_ACCOUNT_NAME/PURVIEW_API_BASE_URL. Body: {probe_body[:500]}"
             )
 
-    if failed_terms:
-        sample = failed_terms[0]
-        raise RuntimeError(
-            "Glossary term publish completed with failures. "
-            f"failed={len(failed_terms)} first_failure=({sample[0]}, HTTP {sample[1]}, {sample[2]})"
-        )
+        resolved_glossary_guid = _resolve_glossary_guid(token)
+        if not resolved_glossary_guid:
+            raise RuntimeError("Could not resolve glossary GUID. Set PURVIEW_GLOSSARY_GUID or PURVIEW_GLOSSARY_NAME.")
+        print(f"Resolved glossary guid: {resolved_glossary_guid}")
 
-    print(
-        "Glossary term publish complete. "
-        f"created={created_terms} existing={existing_terms} healed={healed_terms} failed=0"
-    )
+        # Register each entityDef individually: Atlas's bulk typedefs POST is atomic across
+        # the whole payload, so mixing an already-existing type with a new one can silently
+        # block the new type's creation even though the response looks like a benign "already exists".
+        for entity_def in typedef_payload.get("entityDefs", []):
+            def_name = entity_def.get("name", "<unknown>")
+            def_status, def_body = _request(
+                "POST", "/catalog/api/atlas/v2/types/typedefs", token, {"entityDefs": [entity_def]}
+            )
+            if def_status in (200, 201):
+                print(f"[APPLIED] typedef {def_name}: HTTP {def_status}")
+            elif def_status in (400, 409) and "already exists" in def_body.lower():
+                print(f"[INFO] typedef {def_name} already exists: HTTP {def_status}")
+            else:
+                raise RuntimeError(f"TypeDef publish failed for {def_name}: HTTP {def_status} | {def_body[:500]}")
 
-    print("Starting glossary-to-asset association...")
-    semantic_anchor = _resolve_semantic_model_anchor(token)
-    if semantic_anchor:
-        print(
-            "Semantic-model anchor resolved for fallback association: "
-            f"{semantic_anchor['name']} ({semantic_anchor['guid']})"
-        )
-    else:
-        print(
-            "[WARN] Semantic-model anchor not resolved; glossary associations will only target resolved bound assets."
-        )
-
-    # Promote at least one governed owner onto the semantic model asset for first-class contact visibility.
-    if semantic_anchor:
-        owner_candidates = []
-        for term in term_payloads:
-            payload = term.get("payload", {})
-            owner = _safe_text(payload.get("owner_upn", ""))
-            steward = _safe_text(payload.get("steward_upn", ""))
-            if owner:
-                owner_candidates.append(owner)
-            if steward:
-                owner_candidates.append(steward)
-        owner_applied = False
-        for owner in owner_candidates:
-            owner_outcome, owner_details = _set_entity_owner(semantic_anchor["guid"], owner, token)
-            if owner_outcome in ("assigned", "existing"):
-                owner_applied = True
-                print(f"Semantic-model owner update outcome: {owner_outcome} ({owner})")
+        entity_max_attempts = 4
+        entity_backoff_seconds = 10.0
+        entity_status, entity_body = None, ""
+        for attempt in range(1, entity_max_attempts + 1):
+            entity_status, entity_body = _request("POST", "/catalog/api/atlas/v2/entity/bulk", token, cde_payload)
+            if entity_status in (200, 201):
                 break
-            if owner_details:
-                print(f"[WARN] Semantic-model owner update failed for {owner}: {owner_details}")
-        if not owner_applied and owner_candidates:
-            print("[WARN] Could not apply owner/steward contact onto semantic-model anchor.")
+            if entity_status == 400 and "ATLAS-400-00-014" in entity_body and "does not exist" in entity_body.lower():
+                print(f"[RETRY] entity/bulk attempt {attempt}/{entity_max_attempts} hit type-cache lag, retrying...")
+                time.sleep(entity_backoff_seconds)
+                continue
+            break
+        if entity_status not in (200, 201):
+            raise RuntimeError(f"CDE entity publish failed: HTTP {entity_status} | {entity_body[:500]}")
+        print(f"CDE entity publish result: HTTP {entity_status}")
 
-    # G11-1 ontology fix: CDE entities have carried glossary_term_code as a flat
-    # string attribute since nb_08 was first built, but were never assigned to
-    # their parent glossary Term as a real Purview relationship (the CDE's own
-    # Atlas entity never appeared in that Term's "assignedEntities" graph edge).
-    # Resolve each CDE's real (server-assigned) GUID by qualifiedName and assign
-    # it to its parent term using the same _assign_term_to_entity helper already
-    # used below for bound-asset associations.
-    def _find_entity_guid_by_qualified_name(type_name: str, qualified_name: str, auth_token: str) -> str:
-        status, body = _request(
-            "GET",
-            f"/catalog/api/atlas/v2/entity/uniqueAttribute/type/{type_name}",
-            auth_token,
-            params={"attr:qualifiedName": qualified_name},
+        created_terms = 0
+        existing_terms = 0
+        healed_terms = 0
+        failed_terms = []
+        term_guid_by_code = {}
+        total_terms = len(term_payloads)
+
+        # Build the name/code -> guid index up front so already-existing terms can be
+        # resolved and self-healed in the same pass, not just newly-created ones.
+        term_guid_index = _build_term_guid_index(resolved_glossary_guid, token)
+        print(f"Glossary term index loaded: {len(term_guid_index)} key(s)")
+
+        print(f"Starting glossary term publish for {total_terms} terms...")
+        for index, term in enumerate(term_payloads, start=1):
+            print(f"Publishing term {index}/{total_terms}: {term['term_code']}")
+            payload = dict(term["payload"])
+            payload["anchor"] = {"glossaryGuid": resolved_glossary_guid}
+            term_status, term_body = _request("POST", "/catalog/api/atlas/v2/glossary/term", token, payload)
+            if term_status in (200, 201):
+                created_terms += 1
+                try:
+                    created_term = json.loads(term_body)
+                    guid = _safe_text(created_term.get("guid", "") or created_term.get("id", ""))
+                    if guid:
+                        term_guid_by_code[term["term_code"]] = guid
+                except Exception:
+                    pass
+            elif term_status == 409 or "already exists" in term_body.lower():
+                existing_terms += 1
+                term_name = _safe_text(payload.get("name", ""))
+                existing_guid = _resolve_glossary_term_guid(term_name, term["term_code"], term_guid_index)
+                if existing_guid:
+                    term_guid_by_code[term["term_code"]] = existing_guid
+                    try:
+                        if _self_heal_term_short_description(existing_guid, term["term_code"], token):
+                            healed_terms += 1
+                    except Exception:
+                        pass
+            else:
+                failed_terms.append((term["term_code"], term_status, term_body[:300]))
+            if index % 5 == 0 or index == total_terms:
+                print(
+                    f"Progress: {index}/{total_terms} | "
+                    f"created={created_terms} existing={existing_terms} healed={healed_terms} failed={len(failed_terms)}"
+                )
+
+        if failed_terms:
+            sample = failed_terms[0]
+            raise RuntimeError(
+                "Glossary term publish completed with failures. "
+                f"failed={len(failed_terms)} first_failure=({sample[0]}, HTTP {sample[1]}, {sample[2]})"
+            )
+
+        print(
+            "Glossary term publish complete. "
+            f"created={created_terms} existing={existing_terms} healed={healed_terms} failed=0"
         )
-        if status != 200:
-            return ""
-        try:
-            payload = json.loads(body)
-        except Exception:
-            return ""
-        return _safe_text((payload.get("entity") or {}).get("guid", ""))
 
-    cde_term_attempts = 0
-    cde_term_assigned = 0
-    cde_term_existing = 0
-    cde_term_skipped = 0
-    cde_term_unresolved_entity = 0
-    cde_term_unresolved_term = 0
-    failed_cde_term_links = []
-    for entity in cde_entities:
-        attrs = entity["attributes"]
-        cde_id = attrs["cde_id"]
-        term_code = _safe_text(attrs.get("glossary_term_code", ""))
-        if not term_code:
-            continue
-
-        term_guid = term_guid_by_code.get(term_code, "") or _resolve_glossary_term_guid(term_code, term_code, term_guid_index)
-        if not term_guid:
-            cde_term_unresolved_term += 1
-            continue
-
-        cde_entity_guid = _find_entity_guid_by_qualified_name("EnercareCriticalDataElement", attrs["qualifiedName"], token)
-        if not cde_entity_guid:
-            cde_term_unresolved_entity += 1
-            continue
-
-        cde_term_attempts += 1
-        outcome, details = _assign_term_to_entity(term_guid, cde_entity_guid, token)
-        if outcome == "assigned":
-            cde_term_assigned += 1
-        elif outcome == "existing":
-            cde_term_existing += 1
-        elif outcome == "skipped":
-            cde_term_skipped += 1
+        print("Starting glossary-to-asset association...")
+        semantic_anchor = _resolve_semantic_model_anchor(token)
+        if semantic_anchor:
+            print(
+                "Semantic-model anchor resolved for fallback association: "
+                f"{semantic_anchor['name']} ({semantic_anchor['guid']})"
+            )
         else:
-            failed_cde_term_links.append((cde_id, term_code, details))
+            print(
+                "[WARN] Semantic-model anchor not resolved; glossary associations will only target resolved bound assets."
+            )
 
-    print(
-        "CDE-to-GlossaryTerm relationship summary: "
-        f"attempted={cde_term_attempts} assigned={cde_term_assigned} existing={cde_term_existing} "
-        f"skipped={cde_term_skipped} unresolved_entity={cde_term_unresolved_entity} "
-        f"unresolved_term={cde_term_unresolved_term} failed={len(failed_cde_term_links)}"
-    )
-    if failed_cde_term_links:
-        sample = failed_cde_term_links[0]
-        raise RuntimeError(
-            "CDE-to-GlossaryTerm relationship assignment completed with failures. "
-            f"failed={len(failed_cde_term_links)} first_failure=({sample[0]}, {sample[1]}, {sample[2]})"
-        )
+        # Promote at least one governed owner onto the semantic model asset for first-class contact visibility.
+        if semantic_anchor:
+            owner_candidates = []
+            for term in term_payloads:
+                payload = term.get("payload", {})
+                owner = _safe_text(payload.get("owner_upn", ""))
+                steward = _safe_text(payload.get("steward_upn", ""))
+                if owner:
+                    owner_candidates.append(owner)
+                if steward:
+                    owner_candidates.append(steward)
+            owner_applied = False
+            for owner in owner_candidates:
+                owner_outcome, owner_details = _set_entity_owner(semantic_anchor["guid"], owner, token)
+                if owner_outcome in ("assigned", "existing"):
+                    owner_applied = True
+                    print(f"Semantic-model owner update outcome: {owner_outcome} ({owner})")
+                    break
+                if owner_details:
+                    print(f"[WARN] Semantic-model owner update failed for {owner}: {owner_details}")
+            if not owner_applied and owner_candidates:
+                print("[WARN] Could not apply owner/steward contact onto semantic-model anchor.")
 
-    association_attempts = 0
-    association_assigned = 0
-    association_existing = 0
-    association_skipped = 0
-    unresolved_term_count = 0
-    unresolved_asset_tokens = []
-    failed_associations = []
-    fallback_anchor_links = 0
+        # G11-1 ontology fix: CDE entities have carried glossary_term_code as a flat
+        # string attribute since nb_08 was first built, but were never assigned to
+        # their parent glossary Term as a real Purview relationship (the CDE's own
+        # Atlas entity never appeared in that Term's "assignedEntities" graph edge).
+        # Resolve each CDE's real (server-assigned) GUID by qualifiedName and assign
+        # it to its parent term using the same _assign_term_to_entity helper already
+        # used below for bound-asset associations.
+        def _find_entity_guid_by_qualified_name(type_name: str, qualified_name: str, auth_token: str) -> str:
+            status, body = _request(
+                "GET",
+                f"/catalog/api/atlas/v2/entity/uniqueAttribute/type/{type_name}",
+                auth_token,
+                params={"attr:qualifiedName": qualified_name},
+            )
+            if status != 200:
+                return ""
+            try:
+                payload = json.loads(body)
+            except Exception:
+                return ""
+            return _safe_text((payload.get("entity") or {}).get("guid", ""))
 
-    for term in term_payloads:
-        term_code = term["term_code"]
-        term_name = _safe_text(term["payload"].get("name", ""))
-        term_guid = term_guid_by_code.get(term_code, "")
-        if not term_guid:
-            term_guid = _resolve_glossary_term_guid(term_name, term_code, term_guid_index)
-            if term_guid:
-                term_guid_by_code[term_code] = term_guid
+        cde_term_attempts = 0
+        cde_term_assigned = 0
+        cde_term_existing = 0
+        cde_term_skipped = 0
+        cde_term_unresolved_entity = 0
+        cde_term_unresolved_term = 0
+        failed_cde_term_links = []
+        for entity in cde_entities:
+            attrs = entity["attributes"]
+            cde_id = attrs["cde_id"]
+            term_code = _safe_text(attrs.get("glossary_term_code", ""))
+            if not term_code:
+                continue
 
-        if not term_guid:
-            unresolved_term_count += 1
-            continue
+            term_guid = term_guid_by_code.get(term_code, "") or _resolve_glossary_term_guid(term_code, term_code, term_guid_index)
+            if not term_guid:
+                cde_term_unresolved_term += 1
+                continue
 
-        bound_tokens = term.get("bound_assets", [])
-        if not bound_tokens:
-            continue
+            cde_entity_guid = _find_entity_guid_by_qualified_name("EnercareCriticalDataElement", attrs["qualifiedName"], token)
+            if not cde_entity_guid:
+                cde_term_unresolved_entity += 1
+                continue
 
-        entity_guids = []
-        seen_guids = set()
-        for asset_token in bound_tokens:
-            entity_guid = _resolve_asset_guid_for_token(asset_token, token, term_name=term_name)
-            if entity_guid:
-                if entity_guid not in seen_guids:
-                    entity_guids.append(entity_guid)
-                    seen_guids.add(entity_guid)
-            else:
-                if semantic_anchor and semantic_anchor.get("guid"):
-                    anchor_guid = semantic_anchor["guid"]
-                    if anchor_guid not in seen_guids:
-                        entity_guids.append(anchor_guid)
-                        seen_guids.add(anchor_guid)
-                        fallback_anchor_links += 1
-                elif len(unresolved_asset_tokens) < 25:
-                    unresolved_asset_tokens.append(f"{term_code}:{asset_token}")
-
-        for entity_guid in entity_guids:
-            association_attempts += 1
-            outcome, details = _assign_term_to_entity(term_guid, entity_guid, token)
+            cde_term_attempts += 1
+            outcome, details = _assign_term_to_entity(term_guid, cde_entity_guid, token)
             if outcome == "assigned":
-                association_assigned += 1
+                cde_term_assigned += 1
             elif outcome == "existing":
-                association_existing += 1
+                cde_term_existing += 1
             elif outcome == "skipped":
-                association_skipped += 1
+                cde_term_skipped += 1
             else:
-                failed_associations.append((term_code, entity_guid, details))
+                failed_cde_term_links.append((cde_id, term_code, details))
 
-    print(
-        "Glossary association summary: "
-        f"attempted={association_attempts} assigned={association_assigned} "
-        f"existing={association_existing} skipped={association_skipped} unresolved_terms={unresolved_term_count} "
-        f"unresolved_tokens={len(unresolved_asset_tokens)} anchor_fallback_links={fallback_anchor_links} "
-        f"failed={len(failed_associations)}"
-    )
-    if unresolved_asset_tokens:
-        print(f"Unresolved asset token samples: {unresolved_asset_tokens[:10]}")
-
-    if failed_associations:
-        sample = failed_associations[0]
-        raise RuntimeError(
-            "Glossary association completed with failures. "
-            f"failed={len(failed_associations)} first_failure=({sample[0]}, {sample[1]}, {sample[2]})"
+        print(
+            "CDE-to-GlossaryTerm relationship summary: "
+            f"attempted={cde_term_attempts} assigned={cde_term_assigned} existing={cde_term_existing} "
+            f"skipped={cde_term_skipped} unresolved_entity={cde_term_unresolved_entity} "
+            f"unresolved_term={cde_term_unresolved_term} failed={len(failed_cde_term_links)}"
         )
+        if failed_cde_term_links:
+            sample = failed_cde_term_links[0]
+            raise RuntimeError(
+                "CDE-to-GlossaryTerm relationship assignment completed with failures. "
+                f"failed={len(failed_cde_term_links)} first_failure=({sample[0]}, {sample[1]}, {sample[2]})"
+            )
+
+        association_attempts = 0
+        association_assigned = 0
+        association_existing = 0
+        association_skipped = 0
+        unresolved_term_count = 0
+        unresolved_asset_tokens = []
+        failed_associations = []
+        fallback_anchor_links = 0
+
+        for term in term_payloads:
+            term_code = term["term_code"]
+            term_name = _safe_text(term["payload"].get("name", ""))
+            term_guid = term_guid_by_code.get(term_code, "")
+            if not term_guid:
+                term_guid = _resolve_glossary_term_guid(term_name, term_code, term_guid_index)
+                if term_guid:
+                    term_guid_by_code[term_code] = term_guid
+
+            if not term_guid:
+                unresolved_term_count += 1
+                continue
+
+            bound_tokens = term.get("bound_assets", [])
+            if not bound_tokens:
+                continue
+
+            entity_guids = []
+            seen_guids = set()
+            for asset_token in bound_tokens:
+                entity_guid = _resolve_asset_guid_for_token(asset_token, token, term_name=term_name)
+                if entity_guid:
+                    if entity_guid not in seen_guids:
+                        entity_guids.append(entity_guid)
+                        seen_guids.add(entity_guid)
+                else:
+                    if semantic_anchor and semantic_anchor.get("guid"):
+                        anchor_guid = semantic_anchor["guid"]
+                        if anchor_guid not in seen_guids:
+                            entity_guids.append(anchor_guid)
+                            seen_guids.add(anchor_guid)
+                            fallback_anchor_links += 1
+                    elif len(unresolved_asset_tokens) < 25:
+                        unresolved_asset_tokens.append(f"{term_code}:{asset_token}")
+
+            for entity_guid in entity_guids:
+                association_attempts += 1
+                outcome, details = _assign_term_to_entity(term_guid, entity_guid, token)
+                if outcome == "assigned":
+                    association_assigned += 1
+                elif outcome == "existing":
+                    association_existing += 1
+                elif outcome == "skipped":
+                    association_skipped += 1
+                else:
+                    failed_associations.append((term_code, entity_guid, details))
+
+        print(
+            "Glossary association summary: "
+            f"attempted={association_attempts} assigned={association_assigned} "
+            f"existing={association_existing} skipped={association_skipped} unresolved_terms={unresolved_term_count} "
+            f"unresolved_tokens={len(unresolved_asset_tokens)} anchor_fallback_links={fallback_anchor_links} "
+            f"failed={len(failed_associations)}"
+        )
+        if unresolved_asset_tokens:
+            print(f"Unresolved asset token samples: {unresolved_asset_tokens[:10]}")
+
+        if failed_associations:
+            sample = failed_associations[0]
+            raise RuntimeError(
+                "Glossary association completed with failures. "
+                f"failed={len(failed_associations)} first_failure=({sample[0]}, {sample[1]}, {sample[2]})"
+            )
+    except Exception as ex:
+        _log_nb08_diagnostic("cell5_live_publish", ex)
+        raise
 
 
 # METADATA ********************
