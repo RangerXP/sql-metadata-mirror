@@ -1492,6 +1492,18 @@ try:
     }
 
     domains_df, domains_source = load_metadata_dataset("domains")
+    # TEMP DIAGNOSTIC (2026-08-17): confirm whether the read from the mirror already
+    # lacks parent_domain/governance_domain_stewards, or whether the write step drops
+    # them. Logged unconditionally (not just on exception) so it can be inspected after
+    # a normal successful run.
+    try:
+        spark.createDataFrame([{
+            "stage": "cell3_domains_post_read",
+            "source": str(domains_source),
+            "columns_csv": ",".join(list(domains_df.columns)),
+        }]).write.format("delta").mode("append").saveAsTable("nb02_col_probe")
+    except Exception as probe_ex:
+        print(f"[PROBE] Could not log column probe: {probe_ex}")
     validate_csv(domains_df, domains_required, {"domain_type": domain_type_allowed})
     count_domains = write_table_from_pandas(domains_df, "domains")
     print(f"domains loaded: {count_domains} (source={domains_source})")
