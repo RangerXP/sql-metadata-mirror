@@ -1656,6 +1656,22 @@ qa_parts = [
 ]
 qa_block = " | ".join(qa_parts)
 
+# Persist actual sizes before any truncate/raise decision so a future failure
+# here is diagnosable without a live semantic-model connection.
+try:
+    mssparkutils.fs.mkdirs("Files/debug")
+    mssparkutils.fs.put(
+        "Files/debug/nb05_payload_lengths.txt",
+        f"instruction_count={len(ai_instructions)}\n"
+        f"verified_answer_count={len(verified_answers)}\n"
+        f"instr_block_chars={len(instr_block)}\n"
+        f"qa_block_chars={len(qa_block)}\n"
+        f"MAX_ANNOTATION_CHARS={MAX_ANNOTATION_CHARS}",
+        True,
+    )
+except Exception as debug_ex:
+    print(f"[WARN] Could not write payload length debug log: {debug_ex}")
+
 # Verified answers are their own governed construct (ai_metadata.RecordType=
 # 'verified_answer') and are written to their own annotation so they stay
 # independently addressable/regenerable instead of flattened into one
@@ -1897,83 +1913,85 @@ annotation_results = {}
 if DEMO_MODE:
     print("[DRY RUN] Annotation write skipped")
 else:
-    if labs is None:
-        raise RuntimeError(f"DEMO_MODE=False requires sempy_labs. {LABS_SETUP_MESSAGE}")
+    import traceback
 
-    for annotation_name, annotation_value in annotations_to_publish.items():
-        applied, detail = _publish_annotation_semantic_surface(
-            name=annotation_name,
-            value=annotation_value,
-            labs_module=labs,
-        )
-        annotation_results[annotation_name] = (applied, detail)
+    try:
+        if labs is None:
+            raise RuntimeError(f"DEMO_MODE=False requires sempy_labs. {LABS_SETUP_MESSAGE}")
 
-        if applied:
-            print(f"[APPLIED] Annotation {annotation_name} ({len(annotation_value)} chars) | {detail}")
-        else:
-            print(f"[WARN] Annotation write was not applied for {annotation_name}.")
-            print(f"       Detail: {detail}")
-            print("       Annotation preview (first 500 chars):")
-            print(annotation_value[:500])
-
-    failed_annotations = [
-        name for name, (applied, _) in annotation_results.items() if not applied
-    ]
-    if failed_annotations:
-        raise RuntimeError(
-            "Governed model annotation writes failed: " + ", ".join(failed_annotations)
-        )
-
-    connector_name, connector = _discover_tom_connector(labs)
-    if connector is None:
-        raise RuntimeError("SemPy Labs TOM connector unavailable for model annotation readback")
-
-    model_annotation_readback = {}
-    with connector(dataset=MODEL_NAME, workspace=_resolve_model_workspace_id(), readonly=True) as tom:
-        model_annotations = getattr(tom.model, "Annotations", None)
-        for annotation_name in annotations_to_publish:
-            annotation = _find_collection_item_by_name(model_annotations, annotation_name)
-            model_annotation_readback[annotation_name] = None if annotation is None else str(annotation.Value)
-
-    readback_mismatches = [
-        name
-        for name, expected in annotations_to_publish.items()
-        if model_annotation_readback.get(name) != expected
-    ]
-
-    if readback_mismatches:
-        try:
-            mssparkutils.fs.put(
-                "Files/debug/nb04_model_annotation_readback_failure.txt",
-                "\n".join(readback_mismatches),
-                True,
+        for annotation_name, annotation_value in annotations_to_publish.items():
+            applied, detail = _publish_annotation_semantic_surface(
+                name=annotation_name,
+                value=annotation_value,
+                labs_module=labs,
             )
+            annotation_results[annotation_name] = (applied, detail)
+
+            if applied:
+                print(f"[APPLIED] Annotation {annotation_name} ({len(annotation_value)} chars) | {detail}")
+            else:
+                print(f"[WARN] Annotation write was not applied for {annotation_name}.")
+                print(f"       Detail: {detail}")
+                print("       Annotation preview (first 500 chars):")
+                print(annotation_value[:500])
+
+        failed_annotations = [
+            name for name, (applied, _) in annotation_results.items() if not applied
+        ]
+        if failed_annotations:
+            raise RuntimeError(
+                "Governed model annotation writes failed: " + ", ".join(failed_annotations)
+            )
+
+        connector_name, connector = _discover_tom_connector(labs)
+        if connector is None:
+            raise RuntimeError("SemPy Labs TOM connector unavailable for model annotation readback")
+
+        model_annotation_readback = {}
+        with connector(dataset=MODEL_NAME, workspace=_resolve_model_workspace_id(), readonly=True) as tom:
+            model_annotations = getattr(tom.model, "Annotations", None)
+            for annotation_name in annotations_to_publish:
+                annotation = _find_collection_item_by_name(model_annotations, annotation_name)
+                model_annotation_readback[annotation_name] = None if annotation is None else str(annotation.Value)
+
+        readback_mismatches = [
+            name
+            for name, expected in annotations_to_publish.items()
+            if model_annotation_readback.get(name) != expected
+        ]
+
+        if readback_mismatches:
+            raise RuntimeError(
+                "Governed model annotation readback mismatch: " + ", ".join(readback_mismatches)
+            )
+        if model_annotation_readback["PBI_AI_Instructions"] == model_annotation_readback["PBI_AI_VerifiedAnswers"]:
+            raise RuntimeError("AI instructions and verified answers must remain distinct model annotations")
+
+        print(
+            "Model annotation readback passed: "
+            f"PBI_AI_Instructions={len(model_annotation_readback['PBI_AI_Instructions'])} chars, "
+            f"PBI_AI_VerifiedAnswers={len(model_annotation_readback['PBI_AI_VerifiedAnswers'])} chars"
+        )
+
+        # Operational debug log: records applied/failed status + detail per annotation
+        # so a live run's outcome can be inspected without a separate readback notebook.
+        try:
+            mssparkutils.fs.mkdirs("Files/debug")
+            debug_lines = [
+                f"{name}: applied={annotation_results.get(name, (False, 'not attempted'))[0]} "
+                f"detail={annotation_results.get(name, (False, 'not attempted'))[1]}"
+                for name in annotations_to_publish
+            ]
+            mssparkutils.fs.put("Files/debug/nb05_last_run.txt", "\n".join(debug_lines), True)
+        except Exception as debug_ex:
+            print(f"[WARN] Could not write nb05 debug log: {debug_ex}")
+    except Exception:
+        try:
+            mssparkutils.fs.mkdirs("Files/debug")
+            mssparkutils.fs.put("Files/debug/nb05_exception.txt", traceback.format_exc(), True)
         except Exception:
             pass
-        raise RuntimeError(
-            "Governed model annotation readback mismatch: " + ", ".join(readback_mismatches)
-        )
-    if model_annotation_readback["PBI_AI_Instructions"] == model_annotation_readback["PBI_AI_VerifiedAnswers"]:
-        raise RuntimeError("AI instructions and verified answers must remain distinct model annotations")
-
-    print(
-        "Model annotation readback passed: "
-        f"PBI_AI_Instructions={len(model_annotation_readback['PBI_AI_Instructions'])} chars, "
-        f"PBI_AI_VerifiedAnswers={len(model_annotation_readback['PBI_AI_VerifiedAnswers'])} chars"
-    )
-
-    # Operational debug log: records applied/failed status + detail per annotation
-    # so a live run's outcome can be inspected without a separate readback notebook.
-    try:
-        mssparkutils.fs.mkdirs("Files/debug")
-        debug_lines = [
-            f"{name}: applied={annotation_results.get(name, (False, 'not attempted'))[0]} "
-            f"detail={annotation_results.get(name, (False, 'not attempted'))[1]}"
-            for name in annotations_to_publish
-        ]
-        mssparkutils.fs.put("Files/debug/nb05_last_run.txt", "\n".join(debug_lines), True)
-    except Exception as debug_ex:
-        print(f"[WARN] Could not write nb05 debug log: {debug_ex}")
+        raise
 
 
 # METADATA ********************
