@@ -1564,9 +1564,10 @@ MODEL_NAME           = "BrookfieldEnercare"
 MODEL_WORKSPACE_ID   = "b976cac2-7754-4061-88c2-61c0ac016a99"
 METADATA_LH          = "lh_metadata"
 # Keep this high enough to include all valid instructions + verified Q&A.
-# If your environment enforces a lower annotation limit, the notebook now reports
-# that explicitly instead of silently dropping content.
-MAX_ANNOTATION_CHARS = 12000
+# TOM/AMO Annotation.Value has no meaningfully restrictive size limit; this is a
+# runaway-content safety net, not a business boundary, so it must not sit close
+# to the current legitimate certified-content size (34 verified answers = ~12.0k).
+MAX_ANNOTATION_CHARS = 32000
 
 print(f"nb_05_push_qa_verified_answers | DEMO_MODE={DEMO_MODE}")
 print(f"Target model: {MODEL_NAME}")
