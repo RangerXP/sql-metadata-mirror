@@ -842,12 +842,33 @@ remaining_queues = (
 )  # 79+58+54+27+33+12+9 = 272
 random.shuffle(remaining_queues)
 
-for seq, q in enumerate(remaining_queues):
-    cust_id = (seq % 50) + 1
-    idate   = Q_START + timedelta(days=random.randint(0, DAYS_TOTAL - 1))
+# Assign customer_id/queue_type for every remaining row before generating outcomes, so
+# pp_renewal acceptance can be conditioned on whether that customer has a billing-queue
+# interaction anywhere in the dataset -- designed cohort or incidental. This is what lets
+# the "billing callers renew less" insight survive any reasonable cohort definition an
+# analyst or the Data Agent might use, not just the specific 14 customers CORR_CUSTOMERS
+# was designed around.
+remaining_assignments = [((seq % 50) + 1, q) for seq, q in enumerate(remaining_queues)]
+
+billing_caller_customers = set(CORR_CUSTOMERS) | {
+    cust_id for cust_id, q in remaining_assignments if q == "billing"
+}
+
+# Widened, robust separation between the two groups -- not tuned to an exact target
+# percentage, just a clear enough gap that independent analysis (any query, any cohort
+# definition) converges on the same conclusion: billing callers renew notably less often.
+PP_RENEWAL_WEIGHTS_BILLING_CALLER = {"declined": 33, "accepted": 57, "callback": 10}
+PP_RENEWAL_WEIGHTS_BASELINE = {"declined": 12, "accepted": 80, "callback": 8}
+
+for cust_id, q in remaining_assignments:
+    idate = Q_START + timedelta(days=random.randint(0, DAYS_TOTAL - 1))
     if q == "pp_renewal":
-        pp_out = random.choices(
-            ["declined", "accepted", "callback"], weights=[22, 68, 10])[0]
+        weights_map = (
+            PP_RENEWAL_WEIGHTS_BILLING_CALLER
+            if cust_id in billing_caller_customers
+            else PP_RENEWAL_WEIGHTS_BASELINE
+        )
+        pp_out = random.choices(list(weights_map.keys()), weights=list(weights_map.values()))[0]
     else:
         pp_out = "not_applicable"
     interactions_raw.append(_make_row(iid, cust_id, q, idate, pp_out, False))
@@ -889,6 +910,39 @@ _check = spark.sql(f"""
 """).first()
 _rate = float(_check.renewal_rate) if _check.renewal_rate else 0.0
 print(f"Demo correlation check: PP renewal rate (billing callers Q1): {_rate:.1%}  [target: ~57%]")
+
+# Broader-population check: the same conclusion (billing callers renew less) must hold
+# for ANY customer who ever called billing, not just the 14 designed CORR_CUSTOMERS --
+# this is what makes the insight robust to how an analyst or the Data Agent chooses to
+# query it, rather than only reproducible via the exact designed cohort.
+_broad_check = spark.sql(f"""
+    WITH billing_callers AS (
+        SELECT DISTINCT customer_id FROM {DEMO_LAKEHOUSE}.fct_cc_interactions WHERE queue_type = 'billing'
+    )
+    SELECT
+        SUM(CASE WHEN bc.customer_id IS NOT NULL THEN 1 ELSE 0 END) AS billing_caller_rows,
+        SUM(CASE WHEN bc.customer_id IS NOT NULL AND f.pp_renewal_outcome = 'accepted' THEN 1 ELSE 0 END) * 1.0
+           / NULLIF(SUM(CASE WHEN bc.customer_id IS NOT NULL THEN 1 ELSE 0 END), 0) AS billing_caller_rate,
+        SUM(CASE WHEN bc.customer_id IS NULL THEN 1 ELSE 0 END) AS non_billing_caller_rows,
+        SUM(CASE WHEN bc.customer_id IS NULL AND f.pp_renewal_outcome = 'accepted' THEN 1 ELSE 0 END) * 1.0
+           / NULLIF(SUM(CASE WHEN bc.customer_id IS NULL THEN 1 ELSE 0 END), 0) AS non_billing_caller_rate
+    FROM {DEMO_LAKEHOUSE}.fct_cc_interactions f
+    LEFT JOIN billing_callers bc ON bc.customer_id = f.customer_id
+    WHERE f.queue_type = 'pp_renewal'
+""").first()
+_billing_rate = float(_broad_check.billing_caller_rate) if _broad_check.billing_caller_rate else 0.0
+_non_billing_rate = float(_broad_check.non_billing_caller_rate) if _broad_check.non_billing_caller_rate else 0.0
+print(
+    f"Broader-population check: billing-caller renewal rate={_billing_rate:.1%} "
+    f"(n={_broad_check.billing_caller_rows}), non-billing-caller renewal rate={_non_billing_rate:.1%} "
+    f"(n={_broad_check.non_billing_caller_rows})"
+)
+if _broad_check.non_billing_caller_rows and _non_billing_rate <= _billing_rate:
+    raise RuntimeError(
+        "Demo correlation is not robust: non-billing-caller renewal rate "
+        f"({_non_billing_rate:.1%}) should exceed billing-caller renewal rate "
+        f"({_billing_rate:.1%}) across the full population, not just the designed cohort."
+    )
 
 # METADATA ********************
 
