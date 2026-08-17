@@ -487,8 +487,8 @@ def _capture_purview_access_token(raw_token: str) -> str:
 
 
 def _read_shared_purview_token_cache():
-    # Cache is shared (via lakehouse Files) across nb_07/nb_08/nb_09 sessions so a
-    # sign-in done in one notebook doesn't have to be repeated in the others.
+    # Cache is shared (via lakehouse Files) with 05_publish_governance_domains and this
+    # notebook's own second phase, so a sign-in done in one doesn't have to be repeated.
     cache_path = PURVIEW_TOKEN_CACHE_PATH  # NameError here means Cell 1 wasn't run
     try:
         raw = mssparkutils.fs.head(cache_path, 65536)
@@ -1317,7 +1317,7 @@ else:
 
 # CELL ********************
 
-# Cell 1: Imports and Config
+# Cell 6: Imports and Config
 # Purpose: Initialize Spark session, import required libraries, and set Purview/Fabric configuration.
 # Outputs: Purview endpoint URL, deployment mode flags, output paths, and Enercare workspace identifiers.
 
@@ -1452,7 +1452,7 @@ MANUAL_PURVIEW_BEARER_TOKEN = os.environ.get("MANUAL_PURVIEW_BEARER_TOKEN", "").
 
 # CELL ********************
 
-# Cell 2: Read Metadata Tables
+# Cell 7: Read Metadata Tables
 # Purpose: Load CDEs, label assignments, and data products from lh_metadata lakehouse.
 # Outputs: DataFrames for cdes, label_assignments (optional), and data_products with row counts.
 
@@ -1552,7 +1552,7 @@ except Exception as ex:
 
 # CELL ********************
 
-# Cell 3: Build Sensitivity Label and CDE Classification Manifests
+# Cell 8: Build Sensitivity Label and CDE Classification Manifests
 # Purpose: Derive sensitivity labels separately from CDE classifications.
 # Outputs: typedef_payload (CDE classification definitions), sensitivity_label_manifest, cde_classification_manifest.
 
@@ -2078,7 +2078,7 @@ for item in sorted({d.get("name", "") for d in classification_defs if d.get("nam
 
 # CELL ********************
 
-# Cell 4: Build SQL to Fabric Lineage Edge Manifest
+# Cell 9: Build SQL to Fabric Lineage Edge Manifest
 # Purpose: Extract lineage relationships from data_products (SQL source tables → Fabric target assets).
 # Outputs: lineage_edges list with process qualified names, source/target references, and data product context.
 
@@ -2194,7 +2194,7 @@ print(f"Lineage edge rows prepared: {len(lineage_edges)}")
 
 # CELL ********************
 
-# Cell 5: Write Payloads and Validation Summary
+# Cell 10: Write Payloads and Validation Summary
 # Purpose: Export sensitivity labels, CDE classifications, and lineage payloads to Azure Data Lake.
 #          Create validation table tracking readiness of all artifacts (G9 checklist).
 # Outputs: JSON files in OUTPUT_ROOT; metadata.purview_phase_06_07_validation table.
@@ -2295,7 +2295,7 @@ display(validation_df.orderBy("check_name"))
 
 # CELL ********************
 
-# Cell 6: Optional Live Publish to Purview Atlas
+# Cell 11: Optional Live Publish to Purview Atlas
 # Purpose: Publish classification typedefs and lineage process entities to Purview via Atlas API.
 #          Resolve scanned asset GUIDs by qualifiedName and register lineage input/output relationships.
 # Guard: SQL_MIRROR_ONLY_DEPLOYMENT + PURVIEW_PUBLISH_OVERRIDE control live execution.
@@ -3249,9 +3249,9 @@ def _get_purview_token_via_tokenlibrary() -> str:
 
 
 def _get_purview_token_from_shared_cache() -> str:
-    # Cache is shared (via lakehouse Files) across nb_07/nb_08/nb_09 sessions so a
-    # sign-in done in one notebook doesn't have to be repeated in the others.
-    cache_path = PURVIEW_TOKEN_CACHE_PATH  # NameError here means Cell 1 wasn't run
+    # Cache is shared (via lakehouse Files) with 05_publish_governance_domains and this
+    # notebook's own first phase, so a sign-in done in one doesn't have to be repeated.
+    cache_path = PURVIEW_TOKEN_CACHE_PATH  # NameError here means Cell 6 wasn't run
     try:
         raw = mssparkutils.fs.head(cache_path, 65536)
         cached = json.loads(raw)

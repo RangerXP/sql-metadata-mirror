@@ -17,7 +17,7 @@ BASE = (
 API = "2023-09-01"
 AZ_FALLBACK = r"C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd"
 
-SEED = Path("sql/07_seed_purview_metadata.sql")
+SEED = Path("sql/02_metadata_foundation/07_seed_purview_metadata.sql")
 BASE_REPORT = Path("tools/purview_intent_metadata_write_report.json")
 DESC_CONTACT_REPORT = Path("tools/purview_descriptions_contacts_remediation_report.json")
 MEASURE_DESC_REPORT = Path("tools/purview_measure_description_remediation_report.json")

@@ -9,7 +9,7 @@ Purpose:
   purview-api-notes.md "Unified Catalog RBAC role assignment") -- every grant
   below was a real, manual Purview-portal action performed by the operator.
   This is therefore operator-attested evidence (same honesty pattern as P3's
-  nb_14), not independently machine-verified. It exists so "who is Data
+  access-decision loop in 09_reconcile_semantic_model), not independently machine-verified. It exists so "who is Data
   Product Owner on Service Delivery, since when, per whose action" is
   answerable from SQL, instead of being tribal/portal-only knowledge.
 

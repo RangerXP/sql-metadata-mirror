@@ -10,7 +10,7 @@ from pathlib import Path
 BASE = "https://Purview-West3.purview.azure.com"
 API = "2023-09-01"
 AZ_FALLBACK = r"C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd"
-SEED_META = Path("sql/07_seed_purview_metadata.sql")
+SEED_META = Path("sql/02_metadata_foundation/07_seed_purview_metadata.sql")
 OUT = Path("tools/purview_glossary_remediation_report.json")
 
 DATASET_QN = "https://app.powerbi.com/groups/b976cac2-7754-4061-88c2-61c0ac016a99/datasets/8cb6f6a6-6a9c-4560-9f28-17a1dc4a921c"

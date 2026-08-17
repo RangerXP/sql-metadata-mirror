@@ -2,8 +2,8 @@
 ================================================================================
 Purpose:
   G19-4 -- AI Instruction lifecycle completeness: effective-date activation and
-  rollback. Uses the SAME existing gate (dbo.governance_change_requests + nb_11's
-  apply-step dispatcher) that GCR-AII-001 already proved for AI Instructions --
+  rollback. Uses the SAME existing gate (dbo.governance_change_requests +
+  07_apply_approved_changes's apply-step dispatcher) that GCR-AII-001 already proved for AI Instructions --
   not a new/parallel workflow.
 
 Scenarios:
@@ -18,12 +18,12 @@ Scenarios:
      (Service Delivery efficiency framing), mistakenly approved by Ci Zhu.
   3. GCR-AII-004 -- the rollback: Ranbir Singh catches the missing safety
      clause and requests reverting "escalation" to its prior certified text;
-     approved by Ci Zhu. nb_11's apply_ai_instruction_rollback dynamically
+     approved by Ci Zhu. 07_apply_approved_changes's apply_ai_instruction_rollback dynamically
      resolves the currently-active certified row for TriggerText='escalation'
      (GCR-AII-003's applied row) and the version immediately before it
      (GCR-AII-001's original row) -- no hardcoded RecordID needed.
 
-  approved_at is staggered (003 before 004) so nb_11's ORDER BY approved_at
+  approved_at is staggered (003 before 004) so 07_apply_approved_changes's ORDER BY approved_at
   processes the bad edit before the rollback in the same run.
 
 Idempotent: safe to re-run.
@@ -155,5 +155,5 @@ WHERE request_id = 'GCR-AII-004' AND status = 'PendingApproval';
 PRINT 'GCR-AII-004 approval applied: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' row(s).';
 GO
 
-PRINT 'G19-4 seed+approve complete -- ready for nb_11 apply-on-approve run (processes 002, then 003, then 004, by approved_at).';
+PRINT 'G19-4 seed+approve complete -- ready for 07_apply_approved_changes apply-on-approve run (processes 002, then 003, then 004, by approved_at).';
 GO

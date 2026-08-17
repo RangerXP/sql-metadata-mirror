@@ -14,7 +14,7 @@ The goal is not a blind rename. The goal is to separate the repo into lifecycle 
 
 The strongest architectural pieces are already coherent:
 
-- SQL metadata intake via @tag headers and native extraction in [sql/19_tag_annotation_extraction.sql](../sql/19_tag_annotation_extraction.sql)
+- SQL metadata intake via @tag headers and native extraction in [sql/02_metadata_foundation/19_tag_annotation_extraction.sql](../sql/02_metadata_foundation/19_tag_annotation_extraction.sql)
 - stewardship review surface in [nb_02_metadata_pipeline_demo.Notebook/notebook-content.py](../nb_02_metadata_pipeline_demo.Notebook/notebook-content.py)
 - semantic model apply in [nb_04_sempy_writeback.Notebook/notebook-content.py](../nb_04_sempy_writeback.Notebook/notebook-content.py)
 - publish/readback evidence in [nb_12_purview_workflow_sync.Notebook/notebook-content.py](../nb_12_purview_workflow_sync.Notebook/notebook-content.py)

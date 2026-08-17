@@ -8,7 +8,7 @@
 
 ## 1. Apply the additive ledger
 
-Run `sql/13_closed_loop_governance_ledger.sql` against `sqldemo` on `sqlserver-sk2wus3.database.windows.net`.
+Run `sql/07_governance_gates/13_closed_loop_governance_ledger.sql` against `sqldemo` on `sqlserver-sk2wus3.database.windows.net`.
 
 Expected result:
 

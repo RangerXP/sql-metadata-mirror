@@ -4,9 +4,9 @@ Purpose:
   G17-R3 — Gate AI Instructions (PBI_AI_Instructions / ai_metadata RecordType=
   'ai_instruction') through the same Draft -> PendingApproval -> Approved ->
   Applied gate already proven for KPI/CDE/Verified-Answer/Glossary-Term, using
-  the existing dbo.governance_change_requests table and nb_11's apply-step
-  dispatcher (apply_verified_answer_certification is already generic across
-  RecordType, so no new nb_11 handler function is needed -- only a new
+  the existing dbo.governance_change_requests table and 07_apply_approved_changes's
+  apply-step dispatcher (apply_verified_answer_certification is already generic across
+  RecordType, so no new handler function is needed -- only a new
   DISPATCH entry, added separately in the notebook).
 
 Scenario:
@@ -92,5 +92,5 @@ WHERE request_id = @request_id AND status = 'PendingApproval';
 PRINT 'Approval applied: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' row(s).';
 GO
 
-PRINT 'G17-R3 seed+approve complete -- ready for nb_11 apply-on-approve run.';
+PRINT 'G17-R3 seed+approve complete -- ready for 07_apply_approved_changes apply-on-approve run.';
 GO

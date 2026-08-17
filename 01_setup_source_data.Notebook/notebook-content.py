@@ -30,7 +30,7 @@
 #           them with the same sample data as 01_demo_seed_data.sql, but
 #           entirely in-memory via PySpark.  No SQL Server connection required.
 #
-# Run before : nb_02_metadata_pipeline_demo.py
+# Run before : 02_build_metadata_foundation
 # Prereqs    : Attach this notebook to lh_enercare_demo (default lakehouse)
 # =============================================================================
 
@@ -616,7 +616,7 @@ for tbl in ["customers", "service_accounts", "products", "equipment_registry",
     n = spark.table(f"{DEMO_LAKEHOUSE}.{tbl}").count()
     print(f"  {tbl:<30} {n:>5} rows")
 
-print("\nSetup complete.  Run nb_02_metadata_pipeline_demo.py next.")
+print("\nSetup complete.  Run 02_build_metadata_foundation next.")
 
 # METADATA ********************
 
@@ -705,7 +705,7 @@ df_ref_adj = spark.createDataFrame(ref_adj_data, schema=ref_adj_schema)
 df_ref_adj.write.format("delta").mode("overwrite").saveAsTable(f"{DEMO_LAKEHOUSE}.ref_cc_billing_adj_category")
 print(
     f"  ref_cc_billing_adj_category: {df_ref_adj.count()} rows written"
-    "  [ORPHANED demo asset - informational only, not blocking nb_04]"
+    "  [ORPHANED demo asset - informational only, not blocking 04_writeback_governed_metadata]"
 )
 
 # METADATA ********************
@@ -1072,8 +1072,8 @@ for tbl, note in [
     n = spark.table(f"{DEMO_LAKEHOUSE}.{tbl}").count()
     print(f"  {tbl:<35} {n:>6} rows{note}")
 
-print("\nAll tables ready. Run nb_02_metadata_pipeline_demo.py next.")
-print("Orphaned note is informational only and does not block nb_04_sempy_writeback.")
+print("\nAll tables ready. Run 02_build_metadata_foundation next.")
+print("Orphaned note is informational only and does not block 04_writeback_governed_metadata.")
 
 # METADATA ********************
 
@@ -1087,14 +1087,14 @@ print("Orphaned note is informational only and does not block nb_04_sempy_writeb
 
 # CELL ********************
 
-# Fabric Notebook: nb_05a_publish_synthetic_data_to_sql
+# Publish synthetic source data to Azure SQL
 # Purpose: Publish the seven transactional Enercare source tables from
 #          lh_enercare_demo into Azure SQL in sub2 so SQL becomes the
 #          authoritative mirrored source.
 #
 # Run after:
-#   - nb_01_setup_demo_environment
-#   - sql/02_sub2_sql_source_schema.sql executed against sqldemo
+#   - the setup cells above in this notebook
+#   - sql/01_source_data/02_sub2_sql_source_schema.sql executed against sqldemo
 #
 # DEMO_MODE = True  -> dry-run only
 # DEMO_MODE = False -> acquire an Entra token and write rows to Azure SQL
@@ -1134,7 +1134,7 @@ LOAD_ORDER = [
     "billing_transactions",
 ]
 
-print(f"nb_05a_publish_synthetic_data_to_sql | DEMO_MODE={DEMO_MODE}")
+print(f"DEMO_MODE={DEMO_MODE}")
 print(f"Notebook build : {NOTEBOOK_BUILD_TAG}")
 print(f"Workspace      : {WORKSPACE_ID}")
 print(f"Source lakehouse: {DEMO_LAKEHOUSE}")
@@ -1342,7 +1342,7 @@ inventory_df = spark.createDataFrame(source_inventory, ["table_name", "source_ro
 display(inventory_df)
 
 if DEMO_MODE:
-    print("[DRY RUN] Execute sql/02_sub2_sql_source_schema.sql before running with DEMO_MODE=False.")
+    print("[DRY RUN] Execute sql/01_source_data/02_sub2_sql_source_schema.sql before running with DEMO_MODE=False.")
     print("[DRY RUN] This notebook appends rows into the target SQL tables in dependency order.")
 
 
@@ -1911,9 +1911,9 @@ GO
 PURVIEW_METADATA_SEED_SQL = r"""
 SET NOCOUNT ON;
 GO
--- Clear the OKR tables first (sql/11_ontology_okr_schema.sql), which FK-reference
+-- Clear the OKR tables first (sql/02_metadata_foundation/11_ontology_okr_schema.sql), which FK-reference
 -- governance_domains/governance_data_products and are not owned by this notebook.
--- Re-run sql/12_seed_ontology_okrs.sql afterward to restore OKRs and their links.
+-- Re-run sql/02_metadata_foundation/12_seed_ontology_okrs.sql afterward to restore OKRs and their links.
 IF OBJECT_ID(N'dbo.governance_okr_data_products', N'U') IS NOT NULL DELETE FROM dbo.governance_okr_data_products;
 IF OBJECT_ID(N'dbo.governance_okr_key_results', N'U') IS NOT NULL DELETE FROM dbo.governance_okr_key_results;
 IF OBJECT_ID(N'dbo.governance_okrs', N'U') IS NOT NULL DELETE FROM dbo.governance_okrs;

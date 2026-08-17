@@ -31,7 +31,7 @@ from pyspark.sql.types import StringType, StructField, StructType
 
 # ---------------------------------------------------------------------------
 # G18-A thin reader: SOURCE_TAG_DETECTED rows are extracted natively in SQL
-# (sql/19_tag_annotation_extraction.sql's dbo.usp_extract_tag_annotations,
+# (sql/02_metadata_foundation/19_tag_annotation_extraction.sql's dbo.usp_extract_tag_annotations,
 # fired automatically by trg_tag_annotation_extraction on view/proc DDL) and
 # land as Draft/Submitted rows in dbo.governance_requests. This notebook's
 # only job is to surface those pending rows into lh_metadata for stewards to
@@ -228,11 +228,10 @@ else:
 
 # CELL ********************
 
-# Fabric Notebook: nb_04a_extend_metadata_schema
+# Extend lh_metadata schema and seed certified KPI definitions
 # Gaps: G1-3, G1-4, G1-5, G1-7, G2-1, G2-2
-# Purpose: Extend lh_metadata schema and seed certified KPI definitions
 #
-# Run order: after nb_02_metadata_pipeline_demo (lh_metadata must exist)
+# Prerequisite: lh_metadata must already exist
 # Default lakehouse: lh_metadata
 #
 # DEMO_MODE = True  → print all SQL/data; no writes to Delta
@@ -245,7 +244,7 @@ CERTIFIED_BY       = "Victoria Tan"
 CERTIFIED_DATE     = "2026-05-06"
 MODEL_NAME         = "BrookfieldEnercare"
 
-print(f"nb_04a | DEMO_MODE={DEMO_MODE} | lakehouse={METADATA_LAKEHOUSE}")
+print(f"DEMO_MODE={DEMO_MODE} | lakehouse={METADATA_LAKEHOUSE}")
 
 # METADATA ********************
 
@@ -360,7 +359,7 @@ else:
 
 # Phase 4 Milestone P4-2 — ai_metadata certification columns
 # Mirrors the IsCertified/CertifiedBy/CertifiedDate pattern already on kpi_metadata,
-# so nb_11_gated_governance_sync (P4-4) can certify verified answers the same way.
+# so 07_apply_approved_changes (P4-4) can certify verified answers the same way.
 
 sql_alter_ai_add = f"""
 ALTER TABLE {METADATA_LAKEHOUSE}.ai_metadata
@@ -460,7 +459,7 @@ else:
 # CELL ********************
 
 # G1-7 — Create lineage_edges table
-# Source-to-target graph used by nb_06_purview_lineage.py (G7)
+# Source-to-target graph used by the Purview lineage publication notebook (G7)
 
 sql_create_lineage = f"""
 CREATE TABLE IF NOT EXISTS {METADATA_LAKEHOUSE}.lineage_edges (
@@ -471,13 +470,13 @@ CREATE TABLE IF NOT EXISTS {METADATA_LAKEHOUSE}.lineage_edges (
     TransformType  STRING    COMMENT 'mirror | notebook | dataflow | direct_lake'
 )
 USING DELTA
-COMMENT 'Source-to-target lineage graph — consumed by nb_06_purview_lineage.py'
+COMMENT 'Source-to-target lineage graph — consumed by the Purview lineage publication notebook'
 """.strip()
 
 if DEMO_MODE:
     print("[DEMO_MODE] Would execute:\n")
     print(sql_create_lineage)
-    print("[DEMO_MODE] Would populate lineage_edges from asset_metadata.UpstreamAssets relationships extracted by nb_02")
+    print("[DEMO_MODE] Would populate lineage_edges from asset_metadata.UpstreamAssets relationships extracted by this notebook")
 else:
     spark.sql(sql_create_lineage)
     spark.sql(f"""
@@ -769,7 +768,7 @@ verified_answers = [
      "30 days before to 15 days after the contract end date."),
     # Certified 2026-08-10 via GCR-VA-001 (VERIFIED_ANSWER_CERTIFICATION, approved by Ci Zhu) —
     # supersedes the earlier generic 24-hour-window answer with the actual credit-policy remedy.
-    # See sql/10_seed_gated_governance_scenarios.sql and governance_change_requests.GCR-VA-001.
+    # See sql/07_governance_gates/10_seed_gated_governance_scenarios.sql and governance_change_requests.GCR-VA-001.
     ("SLA_BRCH_RATE", "What is our SLA credit policy for a no-heat call during heating season?",
      "Total Home Protection Plan customers are entitled to a daily pro-rated rental credit for every day past a "
      "24-hour no-heat SLA breach during heating season, plus a full-month courtesy credit on final resolution."),
@@ -987,7 +986,8 @@ if DEMO_MODE:
 else:
     # Deterministic refresh: clear current baseline-seed AI instruction rows for this model, then
     # reinsert canonical rows. G17-R3 structural fix: rows with IsCertified=1 stamped by a REAL
-    # governance approval (nb_11 apply-on-approve, always the real approver's UPN) must NEVER be
+    # governance approval (07_apply_approved_changes's apply-on-approve, always the real approver's
+    # UPN) must NEVER be
     # wiped by this hardcoded-list reseed. Only rows not certified, or certified under this
     # notebook's own baseline-seed authority (CERTIFIED_BY = "Victoria Tan"), are eligible for this reseed --
     # this closes the 2026-08-10 silent-wipe regression class of bug at its root, rather
@@ -1239,7 +1239,7 @@ print(f"Target schema: {TARGET_LAKEHOUSE}.{SCHEMA}")
 print(f"Source mode: {SOURCE_MODE}")
 
 if SOURCE_MODE != "sql_mirror":
-    raise ValueError("nb_07a is configured for sql_mirror-only ingestion. Set SOURCE_MODE='sql_mirror'.")
+    raise ValueError("This step is configured for sql_mirror-only ingestion. Set SOURCE_MODE='sql_mirror'.")
 
 
 # METADATA ********************
@@ -1354,9 +1354,9 @@ def load_metadata_dataset(dataset_name: str) -> tuple[pd.DataFrame, str]:
         f"Mirrored metadata table for '{dataset_name}' was not found. "
         f"Checked catalogs={SQL_MIRROR_CATALOGS}, schemas={SQL_MIRROR_SCHEMAS}, candidates={SQL_SOURCE_TABLES.get(dataset_name, [])}. "
         "Prerequisite SQL objects appear missing from the mirrored source. "
-        "Ensure sql/06_purview_metadata_schema.sql and sql/07_seed_purview_metadata.sql have been executed against sub2 Azure SQL, "
-        "then refresh/confirm sqldemo mirror sync before rerunning nb_07a. "
-        "nb_07a is SQL-mirror-only by design; direct CSV fallback is intentionally disabled."
+        "Ensure sql/02_metadata_foundation/06_purview_metadata_schema.sql and sql/02_metadata_foundation/07_seed_purview_metadata.sql have been executed against sub2 Azure SQL, "
+        "then refresh/confirm sqldemo mirror sync before rerunning this ingestion step. "
+        "This step is SQL-mirror-only by design; direct CSV fallback is intentionally disabled."
     )
 
 
@@ -1626,7 +1626,7 @@ print(f"label_assignments loaded: {count_labels} (source={labels_source})")
 # CELL ********************
 
 # Cell 8b: Phase 4 (P4-1 prerequisite) - dbo.governance_change_requests -> metadata.governance_change_requests
-# Read-only working copy for the gated-approval demo; nb_11_gated_governance_sync
+# Read-only working copy for the gated-approval demo; 07_apply_approved_changes
 # reads the live SQL source directly rather than this copy, to avoid mirror lag
 # on the Approved status transition, but this copy keeps the request log
 # queryable from the same BI surfaces as the other governance_* tables.
@@ -1660,7 +1660,7 @@ print(f"governance_change_requests loaded: {count_gcr} (source={gcr_source})")
 # _data_products -> metadata.okrs / okr_key_results / okr_data_products
 # Business-objective layer that Purview's native OKR business concept links
 # directly to Data Products; closes the top of the ontology graph above
-# GlossaryTerm -> CDE and DataProduct -> Domain (see sql/11_ontology_okr_schema.sql).
+# GlossaryTerm -> CDE and DataProduct -> Domain (see sql/02_metadata_foundation/11_ontology_okr_schema.sql).
 
 okrs_required = [
     "okr_id",
@@ -1738,7 +1738,10 @@ mssparkutils.notebook.exit("NB_02 metadata foundation complete")
 
 # CELL ********************
 
-# Cell 1: Imports and config
+# Cell 10: Imports and config
+# Purpose: cross-reference ingested governance metadata (glossary/CDE/data-product/label
+# associations) against the semantic model's actual table/column names, resolving aliases,
+# and write the reconciled sm_annotations working table.
 
 import re
 from pyspark.sql import SparkSession
@@ -1907,7 +1910,7 @@ print(f"Required metadata tables: {REQUIRED_METADATA_TABLES}")
 
 # CELL ********************
 
-# Cell 2: Read metadata source tables
+# Cell 11: Read metadata source tables
 
 print("[Cell 2] Starting metadata source reads...", flush=True)
 _require_lakehouse_context()
@@ -1957,7 +1960,7 @@ print("[Cell 2] Metadata source reads completed.", flush=True)
 
 # CELL ********************
 
-# Cell 3: Read semantic inventory with SemPy
+# Cell 12: Read semantic inventory with SemPy
 
 USE_SEMPY_INVENTORY = False
 fabric = None
@@ -2032,7 +2035,7 @@ print(f"SemPy inventory: {len(semantic_tables)} table(s), {len(semantic_columns)
 
 # CELL ********************
 
-# Cell 4: Parse bound asset formats and build lookup maps
+# Cell 13: Parse bound asset formats and build lookup maps
 
 
 def _norm(value: str) -> str:
@@ -2192,7 +2195,7 @@ print(
 
 # CELL ********************
 
-# Cell 5: Build annotation rows
+# Cell 14: Build annotation rows
 
 annotation_rows = []
 binding_stats = {
@@ -2306,7 +2309,7 @@ if unresolved_token_samples:
 
 # CELL ********************
 
-# Cell 6: Write sm_annotations (overwrite with schema fallback)
+# Cell 15: Write sm_annotations (overwrite with schema fallback)
 
 annotation_schema = StructType(
     [
@@ -2339,7 +2342,7 @@ print(f"sm_annotations target table: {written_sm_annotations_table}")
 
 # CELL ********************
 
-# Cell 7: Summary by annotation key
+# Cell 16: Summary by annotation key
 
 summary_df = (
     spark.table(_resolve_written_table_name("sm_annotations"))

@@ -12,14 +12,14 @@ This runbook walks each of the 4 gated-change demo scenarios end-to-end using th
 
 1. Apply the gating schema to `sub2` SQL (`sqldemo` source):
    ```sql
-   :r sql/09_gated_governance_requests_schema.sql
+   :r sql/07_governance_gates/09_gated_governance_requests_schema.sql
    ```
 2. Seed the 4 demo scenarios (idempotent — deletes/re-inserts by `request_id`):
    ```sql
-   :r sql/10_seed_gated_governance_scenarios.sql
+   :r sql/07_governance_gates/10_seed_gated_governance_scenarios.sql
    ```
 3. Confirm Fabric Mirroring picks up the new `dbo.governance_change_requests` table (schema autosync). Wait for mirror status `Running` on the new table in the Fabric Mirrored Database item.
-4. Run `nb_07a_ingest_customer_files` once to pull `governance_change_requests` into `lh_metadata.metadata.governance_change_requests`. Confirm row count = 4, all `status='PendingApproval'`.
+4. Run the `02_build_metadata_foundation` notebook once to pull `governance_change_requests` into `lh_metadata.metadata.governance_change_requests`. Confirm row count = 4, all `status='PendingApproval'`.
 
 ---
 

@@ -12,7 +12,7 @@ Pattern:
     in sqldemo, mirrored into Fabric same as the other dbo.governance_* tables.
   - The live governed object (kpi_metadata / ai_metadata / governance_cdes /
     governance_glossary_terms) is only mutated once a request reaches Approved
-    and the sync step (manual today, nb_11 in a future build) applies it.
+    and the sync step (07_apply_approved_changes) applies it.
   - approved_by / approved_at companion columns are added to
     governance_cdes and governance_glossary_terms so the "who certified this"
     fact lives on the object itself, not only in the request log.

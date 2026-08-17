@@ -98,8 +98,8 @@ Purpose:
 
 Current repo input:
 - [02_build_metadata_foundation.Notebook](../02_build_metadata_foundation.Notebook)
-- [sql/19_tag_annotation_extraction.sql](../sql/19_tag_annotation_extraction.sql)
-- [sql/20_g18a_demo_views.sql](../sql/20_g18a_demo_views.sql)
+- [sql/02_metadata_foundation/19_tag_annotation_extraction.sql](../sql/02_metadata_foundation/19_tag_annotation_extraction.sql)
+- [sql/02_metadata_foundation/20_g18a_demo_views.sql](../sql/02_metadata_foundation/20_g18a_demo_views.sql)
 
 Outcome:
 - pending governance requests appear for review

@@ -2,7 +2,7 @@
 ================================================================================
 Purpose:
   G18-A — Extract @tag: comment-annotation markers from live SQL view/procedure
-  definitions natively in T-SQL (via sys.sql_modules), replacing nb_02's
+  definitions natively in T-SQL (via sys.sql_modules), replacing 02_build_metadata_foundation's
   standalone Python/regex prototype. Wired directly into the existing unified
   closed-loop ledger (dbo.governance_requests / dbo.governance_events) — no
   new parallel staging table, per docs/closed-loop-governance-reference-model.md's
@@ -29,7 +29,7 @@ Scope / safety:
     Superseded) request for the same object gets a genuinely NEW request on
     its next content change, preserving the terminal request's history.
 
-Prerequisite: sql/13_closed_loop_governance_ledger.sql must already be applied.
+Prerequisite: sql/07_governance_gates/13_closed_loop_governance_ledger.sql must already be applied.
 ================================================================================
 */
 

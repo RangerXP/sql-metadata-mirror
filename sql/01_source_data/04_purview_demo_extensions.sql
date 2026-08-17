@@ -14,7 +14,7 @@ Scope:
 Run order:
   1. Run after 02_sub2_sql_source_schema.sql.
   2. Run before 05_seed_purview_demo_data.sql (the seed script).
-  3. After Fabric mirror picks up the new shape, re-run nb_03_pbi_star_schema
+  3. After Fabric mirror picks up the new shape, re-run 03_build_semantic_model
      to fold the new columns into the gold star schema.
 
 Notes:

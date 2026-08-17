@@ -9,7 +9,7 @@ from pathlib import Path
 BASE = "https://Purview-West3.purview.azure.com"
 API = "2023-09-01"
 AZ_FALLBACK = r"C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd"
-SEED_META = Path("sql/07_seed_purview_metadata.sql")
+SEED_META = Path("sql/02_metadata_foundation/07_seed_purview_metadata.sql")
 OUT = Path("tools/purview_measure_description_remediation_report.json")
 
 

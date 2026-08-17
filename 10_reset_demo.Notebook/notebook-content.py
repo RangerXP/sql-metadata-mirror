@@ -68,7 +68,7 @@ print(f"nb_18_demo_reset | DEMO_MODE={DEMO_MODE}")
 
 # CELL ********************
 
-# Cell 2: SQL connection helper (same pattern as nb_11/nb_16/nb_17)
+# Cell 2: SQL connection helper (same pattern as 07_apply_approved_changes / 09_reconcile_semantic_model)
 
 import struct
 

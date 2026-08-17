@@ -53,7 +53,7 @@ def parse_insert_values(sql_text, table):
         rows.append(rec)
     return rows
 
-meta=Path('sql/07_seed_purview_metadata.sql').read_text(encoding='utf-8')
+meta=Path('sql/02_metadata_foundation/07_seed_purview_metadata.sql').read_text(encoding='utf-8')
 labels=parse_insert_values(meta,'governance_label_assignments')
 glossary=parse_insert_values(meta,'governance_glossary_terms')
 cdes=parse_insert_values(meta,'governance_cdes')

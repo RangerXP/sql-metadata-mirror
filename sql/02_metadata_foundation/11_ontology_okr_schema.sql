@@ -15,8 +15,8 @@ Why OKRs:
   no business-objective layer above the Data Product tier.
 
 Note on domain hierarchy:
-  dbo.governance_domains.parent_domain has existed since sql/06 (Purview
-  Unified Catalog domain hierarchy supports up to 5 levels). This build keeps
+  dbo.governance_domains.parent_domain has existed since sql/02_metadata_foundation/06_purview_metadata_schema.sql
+  (Purview Unified Catalog domain hierarchy supports up to 5 levels). This build keeps
   the existing 3 seeded domains flat and does not add a root domain — the
   established "3 domains" count is referenced throughout docs/slides/scripts
   and is out of scope for the OKR/ontology work. parent_domain remains
@@ -25,8 +25,9 @@ Note on domain hierarchy:
 Pattern:
   - dbo.governance_* tables remain the source-of-truth in sqldemo.
   - Fabric mirrored database reflects these tables.
-  - nb_07a ingests them into lh_metadata.metadata.*; nb_07 publishes OKRs
-    live to Purview (Atlas custom typedefs, consistent with the existing
+  - 02_build_metadata_foundation ingests them into lh_metadata.metadata.*;
+    05_publish_governance_domains publishes OKRs live to Purview (Atlas custom
+    typedefs, consistent with the existing
     EnercareGovernanceDomain/EnercareDataProduct pattern) with
     relationshipAttributes-style links to Data Products.
 ================================================================================

@@ -2,10 +2,10 @@
 ================================================================================
 Purpose:
   G19-6 (part 2 gate) -- create the Approved request that
-  nb_17_g18_semantic_promotion reconciles, same division of labor as
-  nb_15 (creates the Approved DataProductPublish request) / nb_16 (reconciles
+  09_reconcile_semantic_model reconciles, same division of labor as its
+  earlier phases (creates the Approved DataProductPublish request / reconciles
   it into the semantic model). Gated on ONTOMAP-TECHUTIL-001 (the ontology
-  mapping from sql/27) already being Completed -- the semantic promotion is
+  mapping from sql/07_governance_gates/27_g19_g18_cde_ontology_mapping.sql) already being Completed -- the semantic promotion is
   not allowed to run ahead of the ontology mapping that justifies it.
 
 Idempotent: safe to re-run.
@@ -17,7 +17,7 @@ GO
 
 IF NOT EXISTS (SELECT 1 FROM dbo.governance_requests WHERE request_id = 'ONTOMAP-TECHUTIL-001' AND current_status = 'Completed')
 BEGIN
-    PRINT 'ONTOMAP-TECHUTIL-001 is not yet Completed -- run sql/27 first. Aborting.';
+    PRINT 'ONTOMAP-TECHUTIL-001 is not yet Completed -- run sql/07_governance_gates/27_g19_g18_cde_ontology_mapping.sql first. Aborting.';
     RETURN;
 END
 GO
@@ -46,5 +46,5 @@ VALUES (
     @requested_by, SYSUTCDATETIME(), @approved_by, SYSUTCDATETIME(), 'Approved', @proposed_payload
 );
 
-PRINT 'SEMPROMO-TECHUTIL-001 seeded as Approved: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' row(s). Ready for nb_17_g18_semantic_promotion.';
+PRINT 'SEMPROMO-TECHUTIL-001 seeded as Approved: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' row(s). Ready for 09_reconcile_semantic_model.';
 GO

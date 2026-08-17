@@ -33,8 +33,8 @@
 #
 # Run after: an operator has moved a request from PendingApproval to Approved
 # (see docs/runbooks/phase4-gated-governance-workflow.md step 2 per scenario).
-# Run before: nb_04_sempy_writeback -> nb_05_push_qa_verified_answers ->
-#             nb_07_publish_to_purview / nb_08 / nb_09 -> nb_10 rescoring.
+# Run before: 04_writeback_governed_metadata ->
+#             05_publish_governance_domains / 06_publish_glossary_and_lineage -> 08_validate_governance_evidence rescoring.
 # This notebook only performs the APPLY step; the downstream re-publish chain
 # remains a separate manual run per docs/design-gap-analysis.md G13-5 (deferred).
 #
@@ -557,11 +557,10 @@ print(f"Applied: {applied_request_ids}")
 print(f"Failed:  {failed_requests}")
 print("")
 print("Next: re-run in order to propagate the certified change downstream —")
-print("  1. nb_07a_ingest_customer_files   (refresh lh_metadata.metadata.governance_cdes / governance_glossary_terms / governance_change_requests)")
-print("  2. nb_04_sempy_writeback          (push certification into the semantic model)")
-print("  3. nb_05_push_qa_verified_answers (refresh Data Agent verified answers)")
-print("  4. nb_07_publish_to_purview / nb_08_purview_glossary_cde / nb_09_purview_labels_lineage (re-publish to Purview)")
-print("  5. nb_10_purview_stewardship_ai   (confirm 0 ACTION_REQUIRED)")
+print("  1. 02_build_metadata_foundation   (refresh lh_metadata.metadata.governance_cdes / governance_glossary_terms / governance_change_requests)")
+print("  2. 04_writeback_governed_metadata (push certification into the semantic model and refresh Data Agent verified answers)")
+print("  3. 05_publish_governance_domains / 06_publish_glossary_and_lineage (re-publish to Purview)")
+print("  4. 08_validate_governance_evidence (confirm 0 ACTION_REQUIRED)")
 
 # METADATA ********************
 

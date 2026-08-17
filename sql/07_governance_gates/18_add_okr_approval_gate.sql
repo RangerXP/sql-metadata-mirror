@@ -15,7 +15,7 @@ Scenario:
 
 Scope (matches R3's actual scope): Draft -> Approved -> Applied (real INSERT
 into dbo.governance_okr_key_results) -> SqlApplyReadback receipt -> Completed.
-Downstream Purview republish (nb_07) is a separate, later step, same as how
+Downstream Purview republish (05_publish_governance_domains) is a separate, later step, same as how
 KPI/CDE gates don't force an immediate Purview republish either.
 
 Idempotent: safe to re-run.

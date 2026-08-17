@@ -592,13 +592,13 @@ if not DEMO_MODE:
 
 # CELL ********************
 
-# Fabric Notebook: nb_14_purview_access_sync
-# Purpose: P3 proof for one Purview-native Data Product access decision loop (DP-CUST360).
+# Cell 8: P3 Purview Data Product access decision loop config (DP-CUST360)
 #
 # CONFIRMED LIMITATION (2026-08-12, see repo memory purview-api-notes.md): no REST API, Microsoft
 # Graph endpoint, or Purview diagnostic log captures a Data Product access request's decision.
-# Unlike nb_12 (which observes the term's own `status` field as a real API proxy for approval),
-# there is no equivalent observable signal for an access decision. This notebook therefore records
+# Unlike the glossary term publish loop in 08_validate_governance_evidence (which observes the
+# term's own `status` field as a real API proxy for approval), there is no equivalent observable
+# signal for an access decision. This notebook therefore records
 # the decision as OPERATOR-ATTESTED evidence -- directly witnessed in the Purview portal by the
 # person running this notebook -- clearly labeled as attested, not machine-verified. The Data
 # Product's own current state (status, domain, definition hash) IS read live and IS real,
@@ -632,7 +632,7 @@ SQL_LOGIN_TIMEOUT_SECONDS = 30
 SQL_AUTH_MODE = "tokenlibrary"  # tokenlibrary | managed_identity
 
 print(
-    f"nb_14 | DEMO_MODE={DEMO_MODE} | workflow_configured={WORKFLOW_CONFIGURED} | "
+    f"Cell 8 status: DEMO_MODE={DEMO_MODE} | workflow_configured={WORKFLOW_CONFIGURED} | "
     f"product={PURVIEW_DATA_PRODUCT_CODE}/{PURVIEW_DATA_PRODUCT_ID}"
 )
 
@@ -645,7 +645,7 @@ print(
 
 # CELL ********************
 
-# Cell 2: Authentication and connection helpers (mirrors nb_12)
+# Cell 9: Authentication and connection helpers (mirrors the glossary term publish notebook)
 
 import hashlib
 import json
@@ -745,7 +745,7 @@ ATTESTATION_LIMITATION_NOTICE = (
 
 # CELL ********************
 
-# Cell 3: Read and normalize the supported Data Product resource (real, API-verified evidence)
+# Cell 10: Read and normalize the supported Data Product resource (real, API-verified evidence)
 
 response = requests.get(
     f"{PURVIEW_CATALOG_BASE_URL}/dataproducts/{PURVIEW_DATA_PRODUCT_ID}",
@@ -792,7 +792,7 @@ print(json.dumps(product_snapshot, indent=2, ensure_ascii=True))
 
 # CELL ********************
 
-# Cell 4: Enforce guardrails and build the attested decision payload
+# Cell 11: Enforce guardrails and build the attested decision payload
 
 if DEMO_MODE:
     print("[DEMO_MODE] Baseline observation only; no SQL ledger writes will occur.")
@@ -844,7 +844,7 @@ attestation_payload = canonical_json(
 
 # CELL ********************
 
-# Cell 5: Persist one idempotent Submitted/Approved-or-Rejected observation
+# Cell 12: Persist one idempotent Submitted/Approved-or-Rejected observation
 
 if not DEMO_MODE:
     connection = get_sql_connection()
@@ -991,7 +991,7 @@ if not DEMO_MODE:
 
 # CELL ********************
 
-# Cell 6: Verify the durable P3 evidence contract
+# Cell 13: Verify the durable P3 evidence contract
 
 if not DEMO_MODE:
     connection = get_sql_connection()
@@ -1059,7 +1059,7 @@ if not DEMO_MODE:
 
 # CELL ********************
 
-# Cell 7: Completion boundary
+# Cell 14: Completion boundary
 
 print(
     "P3 Purview access-decision evidence collection finished. This is an audit-only scenario: "
@@ -1077,13 +1077,13 @@ print(
 
 # CELL ********************
 
-# Fabric Notebook: nb_15_purview_dataproduct_sync
+# Cell 15: P4 Purview Data Product publish workflow config (DP-SVCPERF)
 # Purpose: P4 proof for one Purview-native Data Product publish workflow (DP-SVCPERF).
 #
 # Data Products are a Tier 1 evidence object (docs/purview-native-workflow-wireframe.md §2a):
 # the Unified Catalog API exposes the product's own `status` field directly, the same real,
-# independently-verifiable proxy signal nb_12 uses for Term publish. This notebook mirrors nb_12's
-# structure exactly, substituting DataProduct for GlossaryTerm.
+# independently-verifiable proxy signal the glossary term publish notebook uses for Term publish.
+# This notebook mirrors that same structure, substituting DataProduct for GlossaryTerm.
 
 DEMO_MODE = False
 WORKFLOW_CONFIGURED = True
@@ -1105,7 +1105,7 @@ SQL_LOGIN_TIMEOUT_SECONDS = 30
 SQL_AUTH_MODE = "tokenlibrary"  # tokenlibrary | managed_identity
 
 print(
-    f"nb_15 | DEMO_MODE={DEMO_MODE} | workflow_configured={WORKFLOW_CONFIGURED} | "
+    f"Cell 15 status: DEMO_MODE={DEMO_MODE} | workflow_configured={WORKFLOW_CONFIGURED} | "
     f"product={PURVIEW_DATA_PRODUCT_CODE}/{PURVIEW_DATA_PRODUCT_ID}"
 )
 
@@ -1118,7 +1118,7 @@ print(
 
 # CELL ********************
 
-# Cell 2: Authentication and connection helpers (mirrors nb_12)
+# Cell 16: Authentication and connection helpers (mirrors the glossary term publish notebook)
 
 import hashlib
 import json
@@ -1214,7 +1214,7 @@ def utc_now():
 
 # CELL ********************
 
-# Cell 3: Read and normalize the supported Data Product resource
+# Cell 17: Read and normalize the supported Data Product resource
 
 response = requests.get(
     f"{PURVIEW_CATALOG_BASE_URL}/dataproducts/{PURVIEW_DATA_PRODUCT_ID}",
@@ -1262,7 +1262,7 @@ print(json.dumps(product_snapshot, indent=2, ensure_ascii=True))
 
 # CELL ********************
 
-# Cell 4: Enforce the P4 correlation and Draft-before-Published guardrails
+# Cell 18: Enforce the P4 correlation and Draft-before-Published guardrails
 
 if DEMO_MODE:
     print("[DEMO_MODE] Baseline observation only; no SQL ledger writes will occur.")
@@ -1299,7 +1299,7 @@ request_payload = canonical_json(
 
 # CELL ********************
 
-# Cell 5: Persist one idempotent Draft or Published observation
+# Cell 19: Persist one idempotent Draft or Published observation
 
 if not DEMO_MODE:
     connection = get_sql_connection()
@@ -1478,7 +1478,7 @@ if not DEMO_MODE:
 
 # CELL ********************
 
-# Cell 6: Verify the durable P4 evidence contract
+# Cell 20: Verify the durable P4 evidence contract
 
 if not DEMO_MODE:
     connection = get_sql_connection()
@@ -1559,7 +1559,7 @@ if not DEMO_MODE:
 
 # CELL ********************
 
-# Cell 7: Completion boundary
+# Cell 21: Completion boundary
 
 print(
     "P4 Purview evidence collection finished. This notebook does not mark the request "
@@ -1575,11 +1575,11 @@ print(
 
 # CELL ********************
 
-# Fabric Notebook: nb_16_dataproduct_semantic_reconcile
+# Cell 22: P4 semantic reconciliation config (DP-SVCPERF)
 # Purpose: P4 semantic reconciliation for an approved Purview Data Product publish (DP-SVCPERF).
 #
-# Mirrors nb_13's pattern exactly, substituting the DataProduct evidence chain (nb_15) for the
-# GlossaryTerm chain (nb_12/nb_13). Fails closed: requires a passed PublicationReadback receipt,
+# Mirrors Cell 1-7's pattern exactly, substituting the DataProduct evidence chain (Cell 15-21) for
+# the GlossaryTerm chain (Cell 1-14). Fails closed: requires a passed PublicationReadback receipt,
 # changes metadata only, verifies a fresh semantic-model read-back, and marks the request
 # Completed only after both required receipts pass.
 #
@@ -1618,7 +1618,7 @@ SEMANTIC_TARGETS = [
     },
 ]
 
-print(f"nb_16 | DEMO_MODE={DEMO_MODE} | request={RUN_REQUEST_ID or '<not set>'} | model={MODEL_NAME}")
+print(f"Cell 22 status: DEMO_MODE={DEMO_MODE} | request={RUN_REQUEST_ID or '<not set>'} | model={MODEL_NAME}")
 
 # METADATA ********************
 
@@ -1629,7 +1629,7 @@ print(f"nb_16 | DEMO_MODE={DEMO_MODE} | request={RUN_REQUEST_ID or '<not set>'} 
 
 # CELL ********************
 
-# Cell 2: Connection and normalization helpers (mirrors nb_13)
+# Cell 23: Connection and normalization helpers (mirrors Cell 2)
 
 import hashlib
 import json
@@ -1765,7 +1765,7 @@ if not RUN_REQUEST_ID.strip():
 
 # CELL ********************
 
-# Cell 3: Load the approved source definition and enforce the P4 gate
+# Cell 24: Load the approved source definition and enforce the P4 gate
 
 connection = get_sql_connection()
 cursor = connection.cursor()
@@ -1884,7 +1884,7 @@ for item in expected_metadata:
 
 # CELL ********************
 
-# Cell 4: Apply only descriptions and annotations through SemPy Labs TOM
+# Cell 25: Apply only descriptions and annotations through SemPy Labs TOM
 
 if DEMO_MODE:
     print("[DEMO_MODE] Semantic metadata write skipped.")
@@ -1906,7 +1906,7 @@ else:
 
 # CELL ********************
 
-# Cell 5: Reopen the model read-only and compute the observed metadata hash
+# Cell 26: Reopen the model read-only and compute the observed metadata hash
 
 if DEMO_MODE:
     observed_metadata = expected_metadata
@@ -1944,7 +1944,7 @@ else:
 
 # CELL ********************
 
-# Cell 6: Persist the read-back receipt and complete only after both gates pass
+# Cell 27: Persist the read-back receipt and complete only after both gates pass
 
 if DEMO_MODE:
     print("[DEMO_MODE] SQL receipt and request completion skipped.")
@@ -2035,7 +2035,7 @@ else:
 
 # CELL ********************
 
-# Cell 7: Verify the closed-loop completion
+# Cell 28: Verify the closed-loop completion
 
 if not DEMO_MODE:
     connection = get_sql_connection()
@@ -2083,11 +2083,11 @@ if not DEMO_MODE:
 
 # CELL ********************
 
-# Fabric Notebook: nb_17_g18_semantic_promotion
+# Cell 29: G18 semantic promotion (single flattened cell)
 # Purpose: G19-6 -- real semantic-model TOM promotion for a G18-A-approved source object,
 # completing the discovery->classify->approve->CDE/ontology-map->promote chain.
 #
-# Unlike nb_13/nb_16 (which only annotate EXISTING columns), this notebook ADDS a brand-new
+# Unlike Cell 22-28 (which only annotate EXISTING columns), this cell ADDS a brand-new
 # measure to the semantic model -- the actual "promotion" step G18's design always intended.
 # Fails closed: requires the gating SemanticModelPromotion request to be Approved and its
 # prerequisite ontology-mapping receipt to have passed.
@@ -2113,7 +2113,7 @@ SQL_PORT = 1433
 SQL_LOGIN_TIMEOUT_SECONDS = 30
 SQL_AUTH_MODE = "tokenlibrary"  # tokenlibrary | managed_identity
 
-print(f"nb_17 | DEMO_MODE={DEMO_MODE} | request={RUN_REQUEST_ID} | model={MODEL_NAME}")
+print(f"Cell 29 status: DEMO_MODE={DEMO_MODE} | request={RUN_REQUEST_ID} | model={MODEL_NAME}")
 
 import hashlib
 import json
@@ -2259,7 +2259,7 @@ print(f"[READY] request={RUN_REQUEST_ID} status={request_row[0]} target={TARGET_
 # NOTE: Microsoft.AnalysisServices.Tabular is only importable AFTER connect_semantic_model has
 # bootstrapped the CLR bridge in this session -- importing it before any connect_semantic_model
 # call raises ModuleNotFoundError: No module named 'Microsoft'. Always import it INSIDE the
-# active `with` block (matches nb_16's upsert_annotation, which only ever runs inside one).
+# active `with` block (matches Cell 22-28's upsert_annotation, which only ever runs inside one).
 if DEMO_MODE:
     print("[DEMO_MODE] Semantic measure creation skipped.")
 else:

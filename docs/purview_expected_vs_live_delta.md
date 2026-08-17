@@ -12,7 +12,7 @@ The following objects are source-backed in the repo and appear in the seeded gov
 - `GT-CONSENT`
 - `GT-PII`
 
-These items are explicitly present in [sql/07_seed_purview_metadata.sql](../sql/07_seed_purview_metadata.sql), [purview/data-product-catalog.csv](../purview/data-product-catalog.csv), and [purview/glossary-master.csv](../purview/glossary-master.csv). They should be classified as pre-seeded catalog scope, not as active demo-breaking defects.
+These items are explicitly present in [sql/02_metadata_foundation/07_seed_purview_metadata.sql](../sql/02_metadata_foundation/07_seed_purview_metadata.sql), [purview/data-product-catalog.csv](../purview/data-product-catalog.csv), and [purview/glossary-master.csv](../purview/glossary-master.csv). They should be classified as pre-seeded catalog scope, not as active demo-breaking defects.
 
 ## ✅ BrookfieldEnercare — present
 - enercare://governance/domain/probe-domain-001 | EnercareGovernanceDomainProbe | enercare://governance/domain/probe-domain-001 | sourceQuery=BrookfieldEnercare

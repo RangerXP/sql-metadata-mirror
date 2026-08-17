@@ -17,7 +17,7 @@ Scenarios:
   2. Having a real CDE mapping now justifies finally deciding the pending
      object: TAG-D0BF6E496681E6B0 is APPROVED (Ci Zhu, domain owner) and
      applied -- the same real snapshot+receipt+Completed pattern as G18-A's
-     other approved object (sql/21).
+     other approved object (sql/07_governance_gates/21_g18a_demo_decisions.sql).
   3. Ontology mapping: dbo.vw_technician_utilization_summary (already
      Approved+Completed via G18-A) is mapped to the real Key Result
      KR-TECH-UTIL ("Technician Utilization Rate At Or Above Target",
@@ -26,8 +26,8 @@ Scenarios:
      task. Requested by Shruthi Srinivas (the KR's original requester),
      approved by Ci Zhu.
 
-Part 2 (real semantic-model TOM promotion) is a separate notebook,
-nb_17_g18_semantic_promotion, since it requires Spark/SemPy Labs, not T-SQL.
+Part 2 (real semantic-model TOM promotion) is a separate step in
+09_reconcile_semantic_model, since it requires Spark/SemPy Labs, not T-SQL.
 
 Idempotent: safe to re-run.
 ================================================================================
@@ -225,5 +225,5 @@ SELECT @request_id, 'SQL', 'SqlModuleTagAnnotation', @object_id, 'OntologyMappin
 PRINT 'ONTOMAP-TECHUTIL-001 applied + receipted.';
 GO
 
-PRINT 'G19-6 part 1 (CDE mapping + ontology mapping) complete -- next: nb_17_g18_semantic_promotion for the real TOM mutation.';
+PRINT 'G19-6 part 1 (CDE mapping + ontology mapping) complete -- next: 09_reconcile_semantic_model for the real TOM mutation.';
 GO

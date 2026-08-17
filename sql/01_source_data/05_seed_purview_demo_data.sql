@@ -17,8 +17,8 @@ Coverage:
 
 Notes:
   - SIN columns (dbo.employees.sin_full and dbo.customers.sin_last_4) are left
-    NULL by this script and populated separately by the Python notebook
-    nb_05a_publish_synthetic_data_to_sql using the Luhn-valid generator in
+    NULL by this script and populated separately by the 01_setup_source_data
+    notebook using the Luhn-valid generator in
     tools/sin_luhn_generator.py. This is Layer 1 of the SIN classifier backstop.
     See docs/purview-sin-classifier-backstop.md for the full strategy.
   - All values here are synthetic and do not correspond to real persons.
@@ -57,7 +57,7 @@ GO
 -- Enercare leadership in scope for this demo (from Brian Lung's correspondence
 -- and the 2026-05-20 Deeper Dive Data Mirroring and Governance meeting).
 -- sin_full is left NULL and populated by the Python Luhn-valid generator in
--- nb_05a (Layer 1 of the SIN backstop strategy).
+-- 01_setup_source_data (Layer 1 of the SIN backstop strategy).
 --
 -- Note: Christopher Dingle (VP Data Analytics & Governance at Enercare) is
 -- intentionally out of scope for this demo. His governance authoring duties
@@ -72,7 +72,7 @@ INSERT INTO dbo.employees (employee_id, upn, first_name, last_name, email, phone
 GO
 
 -- Synthetic operational employees (technicians, supervisors) — these remain
--- fictional Enercare HR records as scan targets. sin_full populated by nb_05a.
+-- fictional Enercare HR records as scan targets. sin_full populated by 01_setup_source_data.
 -- manager_employee_id rolls up to Ranbir Singh (employee_id=2) for the field-ops chain.
 INSERT INTO dbo.employees (employee_id, upn, first_name, last_name, email, phone, role, department, manager_employee_id, hire_date, sin_full, date_of_birth, home_postal_code, is_active) VALUES
 (101, 'tnguyen@enercare.ca',    'Tom',     'Nguyen',   'tnguyen@enercare.ca',    '+1-416-555-1101', 'Service Technician', 'Field Ops', 2, '2022-03-14', NULL, '1990-04-12', 'L6T', 1),
@@ -153,7 +153,7 @@ GO
    Steward owner_email rotates across the three customer-ops stewards.
 ------------------------------------------------------------------------------ */
 
--- sin_last_4 is intentionally left NULL here; nb_05a populates it from the
+-- sin_last_4 is intentionally left NULL here; 01_setup_source_data populates it from the
 -- last 4 digits of a Luhn-valid 9-digit SIN per the backstop strategy.
 UPDATE dbo.customers
 SET

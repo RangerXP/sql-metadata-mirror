@@ -3,7 +3,7 @@
 Purpose:
   Seed the 3 Enercare business-objective OKRs (one per governance domain),
   their key results (tied to real kpi_metadata KPICodes / measure asset refs
-  from nb_04a_extend_metadata_schema), and their links to the existing 3
+  from 02_build_metadata_foundation), and their links to the existing 3
   data products. Closes G11-1's business-objective layer.
 
 Expected output counts:
@@ -32,16 +32,18 @@ VALUES
 GO
 
 /* ------------------------------------------------------------------------------
-   2. Key results (5) - metric_source ties to kpi_metadata.KPICode (nb_04a) or a
+   2. Key results (5) - metric_source ties to kpi_metadata.KPICode
+      (02_build_metadata_foundation) or a
       BrookfieldEnercare/_Measures/<name> asset ref where no KPICode exists yet.
-      goal/max amounts match the certified thresholds documented in nb_04a's
+      goal/max amounts match the certified thresholds documented in
+      02_build_metadata_foundation's
       AI Data Schema (FCR 78%, CSAT 4.2/5, PP_RNW_RATE 82%, SLA_BRCH_RATE 5%).
 ------------------------------------------------------------------------------ */
 -- NOTE: progress_amount must NEVER be seeded as NULL. An all-NULL column across
--- every row causes Spark to infer NullType when nb_07a converts this table to a
+-- every row causes Spark to infer NullType when 02_build_metadata_foundation converts this table to a
 -- pandas/Spark DataFrame, which Delta then declares in the schema but does not
 -- physically materialize in the Parquet files -- an identical failure class to
--- the historical domains.parent_domain issue. This breaks nb_07's column-pruned
+-- the historical domains.parent_domain issue. This breaks 05_publish_governance_domains's column-pruned
 -- .collect() with "Couldn't find progress_amount#... in [...]" even though the
 -- column is listed in df.columns. Always seed a real numeric value.
 INSERT INTO dbo.governance_okr_key_results

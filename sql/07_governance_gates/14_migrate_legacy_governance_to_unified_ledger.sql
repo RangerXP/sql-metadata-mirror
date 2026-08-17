@@ -5,7 +5,7 @@ Purpose:
   Approval, Verified Answer Certification, CDE Classification, Glossary Term
   Definition — all Phase 4 / G14 scenarios) into the unified closed-loop
   ledger (dbo.governance_requests / governance_events / governed_object_versions
-  / governance_target_receipts) introduced in sql/13_closed_loop_governance_ledger.sql.
+  / governance_target_receipts) introduced in sql/07_governance_gates/13_closed_loop_governance_ledger.sql.
 
   This is a historical backfill, not a re-approval: no new decision is made,
   no governed object is mutated. It exists so "is this artifact closed-loop
@@ -29,7 +29,7 @@ Design:
     unique index via NOT EXISTS checks).
 
 Prerequisite:
-  sql/13_closed_loop_governance_ledger.sql must already be applied.
+  sql/07_governance_gates/13_closed_loop_governance_ledger.sql must already be applied.
 ================================================================================
 */
 

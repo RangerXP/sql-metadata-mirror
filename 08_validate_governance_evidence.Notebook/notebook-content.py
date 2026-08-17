@@ -429,7 +429,7 @@ display(summary_df.orderBy("stage"))
 
 # CELL ********************
 
-# Fabric Notebook: nb_12_purview_workflow_sync
+# Cell 7: P1 Purview glossary term publication loop config
 # Purpose: P1 proof for one Purview-native glossary term publication loop.
 #
 # This notebook observes the supported Unified Catalog term resource. The public
@@ -458,7 +458,7 @@ SQL_LOGIN_TIMEOUT_SECONDS = 30
 SQL_AUTH_MODE = "tokenlibrary"  # tokenlibrary | managed_identity
 
 print(
-    f"nb_12 | DEMO_MODE={DEMO_MODE} | workflow_configured={WORKFLOW_CONFIGURED} | "
+    f"Cell 7 status: DEMO_MODE={DEMO_MODE} | workflow_configured={WORKFLOW_CONFIGURED} | "
     f"term={PURVIEW_TERM_CODE}/{PURVIEW_TERM_ID}"
 )
 
@@ -471,7 +471,7 @@ print(
 
 # CELL ********************
 
-# Cell 2: Authentication and connection helpers
+# Cell 8: Authentication and connection helpers
 
 import hashlib
 import json
@@ -567,7 +567,7 @@ def utc_now():
 
 # CELL ********************
 
-# Cell 3: Read and normalize the supported Unified Catalog term resource
+# Cell 9: Read and normalize the supported Unified Catalog term resource
 
 response = requests.get(
     f"{PURVIEW_CATALOG_BASE_URL}/terms/{PURVIEW_TERM_ID}",
@@ -615,7 +615,7 @@ print(json.dumps(term_snapshot, indent=2, ensure_ascii=True))
 
 # CELL ********************
 
-# Cell 4: Enforce the P1 correlation and Draft-before-Published guardrails
+# Cell 10: Enforce the P1 correlation and Draft-before-Published guardrails
 
 if DEMO_MODE:
     print("[DEMO_MODE] Baseline observation only; no SQL ledger writes will occur.")
@@ -652,7 +652,7 @@ request_payload = canonical_json(
 
 # CELL ********************
 
-# Cell 5: Persist one idempotent Draft or Published observation
+# Cell 11: Persist one idempotent Draft or Published observation
 
 if not DEMO_MODE:
     connection = get_sql_connection()
@@ -838,7 +838,7 @@ if not DEMO_MODE:
 
 # CELL ********************
 
-# Cell 6: Verify the durable P1 evidence contract
+# Cell 12: Verify the durable P1 evidence contract
 
 if not DEMO_MODE:
     connection = get_sql_connection()
@@ -919,7 +919,7 @@ if not DEMO_MODE:
 
 # CELL ********************
 
-# Cell 7: Completion boundary
+# Cell 13: Completion boundary
 
 print(
     "P1 Purview evidence collection finished. This notebook does not mark the request "

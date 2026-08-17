@@ -7,7 +7,7 @@ Purpose:
 Pattern:
   - dbo.governance_* tables are the source-of-truth in sqldemo.
   - Fabric mirrored database reflects these tables.
-  - nb_07a can read mirrored SQL first and only fall back to CSV bootstrap.
+  - 02_build_metadata_foundation can read mirrored SQL first and only fall back to CSV bootstrap.
 ================================================================================
 */
 
