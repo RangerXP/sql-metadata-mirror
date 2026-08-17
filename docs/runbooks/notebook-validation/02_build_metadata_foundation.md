@@ -1,6 +1,6 @@
 # `02_build_metadata_foundation` — Validation Capture
 
-**Status:** 🔄 Retry in progress after an initial failure — see findings below.
+**Status:** ✅ Completed — validated end-to-end 2026-08-17, after finding and fixing a real bug.
 
 ## Purpose being validated
 
@@ -8,16 +8,20 @@ Two merged sections: Cells 1–9 (governance CSV/SQL-mirror ingestion into `lh_m
 and Cells 10–16 (semantic reconciliation — cross-references glossary/CDE/data-product/label
 bindings against the semantic model and writes `sm_annotations`). Cells 10–16 were unreachable
 dead code (behind a stray `mssparkutils.notebook.exit()`) until the fix earlier in this session
-— **this is the first live run where they can possibly execute.**
+— **this was the first live run where they could possibly execute.**
 
 ## Run record
 
 | Attempt | Job ID | Start (UTC) | End (UTC) | Status |
 |---|---|---|---|---|
 | 1 | `a015cfc0-f560-49fe-aa39-a21e4d6c1f82` | 2026-08-17T05:08:22 | 2026-08-17T05:15:11 | ❌ `Failed` |
-| 2 | *(in progress)* | | | |
+| 2 (retry, no code change) | `929054d2-82f3-4c84-b470-23bc9f794e61` | 2026-08-17T05:17:58 | 2026-08-17T05:25:32 | ❌ `Failed` (reproducible, not transient) |
+| 3 (ingestion reorder + Cells 3-9 diagnostics) | `a6c41b4d-1001-4b7b-8f85-e0e62e6e956f` | 2026-08-17T05:30:28 | 2026-08-17T05:37:22 | ❌ `Failed` (reorder wasn't the cause; diagnostics finally captured the real exception) |
+| 4 (real fix: refreshTable + column pruning) | `5bc51918-6849-486f-8ff0-8669c91c1a73` | 2026-08-17T05:42:05 | 2026-08-17T05:48:45 | ❌ `Failed` (fix not yet pushed/synced when this ran) |
+| 5 (fix live) | `92e98718-6a78-42c2-8a1d-b54157e27a68` | 2026-08-17T05:52:12 | 2026-08-17T05:58:52 | ✅ `Completed` |
 
-**Attempt 1 failure detail (full generic message — Fabric exposes no more than this over REST):**
+**Generic Fabric failure detail (identical across all 4 failed attempts — confirms the platform
+exposes no more than this over REST):**
 
 ```json
 {
@@ -27,47 +31,83 @@ dead code (behind a stray `mssparkutils.notebook.exit()`) until the fix earlier 
 }
 ```
 
-Livy session: `sparkApplicationId=application_1786943372244_0001`,
-`livyId=865aebd1-24a4-4dda-8a11-8ece523ee61c` — same generic `cancellationReason`, no
-additional detail even from the singular Livy session endpoint.
+## Root cause (found via custom diagnostic instrumentation, not the Fabric API)
 
-## Diagnostic findings (attempt 1, by inference — no cell-level API exists)
+Added a `_log_nb02_diagnostic(stage, error)` helper (matching the existing pattern already used
+in `06_publish_glossary_and_lineage`/`07_apply_approved_changes`) that writes the real Python
+exception + traceback to `dbo.nb02_diagnostics_log` before re-raising, since Fabric's REST API
+cannot identify the failing cell. This surfaced the actual error on attempt 3:
 
-Since Fabric's REST API cannot identify the failing cell, diagnosis was done by querying
-`lh_metadata` directly and reading the source code:
+```
+stage: cell14_build_annotation_rows
+error_type: Py4JJavaError
+error_message: An error occurred while calling o10276.collectToPython.
+: java.lang.IllegalStateException: Couldn't find parent_term_code#42033 in
+  [term_code#42030,term_name#42031,acronyms#42032,domain_code#42034,owner_upn#42035,
+   additional_owners_upn#42036,definition#42037,status#42038,is_cde#42039,
+   industry_origin#42040,resources#42041,bound_assets#42042,approved_at#42044]
+```
 
-- All Cells 1–9 target tables (`dbo.domains`, `dbo.data_products`, `dbo.glossary_terms`,
-  `dbo.cdes`, `dbo.role_assignments`, `dbo.label_assignments`,
-  `dbo.governance_change_requests`, `dbo.okrs`, `dbo.okr_key_results`,
-  `dbo.okr_data_products`) all hold exactly their expected row counts (3/3/35/12/48/9/8/3/5/3).
-  This is consistent with Cells 1–9 succeeding, but is **not conclusive** — none of these are
-  freshly created by this notebook alone in a way that rules out stale prior-run data.
-- `dbo.sm_annotations` (the table Cells 10–16 build) already existed with 77 rows and a schema
-  exactly matching what Cell 15 writes (`model`, `table`, `object_type`, `object_name`,
-  `annotation_key`, `annotation_value`) — no schema drift. This table's data could be stale from
-  before the dead-code fix (its write is `mode("overwrite")`, so whatever is there reflects the
-  last time Cell 15 *did* run, which historically could only have been the old, pre-consolidation
-  standalone `nb_07b` notebook).
-- Code review of Cells 10–16 found no obvious hard defect (schema matches, null-guards are
-  present in `_append_annotation`), but this logic has never run successfully as part of the
-  consolidated notebook before today, so a reproducible bug is still plausible.
-- Other notebooks in this workspace (`04_writeback_governed_metadata`) also show several
-  `Failed` runs with the identical generic error in the same 2026-08-16/17 window, which is
-  consistent with either a shared environment/capacity issue or genuine per-notebook bugs —
-  ambiguous from the API evidence alone.
+**This is the exact same stale-Spark-catalog-schema bug already documented and fixed elsewhere
+in this repo** (`06_publish_glossary_and_lineage`'s `_read_table()`, and the historical
+2026-08-10 "G14-8" fix for `nb_08`/`nb_09`): Spark's cached logical plan expected a
+`parent_term_code` column that no longer exists in the physical Delta table (replaced by
+`approved_at` from a later schema migration), and `glossary_df.collect()` in Cell 14 forces
+Spark to materialize the *entire* cached schema, not just the columns the Python code actually
+touches. Cell 10's `_read_table()` (used for the reconciliation section) never got the
+`refreshTable()` + column-pruning fix that notebook 06 already has.
 
-**Decision:** retry once before deeper code-level instrumentation, to distinguish a transient
-Spark session/capacity issue from a reproducible bug in the newly-unblocked cells.
+**Fix applied:** added `spark.catalog.refreshTable(candidate)` before `spark.table(candidate)`
+in Cell 10's `_read_table()`, and pruned `glossary_df`/`cde_df`/`data_products_df`/`labels_df`
+to only the columns Cell 14 actually reads (`GLOSSARY_COLUMNS_NEEDED`, `CDE_COLUMNS_NEEDED`,
+etc.) — same pattern as notebook 06. Also instrumented Cells 3–9 with the same diagnostic
+logger for defense-in-depth (none of them actually failed, but if a similar bug ever recurs
+there, it will now be immediately queryable instead of hidden).
+
+**A red herring investigated first:** `try_load_sql_dataset()`'s ingestion helper (Cells 1–9)
+tries a large combinatorial set of physical `abfss://` Delta paths before falling back to
+catalog-based lookup — worth avoiding on its own merits (reordered to try the known-good
+catalog lookup first), but this was **not** the actual cause of this failure; attempt 3 proved
+that empirically (still failed after reordering, until the real Cell 14 fix was applied).
 
 ## Data write-out confirmation
 
-*(pending final attempt)*
+`dbo.sm_annotations` (rebuilt fresh by the successful run, `mode("overwrite")`): **77 rows**,
+breakdown by `annotation_key`:
+
+| Annotation key | Count |
+|---|---|
+| `Glossary_Term_References` | 62 |
+| `Sensitivity_Label` | 7 |
+| `Data_Product_Owner` | 6 |
+| `CDE_Member_Of` | 2 |
+
+`dbo.nb02_diagnostics_log`: 2 rows total, both from the pre-fix failed attempts — **zero new
+rows added during the successful run**, confirming the fix, not luck, resolved it.
+
+Cells 1–9 target tables all still hold their expected counts (3/3/35/12/48/9/8/3/5/3 for
+domains/data_products/glossary_terms/cdes/role_assignments/label_assignments/
+governance_change_requests/okrs/okr_key_results/okr_data_products).
 
 ## Maria Castellanos north-star use-case match
 
-*(pending — will confirm glossary/CDE/data-product bindings that touch Maria's specific
-governed objects, e.g. GT-CONSENT, CDE-CONSENTSTATE, resolve correctly in `sm_annotations`.)*
+- ✅ `dim_customer` correctly carries the `GT-003 | Customer Consent` glossary binding,
+  resolved from `dbo.glossary_terms` (`bound_assets = dbo.customer_consents`) — this is the
+  term Ci Zhu cites when explaining Maria's consent governance in Act 3.
+- ⚠️ **Finding (source-data quality gap, not a notebook 02 bug):** of the 35 glossary terms,
+  only `GT-001` through `GT-010` have real curated `term_name` values (Customer, Customer
+  Consent, Social Insurance Number, PCI Scope Data, Service Request, First Contact Resolution,
+  Contract, Billing Transaction, Data Owner, Data Access Audit). `GT-011` through `GT-035` (25
+  terms) carry a generic placeholder name — literally `"Governance Term 16"`, `"Governance Term
+  17"`, etc. — in the underlying `dbo.glossary_terms` source data. Notebook 02 correctly reads
+  and reconciles whatever the SQL source contains; this is upstream seed-content that needs
+  real curated definitions written for GT-011–035 (likely in
+  `sql/02_metadata_foundation/07_seed_purview_metadata.sql` or wherever these specific rows
+  originate) — flagged for the broader artifact-cataloging pass, not fixed here.
 
 ## Issues encountered
 
-- Attempt 1: `Failed`, generic Spark session cancellation, cause not yet isolated.
+- 4 of 5 attempts failed before the real fix was found and applied; resolved via custom
+  diagnostic instrumentation since Fabric's REST API provides no cell-level detail. See
+  "Root cause" above for the full investigation trail.
+

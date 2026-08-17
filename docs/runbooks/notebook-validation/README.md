@@ -40,7 +40,7 @@ with `--job-id <jobId>` printed at submission time.
 | # | Notebook | Status | Doc |
 |---|---|---|---|
 | 1 | `01_setup_source_data` | ✅ Completed | [01_setup_source_data.md](./01_setup_source_data.md) |
-| 2 | `02_build_metadata_foundation` | ⬜ Not started | — |
+| 2 | `02_build_metadata_foundation` | ✅ Completed (real bug found + fixed) | [02_build_metadata_foundation.md](./02_build_metadata_foundation.md) |
 | 3 | `03_build_semantic_model` | ⬜ Not started | — |
 | 4 | `04_writeback_governed_metadata` | ⬜ Not started | — |
 | 5 | `05_publish_governance_domains` | ⬜ Not started | — |
