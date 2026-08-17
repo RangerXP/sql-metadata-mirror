@@ -1883,82 +1883,7 @@ PRINT 'Purview demo seed complete.';
 GO
 """
 
-PURVIEW_METADATA_SCHEMA_SQL = r"""
-SET NOCOUNT ON;
-GO
-IF OBJECT_ID(N'dbo.governance_domains', N'U') IS NULL CREATE TABLE dbo.governance_domains (domain_id VARCHAR(64) NOT NULL, domain_name NVARCHAR(200) NOT NULL, domain_type VARCHAR(64) NOT NULL, description NVARCHAR(1000) NULL, parent_domain VARCHAR(64) NULL, status VARCHAR(32) NOT NULL, governance_domain_owners NVARCHAR(1000) NULL, governance_domain_creators NVARCHAR(1000) NULL, CONSTRAINT PK_governance_domains PRIMARY KEY CLUSTERED (domain_id));
-GO
-IF OBJECT_ID(N'dbo.governance_data_products', N'U') IS NULL CREATE TABLE dbo.governance_data_products (data_product_id VARCHAR(64) NOT NULL, data_product_name NVARCHAR(200) NOT NULL, product_type VARCHAR(64) NOT NULL, business_use_case NVARCHAR(1000) NULL, audience NVARCHAR(400) NULL, owners NVARCHAR(1000) NULL, attached_assets NVARCHAR(MAX) NULL, access_policy NVARCHAR(MAX) NULL, status VARCHAR(32) NOT NULL, parent_domain_id VARCHAR(64) NOT NULL, CONSTRAINT PK_governance_data_products PRIMARY KEY CLUSTERED (data_product_id));
-GO
-IF OBJECT_ID(N'dbo.governance_glossary_terms', N'U') IS NULL CREATE TABLE dbo.governance_glossary_terms (term_code VARCHAR(64) NOT NULL, term_name NVARCHAR(200) NOT NULL, acronyms NVARCHAR(200) NULL, parent_term_code VARCHAR(64) NULL, domain_code VARCHAR(64) NULL, owner_upn VARCHAR(255) NULL, additional_owners_upn NVARCHAR(1000) NULL, definition NVARCHAR(MAX) NOT NULL, status VARCHAR(32) NOT NULL, is_cde BIT NOT NULL, industry_origin VARCHAR(64) NULL, resources NVARCHAR(MAX) NULL, bound_assets NVARCHAR(MAX) NULL, CONSTRAINT PK_governance_glossary_terms PRIMARY KEY CLUSTERED (term_code));
-GO
-IF OBJECT_ID(N'dbo.governance_cdes', N'U') IS NULL CREATE TABLE dbo.governance_cdes (cde_id VARCHAR(64) NOT NULL, cde_name NVARCHAR(200) NOT NULL, expected_data_type VARCHAR(32) NOT NULL, business_definition NVARCHAR(MAX) NOT NULL, owner_role VARCHAR(128) NULL, status VARCHAR(32) NOT NULL, parent_glossary_term VARCHAR(64) NULL, bound_columns NVARCHAR(MAX) NULL, CONSTRAINT PK_governance_cdes PRIMARY KEY CLUSTERED (cde_id));
-GO
-IF OBJECT_ID(N'dbo.governance_role_assignments', N'U') IS NULL CREATE TABLE dbo.governance_role_assignments (role_id VARCHAR(64) NOT NULL, principal_email VARCHAR(255) NOT NULL, principal_display_name NVARCHAR(200) NOT NULL, role_type VARCHAR(128) NOT NULL, scope_target NVARCHAR(300) NOT NULL, scope_target_type VARCHAR(64) NOT NULL, governance_layer VARCHAR(64) NOT NULL, CONSTRAINT PK_governance_role_assignments PRIMARY KEY CLUSTERED (role_id));
-GO
-IF OBJECT_ID(N'dbo.governance_label_assignments', N'U') IS NULL CREATE TABLE dbo.governance_label_assignments (label_id VARCHAR(64) NOT NULL, label_name NVARCHAR(200) NOT NULL, sensitivity_tier VARCHAR(64) NOT NULL, protection_policy NVARCHAR(MAX) NULL, applies_to_asset_ids NVARCHAR(MAX) NULL, scope VARCHAR(128) NOT NULL, CONSTRAINT PK_governance_label_assignments PRIMARY KEY CLUSTERED (label_id));
-GO
-IF OBJECT_ID(N'dbo.governance_okrs', N'U') IS NULL CREATE TABLE dbo.governance_okrs (okr_id VARCHAR(64) NOT NULL, okr_name NVARCHAR(200) NOT NULL, domain_id VARCHAR(64) NOT NULL, definition NVARCHAR(MAX) NOT NULL, owner_upn VARCHAR(255) NOT NULL, target_date DATE NULL, status VARCHAR(32) NOT NULL, is_certified BIT NOT NULL CONSTRAINT DF_governance_okrs_is_certified DEFAULT 0, certified_by VARCHAR(255) NULL, certified_date DATETIME2(7) NULL, recertification_due DATE NULL, retired_at DATETIME2(7) NULL, retired_by VARCHAR(255) NULL, retirement_reason NVARCHAR(500) NULL, CONSTRAINT PK_governance_okrs PRIMARY KEY CLUSTERED (okr_id), CONSTRAINT FK_governance_okrs_domain FOREIGN KEY (domain_id) REFERENCES dbo.governance_domains (domain_id));
-GO
-IF OBJECT_ID(N'dbo.governance_okr_key_results', N'U') IS NULL CREATE TABLE dbo.governance_okr_key_results (key_result_id VARCHAR(64) NOT NULL, okr_id VARCHAR(64) NOT NULL, result_name NVARCHAR(200) NOT NULL, metric_source VARCHAR(255) NOT NULL, goal_amount DECIMAL(18,4) NOT NULL, progress_amount DECIMAL(18,4) NULL, max_amount DECIMAL(18,4) NOT NULL, progress_status VARCHAR(32) NOT NULL, CONSTRAINT PK_governance_okr_key_results PRIMARY KEY CLUSTERED (key_result_id), CONSTRAINT FK_governance_okr_key_results_okr FOREIGN KEY (okr_id) REFERENCES dbo.governance_okrs (okr_id));
-GO
-IF OBJECT_ID(N'dbo.governance_okr_data_products', N'U') IS NULL CREATE TABLE dbo.governance_okr_data_products (okr_id VARCHAR(64) NOT NULL, data_product_id VARCHAR(64) NOT NULL, CONSTRAINT PK_governance_okr_data_products PRIMARY KEY CLUSTERED (okr_id, data_product_id), CONSTRAINT FK_governance_okr_data_products_okr FOREIGN KEY (okr_id) REFERENCES dbo.governance_okrs (okr_id), CONSTRAINT FK_governance_okr_data_products_product FOREIGN KEY (data_product_id) REFERENCES dbo.governance_data_products (data_product_id));
-GO
-PRINT 'Purview metadata schema tables are ready.';
-GO
-"""
-
-PURVIEW_METADATA_SEED_SQL = r"""
-SET NOCOUNT ON;
-GO
--- Clear the OKR tables first (sql/02_metadata_foundation/11_ontology_okr_schema.sql), which FK-reference
--- governance_domains/governance_data_products and are not owned by this notebook.
--- Re-run sql/02_metadata_foundation/12_seed_ontology_okrs.sql afterward to restore OKRs and their links.
-IF OBJECT_ID(N'dbo.governance_okr_data_products', N'U') IS NOT NULL DELETE FROM dbo.governance_okr_data_products;
-IF OBJECT_ID(N'dbo.governance_okr_key_results', N'U') IS NOT NULL DELETE FROM dbo.governance_okr_key_results;
-IF OBJECT_ID(N'dbo.governance_okrs', N'U') IS NOT NULL DELETE FROM dbo.governance_okrs;
-DELETE FROM dbo.governance_label_assignments; DELETE FROM dbo.governance_role_assignments; DELETE FROM dbo.governance_cdes; DELETE FROM dbo.governance_glossary_terms; DELETE FROM dbo.governance_data_products; DELETE FROM dbo.governance_domains;
-GO
-INSERT INTO dbo.governance_domains (domain_id, domain_name, domain_type, description, parent_domain, status, governance_domain_owners, governance_domain_creators) VALUES ('DOM-CUSTOPS','Customer Operations','Data domain','Customer support, consent, complaint, and profile stewardship domain.',NULL,'Published','Victoria.Tan@enercare.ca;Ci.Zhu@enercare.ca','Ci.Zhu@enercare.ca;Alison.Pouw@microsoft.com'),('DOM-SVCDEL','Service Delivery','Data domain','Field service scheduling, work-order execution, and SLA governance.',NULL,'Published','ranbir.singh@enercare.ca;Ci.Zhu@enercare.ca','Ci.Zhu@enercare.ca;Alison.Pouw@microsoft.com'),('DOM-REVCON','Revenue and Contracts','Data domain','Billing, contracts, renewals, and financial governance domain.',NULL,'Published','Ci.Zhu@enercare.ca;ranbir.singh@enercare.ca','Ci.Zhu@enercare.ca;Alison.Pouw@microsoft.com');
-GO
-INSERT INTO dbo.governance_data_products (data_product_id, data_product_name, product_type, business_use_case, audience, owners, attached_assets, access_policy, status, parent_domain_id) VALUES ('DP-CUST360','Customer 360','Master and reference data','Single customer profile and consent posture for call-center and compliance operations.','Call Center;Privacy;Leadership','Victoria.Tan@enercare.ca','dbo.customers;dbo.customer_consents;BrookfieldEnercare/dim_customer','Role-based access with privacy approval for regulated attributes.','Published','DOM-CUSTOPS'),('DP-SVCPERF','Service Performance','Dataset','Track service request performance, technician throughput, and SLA adherence.','Field Operations;Leadership','ranbir.singh@enercare.ca','dbo.service_requests;dbo.service_accounts;dbo.service_zones;BrookfieldEnercare/fct_service_requests','Operational use for service planning and SLA management.','Published','DOM-SVCDEL'),('DP-BILLHEALTH','Billing Health','Dataset','Monitor billing accuracy, repeat complaints, and contract renewal outcomes.','Finance;Customer Care;Leadership','Ci.Zhu@enercare.ca','dbo.billing_transactions;dbo.contracts;dbo.customer_complaints;BrookfieldEnercare/fct_billing','Access requires finance and governance approval for sensitive fields.','Published','DOM-REVCON');
-GO
-;WITH n AS (SELECT TOP (35) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn FROM sys.objects)
-INSERT INTO dbo.governance_glossary_terms (term_code, term_name, acronyms, parent_term_code, domain_code, owner_upn, additional_owners_upn, definition, status, is_cde, industry_origin, resources, bound_assets)
-SELECT CONCAT('GT-', RIGHT(CONCAT('000', rn), 3)), CASE rn WHEN 1 THEN 'Customer' WHEN 2 THEN 'Social Insurance Number' WHEN 3 THEN 'Customer Consent' WHEN 4 THEN 'PCI Scope Data' WHEN 5 THEN 'Service Request' WHEN 6 THEN 'First Contact Resolution' WHEN 7 THEN 'Contract' WHEN 8 THEN 'Billing Transaction' WHEN 9 THEN 'Data Owner' WHEN 10 THEN 'Data Access Audit' ELSE CONCAT('Governance Term ', rn) END, CASE rn WHEN 2 THEN 'SIN' WHEN 4 THEN 'PCI' WHEN 6 THEN 'FCR' ELSE NULL END, NULL, CASE rn % 3 WHEN 0 THEN 'DOM-REVCON' WHEN 1 THEN 'DOM-CUSTOPS' ELSE 'DOM-SVCDEL' END, 'Ci.Zhu@enercare.ca', 'Victoria.Tan@enercare.ca', CASE rn WHEN 6 THEN 'Percentage of customer interactions resolved without a follow-up contact about the same issue within 5 business days. The certified target is 78 percent.' ELSE CONCAT('Notebook-owned governance term definition ', rn) END, 'Published', CASE WHEN rn <= 12 THEN 1 ELSE 0 END, 'Generic', 'internal://glossary/notebook', CASE rn WHEN 1 THEN 'dbo.customers.customer_id' WHEN 2 THEN 'dbo.employees.sin_full;dbo.customers.sin_last_4' WHEN 3 THEN 'dbo.customer_consents' WHEN 4 THEN 'dbo.billing_transactions.card_pan_last_4;dbo.billing_transactions.bank_routing_last_4' WHEN 5 THEN 'dbo.service_requests' WHEN 6 THEN 'BrookfieldEnercare/_Measures/FCR' ELSE 'dbo.customers;dbo.service_requests' END FROM n;
-GO
-INSERT INTO dbo.governance_cdes (cde_id, cde_name, expected_data_type, business_definition, owner_role, status, parent_glossary_term, bound_columns) VALUES ('CDE-CUST-ID','Customer Identifier','number','Unique enterprise identifier for customer entities.','Data Steward','Published','GT-001','dbo.customers.customer_id'),('CDE-SVCACCT-ID','Service Account Identifier','number','Unique identifier for service account records.','Data Steward','Published','GT-005','dbo.service_accounts.service_account_id'),('CDE-CONTRACT-ID','Contract Identifier','number','Unique identifier for customer contracts.','Data Steward','Published','GT-007','dbo.contracts.contract_id'),('CDE-REQ-ID','Service Request Identifier','number','Unique service request key.','Data Steward','Published','GT-005','dbo.service_requests.request_id'),('CDE-CONSENT-STATUS','Consent Status','text','Current legal status of customer consent record.','Privacy Officer','Published','GT-003','dbo.customer_consents.consent_status'),('CDE-SIN','Social Insurance Number','text','Canadian SIN full or partial representation.','Privacy Officer','Published','GT-002','dbo.employees.sin_full;dbo.customers.sin_last_4'),('CDE-DOB','Date Of Birth','date','Customer date of birth for identity and eligibility checks.','Privacy Officer','Published','GT-001','dbo.customers.date_of_birth'),('CDE-GEO','Geo Coordinates','text','Service account latitude and longitude values.','Data Steward','Published','GT-001','dbo.service_accounts.latitude;dbo.service_accounts.longitude'),('CDE-PAN-LAST4','Card PAN Last 4','text','Last four digits of payment card number.','Finance Steward','Published','GT-004','dbo.billing_transactions.card_pan_last_4'),('CDE-BANK-LAST4','Bank Routing Last 4','text','Last four digits of bank routing details.','Finance Steward','Published','GT-004','dbo.billing_transactions.bank_routing_last_4'),('CDE-OWNER-UPN','Data Owner UPN','text','UPN of assigned data owner for governed object.','Data Governance Admin','Published','GT-009','dbo.data_owners_directory.data_owner_upn'),('CDE-AUDIT-PURPOSE','Audit Purpose Of Use','text','Declared purpose for data access event.','Data Governance Admin','Published','GT-010','dbo.audit_data_access.purpose_of_use');
-GO
-;WITH n AS (SELECT TOP (48) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn FROM sys.objects)
-INSERT INTO dbo.governance_role_assignments (role_id, principal_email, principal_display_name, role_type, scope_target, scope_target_type, governance_layer)
-SELECT CONCAT('R', RIGHT(CONCAT('000', rn), 3)), CASE rn % 6 WHEN 0 THEN 'seankelley@microsoft.com' WHEN 1 THEN 'Ci.Zhu@enercare.ca' WHEN 2 THEN 'Victoria.Tan@enercare.ca' WHEN 3 THEN 'ranbir.singh@enercare.ca' WHEN 4 THEN 'Rupal.Solanki@enercare.ca' ELSE 'Shruthi.Srinivas@enercare.ca' END, CONCAT('Governance Principal ', rn), CASE rn % 5 WHEN 0 THEN 'Data Governance Administrator' WHEN 1 THEN 'Governance Domain Owner' WHEN 2 THEN 'Data Product Owner' WHEN 3 THEN 'Data Steward' ELSE 'Global Catalog Reader' END, CASE rn % 4 WHEN 0 THEN 'Enercare' WHEN 1 THEN 'DOM-CUSTOPS' WHEN 2 THEN 'DOM-SVCDEL' ELSE 'DOM-REVCON' END, CASE WHEN rn % 4 = 0 THEN 'Collection' ELSE 'Domain' END, CASE WHEN rn % 4 = 0 THEN 'Tenant' ELSE 'Domain' END FROM n;
-GO
-;WITH n AS (SELECT TOP (9) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn FROM sys.objects)
-INSERT INTO dbo.governance_label_assignments (label_id, label_name, sensitivity_tier, protection_policy, applies_to_asset_ids, scope)
-SELECT CONCAT('LBL-', RIGHT(CONCAT('000', rn), 3)), CASE rn WHEN 1 THEN 'General' WHEN 2 THEN 'Internal' WHEN 3 THEN 'Confidential' WHEN 4 THEN 'Highly Confidential' WHEN 5 THEN 'PCI Restricted' WHEN 6 THEN 'Privacy Restricted' WHEN 7 THEN 'Operations Sensitive' WHEN 8 THEN 'Executive KPI' ELSE 'Governance Admin' END, CASE WHEN rn IN (4,5,6) THEN 'Highly Confidential' WHEN rn IN (3,7,9) THEN 'Confidential' WHEN rn = 1 THEN 'General' ELSE 'Internal' END, 'Notebook-owned policy seed.', CASE rn WHEN 4 THEN 'dbo.employees.sin_full;dbo.customers.sin_last_4' WHEN 5 THEN 'dbo.billing_transactions.card_pan_last_4' ELSE 'dbo.customers;BrookfieldEnercare.SemanticModel' END, 'Tenant' FROM n;
-GO
-INSERT INTO dbo.governance_okrs (okr_id, okr_name, domain_id, definition, owner_upn, target_date, status) VALUES
-('OKR-SVCDEL-SLA','Protect SLA Attainment In Field Service Delivery','DOM-SVCDEL','Hold SLA breach exposure at or below target across all service-request queues, closing the auto-suppression dispatch gap surfaced in Act 2 of the Maria northstar scenario.','ranbir.singh@enercare.ca','2026-12-31','Published'),
-('OKR-CUSTOPS-CX','Improve Call-Center Customer Experience','DOM-CUSTOPS','Raise first-contact resolution and customer satisfaction for call-center interactions to their certified target thresholds.','Victoria.Tan@enercare.ca','2026-12-31','Published'),
-('OKR-REVCON-RETAIN','Protect Renewal Revenue And Reduce Repeat Billing Complaints','DOM-REVCON','Sustain protection-plan renewal rate at target while reducing the rate of customers filing more than one billing complaint per period.','Ci.Zhu@enercare.ca','2026-12-31','Published');
-GO
-INSERT INTO dbo.governance_okr_key_results (key_result_id, okr_id, result_name, metric_source, goal_amount, progress_amount, max_amount, progress_status) VALUES
-('KR-SLA-BREACH','OKR-SVCDEL-SLA','SLA Breach Rate At Or Below Target','kpi_metadata.SLA_BRCH_RATE',5.00,3.80,100.00,'OnTrack'),
-('KR-FCR-RATE','OKR-CUSTOPS-CX','First Contact Resolution At Or Above Target','kpi_metadata.FCR',78.00,81.50,100.00,'OnTrack'),
-('KR-CSAT-SCORE','OKR-CUSTOPS-CX','Customer Satisfaction At Or Above Target','kpi_metadata.CSAT',4.20,4.35,5.00,'OnTrack'),
-('KR-PP-RENEWAL','OKR-REVCON-RETAIN','Protection Plan Renewal Rate At Or Above Target','kpi_metadata.PP_RNW_RATE',82.00,84.00,100.00,'OnTrack'),
-('KR-REPEAT-COMPLAINT','OKR-REVCON-RETAIN','Repeat Billing Complaint Rate Reduced','BrookfieldEnercare/_Measures/RepeatComplaintRate',10.00,14.50,100.00,'AtRisk');
-GO
-INSERT INTO dbo.governance_okr_data_products (okr_id, data_product_id) VALUES
-('OKR-SVCDEL-SLA','DP-SVCPERF'),
-('OKR-CUSTOPS-CX','DP-CUST360'),
-('OKR-REVCON-RETAIN','DP-BILLHEALTH');
-GO
-PRINT 'Purview SQL-first metadata seed complete.';
-GO
-"""
-
-print("B0A complete. SQL scripts are defined inline in this notebook; no Lakehouse Files upload is required.")
+print("B0A complete. Source-data SQL is defined inline in this notebook. Governance metadata SQL (domains, data products, glossary, CDEs, roles, labels, OKRs) now lives in sql/02_metadata_foundation/ and must be applied there directly -- this notebook no longer duplicates it.")
 
 
 # METADATA ********************
@@ -2196,37 +2121,25 @@ else:
 
 # CELL ********************
 
-# CELL B4A — Execute notebook-owned SQL-first metadata schema and seed
+# CELL B4A — Verify SQL-first governance metadata prerequisite
 
-
-def execute_sql_script(sql_script: str, friendly_name: str) -> None:
-    batches = split_sql_batches(sql_script)
-    print(f"{friendly_name}: {len(batches)} batches to execute")
-
-    local_cur = conn.cursor()
-    batch_errors = []
-    for i, batch in enumerate(batches, 1):
-        try:
-            local_cur.execute(batch)
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            message = f"Batch {i}/{len(batches)} failed: {type(e).__name__}: {e}"
-            batch_errors.append(message)
-            print(f"  {message}")
-
-    if batch_errors:
-        raise RuntimeError(f"{friendly_name} execution failed; see batch errors above.")
-
+# Governance metadata (domains, data products, glossary, CDEs, roles, labels, OKRs) is now
+# sourced from sql/02_metadata_foundation/*.sql, applied directly against sqldemo. This
+# notebook only verifies that prerequisite ran; it no longer duplicates the schema/seed here.
 
 if DEMO_MODE:
-    print("[DRY RUN] Skipping notebook-owned metadata schema/seed execution")
+    print("[DRY RUN] Skipping governance metadata prerequisite check")
 else:
-    execute_sql_script(PURVIEW_METADATA_SCHEMA_SQL, "Metadata schema")
-    print("DDL applied: notebook-owned Purview metadata schema")
-
-    execute_sql_script(PURVIEW_METADATA_SEED_SQL, "Metadata seed")
-    print("Seed applied: notebook-owned Purview metadata seed")
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM dbo.governance_domains")
+    domain_count = cur.fetchone()[0]
+    if domain_count == 0:
+        raise RuntimeError(
+            "dbo.governance_domains is empty. Run sql/02_metadata_foundation/06_purview_metadata_schema.sql, "
+            "07_seed_purview_metadata.sql, 11_ontology_okr_schema.sql, and 12_seed_ontology_okrs.sql "
+            "against sqldemo before continuing -- this notebook no longer seeds governance metadata itself."
+        )
+    print(f"Governance metadata prerequisite verified: {domain_count} domain(s) present.")
 
 
 # METADATA ********************
