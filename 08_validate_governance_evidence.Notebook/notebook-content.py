@@ -268,41 +268,45 @@ except Exception as ex:
 
 # Cell 4: DLP and governance-control readiness checks
 
-high_sensitivity_labels = ["Confidential", "Highly Confidential"]
+try:
+    high_sensitivity_labels = ["Confidential", "Highly Confidential"]
 
-if "sensitivity_label" in cde_df.columns:
-    sensitive_cde_count = cde_df.where(F.col("sensitivity_label").isin(*high_sensitivity_labels)).count()
-elif labels_df is not None and "label_name" in labels_df.columns:
-    labeled_sensitive_df = labels_df.where(F.col("label_name").isin(*high_sensitivity_labels))
-    if "cde_id" in labeled_sensitive_df.columns and "cde_id" in cde_df.columns:
-        sensitive_cde_count = (
-            cde_df.join(labeled_sensitive_df.select("cde_id").distinct(), on="cde_id", how="inner")
-            .select("cde_id")
-            .distinct()
-            .count()
-        )
+    if "sensitivity_label" in cde_df.columns:
+        sensitive_cde_count = cde_df.where(F.col("sensitivity_label").isin(*high_sensitivity_labels)).count()
+    elif labels_df is not None and "label_name" in labels_df.columns:
+        labeled_sensitive_df = labels_df.where(F.col("label_name").isin(*high_sensitivity_labels))
+        if "cde_id" in labeled_sensitive_df.columns and "cde_id" in cde_df.columns:
+            sensitive_cde_count = (
+                cde_df.join(labeled_sensitive_df.select("cde_id").distinct(), on="cde_id", how="inner")
+                .select("cde_id")
+                .distinct()
+                .count()
+            )
+        else:
+            sensitive_cde_count = labeled_sensitive_df.count()
+        print("[Cell 4] cdes.sensitivity_label not found; deriving sensitive CDE coverage from label_assignments.")
     else:
-        sensitive_cde_count = labeled_sensitive_df.count()
-    print("[Cell 4] cdes.sensitivity_label not found; deriving sensitive CDE coverage from label_assignments.")
-else:
-    sensitive_cde_count = 0
-    print("[Cell 4][WARN] No sensitivity label columns found in cdes or label_assignments.")
+        sensitive_cde_count = 0
+        print("[Cell 4][WARN] No sensitivity label columns found in cdes or label_assignments.")
 
-label_policy_count = labels_df.count() if labels_df is not None else 0
-high_label_count = 0
-if labels_df is not None and "label_name" in labels_df.columns:
-    high_label_count = labels_df.where(F.col("label_name").isin(*high_sensitivity_labels)).count()
+    label_policy_count = labels_df.count() if labels_df is not None else 0
+    high_label_count = 0
+    if labels_df is not None and "label_name" in labels_df.columns:
+        high_label_count = labels_df.where(F.col("label_name").isin(*high_sensitivity_labels)).count()
 
-controls_rows = [
-    ("sensitive_cdes_identified", sensitive_cde_count, "PASS" if sensitive_cde_count > 0 else "FAIL"),
-    ("label_policy_rows_available", label_policy_count, "PASS" if label_policy_count > 0 else "ACTION_REQUIRED"),
-    ("confidential_label_rules_available", high_label_count, "PASS" if high_label_count > 0 else "ACTION_REQUIRED"),
-    ("dlp_policy_mode_selected", 0, "WARN"),  # Manual operator gate — select alert-only/policy-tip/block before demo
-]
-controls_df = spark.createDataFrame(controls_rows, ["check_name", "check_value", "status"])
-phase_09_controls_table = _write_table(controls_df, "purview_phase_09_controls_validation")
-print(f"[Cell 4] Wrote controls validation to: {phase_09_controls_table}")
-display(controls_df.orderBy("check_name"))
+    controls_rows = [
+        ("sensitive_cdes_identified", sensitive_cde_count, "PASS" if sensitive_cde_count > 0 else "FAIL"),
+        ("label_policy_rows_available", label_policy_count, "PASS" if label_policy_count > 0 else "ACTION_REQUIRED"),
+        ("confidential_label_rules_available", high_label_count, "PASS" if high_label_count > 0 else "ACTION_REQUIRED"),
+        ("dlp_policy_mode_selected", 0, "WARN"),  # Manual operator gate — select alert-only/policy-tip/block before demo
+    ]
+    controls_df = spark.createDataFrame(controls_rows, ["check_name", "check_value", "status"])
+    phase_09_controls_table = _write_table(controls_df, "purview_phase_09_controls_validation")
+    print(f"[Cell 4] Wrote controls validation to: {phase_09_controls_table}")
+    display(controls_df.orderBy("check_name"))
+except Exception as ex:
+    _log_nb08val_diagnostic("cell4_dlp_controls", ex)
+    raise
 
 
 # METADATA ********************
@@ -316,21 +320,25 @@ display(controls_df.orderBy("check_name"))
 
 # Cell 5: AI readiness validation
 
-certified_product_count = product_score.where(F.col("status").isin(CERTIFICATION_STATUSES)).count()
-glossary_bound_count = glossary_df.where(F.length(F.coalesce(F.col("bound_assets"), F.lit(""))) > 0).count() if "bound_assets" in glossary_df.columns else 0
-cde_bound_count = cde_df.where(F.length(F.coalesce(F.col("bound_columns"), F.lit(""))) > 0).count() if "bound_columns" in cde_df.columns else 0
-annotation_count = semantic_annotations_df.count() if semantic_annotations_df is not None else 0
+try:
+    certified_product_count = product_score.where(F.col("status").isin(CERTIFICATION_STATUSES)).count()
+    glossary_bound_count = glossary_df.where(F.length(F.coalesce(F.col("bound_assets"), F.lit(""))) > 0).count() if "bound_assets" in glossary_df.columns else 0
+    cde_bound_count = cde_df.where(F.length(F.coalesce(F.col("bound_columns"), F.lit(""))) > 0).count() if "bound_columns" in cde_df.columns else 0
+    annotation_count = semantic_annotations_df.count() if semantic_annotations_df is not None else 0
 
-ai_rows = [
-    ("certified_or_published_products", certified_product_count, "PASS" if certified_product_count >= 3 else "ACTION_REQUIRED"),
-    ("glossary_terms_bound_to_assets", glossary_bound_count, "PASS" if glossary_bound_count > 0 else "ACTION_REQUIRED"),
-    ("cdes_bound_to_columns", cde_bound_count, "PASS" if cde_bound_count > 0 else "ACTION_REQUIRED"),
-    ("semantic_annotation_plan_available", annotation_count, "PASS" if annotation_count > 0 else "ACTION_REQUIRED"),
-]
-ai_df = spark.createDataFrame(ai_rows, ["check_name", "check_value", "status"])
-phase_10_ai_table = _write_table(ai_df, "purview_phase_10_ai_readiness_validation")
-print(f"[Cell 5] Wrote AI readiness validation to: {phase_10_ai_table}")
-display(ai_df.orderBy("check_name"))
+    ai_rows = [
+        ("certified_or_published_products", certified_product_count, "PASS" if certified_product_count >= 3 else "ACTION_REQUIRED"),
+        ("glossary_terms_bound_to_assets", glossary_bound_count, "PASS" if glossary_bound_count > 0 else "ACTION_REQUIRED"),
+        ("cdes_bound_to_columns", cde_bound_count, "PASS" if cde_bound_count > 0 else "ACTION_REQUIRED"),
+        ("semantic_annotation_plan_available", annotation_count, "PASS" if annotation_count > 0 else "ACTION_REQUIRED"),
+    ]
+    ai_df = spark.createDataFrame(ai_rows, ["check_name", "check_value", "status"])
+    phase_10_ai_table = _write_table(ai_df, "purview_phase_10_ai_readiness_validation")
+    print(f"[Cell 5] Wrote AI readiness validation to: {phase_10_ai_table}")
+    display(ai_df.orderBy("check_name"))
+except Exception as ex:
+    _log_nb08val_diagnostic("cell5_ai_readiness", ex)
+    raise
 
 
 # METADATA ********************
@@ -351,45 +359,49 @@ okrs_df, okrs_source = _read_table("okrs", required=False)
 okr_key_results_df, okr_key_results_source = _read_table("okr_key_results", required=False)
 okr_data_products_df, okr_data_products_source = _read_table("okr_data_products", required=False)
 
-if okrs_df is not None:
-    print(f"okrs rows: {okrs_df.count()} (source={okrs_source})")
-if okr_key_results_df is not None:
-    print(f"okr_key_results rows: {okr_key_results_df.count()} (source={okr_key_results_source})")
-if okr_data_products_df is not None:
-    print(f"okr_data_products rows: {okr_data_products_df.count()} (source={okr_data_products_source})")
+try:
+    if okrs_df is not None:
+        print(f"okrs rows: {okrs_df.count()} (source={okrs_source})")
+    if okr_key_results_df is not None:
+        print(f"okr_key_results rows: {okr_key_results_df.count()} (source={okr_key_results_source})")
+    if okr_data_products_df is not None:
+        print(f"okr_data_products rows: {okr_data_products_df.count()} (source={okr_data_products_source})")
 
-okr_count = okrs_df.count() if okrs_df is not None else 0
-key_result_count = okr_key_results_df.count() if okr_key_results_df is not None else 0
-okr_link_count = okr_data_products_df.count() if okr_data_products_df is not None else 0
+    okr_count = okrs_df.count() if okrs_df is not None else 0
+    key_result_count = okr_key_results_df.count() if okr_key_results_df is not None else 0
+    okr_link_count = okr_data_products_df.count() if okr_data_products_df is not None else 0
 
-okrs_with_linked_product = 0
-if okrs_df is not None and okr_data_products_df is not None and okr_count > 0:
-    okrs_with_linked_product = (
-        okrs_df.select("okr_id")
-        .join(okr_data_products_df.select("okr_id").distinct(), on="okr_id", how="inner")
-        .distinct()
-        .count()
-    )
+    okrs_with_linked_product = 0
+    if okrs_df is not None and okr_data_products_df is not None and okr_count > 0:
+        okrs_with_linked_product = (
+            okrs_df.select("okr_id")
+            .join(okr_data_products_df.select("okr_id").distinct(), on="okr_id", how="inner")
+            .distinct()
+            .count()
+        )
 
-key_results_with_parent = 0
-if okr_key_results_df is not None and okrs_df is not None and key_result_count > 0:
-    key_results_with_parent = (
-        okr_key_results_df.select("key_result_id", "okr_id")
-        .join(okrs_df.select(F.col("okr_id").alias("okr_id_r")), okr_key_results_df.okr_id == F.col("okr_id_r"), how="inner")
-        .distinct()
-        .count()
-    )
+    key_results_with_parent = 0
+    if okr_key_results_df is not None and okrs_df is not None and key_result_count > 0:
+        key_results_with_parent = (
+            okr_key_results_df.select("key_result_id", "okr_id")
+            .join(okrs_df.select(F.col("okr_id").alias("okr_id_r")), okr_key_results_df.okr_id == F.col("okr_id_r"), how="inner")
+            .distinct()
+            .count()
+        )
 
-ontology_rows = [
-    ("okrs_available", okr_count, "PASS" if okr_count > 0 else "ACTION_REQUIRED"),
-    ("okr_key_results_available", key_result_count, "PASS" if key_result_count > 0 else "ACTION_REQUIRED"),
-    ("okrs_with_linked_data_product", okrs_with_linked_product, "PASS" if okr_count > 0 and okrs_with_linked_product == okr_count else "ACTION_REQUIRED"),
-    ("key_results_with_resolved_parent_okr", key_results_with_parent, "PASS" if key_result_count > 0 and key_results_with_parent == key_result_count else "ACTION_REQUIRED"),
-]
-ontology_df = spark.createDataFrame(ontology_rows, ["check_name", "check_value", "status"])
-phase_11_ontology_table = _write_table(ontology_df, "purview_phase_11_ontology_validation")
-print(f"[Cell 5a] Wrote ontology relationship validation to: {phase_11_ontology_table}")
-display(ontology_df.orderBy("check_name"))
+    ontology_rows = [
+        ("okrs_available", okr_count, "PASS" if okr_count > 0 else "ACTION_REQUIRED"),
+        ("okr_key_results_available", key_result_count, "PASS" if key_result_count > 0 else "ACTION_REQUIRED"),
+        ("okrs_with_linked_data_product", okrs_with_linked_product, "PASS" if okr_count > 0 and okrs_with_linked_product == okr_count else "ACTION_REQUIRED"),
+        ("key_results_with_resolved_parent_okr", key_results_with_parent, "PASS" if key_result_count > 0 and key_results_with_parent == key_result_count else "ACTION_REQUIRED"),
+    ]
+    ontology_df = spark.createDataFrame(ontology_rows, ["check_name", "check_value", "status"])
+    phase_11_ontology_table = _write_table(ontology_df, "purview_phase_11_ontology_validation")
+    print(f"[Cell 5a] Wrote ontology relationship validation to: {phase_11_ontology_table}")
+    display(ontology_df.orderBy("check_name"))
+except Exception as ex:
+    _log_nb08val_diagnostic("cell5a_ontology_validation", ex)
+    raise
 
 
 # METADATA ********************
