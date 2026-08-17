@@ -1726,8 +1726,7 @@ non_green_checks = summary_df.where(F.col("status") != "GREEN").count()
 if non_green_checks:
     raise RuntimeError(f"Metadata foundation validation failed: {non_green_checks} non-GREEN check(s).")
 
-print("NB_02 metadata foundation complete; semantic annotation refresh runs in NB_04.")
-mssparkutils.notebook.exit("NB_02 metadata foundation complete")
+print("NB_02 metadata foundation complete; semantic annotation reconciliation runs next in this notebook.")
 
 # METADATA ********************
 

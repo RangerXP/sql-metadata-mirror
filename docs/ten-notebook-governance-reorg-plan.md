@@ -6,10 +6,9 @@
 > pass, and the companion `sql/` folder was repacked to mirror the same 10-notebook alignment.
 > See `docs/01_Notebook_Description.md` for the current per-notebook reference (with a full
 > `nb_XX` → current-name mapping table) and `docs/sql-prep-catalog.md` for the SQL-side catalog.
-> One open item remains from the consolidation: `02_build_metadata_foundation`'s merged
-> reconciliation section is currently unreachable dead code behind an unconditional
-> `mssparkutils.notebook.exit()` — flagged in `01_Notebook_Description.md`'s Governance Review
-> Findings, not yet fixed.
+> A dead-code bug found during the consolidation (`02_build_metadata_foundation`'s merged
+> reconciliation section was unreachable behind a leftover `mssparkutils.notebook.exit()`) and
+> 3 stale pre-consolidation paths in `tools/` validation scripts were also fixed the same day.
 
 ## Objective
 

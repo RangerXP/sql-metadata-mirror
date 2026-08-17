@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 
-NOTEBOOK = Path("nb_09_lineage_and_labels_stage.Notebook/notebook-content.py")
+NOTEBOOK = Path("06_publish_glossary_and_lineage.Notebook/notebook-content.py")
 
 
 def _read_config_value(name: str):
@@ -13,7 +13,7 @@ def _read_config_value(name: str):
     return match.group(1).strip()
 
 
-def test_nb09_live_publish_defaults_are_enabled_for_governance_workflow():
+def test_publish_glossary_and_lineage_live_defaults_are_enabled_for_governance_workflow():
     assert _read_config_value("APPLY_CHANGES") == "True"
     assert _read_config_value("SQL_MIRROR_ONLY_DEPLOYMENT") == "False"
     assert _read_config_value("PURVIEW_PUBLISH_OVERRIDE") == "True"

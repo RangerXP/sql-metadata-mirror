@@ -94,12 +94,12 @@ Write-Host "Normalizing Fabric canonical state..." -ForegroundColor Cyan
 
 $datasourceFiles = @(
     @{
-        Path = "fabric/ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/Files/Config/draft/semantic-model-BrookfieldEnercare/datasource.json"
-        Display = "fabric/ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/Files/Config/draft/semantic-model-BrookfieldEnercare/datasource.json"
+        Path = "ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/Files/Config/draft/semantic-model-BrookfieldEnercare/datasource.json"
+        Display = "ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/Files/Config/draft/semantic-model-BrookfieldEnercare/datasource.json"
     },
     @{
-        Path = "fabric/ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/Files/Config/published/semantic-model-BrookfieldEnercare/datasource.json"
-        Display = "fabric/ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/Files/Config/published/semantic-model-BrookfieldEnercare/datasource.json"
+        Path = "ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/Files/Config/published/semantic-model-BrookfieldEnercare/datasource.json"
+        Display = "ee82668f-baa4-9ac6-4e1d-3e762403f320.DataAgent/Files/Config/published/semantic-model-BrookfieldEnercare/datasource.json"
     }
 )
 
@@ -110,12 +110,8 @@ foreach ($entry in $datasourceFiles) {
 
 $notebookFiles = @(
     @{
-        Path = "fabric/nb_04_sempy_writeback.Notebook/notebook-content.py"
-        Display = "fabric/nb_04_sempy_writeback.Notebook/notebook-content.py"
-    },
-    @{
-        Path = "fabric/nb_05_push_qa_verified_answers.Notebook/notebook-content.py"
-        Display = "fabric/nb_05_push_qa_verified_answers.Notebook/notebook-content.py"
+        Path = "04_writeback_governed_metadata.Notebook/notebook-content.py"
+        Display = "04_writeback_governed_metadata.Notebook/notebook-content.py"
     }
 )
 

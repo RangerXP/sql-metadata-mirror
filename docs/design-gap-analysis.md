@@ -24,10 +24,13 @@
 > behind the authoritative `sql/02_metadata_foundation/06_purview_metadata_schema.sql` (missing
 > a `governance_domain_stewards` column) — the duplicate was removed and replaced with a
 > prerequisite check that fails closed with a clear error naming the scripts to run first. Also
-> confirmed and documented (not yet fixed) a real dead-code bug in `02_build_metadata_foundation`:
-> an unconditional `mssparkutils.notebook.exit()` mid-file leaves its final merged section
-> (`sm_annotations` reconciliation) unreachable — see `docs/01_Notebook_Description.md`'s
-> Governance Review Findings.
+> found and fixed a real dead-code bug in `02_build_metadata_foundation`: an unconditional
+> `mssparkutils.notebook.exit()` mid-file (a leftover from before its final merged section was
+> appended) left its reconciliation cells (`sm_annotations` build) unreachable — removed the
+> `exit()` call. Also fixed 3 stale pre-consolidation paths in `tools/` validation scripts
+> (`validate_build_workflow.ps1`, `normalize_fabric_canonical_state.ps1`, and a test file) that
+> referenced a nonexistent `fabric/` prefix folder and the old `nb_04`/`nb_05`/`nb_09` notebook
+> names — see `docs/01_Notebook_Description.md`'s Governance Review Findings.
 >
 > **Previous version (2026-08-11, G11-1 built):**
 > Corrected a stale claim that Purview Unified Catalog typed relationships (Domain hierarchy, OKRs, CDE-to-Term links) were "not yet GA" — Microsoft Learn research confirmed these features are available now (OKRs and CDEs in Preview). Built the business-objective (OKR) layer end-to-end: `sql/11_ontology_okr_schema.sql` + `sql/12_seed_ontology_okrs.sql` (3 OKRs, 5 key results tied to real certified KPICodes, 3 OKR→DataProduct links), `purview/okr-catalog.csv`, `nb_07a` ingestion (Cell 8c), `nb_07` publish of `EnercareOKR`/`EnercareOKRKeyResult` Atlas entities with reference-attribute links to Data Products, and a surgical fix in `nb_08` that assigns each CDE's own Atlas entity to its parent glossary term (previously only `bound_assets` were linked, not the CDE entity itself). Added `nb_10` Cell 5a (`purview_phase_11_ontology_validation`). Not yet live-applied — see G11 detailed section for the live-apply sequence. This directly supports the B2C customer chatbot end-state (G11-3): a real relationship graph from Data Product → OKR → Key Result → certified KPI that a future chatbot can traverse instead of relying on free-text search.

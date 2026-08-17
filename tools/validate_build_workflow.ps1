@@ -64,8 +64,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # Canonical Data Agent structure checks
-$fabricRoot = Join-Path $repoRoot "fabric"
-$dataAgentDirs = Get-ChildItem -Path $fabricRoot -Directory -Filter "*.DataAgent" -ErrorAction SilentlyContinue
+$dataAgentDirs = Get-ChildItem -Path $repoRoot -Directory -Filter "*.DataAgent" -ErrorAction SilentlyContinue
 
 $enercareAgentDirs = @()
 foreach ($dir in $dataAgentDirs) {
@@ -80,7 +79,7 @@ foreach ($dir in $dataAgentDirs) {
             $enercareAgentDirs += $dir
         }
     } catch {
-        Add-Warning "Unable to parse .platform for Data Agent folder: fabric/$($dir.Name)"
+        Add-Warning "Unable to parse .platform for Data Agent folder: $($dir.Name)"
     }
 }
 
@@ -108,7 +107,7 @@ foreach ($relativePath in $requiredConfigFiles) {
     }
     $fullPath = Join-Path $canonicalAgentPath $relativePath
     if (-not (Test-Path $fullPath)) {
-        Add-Issue "Missing required Data Agent file: fabric/$canonicalAgentName/$relativePath"
+        Add-Issue "Missing required Data Agent file: $canonicalAgentName/$relativePath"
     }
 }
 
@@ -134,14 +133,14 @@ foreach ($relativePath in $requiredDatasourceFiles) {
     }
     $fullPath = Join-Path $canonicalAgentPath $relativePath
     if (-not (Test-Path $fullPath)) {
-        Add-Issue "Missing required Data Agent datasource file: fabric/$canonicalAgentName/$relativePath"
+        Add-Issue "Missing required Data Agent datasource file: $canonicalAgentName/$relativePath"
         continue
     }
 
     try {
         $json = Get-Content -Raw $fullPath | ConvertFrom-Json
     } catch {
-        Add-Issue "Invalid JSON in datasource file: fabric/$canonicalAgentName/$relativePath"
+        Add-Issue "Invalid JSON in datasource file: $canonicalAgentName/$relativePath"
         continue
     }
 
@@ -149,11 +148,11 @@ foreach ($relativePath in $requiredDatasourceFiles) {
     $isPlaceholderArtifact = ($json.artifactId -eq $placeholderArtifactId)
 
     if ($isPlaceholderWorkspace -and $isPlaceholderArtifact) {
-        Add-GateDCheck "PASS datasource canonical state: fabric/$canonicalAgentName/$relativePath"
+        Add-GateDCheck "PASS datasource canonical state: $canonicalAgentName/$relativePath"
     } elseif ($isPlaceholderWorkspace -or $isPlaceholderArtifact) {
-        Add-Issue "Mixed datasource ID state (one placeholder, one non-placeholder): fabric/$canonicalAgentName/$relativePath"
+        Add-Issue "Mixed datasource ID state (one placeholder, one non-placeholder): $canonicalAgentName/$relativePath"
     } else {
-        Add-Issue "Non-canonical datasource ID state (expected logicalId/0000): fabric/$canonicalAgentName/$relativePath"
+        Add-Issue "Non-canonical datasource ID state (expected logicalId/0000): $canonicalAgentName/$relativePath"
     }
 }
 
@@ -163,14 +162,14 @@ foreach ($relativePath in $optionalDatasourceFiles) {
     }
     $fullPath = Join-Path $canonicalAgentPath $relativePath
     if (-not (Test-Path $fullPath)) {
-        Add-Warning "Optional published datasource file not present: fabric/$canonicalAgentName/$relativePath"
+        Add-Warning "Optional published datasource file not present: $canonicalAgentName/$relativePath"
         continue
     }
 
     try {
         $json = Get-Content -Raw $fullPath | ConvertFrom-Json
     } catch {
-        Add-Issue "Invalid JSON in datasource file: fabric/$canonicalAgentName/$relativePath"
+        Add-Issue "Invalid JSON in datasource file: $canonicalAgentName/$relativePath"
         continue
     }
 
@@ -178,19 +177,18 @@ foreach ($relativePath in $optionalDatasourceFiles) {
     $isPlaceholderArtifact = ($json.artifactId -eq $placeholderArtifactId)
 
     if ($isPlaceholderWorkspace -and $isPlaceholderArtifact) {
-        Add-GateDCheck "PASS datasource canonical state: fabric/$canonicalAgentName/$relativePath"
+        Add-GateDCheck "PASS datasource canonical state: $canonicalAgentName/$relativePath"
     } elseif ($isPlaceholderWorkspace -or $isPlaceholderArtifact) {
-        Add-Issue "Mixed datasource ID state (one placeholder, one non-placeholder): fabric/$canonicalAgentName/$relativePath"
+        Add-Issue "Mixed datasource ID state (one placeholder, one non-placeholder): $canonicalAgentName/$relativePath"
     } else {
-        Add-Issue "Non-canonical datasource ID state (expected logicalId/0000): fabric/$canonicalAgentName/$relativePath"
+        Add-Issue "Non-canonical datasource ID state (expected logicalId/0000): $canonicalAgentName/$relativePath"
     }
 }
 
 # Notebook metadata workspaceId canonical checks for no-loop policy
 $canonicalNotebookWorkspaceId = "00000000-0000-0000-0000-000000000000"
 $gateDNotebookFiles = @(
-    "fabric/nb_04_sempy_writeback.Notebook/notebook-content.py",
-    "fabric/nb_05_push_qa_verified_answers.Notebook/notebook-content.py"
+    "04_writeback_governed_metadata.Notebook/notebook-content.py"
 )
 
 foreach ($relativePath in $gateDNotebookFiles) {
@@ -220,7 +218,7 @@ foreach ($relativePath in $gateDNotebookFiles) {
 $lastCommitFiles = git diff-tree --no-commit-id --name-only -r HEAD
 if ($LASTEXITCODE -eq 0 -and $lastCommitFiles) {
     $touchedFabricItems = $lastCommitFiles | Where-Object {
-        $_ -match "^fabric/.+\.DataAgent/" -or $_ -match "^fabric/.+\.Notebook/"
+        $_ -match "^[^/]+\.DataAgent/" -or $_ -match "^[^/]+\.Notebook/"
     }
     if ($touchedFabricItems) {
         Add-Warning "Latest commit touched Fabric item definitions. Confirm Fabric Source Control refresh/update is completed before more portal/API edits."

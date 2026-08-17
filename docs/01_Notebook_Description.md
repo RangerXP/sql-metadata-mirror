@@ -104,13 +104,9 @@ tables or an executive looking at a Power BI report."
 - **Cells 10–16 — semantic reconciliation** (formerly `nb_07b_merge_customer_metadata`):
   cross-references glossary/CDE/data-product/label associations against the semantic model's
   real table/column names via SemPy, resolves aliases, and writes the reconciled
-  `sm_annotations` working table that `04_writeback_governed_metadata` depends on.
-**⚠️ Known open bug (not yet fixed):** an unconditional `mssparkutils.notebook.exit(...)` call
-at the end of Cell 9 means **Cells 10–16 never run** in a normal end-to-end execution — the
-`sm_annotations` reconciliation step is dead code today. `04_writeback_governed_metadata`'s
-Cell 8 hard-fails with `RuntimeError("sm_annotations is empty")` unless `sm_annotations` was
-populated by some earlier, pre-bug run. This needs a fix (remove or move the `exit()` call)
-before relying on a clean rebuild of this pipeline.
+  `sm_annotations` working table that `04_writeback_governed_metadata` depends on. A leftover
+  `mssparkutils.notebook.exit()` from before this section was merged in briefly made Cells
+  10–16 unreachable dead code — fixed 2026-08-16 (see Governance Review Findings below).
 **Demo fit:** Invisible plumbing — keeps the governance content Purview publishes, and the
 annotations the semantic model receives, in sync with the SQL source of truth.
 **Talking points:** "Every governance object — domain, product, term, CDE — has one SQL source
@@ -136,7 +132,8 @@ me Maria's furnace status" and get a grounded answer (Act 1 / Acceptance Criteri
 uncertified KPI or AI instruction change never reaches the semantic model or the Data Agent
 through this path. That's what makes drift structurally impossible, not just a policy."
 **Dependency risk:** Cell 8's `sm_annotations` read depends on `02_build_metadata_foundation`'s
-Cells 10–16 having actually run at least once — see the open bug noted above.
+Cells 10–16 having run in the same environment (fixed 2026-08-16 — see Governance Review
+Findings below).
 
 ---
 
@@ -265,5 +262,7 @@ architectural schema-building.
 |---|---|---|
 | **AI grounding writeback was missing an `IsCertified` filter** | The AI-grounding half of `04_writeback_governed_metadata` originally filtered only `WHERE IsDraft = 0`, unlike the KPI writeback path's `WHERE IsCertified = 1`. | ✅ **Fixed 2026-08-13** — now filters `WHERE IsDraft = 0 AND IsCertified = 1`, matching the KPI pattern exactly. Live-verified: `verified_answer: total_draft0=34 certified=34`, `ai_instruction: total_draft0=8 certified=8`. |
 | **`02_build_metadata_foundation`'s reconciliation half is unreachable dead code** | An unconditional `mssparkutils.notebook.exit(...)` at the end of Cell 9 prevents Cells 10–16 (the `sm_annotations` reconciliation, formerly `nb_07b`) from ever running. | 🔴 **Open, not yet fixed.** `04_writeback_governed_metadata` Cell 8 depends on `sm_annotations` and will raise `RuntimeError("sm_annotations is empty")` on a clean environment. Needs the `exit()` call removed or relocated. |
-| **Notebook 1 duplicated and had drifted behind the SQL-first governance metadata schema** | `01_setup_source_data` previously embedded its own copy of the domains/data-products/glossary/CDE/role/label/OKR schema-and-seed SQL as Python string literals, and that copy was missing a `governance_domain_stewards` column the real `sql/02_metadata_foundation/06_purview_metadata_schema.sql` had. | ✅ **Fixed 2026-08-16.** The duplicate creation/seed logic was removed; the notebook now only verifies the prerequisite (`dbo.governance_domains` populated) and points to the 4 authoritative `sql/02_metadata_foundation/*.sql` scripts if it's not. See `docs/sql-prep-catalog.md`. |
+| **`02_build_metadata_foundation`'s reconciliation half was unreachable dead code** | An unconditional `mssparkutils.notebook.exit(...)` at the end of Cell 9 prevented Cells 10–16 (the `sm_annotations` reconciliation, formerly `nb_07b`) from ever running — a leftover from the merge: the `exit()` was correct for the original standalone notebook, which ended at that line, and was never removed once the reconciliation cells were appended during consolidation. | ✅ **Fixed 2026-08-16.** Removed the `exit()` call; Cells 10–16 now run normally. `04_writeback_governed_metadata` Cell 8's `sm_annotations` dependency is satisfied by a normal end-to-end run again. |
+| **Stale pre-consolidation paths in `tools/`** | `tools/validate_build_workflow.ps1` and `tools/normalize_fabric_canonical_state.ps1` referenced a `fabric/` prefix folder that doesn't exist in this repo layout, plus the old `nb_04_sempy_writeback`/`nb_05_push_qa_verified_answers` notebook names — both scripts would fail their Gate D checks with false-positive "file missing" issues. `tools/test_nb09_live_publish_defaults.py` pointed at a notebook path that no longer exists. | ✅ **Fixed 2026-08-16.** Both scripts updated to the current repo-root paths and the single merged `04_writeback_governed_metadata.Notebook`; re-run and confirmed passing (`validate_build_workflow.ps1` → all Gate D checks PASS, `normalize_fabric_canonical_state.ps1` → no changes required). The test file was fixed and renamed to `tools/test_publish_glossary_and_lineage_live_defaults.py` and confirmed passing. |
+| Notebook 1 duplicated and had drifted behind the SQL-first governance metadata schema** | `01_setup_source_data` previously embedded its own copy of the domains/data-products/glossary/CDE/role/label/OKR schema-and-seed SQL as Python string literals, and that copy was missing a `governance_domain_stewards` column the real `sql/02_metadata_foundation/06_purview_metadata_schema.sql` had. | ✅ **Fixed 2026-08-16.** The duplicate creation/seed logic was removed; the notebook now only verifies the prerequisite (`dbo.governance_domains` populated) and points to the 4 authoritative `sql/02_metadata_foundation/*.sql` scripts if it's not. See `docs/sql-prep-catalog.md`. |
 | Everything else reviewed | Domain/data-product/glossary/CDE publication notebooks (`05`, `06`) republish already-governed SQL/CSV source content — no bypass found. `07_apply_approved_changes` and `09_reconcile_semantic_model` all correctly fail closed on a required prior receipt before applying. `08_validate_governance_evidence`'s scorecard cells are read-only. `10_reset_demo` never deletes a governed row. | 🟢 No other orphans found |
