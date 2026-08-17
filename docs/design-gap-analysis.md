@@ -9,7 +9,9 @@
 > **Naming note:** this document's entries below cite the pre-consolidation `nb_XX_name` notebook
 > names as a dated historical log and are intentionally left as-is (see `docs/sql-prep-catalog.md`
 > §"Validation performed" for the rationale). For the current 10-notebook names and a full
-> `nb_XX` → current-name mapping table, see `docs/01_Notebook_Description.md`.
+> `nb_XX` → current-name mapping table, see `docs/03-10_Notebook_Description_pending.md`
+> (notebooks 01/02 now have their own `docs/01_Notebook_Description.md` /
+> `docs/02_Notebook_Description.md`; 03-10 will split out the same way as each is validated).
 >
 > **What changed in this version (2026-08-16, structural cleanup):**
 > Completed the notebook consolidation from 18 `nb_XX_name.Notebook` items down to the 10
@@ -30,7 +32,9 @@
 > `exit()` call. Also fixed 3 stale pre-consolidation paths in `tools/` validation scripts
 > (`validate_build_workflow.ps1`, `normalize_fabric_canonical_state.ps1`, and a test file) that
 > referenced a nonexistent `fabric/` prefix folder and the old `nb_04`/`nb_05`/`nb_09` notebook
-> names — see `docs/01_Notebook_Description.md`'s Governance Review Findings.
+> names — see `docs/01_Notebook_Description.md` / `docs/02_Notebook_Description.md`'s
+> Live-validation findings sections, and `docs/03-10_Notebook_Description_pending.md`'s
+> Governance Review Findings for notebooks not yet split out.
 >
 > **Previous version (2026-08-11, G11-1 built):**
 > Corrected a stale claim that Purview Unified Catalog typed relationships (Domain hierarchy, OKRs, CDE-to-Term links) were "not yet GA" — Microsoft Learn research confirmed these features are available now (OKRs and CDEs in Preview). Built the business-objective (OKR) layer end-to-end: `sql/11_ontology_okr_schema.sql` + `sql/12_seed_ontology_okrs.sql` (3 OKRs, 5 key results tied to real certified KPICodes, 3 OKR→DataProduct links), `purview/okr-catalog.csv`, `nb_07a` ingestion (Cell 8c), `nb_07` publish of `EnercareOKR`/`EnercareOKRKeyResult` Atlas entities with reference-attribute links to Data Products, and a surgical fix in `nb_08` that assigns each CDE's own Atlas entity to its parent glossary term (previously only `bound_assets` were linked, not the CDE entity itself). Added `nb_10` Cell 5a (`purview_phase_11_ontology_validation`). Not yet live-applied — see G11 detailed section for the live-apply sequence. This directly supports the B2C customer chatbot end-state (G11-3): a real relationship graph from Data Product → OKR → Key Result → certified KPI that a future chatbot can traverse instead of relying on free-text search.

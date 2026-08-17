@@ -8,7 +8,9 @@
 > names as a dated historical log and is intentionally left as-is. Those 18 notebooks were
 > consolidated into the 10 current notebooks (`01_setup_source_data` … `10_reset_demo`); for the
 > current names, current cell-level structure, and a full `nb_XX` → current-name mapping table,
-> see `docs/01_Notebook_Description.md`. The `sql/` folder referenced throughout was also
+> see `docs/01_Notebook_Description.md` (notebooks are being split into one file per notebook
+> as each is live-validated; see `docs/03-10_Notebook_Description_pending.md` for 03-10 until
+> they're split out). The `sql/` folder referenced throughout was also
 > repacked into 3 notebook-aligned folders — see `docs/sql-prep-catalog.md`.
 
 ---
