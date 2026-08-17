@@ -5,8 +5,8 @@
 > build has since consolidated to **10 notebooks** (`01_setup_source_data` … `10_reset_demo`).
 > For current, artifact-cataloging demo-prep content (what each notebook produces, how those
 > artifacts map to build requirements, and how they support the Maria Castellanos scenario), see
-> [`nb_01_demo_prep.md`](./nb_01_demo_prep.md) through [`nb_06_demo_prep.md`](./nb_06_demo_prep.md)
-> (07–10 to follow as each is validated). This file is kept for historical reference only.
+> [`nb_01_demo_prep.md`](./nb_01_demo_prep.md) through [`nb_07_demo_prep.md`](./nb_07_demo_prep.md)
+> (08–10 to follow as each is validated). This file is kept for historical reference only.
 
 ## Overview
 
