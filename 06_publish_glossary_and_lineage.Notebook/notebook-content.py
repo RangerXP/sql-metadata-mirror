@@ -187,9 +187,8 @@ GLOSSARY_COLUMNS_NEEDED = [
     "term_code", "term_name", "definition", "status", "acronyms", "resources", "bound_assets",
 ]
 CDE_COLUMNS_NEEDED = [
-    "cde_id", "cde_code", "cde_name", "domain_code", "parent_glossary_term", "expected_data_type",
-    "sensitivity_label", "status", "owner_upn", "owner_role", "steward_upn", "bound_columns",
-    "validation_rule", "description", "business_definition",
+    "cde_id", "cde_name", "parent_glossary_term", "expected_data_type",
+    "status", "owner_role", "bound_columns", "business_definition",
 ]
 
 
@@ -1490,7 +1489,7 @@ def _read_table(table_name: str, required=True):
 # another notebook's write that this session's cached plan still references
 # but the current data doesn't have). Same fix validated in nb_08.
 CDE_COLUMNS_NEEDED = [
-    "sensitivity_label", "cde_id", "cde_code", "cde_name", "parent_glossary_term",
+    "cde_id", "cde_name", "parent_glossary_term",
     "owner_role", "business_definition", "bound_columns",
 ]
 LABELS_COLUMNS_NEEDED = [
