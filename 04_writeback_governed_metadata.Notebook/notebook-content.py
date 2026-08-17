@@ -1489,43 +1489,34 @@ def _description_quality_error(description):
 
 readback_failures = []
 if not EFFECTIVE_DEMO_MODE:
-    import time
+    with TOM_CONNECTOR(dataset=MODEL_NAME, readonly=True) as tom:
+        for table_name, _, _ in planned_table_updates:
+            table_obj = _find_collection_item_by_name(tom.model.Tables, table_name)
+            error = "missing_object" if table_obj is None else _description_quality_error(table_obj.Description)
+            if error:
+                readback_failures.append(f"Table {table_name}: {error}")
 
-    for readback_attempt in range(1, 6):
-        readback_failures = []
-        with TOM_CONNECTOR(dataset=MODEL_NAME, readonly=True) as tom:
-            for table_name, _, _ in planned_table_updates:
-                table_obj = _find_collection_item_by_name(tom.model.Tables, table_name)
-                error = "missing_object" if table_obj is None else _description_quality_error(table_obj.Description)
-                if error:
-                    readback_failures.append(f"Table {table_name}: {error}")
+        for table_name, measure_name, _ in planned_measure_updates:
+            table_obj = _find_collection_item_by_name(tom.model.Tables, table_name)
+            measure_obj = None if table_obj is None else _find_collection_item_by_name(table_obj.Measures, measure_name)
+            error = "missing_object" if measure_obj is None else _description_quality_error(measure_obj.Description)
+            if error:
+                readback_failures.append(f"Measure {table_name}.{measure_name}: {error}")
 
-            for table_name, measure_name, _ in planned_measure_updates:
-                table_obj = _find_collection_item_by_name(tom.model.Tables, table_name)
-                measure_obj = None if table_obj is None else _find_collection_item_by_name(table_obj.Measures, measure_name)
-                error = "missing_object" if measure_obj is None else _description_quality_error(measure_obj.Description)
-                if error:
-                    readback_failures.append(f"Measure {table_name}.{measure_name}: {error}")
-
-            for intent in annotation_intents + certification_annotation_intents:
-                table_obj = _find_collection_item_by_name(tom.model.Tables, intent["table"])
-                collection = None
-                if table_obj is not None and intent["object_type"] == "Column":
-                    collection = table_obj.Columns
-                elif table_obj is not None and intent["object_type"] == "Measure":
-                    collection = table_obj.Measures
-                target_obj = None if collection is None else _find_collection_item_by_name(collection, intent["object_name"])
-                actual = None if target_obj is None else _read_annotation_value(target_obj, intent["annotation_key"])
-                if actual != intent["annotation_value"]:
-                    readback_failures.append(
-                        f"Annotation {intent['table']}.{intent['object_name']}[{intent['annotation_key']}]: "
-                        f"expected={intent['annotation_value']!r}, actual={actual!r}"
-                    )
-        if not readback_failures:
-            break
-        if readback_attempt < 5:
-            print(f"Cell 10 status: TOM readback attempt {readback_attempt} not converged; retrying")
-            time.sleep(5)
+        for intent in annotation_intents + certification_annotation_intents:
+            table_obj = _find_collection_item_by_name(tom.model.Tables, intent["table"])
+            collection = None
+            if table_obj is not None and intent["object_type"] == "Column":
+                collection = table_obj.Columns
+            elif table_obj is not None and intent["object_type"] == "Measure":
+                collection = table_obj.Measures
+            target_obj = None if collection is None else _find_collection_item_by_name(collection, intent["object_name"])
+            actual = None if target_obj is None else _read_annotation_value(target_obj, intent["annotation_key"])
+            if actual != intent["annotation_value"]:
+                readback_failures.append(
+                    f"Annotation {intent['table']}.{intent['object_name']}[{intent['annotation_key']}]: "
+                    f"expected={intent['annotation_value']!r}, actual={actual!r}"
+                )
 
 if readback_failures:
     try:
@@ -1937,27 +1928,18 @@ else:
     if connector is None:
         raise RuntimeError("SemPy Labs TOM connector unavailable for model annotation readback")
 
-    import time
+    model_annotation_readback = {}
+    with connector(dataset=MODEL_NAME, workspace=_resolve_model_workspace_id(), readonly=True) as tom:
+        model_annotations = getattr(tom.model, "Annotations", None)
+        for annotation_name in annotations_to_publish:
+            annotation = _find_collection_item_by_name(model_annotations, annotation_name)
+            model_annotation_readback[annotation_name] = None if annotation is None else str(annotation.Value)
 
-    readback_mismatches = []
-    for readback_attempt in range(1, 6):
-        model_annotation_readback = {}
-        with connector(dataset=MODEL_NAME, workspace=_resolve_model_workspace_id(), readonly=True) as tom:
-            model_annotations = getattr(tom.model, "Annotations", None)
-            for annotation_name in annotations_to_publish:
-                annotation = _find_collection_item_by_name(model_annotations, annotation_name)
-                model_annotation_readback[annotation_name] = None if annotation is None else str(annotation.Value)
-
-        readback_mismatches = [
-            name
-            for name, expected in annotations_to_publish.items()
-            if model_annotation_readback.get(name) != expected
-        ]
-        if not readback_mismatches:
-            break
-        if readback_attempt < 5:
-            print(f"Model annotation readback attempt {readback_attempt} not converged; retrying")
-            time.sleep(5)
+    readback_mismatches = [
+        name
+        for name, expected in annotations_to_publish.items()
+        if model_annotation_readback.get(name) != expected
+    ]
 
     if readback_mismatches:
         try:
