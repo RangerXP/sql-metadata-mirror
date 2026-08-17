@@ -74,4 +74,5 @@ confirming this notebook doesn't independently copy or drift from the source dat
 ---
 
 See also: [`02_Notebook_Description.md`](./02_Notebook_Description.md) ·
+[`04_Notebook_Description.md`](./04_Notebook_Description.md) ·
 [`docs/runbooks/notebook-validation/03_build_semantic_model.md`](./runbooks/notebook-validation/03_build_semantic_model.md)

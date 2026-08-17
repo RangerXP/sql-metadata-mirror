@@ -6,7 +6,7 @@ narrative — [Maria's Furnace](./purview-maria-north-star-scenario.md). This do
 result of the SQL repack that aligned `sql/` with the 10-notebook structure (see
 [`sql/README.md`](../sql/README.md) for the folder-level summary).
 
-**Companion documents:** [`docs/01_Notebook_Description.md`](./01_Notebook_Description.md), [`docs/02_Notebook_Description.md`](./02_Notebook_Description.md), [`docs/03_Notebook_Description.md`](./03_Notebook_Description.md) — the equivalent per-notebook catalog, split one file per notebook as each is live-validated (see [`docs/04-10_Notebook_Description_pending.md`](./04-10_Notebook_Description_pending.md) for notebooks not yet split out).
+**Companion documents:** [`docs/01_Notebook_Description.md`](./01_Notebook_Description.md), [`docs/02_Notebook_Description.md`](./02_Notebook_Description.md), [`docs/03_Notebook_Description.md`](./03_Notebook_Description.md), [`docs/04_Notebook_Description.md`](./04_Notebook_Description.md) — the equivalent per-notebook catalog, split one file per notebook as each is live-validated (see [`docs/05-10_Notebook_Description_pending.md`](./05-10_Notebook_Description_pending.md) for notebooks not yet split out).
 
 ---
 

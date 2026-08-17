@@ -1,15 +1,15 @@
-# Notebooks 04–10 — Pending Individual-File Split
+# Notebooks 05–10 — Pending Individual-File Split
 
-**Status:** Temporary holding document. `docs/01_Notebook_Description.md`, `docs/02_Notebook_Description.md`,
-and `docs/03_Notebook_Description.md` have been split into individual per-notebook files (one
+**Status:** Temporary holding document. `docs/01_Notebook_Description.md` through
+`docs/04_Notebook_Description.md` have been split into individual per-notebook files (one
 file per notebook, matching the naming convention `NN_Notebook_Description.md`), each enriched
 with artifact cataloging and live-validation findings as that notebook is worked through the
 validation sequence (`docs/runbooks/notebook-validation/`).
 
-The content below for notebooks 04–10 has not yet been split out or enriched with live-run
+The content below for notebooks 05–10 has not yet been split out or enriched with live-run
 evidence — it's preserved verbatim from the prior consolidated `01_Notebook_Description.md` so
 nothing is lost. As each notebook is reached in the validation sequence, its section here will
-be extracted into its own `0N_Notebook_Description.md` (matching the pattern of 01/02/03) and
+be extracted into its own `0N_Notebook_Description.md` (matching the pattern of 01–04) and
 removed from this file.
 
 ---
