@@ -1542,7 +1542,7 @@ print(
 
 # CELL ********************
 
-# Fabric Notebook: nb_05_push_qa_verified_answers
+# Cell 11: AI grounding annotations config
 # Purpose: Read ai_instruction + verified_answer rows from lh_metadata.ai_metadata
 #          and write them to the semantic model as two distinct annotations using
 #          SemPy Labs (primary write-back path):
@@ -1569,7 +1569,7 @@ METADATA_LH          = "lh_metadata"
 # to the current legitimate certified-content size (34 verified answers = ~12.0k).
 MAX_ANNOTATION_CHARS = 32000
 
-print(f"nb_05_push_qa_verified_answers | DEMO_MODE={DEMO_MODE}")
+print(f"Cell 11 status: AI grounding annotations config | DEMO_MODE={DEMO_MODE}")
 print(f"Target model: {MODEL_NAME}")
 print(f"Max annotation chars: {MAX_ANNOTATION_CHARS}")
 
@@ -1583,8 +1583,8 @@ print(f"Max annotation chars: {MAX_ANNOTATION_CHARS}")
 
 # CELL ********************
 
-# Cell 2: Read ai_metadata
-# Gate matches nb_04_sempy_writeback's KPI pattern exactly (WHERE IsCertified = 1): only
+# Cell 12: Read ai_metadata
+# Gate matches Cell 3's KPI pattern exactly (WHERE IsCertified = 1): only
 # certified content reaches the Data Agent's live grounding surface. Previously this filtered
 # only IsDraft = 0, which let content with no certification decision at all (IsCertified NULL)
 # through -- found during the 2026-08-13 notebook governance review (docs/01_Notebook_Description.md).
@@ -1634,7 +1634,7 @@ print(f"Loaded: {len(ai_instructions)} instruction(s), {len(verified_answers)} v
 
 # CELL ********************
 
-# Cell 3: Build annotation payload
+# Cell 13: Build annotation payload
 
 
 def _safe(text: str) -> str:
@@ -1662,7 +1662,7 @@ qa_block = " | ".join(qa_parts)
 try:
     mssparkutils.fs.mkdirs("Files/debug")
     mssparkutils.fs.put(
-        "Files/debug/nb05_payload_lengths.txt",
+        "Files/debug/nb04_qa_payload_lengths.txt",
         f"instruction_count={len(ai_instructions)}\n"
         f"verified_answer_count={len(verified_answers)}\n"
         f"instr_block_chars={len(instr_block)}\n"
@@ -1700,7 +1700,7 @@ print("..." if len(verified_answers_payload) > 500 else "")
 
 # CELL ********************
 
-# Cell 4: Write annotation with SemPy Labs
+# Cell 14: Write annotation with SemPy Labs
 
 
 def _find_collection_item_by_name(collection, name: str):
@@ -1983,13 +1983,13 @@ else:
                 f"detail={annotation_results.get(name, (False, 'not attempted'))[1]}"
                 for name in annotations_to_publish
             ]
-            mssparkutils.fs.put("Files/debug/nb05_last_run.txt", "\n".join(debug_lines), True)
+            mssparkutils.fs.put("Files/debug/nb04_ai_grounding_last_run.txt", "\n".join(debug_lines), True)
         except Exception as debug_ex:
-            print(f"[WARN] Could not write nb05 debug log: {debug_ex}")
+            print(f"[WARN] Could not write Cell 14 debug log: {debug_ex}")
     except Exception:
         try:
             mssparkutils.fs.mkdirs("Files/debug")
-            mssparkutils.fs.put("Files/debug/nb05_exception.txt", traceback.format_exc(), True)
+            mssparkutils.fs.put("Files/debug/nb04_ai_grounding_exception.txt", traceback.format_exc(), True)
         except Exception:
             pass
         raise
@@ -2004,9 +2004,9 @@ else:
 
 # CELL ********************
 
-# Cell 5: Summary
+# Cell 15: Summary
 
-print("\n=== nb_05 Summary ===")
+print("\n=== AI grounding annotations summary ===")
 print(f"  Model:                        {MODEL_NAME}")
 print(f"  AI instructions:              {len(ai_instructions)}")
 print(f"  Verified Q&A pairs:           {len(qa_parts)}")
