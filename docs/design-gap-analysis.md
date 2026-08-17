@@ -9,7 +9,7 @@
 > **Naming note:** this document's entries below cite the pre-consolidation `nb_XX_name` notebook
 > names as a dated historical log and are intentionally left as-is (see `docs/sql-prep-catalog.md`
 > §"Validation performed" for the rationale). For the current 10-notebook names and a full
-> `nb_XX` → current-name mapping table, see `docs/03-10_Notebook_Description_pending.md`
+> `nb_XX` → current-name mapping table, see `docs/04-10_Notebook_Description_pending.md`
 > (notebooks 01/02 now have their own `docs/01_Notebook_Description.md` /
 > `docs/02_Notebook_Description.md`; 03-10 will split out the same way as each is validated).
 >
@@ -33,7 +33,7 @@
 > (`validate_build_workflow.ps1`, `normalize_fabric_canonical_state.ps1`, and a test file) that
 > referenced a nonexistent `fabric/` prefix folder and the old `nb_04`/`nb_05`/`nb_09` notebook
 > names — see `docs/01_Notebook_Description.md` / `docs/02_Notebook_Description.md`'s
-> Live-validation findings sections, and `docs/03-10_Notebook_Description_pending.md`'s
+> Live-validation findings sections, and `docs/04-10_Notebook_Description_pending.md`'s
 > Governance Review Findings for notebooks not yet split out.
 >
 > **Previous version (2026-08-11, G11-1 built):**

@@ -91,6 +91,7 @@ protection plan."
 ---
 
 See also: [`02_Notebook_Description.md`](./02_Notebook_Description.md) ·
+[`03_Notebook_Description.md`](./03_Notebook_Description.md) ·
 [`docs/runbooks/notebook-validation/01_setup_source_data.md`](./runbooks/notebook-validation/01_setup_source_data.md) ·
 [`docs/sql-prep-catalog.md`](./sql-prep-catalog.md)
 

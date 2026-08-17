@@ -103,5 +103,6 @@ traceback to `dbo.nb02_diagnostics_log` before re-raising).
 ---
 
 See also: [`01_Notebook_Description.md`](./01_Notebook_Description.md) ·
+[`03_Notebook_Description.md`](./03_Notebook_Description.md) ·
 [`docs/runbooks/notebook-validation/02_build_metadata_foundation.md`](./runbooks/notebook-validation/02_build_metadata_foundation.md) ·
 [`docs/sql-prep-catalog.md`](./sql-prep-catalog.md)

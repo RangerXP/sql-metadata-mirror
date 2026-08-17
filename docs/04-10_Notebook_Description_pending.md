@@ -1,15 +1,15 @@
-# Notebooks 03–10 — Pending Individual-File Split
+# Notebooks 04–10 — Pending Individual-File Split
 
-**Status:** Temporary holding document. `docs/01_Notebook_Description.md` and
-`docs/02_Notebook_Description.md` have been split into individual per-notebook files (one file
-per notebook, matching the naming convention `NN_Notebook_Description.md`), each enriched with
-artifact cataloging and live-validation findings as that notebook is worked through the
+**Status:** Temporary holding document. `docs/01_Notebook_Description.md`, `docs/02_Notebook_Description.md`,
+and `docs/03_Notebook_Description.md` have been split into individual per-notebook files (one
+file per notebook, matching the naming convention `NN_Notebook_Description.md`), each enriched
+with artifact cataloging and live-validation findings as that notebook is worked through the
 validation sequence (`docs/runbooks/notebook-validation/`).
 
-The content below for notebooks 03–10 has not yet been split out or enriched with live-run
+The content below for notebooks 04–10 has not yet been split out or enriched with live-run
 evidence — it's preserved verbatim from the prior consolidated `01_Notebook_Description.md` so
 nothing is lost. As each notebook is reached in the validation sequence, its section here will
-be extracted into its own `0N_Notebook_Description.md` (matching the pattern of 01/02) and
+be extracted into its own `0N_Notebook_Description.md` (matching the pattern of 01/02/03) and
 removed from this file.
 
 ---
@@ -30,19 +30,6 @@ For cross-referencing older dated docs that still cite the pre-consolidation nam
 | `08_validate_governance_evidence` | `nb_10_purview_stewardship_ai`, `nb_12_purview_workflow_sync` (P1) |
 | `09_reconcile_semantic_model` | `nb_13_semantic_reconcile` (P2), `nb_14_purview_access_sync` (P3), `nb_15_purview_dataproduct_sync` (P4 publish), `nb_16_dataproduct_semantic_reconcile` (P4 reconcile), `nb_17_g18_semantic_promotion` (G19 semantic promotion) |
 | `10_reset_demo` | `nb_18_demo_reset` |
-
----
-
-### `03_build_semantic_model.Notebook` — single-notebook, no `DEMO_MODE` gate
-**What it does:** Builds the Power BI-ready dimensional star schema (`dim_date`, core
-dimensions, `dim_equipment`, `fct_billing`, `fct_service_request`, `fct_contract_month`, and
-the call-center fact/dimension tables) on top of the Fabric-mirrored SQL source in one
-straight-through run — no dry-run/live split, since this only ever rebuilds derived tables in
-the lakehouse, never SQL or the semantic model itself.
-**Demo fit:** This produces the actual tables the `BrookfieldEnercare` semantic model and every
-downstream KPI/measure are built on — the physical backbone of Act 2 (Victoria's dashboard).
-**Talking points:** "Same dimensional model whether you're a data engineer looking at Delta
-tables or an executive looking at a Power BI report."
 
 ---
 
