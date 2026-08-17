@@ -1886,6 +1886,13 @@ def _read_table(table_name: str):
     candidates = _table_candidates(table_name)
     for candidate in candidates:
         try:
+            # Spark's catalog can cache a stale schema (e.g. a dropped/renamed column)
+            # across sessions; refresh before reading to avoid collectToPython mismatches.
+            # Same root cause and fix already proven in 06_publish_glossary_and_lineage.
+            try:
+                spark.catalog.refreshTable(candidate)
+            except Exception:
+                pass
             return spark.table(candidate), candidate
         except Exception as ex:
             last_error = ex
@@ -1898,6 +1905,25 @@ def _read_table(table_name: str):
         "Prerequisite: run nb_07a_ingest_customer_files first to populate "
         "glossary_terms/cdes/data_products (and optionally label_assignments) in lh_metadata."
     )
+
+
+# Columns actually read in Cell 14. Pruning to this set avoids collectToPython
+# failures when the Delta table's schema has stale/unmaterialized columns (e.g. a
+# schema-declared column from another notebook's write that this session's cached
+# plan still references but the current data doesn't have).
+GLOSSARY_COLUMNS_NEEDED = ["term_code", "term_name", "bound_assets"]
+CDE_COLUMNS_NEEDED = ["cde_id", "cde_code", "cde_name", "bound_columns", "sensitivity_label"]
+DATA_PRODUCT_COLUMNS_NEEDED = [
+    "data_product_id", "product_code", "owners", "owner_upn", "owner_name",
+    "attached_assets", "semantic_model_assets", "fabric_assets", "sql_assets",
+]
+LABEL_COLUMNS_NEEDED = ["label_name", "applies_to_asset_ids"]
+
+
+def _prune_columns(df, needed_columns):
+    available = {c.lower(): c for c in df.columns}
+    select_cols = [available[c] for c in needed_columns if c in available]
+    return df.select(*select_cols) if select_cols else df
 
 
 def _write_table_name(table_name: str):
@@ -1982,15 +2008,22 @@ try:
     glossary_df, glossary_source = _read_table("glossary_terms")
     print(f"[Cell 2] Resolved glossary_terms source: {glossary_source}", flush=True)
 
+    glossary_df, glossary_source = _read_table("glossary_terms")
+    glossary_df = _prune_columns(glossary_df, GLOSSARY_COLUMNS_NEEDED)
+    print(f"[Cell 2] Resolved glossary_terms source: {glossary_source}", flush=True)
+
     cde_df, cde_source = _read_table("cdes")
+    cde_df = _prune_columns(cde_df, CDE_COLUMNS_NEEDED)
     print(f"[Cell 2] Resolved cdes source: {cde_source}", flush=True)
 
     data_products_df, data_products_source = _read_table("data_products")
+    data_products_df = _prune_columns(data_products_df, DATA_PRODUCT_COLUMNS_NEEDED)
     print(f"[Cell 2] Resolved data_products source: {data_products_source}", flush=True)
 
     # Optional table in case labels were ingested already.
     try:
         labels_df, labels_source = _read_table("label_assignments")
+        labels_df = _prune_columns(labels_df, LABEL_COLUMNS_NEEDED)
         print(f"[Cell 2] Resolved label_assignments source: {labels_source}", flush=True)
     except Exception:
         labels_df = None
