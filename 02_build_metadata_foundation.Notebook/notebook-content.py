@@ -1388,8 +1388,34 @@ def load_metadata_dataset(dataset_name: str) -> tuple[pd.DataFrame, str]:
 WRITTEN_TABLE_NAMES: dict[str, str] = {}
 
 
+def _pandas_to_spark_df(df: pd.DataFrame):
+    # A column that is NULL in every row of the pandas frame gets inferred by
+    # spark.createDataFrame() as NullType; Delta has no physical Parquet storage
+    # for NullType, so the column ends up declared in the Delta schema but absent
+    # from the physical file -- later reads that select it fail with
+    # IllegalStateException ("Couldn't find <col># in [...]") even though the
+    # column is listed in df.columns. This is a real, permanent risk for any
+    # column that is legitimately all-NULL by design (e.g. domains.parent_domain,
+    # which has no parent hierarchy in this demo), not just a transient data gap.
+    # Fix: force every all-null object/NaN column to a StringType schema entry
+    # explicitly, so it is always materialized as a real (if entirely-null)
+    # Parquet column instead of being silently dropped.
+    from pyspark.sql.types import StructType, StructField, StringType
+
+    all_null_cols = {c for c in df.columns if df[c].isna().all()}
+    if not all_null_cols:
+        return spark.createDataFrame(df)
+
+    sdf = spark.createDataFrame(df.astype({c: "object" for c in all_null_cols}))
+    schema = StructType([
+        StructField(f.name, StringType(), True) if f.name in all_null_cols else f
+        for f in sdf.schema.fields
+    ])
+    return spark.createDataFrame(sdf.rdd, schema=schema)
+
+
 def write_table_from_pandas(df: pd.DataFrame, table_name: str) -> int:
-    sdf = spark.createDataFrame(df)
+    sdf = _pandas_to_spark_df(df)
     expected_count = int(len(df.index))
     table_candidates = [table_name]
     last_error = None
@@ -1492,18 +1518,6 @@ try:
     }
 
     domains_df, domains_source = load_metadata_dataset("domains")
-    # TEMP DIAGNOSTIC (2026-08-17): confirm whether the read from the mirror already
-    # lacks parent_domain/governance_domain_stewards, or whether the write step drops
-    # them. Logged unconditionally (not just on exception) so it can be inspected after
-    # a normal successful run.
-    try:
-        spark.createDataFrame([{
-            "stage": "cell3_domains_post_read",
-            "source": str(domains_source),
-            "columns_csv": ",".join(list(domains_df.columns)),
-        }]).write.format("delta").mode("append").saveAsTable("nb02_col_probe")
-    except Exception as probe_ex:
-        print(f"[PROBE] Could not log column probe: {probe_ex}")
     validate_csv(domains_df, domains_required, {"domain_type": domain_type_allowed})
     count_domains = write_table_from_pandas(domains_df, "domains")
     print(f"domains loaded: {count_domains} (source={domains_source})")

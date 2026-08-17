@@ -130,6 +130,20 @@ def _write_table(df, table_name: str, mode: str = "overwrite"):
     raise RuntimeError(f"Could not write table '{table_name}'. Last error: {last_error}")
 
 
+def _real_columns(table_ref: str) -> set:
+    # DataFrame.columns can reflect a stale cached logical-plan schema even after
+    # refreshTable() (confirmed live 2026-08-17: domains_df.columns included a
+    # governance_domain_stewards column that doesn't exist in the current physical
+    # table at all, causing an IllegalStateException at write time). A fresh
+    # DESCRIBE TABLE query against the catalog is the truthful source of columns
+    # that actually exist right now.
+    try:
+        rows = spark.sql(f"DESCRIBE {table_ref}").collect()
+        return {r["col_name"] for r in rows if r["col_name"] and not r["col_name"].startswith("#")}
+    except Exception:
+        return set()
+
+
 try:
     domains_df, domains_source = _read_table("domains")
     data_products_df, data_products_source = _read_table("data_products")
@@ -171,65 +185,69 @@ except Exception as ex:
 # Cell 3: Build stewardship and certification scorecard
 
 
-def _column_or_null(df, column_name):
-    return F.col(column_name) if column_name in df.columns else F.lit(None).alias(column_name)
+def _column_or_null(df, column_name, real_cols):
+    return F.col(column_name) if column_name in real_cols else F.lit(None).alias(column_name)
 
 
-def _status_column(df):
+def _status_column(df, real_cols):
     for name in ["status", "published_status", "certification_status"]:
-        if name in df.columns:
+        if name in real_cols:
             return F.col(name)
     return F.lit(None)
 
 
-def _owner_column(df):
+def _owner_column(df, real_cols):
     for name in ["owners", "owner_upn", "business_owner", "governance_domain_owners", "owner_role"]:
-        if name in df.columns:
+        if name in real_cols:
             return F.col(name)
     return F.lit(None)
 
 
-def _steward_column(df):
+def _steward_column(df, real_cols):
     for name in ["steward_upn", "data_steward", "steward_name", "stewards", "governance_domain_stewards"]:
-        if name in df.columns:
+        if name in real_cols:
             return F.col(name)
     return F.lit(None)
 
 
-def _id_column(df, candidates):
+def _id_column(df, candidates, real_cols):
     for name in candidates:
-        if name in df.columns:
+        if name in real_cols:
             return F.col(name)
     return F.lit(None)
 
 
 try:
+    domains_real_cols = _real_columns(domains_source)
+    data_products_real_cols = _real_columns(data_products_source)
+    cde_real_cols = _real_columns(cde_source)
+
     domain_score = domains_df.select(
         F.lit("Domain").alias("object_type"),
-        _id_column(domains_df, ["domain_id", "domain_code"]).alias("object_id"),
+        _id_column(domains_df, ["domain_id", "domain_code"], domains_real_cols).alias("object_id"),
         F.col("domain_name").alias("object_name"),
-        _owner_column(domains_df).alias("owner"),
-        _steward_column(domains_df).alias("steward"),
-        _status_column(domains_df).alias("status"),
+        _owner_column(domains_df, domains_real_cols).alias("owner"),
+        _steward_column(domains_df, domains_real_cols).alias("steward"),
+        _status_column(domains_df, domains_real_cols).alias("status"),
     )
 
-    product_name_col = "data_product_name" if "data_product_name" in data_products_df.columns else "product_name"
+    product_name_col = "data_product_name" if "data_product_name" in data_products_real_cols else "product_name"
     product_score = data_products_df.select(
         F.lit("DataProduct").alias("object_type"),
-        _id_column(data_products_df, ["data_product_id", "product_code"]).alias("object_id"),
+        _id_column(data_products_df, ["data_product_id", "product_code"], data_products_real_cols).alias("object_id"),
         F.col(product_name_col).alias("object_name"),
-        _owner_column(data_products_df).alias("owner"),
-        _steward_column(data_products_df).alias("steward"),
-        _status_column(data_products_df).alias("status"),
+        _owner_column(data_products_df, data_products_real_cols).alias("owner"),
+        _steward_column(data_products_df, data_products_real_cols).alias("steward"),
+        _status_column(data_products_df, data_products_real_cols).alias("status"),
     )
 
     cde_score = cde_df.select(
         F.lit("CDE").alias("object_type"),
-        _id_column(cde_df, ["cde_id", "cde_code"]).alias("object_id"),
+        _id_column(cde_df, ["cde_id", "cde_code"], cde_real_cols).alias("object_id"),
         F.col("cde_name").alias("object_name"),
-        _owner_column(cde_df).alias("owner"),
-        _steward_column(cde_df).alias("steward"),
-        _status_column(cde_df).alias("status"),
+        _owner_column(cde_df, cde_real_cols).alias("owner"),
+        _steward_column(cde_df, cde_real_cols).alias("steward"),
+        _status_column(cde_df, cde_real_cols).alias("status"),
     )
 
     scorecard_df = domain_score.unionByName(product_score).unionByName(cde_score)
