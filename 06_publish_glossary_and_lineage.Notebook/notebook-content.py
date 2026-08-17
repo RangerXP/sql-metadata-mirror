@@ -1341,7 +1341,7 @@ spark = SparkSession.builder.getOrCreate()
 
 METADATA_LAKEHOUSE = "lh_metadata"
 METADATA_SCHEMA = "metadata"
-PURVIEW_ACCOUNT_NAME = os.getenv("PURVIEW_ACCOUNT_NAME", "Purview-West3")
+PURVIEW_ACCOUNT_NAME = os.getenv("PURVIEW_ACCOUNT_NAME", "Purview-West2")
 
 
 def _resolve_purview_base_url():
@@ -1353,12 +1353,10 @@ def _resolve_purview_base_url():
     if configured_base:
         return configured_base.rstrip("/")
 
-    raise RuntimeError(
-        "PURVIEW_API_BASE_URL/PURVIEW_PRIVATE_ENDPOINT_URL/PURVIEW_PRIVATE_BASE_URL is not set. "
-        "Set it to the reachable Purview endpoint in this runtime, typically a private endpoint such as "
-        "https://<account-name>.privatelink.purview.azure.com. The public hostname "
-        f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com will fail in private-network Fabric runtimes."
-    )
+    # Matches Cell 1's resolver: the Purview service certificate is valid for the
+    # account's public host, not the private-link alias. Use the public hostname
+    # unless an explicit internal override is required for a custom DNS setup.
+    return f"https://{PURVIEW_ACCOUNT_NAME}.purview.azure.com"
 
 
 PURVIEW_BASE_URL = _resolve_purview_base_url()
