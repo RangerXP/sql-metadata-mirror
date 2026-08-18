@@ -1,6 +1,9 @@
 # `02_build_metadata_foundation` — Validation Capture
 
 **Status:** ✅ Completed — validated end-to-end 2026-08-17, after finding and fixing a real bug.
+Revisited 2026-08-17/18 during `08_validate_governance_evidence` validation, which surfaced a
+separate steward-data regression + a real `write_table_from_pandas` bug; see the Follow-up
+section below. Re-confirmed ✅ Completed after those fixes.
 
 ## Purpose being validated
 
@@ -146,5 +149,57 @@ of a `notebook-content.py` change and before re-running that notebook's job.**
 > date renew at roughly 51%, versus about 86% for customers who did not contact the billing
 > queue — a ~35-point gap signaling billing confusion as a churn driver. Cross-reference with
 > AHT on billing queue.
+
+## Follow-up (2026-08-17/18, discovered while validating `08_validate_governance_evidence`): steward-data regression + write-path column-support fixes
+
+`08_validate_governance_evidence`'s stewardship scorecard failed repeatedly with
+`Couldn't find governance_domain_stewards#74 in [...]` — the physical `lh_metadata.domains`
+table was missing the column entirely. Root-cause chain, all traced back to this notebook's
+territory (source data + `write_table_from_pandas`), not nb_08 itself:
+
+1. **Source-data regression (sub2):** `governance_domain_stewards`/`stewards`/`steward_upn`
+   were NULL for every row in `dbo.governance_domains`/`governance_data_products`/
+   `governance_cdes` — a full regression of the original 2026-08-08 steward fix. Backfilled via
+   `sql/02_metadata_foundation/13_backfill_steward_columns.sql` (surgical `UPDATE`s, not a full
+   reseed, to avoid disturbing any gate-approval state layered on `governance_cdes`/
+   `governance_glossary_terms`).
+2. **Separately, `governance_glossary_terms` held 35 stale legacy `GT-001`..`GT-035` placeholder
+   rows** (generic names/definitions) that had never actually been replaced by the current
+   `07_seed_purview_metadata.sql`'s real content (`GT-PII`, `GT-CUSTOMER`, etc.) — this directly
+   explains and supersedes the "⚠️ Finding" noted above about `GT-011`-`GT-035` placeholder
+   names; that was this same stale-seed condition, not a separate content gap. Fixed by
+   re-running `06_purview_metadata_schema.sql` + `07_seed_purview_metadata.sql` against sub2.
+3. **Mirroring was found `Paused`** (via `getMirroringStatus`), which is why fixes #1/#2 didn't
+   propagate to the Fabric mirror at first — restarted via `startMirroring`, confirmed `Running`
+   and replicated.
+4. **New tool:** `tools/audit_seed_vs_source.py` — reusable NULL/drift audit that reads live
+   sub2 tables, diffs against the declarative `.sql` seed files' intended values (keyed by
+   natural id), and can generate backfill SQL. Confirms 0 drift across all 8 parseable
+   governance seed tables going forward.
+5. **Real code bug in `write_table_from_pandas`:** a column that is `NULL` in every row of the
+   pandas frame is inferred by `spark.createDataFrame()` as `NullType`, which Delta cannot
+   physically store in Parquet — the column ends up declared in the Delta schema but absent
+   from the physical file. This is a **permanent** risk for any column that is legitimately
+   all-NULL by design (e.g. `domains.parent_domain`, which has no parent hierarchy in this demo),
+   not just a symptom of the source-data regression above. Fixed by adding
+   `_pandas_to_spark_df()`, which forces an explicit `StringType` schema for any all-null column
+   instead of letting Spark silently drop it.
+6. **Cell 9's expected-count check was stale:** `governance_change_requests` expected `8`,
+   hardcoded when the gate-scenario ledger had fewer rows; it has since legitimately grown to
+   `10` (AI-instruction-certification scenarios x4, CDE, glossary-term, KPI, verified-answer,
+   plus a validation-test pair) with no duplicates. Updated the expected count to `10`.
+7. **New tool:** `tools/validate_required_columns_not_null.py` — checks every column nb_02's own
+   `validate_csv()` declares as required (which only asserts column *presence*, not that every
+   row's *value* is non-null) for actual NULLs, at both the sub2 source and the `lh_metadata`
+   destination. Confirmed **0 violations across 74 required-column x table checks** (10 tables)
+   at both ends after the fixes above.
+
+Re-ran clean afterward (job `d417d422-47e3-49ae-9164-7f9a89d2c343`, `Completed`) — confirmed
+`lh_metadata.domains` now carries all 9 columns with real steward data
+(`Rupal.Solanki@enercare.ca` / `Shruthi.Srinivas@enercare.ca` / `Ci.Zhu@enercare.ca`) and
+`parent_domain` physically materialized as `NULL` (by design) rather than silently dropped.
+This unblocked `08_validate_governance_evidence`'s stewardship scorecard, which now reports
+`has_steward=true` for all 18 domain/data-product/CDE rows (0 `ACTION_REQUIRED`) — see
+`docs/runbooks/notebook-validation/08_validate_governance_evidence.md`.
 
 
