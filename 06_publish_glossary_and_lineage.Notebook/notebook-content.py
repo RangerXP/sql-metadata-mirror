@@ -513,24 +513,24 @@ def _write_shared_purview_token_cache(token: str, expires_on: float):
         print(f"[WARN] Could not write shared Purview token cache: {exc}")
 
 
-def _get_purview_token_via_device_code(tenant_id: str) -> str:
+def _get_purview_token_via_azure_cli(tenant_id: str) -> str:
     try:
-        from azure.identity import DeviceCodeCredential
+        from azure.identity import AzureCliCredential
     except ImportError:
         import subprocess
         import sys
         subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "azure-identity"], check=True)
-        from azure.identity import DeviceCodeCredential
+        from azure.identity import AzureCliCredential
 
-    def _print_device_code(verification_uri, user_code, expires_on):
-        print(f"[AUTH] Open {verification_uri} in any browser and enter code: {user_code}")
-
-    credential = DeviceCodeCredential(
-        client_id="04b07795-8ddb-461a-bbee-02f9e1bf7b46",
-        tenant_id=tenant_id,
-        prompt_callback=_print_device_code,
-    )
-    result = credential.get_token("https://purview.azure.net/.default")
+    try:
+        result = AzureCliCredential().get_token("https://purview.azure.net/.default")
+    except Exception as exc:
+        raise RuntimeError(
+            "No PURVIEW_ACCESS_TOKEN supplied, no cached token, and AzureCliCredential failed "
+            f"({exc}). This notebook never prompts interactively when run unattended -- set "
+            "PURVIEW_ACCESS_TOKEN, ensure 'az login' has been run somewhere mssparkutils can "
+            "reach, or run this notebook interactively in the Fabric portal after signing in."
+        ) from exc
     _write_shared_purview_token_cache(result.token, result.expires_on)
     return result.token
 
@@ -545,8 +545,8 @@ def _resolve_purview_token() -> str:
         print("[AUTH] Reusing cached Purview token acquired from another notebook/session.")
         return cached_token
 
-    print("[AUTH] No token supplied and no valid cached token found; starting device-code sign-in.")
-    return _get_purview_token_via_device_code(PURVIEW_TENANT_ID)
+    print("[AUTH] No token supplied and no valid cached token found; using Azure CLI credential.")
+    return _get_purview_token_via_azure_cli(PURVIEW_TENANT_ID)
 
 
 def _extract_glossary_guid(glossary_obj) -> str:
@@ -1371,7 +1371,7 @@ FAIL_ON_TOKEN_ACQUISITION_ERROR = True
 TOKEN_RESOURCE_CANDIDATES = ["https://purview.azure.net"]
 TOKEN_OUTER_RETRY_ATTEMPTS = 1
 DISABLE_LIVE_PURVIEW_PUBLISH = False
-TOKEN_ACQUISITION_MODE = "auto"  # auto | manual | azcli | tokenlibrary | devicecode
+TOKEN_ACQUISITION_MODE = "auto"  # auto | manual | azcli | tokenlibrary
 PURVIEW_TENANT_ID = "b7e47691-9726-4f67-a302-e567815f3522"
 PURVIEW_TOKEN_CACHE_PATH = "Files/purview_publish/.purview_token_cache.json"
 # Keep purge off for normal runs to reduce API round-trips and runtime.
@@ -3278,33 +3278,10 @@ def _write_purview_token_to_shared_cache(token: str, expires_on: float):
         print(f"[Cell 6][WARN] Could not write shared Purview token cache: {exc}")
 
 
-def _get_purview_token_via_device_code() -> str:
-    try:
-        from azure.identity import DeviceCodeCredential
-    except ImportError:
-        import subprocess
-        import sys
-        subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "azure-identity"], check=True)
-        from azure.identity import DeviceCodeCredential
-
-    def _print_device_code(verification_uri, user_code, expires_on):
-        print(f"[Cell 6] Open {verification_uri} in any browser and enter code: {user_code}")
-
-    credential = DeviceCodeCredential(
-        client_id="04b07795-8ddb-461a-bbee-02f9e1bf7b46",
-        tenant_id=PURVIEW_TENANT_ID,
-        prompt_callback=_print_device_code,
-    )
-    result = credential.get_token("https://purview.azure.net/.default")
-    _write_purview_token_to_shared_cache(result.token, result.expires_on)
-    print("[Cell 6] Acquired Purview token via device-code sign-in.")
-    return result.token
-
-
 def _get_purview_token_with_retry() -> str:
     mode = _safe_text(globals().get("TOKEN_ACQUISITION_MODE", "auto")).lower()
-    if mode not in {"auto", "manual", "azcli", "tokenlibrary", "devicecode"}:
-        raise RuntimeError(f"Unsupported TOKEN_ACQUISITION_MODE='{mode}'. Use auto, manual, azcli, tokenlibrary, or devicecode.")
+    if mode not in {"auto", "manual", "azcli", "tokenlibrary"}:
+        raise RuntimeError(f"Unsupported TOKEN_ACQUISITION_MODE='{mode}'. Use auto, manual, azcli, or tokenlibrary.")
 
     if mode == "manual":
         return _get_purview_token_from_manual()
@@ -3315,11 +3292,9 @@ def _get_purview_token_with_retry() -> str:
     if mode == "tokenlibrary":
         return _get_purview_token_via_tokenlibrary()
 
-    if mode == "devicecode":
-        return _get_purview_token_via_device_code()
-
     # auto mode: prefer the shared cache, then manual token, then Azure CLI, then
-    # TokenLibrary, and finally an interactive device-code sign-in as last resort.
+    # TokenLibrary. Never prompts interactively -- this notebook is often triggered as an
+    # unattended RunNotebook job, which can never complete an interactive sign-in.
     try:
         return _get_purview_token_from_shared_cache()
     except Exception as cache_ex:
@@ -3335,11 +3310,7 @@ def _get_purview_token_with_retry() -> str:
     except Exception as az_ex:
         print(f"[Cell 6][WARN] Azure CLI token path failed; trying TokenLibrary. Error: {az_ex}")
 
-    try:
-        return _get_purview_token_via_tokenlibrary()
-    except Exception as tl_ex:
-        print(f"[Cell 6][WARN] TokenLibrary path failed; starting device-code sign-in. Error: {tl_ex}")
-        return _get_purview_token_via_device_code()
+    return _get_purview_token_via_tokenlibrary()
 
 
 def _probe_token(token: str):
@@ -3364,7 +3335,7 @@ def _ensure_valid_token(token: str) -> str:
 
     print("[Cell 6][WARN] Supplied token appears invalid or expired; attempting fallback token acquisition.")
     fallback_errors = []
-    for fn in (_get_purview_token_from_shared_cache, _get_purview_token_via_az_cli, _get_purview_token_via_tokenlibrary, _get_purview_token_via_device_code):
+    for fn in (_get_purview_token_from_shared_cache, _get_purview_token_via_az_cli, _get_purview_token_via_tokenlibrary):
         try:
             candidate = fn()
             probe_status, _ = _probe_token(candidate)

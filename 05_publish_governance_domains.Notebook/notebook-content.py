@@ -512,16 +512,14 @@ print(" - entities_day2.json")
 # CELL ********************
 
 # Cell 4a: Acquire a Purview bearer token, reusing a cached one if another notebook
-# (06_publish_glossary_and_lineage) already signed in recently, otherwise via interactive
-# device-code sign-in. No terminal or copy-pasting a token needed: if a sign-in is
-# required, running this cell prints a URL and a short one-time code. Open the URL
-# in any browser tab, enter the code, approve the sign-in, and the token is captured
-# straight into PURVIEW_ACCESS_TOKEN below and cached for the other notebooks to reuse.
-# Uses the public "Azure CLI" client ID, which users in this tenant are already
-# consented for, so no app registration/admin consent step is required.
+# (06_publish_glossary_and_lineage) already signed in recently, otherwise via a
+# non-interactive Azure CLI credential. This notebook is often triggered as an
+# unattended RunNotebook job, which can never complete an interactive sign-in -- so
+# it never prompts for one; it fails with a clear error instead of hanging.
 #
-# Fallback (e.g. no outbound internet from this Spark session): comment out this
-# cell's body and instead set PURVIEW_ACCESS_TOKEN directly to a token captured with
+# Manual override (e.g. no outbound internet from this Spark session, or az CLI
+# unavailable): set the PURVIEW_ACCESS_TOKEN environment variable to a token
+# captured with
 #   az account get-access-token --resource https://purview.azure.net --query accessToken -o tsv
 
 if "PURVIEW_TENANT_ID" not in globals() or "PURVIEW_TOKEN_CACHE_PATH" not in globals():
@@ -563,34 +561,33 @@ def _write_shared_purview_token_cache(token: str, expires_on: float):
 # kernel on every invocation, which wipes Cell 1's globals and re-triggers the
 # guard above on the very next line. Only install if the import genuinely fails.
 try:
-    from azure.identity import DeviceCodeCredential
+    from azure.identity import AzureCliCredential
 except ImportError:
     import subprocess
     import sys
     subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "azure-identity"], check=True)
-    from azure.identity import DeviceCodeCredential
+    from azure.identity import AzureCliCredential
 
-_AZURE_CLI_CLIENT_ID = "04b07795-8ddb-461a-bbee-02f9e1bf7b46"
-
-
-def _print_device_code(verification_uri, user_code, expires_on):
-    print(f"[Cell 4a] Open {verification_uri} in any browser and enter code: {user_code}")
-
-
-PURVIEW_ACCESS_TOKEN = _read_shared_purview_token_cache()
+PURVIEW_ACCESS_TOKEN = os.getenv("PURVIEW_ACCESS_TOKEN", "").strip()
 if PURVIEW_ACCESS_TOKEN:
-    print("[Cell 4a] Reusing cached Purview token acquired from another notebook/session.")
+    print("[Cell 4a] Using PURVIEW_ACCESS_TOKEN environment override.")
 else:
-    print("[Cell 4a] No valid cached token found; starting device-code sign-in.")
-    _purview_credential = DeviceCodeCredential(
-        client_id=_AZURE_CLI_CLIENT_ID,
-        tenant_id=PURVIEW_TENANT_ID,
-        prompt_callback=_print_device_code,
-    )
-    _purview_token_result = _purview_credential.get_token("https://purview.azure.net/.default")
-    PURVIEW_ACCESS_TOKEN = _purview_token_result.token
-    _write_shared_purview_token_cache(_purview_token_result.token, _purview_token_result.expires_on)
-    print("[Cell 4a] Purview token acquired via device-code sign-in and cached for other notebooks.")
+    PURVIEW_ACCESS_TOKEN = _read_shared_purview_token_cache()
+    if PURVIEW_ACCESS_TOKEN:
+        print("[Cell 4a] Reusing cached Purview token acquired from another notebook/session.")
+    else:
+        try:
+            _purview_token_result = AzureCliCredential().get_token("https://purview.azure.net/.default")
+        except Exception as exc:
+            raise RuntimeError(
+                "No PURVIEW_ACCESS_TOKEN override, no cached token, and AzureCliCredential failed "
+                f"({exc}). This notebook never prompts interactively when run unattended -- set "
+                "PURVIEW_ACCESS_TOKEN, ensure 'az login' has been run somewhere mssparkutils can "
+                "reach, or run this notebook interactively in the Fabric portal after signing in."
+            ) from exc
+        PURVIEW_ACCESS_TOKEN = _purview_token_result.token
+        _write_shared_purview_token_cache(_purview_token_result.token, _purview_token_result.expires_on)
+        print("[Cell 4a] Using Azure CLI credential (az account get-access-token); cached for other notebooks.")
 
 
 # METADATA ********************

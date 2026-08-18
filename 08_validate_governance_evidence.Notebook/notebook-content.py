@@ -620,7 +620,7 @@ def get_purview_token():
         return cached_token
 
     try:
-        from azure.identity import AzureCliCredential, DeviceCodeCredential
+        from azure.identity import AzureCliCredential
     except ImportError:
         import subprocess
         import sys
@@ -629,29 +629,19 @@ def get_purview_token():
             [sys.executable, "-m", "pip", "install", "--quiet", "azure-identity"],
             check=True,
         )
-        from azure.identity import AzureCliCredential, DeviceCodeCredential
+        from azure.identity import AzureCliCredential
 
     try:
         token_result = AzureCliCredential().get_token("https://purview.azure.net/.default")
-        print("[AUTH] Using Azure CLI credential (az account get-access-token).")
-        _write_shared_purview_token_cache(token_result.token, token_result.expires_on)
-        return token_result.token
     except Exception as exc:
-        print(f"[AUTH] Azure CLI credential unavailable ({exc}); falling back to device-code sign-in.")
+        raise RuntimeError(
+            "No PURVIEW_ACCESS_TOKEN override, no cached token, and AzureCliCredential failed "
+            f"({exc}). This notebook never prompts interactively when run unattended -- set "
+            "PURVIEW_ACCESS_TOKEN, ensure 'az login' has been run somewhere mssparkutils can "
+            "reach, or run this notebook interactively in the Fabric portal after signing in."
+        ) from exc
 
-    def show_device_code(verification_uri, user_code, expires_on):
-        print(
-            f"[AUTH] Open {verification_uri} in an InPrivate browser and enter "
-            f"code {user_code}. Sign in as the Sean account in tenant {PURVIEW_TENANT_ID}."
-        )
-
-    print("[AUTH] No cached token or override found; starting device-code sign-in.")
-    credential = DeviceCodeCredential(
-        client_id="04b07795-8ddb-461a-bbee-02f9e1bf7b46",
-        tenant_id=PURVIEW_TENANT_ID,
-        prompt_callback=show_device_code,
-    )
-    token_result = credential.get_token("https://purview.azure.net/.default")
+    print("[AUTH] Using Azure CLI credential (az account get-access-token).")
     _write_shared_purview_token_cache(token_result.token, token_result.expires_on)
     return token_result.token
 

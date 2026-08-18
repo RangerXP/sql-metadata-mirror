@@ -26,15 +26,27 @@
 
 # CELL ********************
 
-# Fabric Notebook: nb_13_semantic_reconcile
-# Purpose: P2 semantic reconciliation for an approved Purview glossary term.
+# Fabric Notebook: 09_reconcile_semantic_model
+# Purpose: closes the loop between Purview-native governance decisions and the live
+# BrookfieldEnercare semantic model, across 4 scenarios in 5 phases:
+#   Cell  1-7  P2  -- GT-SLA glossary term: reconcile the approved Purview definition into
+#              semantic-model descriptions/annotations (real, API-verified evidence).
+#   Cell  8-14 P3  -- DP-CUST360 data product access: record the access decision as
+#              operator-attested evidence (no API/log exposes this decision -- see Cell 8).
+#   Cell 15-21 P4a -- DP-SVCPERF publish: observe the Draft->Published transition as real,
+#              API-verified evidence (the product's own `status` field).
+#   Cell 22-28 P4b -- DP-SVCPERF reconcile: reconcile the approved publish into semantic-
+#              model annotations, mirroring Cell 1-7's pattern.
+#   Cell 29    G18 -- promote a G18-A-approved source object into a brand-new semantic
+#              measure (Technician Utilization Rate), not just an annotation.
 #
-# The notebook fails closed: it requires a passed PublicationReadback receipt,
-# changes metadata only, verifies a fresh semantic-model read-back, and marks the
-# request Completed only after both required receipts pass.
+# Each phase fails closed: it requires its own upstream approval/receipt before writing
+# anything, changes only the metadata/annotations it owns, verifies a fresh semantic-model
+# read-back, and marks its own governance request Completed only after every required
+# receipt passes.
 
 DEMO_MODE = False
-RUN_REQUEST_ID = "PV-GT-SLA-0359C207890E4EB1B8AB"
+RUN_REQUEST_ID = "PV-GT-SLA-0359C207890E4EB1B8AB"  # P2 scenario config; see Cell 8/15/22/29 for P3/P4a/P4b/G18.
 
 MODEL_NAME = "BrookfieldEnercare"
 PURVIEW_TERM_ID = "b3b54277-3b36-47d8-831c-a2b9a5f02634"
@@ -67,7 +79,7 @@ SEMANTIC_TARGETS = [
     },
 ]
 
-print(f"nb_13 | DEMO_MODE={DEMO_MODE} | request={RUN_REQUEST_ID or '<not set>'} | model={MODEL_NAME}")
+print(f"09_reconcile_semantic_model | Cell 1 (P2 GT-SLA config) | DEMO_MODE={DEMO_MODE} | request={RUN_REQUEST_ID or '<not set>'} | model={MODEL_NAME}")
 
 import traceback
 
@@ -103,7 +115,10 @@ def _log_nb09_diagnostic(stage: str, error: Exception) -> None:
 
 # CELL ********************
 
-# Cell 2: Connection and normalization helpers
+# Cell 2: Connection and normalization helpers (P2)
+# Purpose: SQL connection factory (Entra token auth via mssparkutils) plus the canonical-JSON/
+# hash/TOM lookup helpers Cell 3-7 reuse. Cell 23 and 29 each carry their own copy of this same
+# helper set so every phase in this notebook stays independently runnable, cell-by-cell.
 
 import hashlib
 import json
@@ -228,6 +243,8 @@ def read_annotation(obj, key):
     return None if annotation is None else str(annotation.Value)
 
 
+print("[READY] Cell 2 helpers loaded (SQL connection, hashing, TOM lookup/annotation helpers).")
+
 if not RUN_REQUEST_ID.strip():
     raise RuntimeError("Set RUN_REQUEST_ID to the approved P1 governance request ID.")
 
@@ -240,7 +257,10 @@ if not RUN_REQUEST_ID.strip():
 
 # CELL ********************
 
-# Cell 3: Load the approved source definition and enforce the P1 gate
+# Cell 3: Load the approved source definition and enforce the P1 gate (P2)
+# Purpose: read the already-Completed P1 Purview Term-publish evidence (built and verified in
+# 08_validate_governance_evidence) and its PublicationReadback receipt, then fail closed unless
+# both are present and their content hashes agree -- this is P2's only allowed input.
 
 try:
     connection = get_sql_connection()
@@ -363,7 +383,9 @@ except Exception as ex:
 
 # CELL ********************
 
-# Cell 4: Apply only descriptions and annotations through SemPy Labs TOM
+# Cell 4: Apply only descriptions and annotations through SemPy Labs TOM (P2)
+# Purpose: write ONLY the Description and the 4 governance annotations (ANNOTATION_KEYS) onto
+# each SEMANTIC_TARGETS object -- never touches any other model property.
 
 try:
     if DEMO_MODE:
@@ -588,7 +610,10 @@ else:
 
 # CELL ********************
 
-# Cell 7: Final verification
+# Cell 7: Final verification (P2)
+# Purpose: re-read the request/receipts fresh from SQL (not the in-memory state from Cell 6) to
+# confirm the Completed status and both Passed receipts are durably persisted, not just returned
+# from a job that could still fail silently downstream.
 
 try:
     if not DEMO_MODE:
@@ -649,7 +674,8 @@ except Exception as ex:
 # the decision as OPERATOR-ATTESTED evidence -- directly witnessed in the Purview portal by the
 # person running this notebook -- clearly labeled as attested, not machine-verified. The Data
 # Product's own current state (status, domain, definition hash) IS read live and IS real,
-# API-verified evidence; only the access decision itself is attested.
+# API-verified evidence; only the access decision itself is attested. This phase ends at Cell
+# 14 -- unlike P2/P4, there is no semantic-model reconciliation step for an access decision.
 
 DEMO_MODE = False
 WORKFLOW_CONFIGURED = True
@@ -692,7 +718,12 @@ print(
 
 # CELL ********************
 
-# Cell 9: Authentication and connection helpers (mirrors the glossary term publish notebook)
+# Cell 9: Authentication and connection helpers (P3)
+# Purpose: Purview REST auth (Cell 10 needs a bearer token) plus the SQL connection helper.
+# The auth cascade is non-interactive only, in order: PURVIEW_ACCESS_TOKEN env override -> a
+# token already cached by another notebook in this run window (05/06/08/09 share one cache
+# file) -> Azure CLI credential. If none succeed it fails with a clear error instead of
+# blocking an unattended run on an interactive device-code prompt.
 
 import hashlib
 import json
@@ -707,7 +738,7 @@ import requests
 ODBC_SQL_COPT_SS_ACCESS_TOKEN = 1256
 
 # Shared with 05/06/08's Purview sign-in: if another notebook already cached a
-# valid token in this run window, reuse it instead of blocking on interactive sign-in.
+# valid token in this run window, reuse it instead of re-acquiring one.
 PURVIEW_TOKEN_CACHE_PATH = "Files/purview_publish/.purview_token_cache.json"
 
 
@@ -761,7 +792,7 @@ def get_purview_token():
         return cached_token
 
     try:
-        from azure.identity import AzureCliCredential, DeviceCodeCredential
+        from azure.identity import AzureCliCredential
     except ImportError:
         import subprocess
         import sys
@@ -770,29 +801,19 @@ def get_purview_token():
             [sys.executable, "-m", "pip", "install", "--quiet", "azure-identity"],
             check=True,
         )
-        from azure.identity import AzureCliCredential, DeviceCodeCredential
+        from azure.identity import AzureCliCredential
 
     try:
         token_result = AzureCliCredential().get_token("https://purview.azure.net/.default")
-        print("[AUTH] Using Azure CLI credential (az account get-access-token).")
-        _write_shared_purview_token_cache(token_result.token, token_result.expires_on)
-        return token_result.token
     except Exception as exc:
-        print(f"[AUTH] Azure CLI credential unavailable ({exc}); falling back to device-code sign-in.")
+        raise RuntimeError(
+            "No PURVIEW_ACCESS_TOKEN override, no cached token, and AzureCliCredential failed "
+            f"({exc}). This notebook never prompts interactively when run unattended -- set "
+            "PURVIEW_ACCESS_TOKEN, ensure 'az login' has been run somewhere mssparkutils can "
+            "reach, or run this notebook interactively in the Fabric portal after signing in."
+        ) from exc
 
-    def show_device_code(verification_uri, user_code, expires_on):
-        print(
-            f"[AUTH] Open {verification_uri} in an InPrivate browser and enter "
-            f"code {user_code}. Sign in as the Sean account in tenant {PURVIEW_TENANT_ID}."
-        )
-
-    print("[AUTH] No cached token or override found; starting device-code sign-in.")
-    credential = DeviceCodeCredential(
-        client_id="04b07795-8ddb-461a-bbee-02f9e1bf7b46",
-        tenant_id=PURVIEW_TENANT_ID,
-        prompt_callback=show_device_code,
-    )
-    token_result = credential.get_token("https://purview.azure.net/.default")
+    print("[AUTH] Using Azure CLI credential (az account get-access-token).")
     _write_shared_purview_token_cache(token_result.token, token_result.expires_on)
     return token_result.token
 
@@ -828,6 +849,8 @@ def sha256_text(value):
 def utc_now():
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
+
+print("[READY] Cell 9 auth/connection helpers loaded (non-interactive Purview auth cascade).")
 
 ATTESTATION_LIMITATION_NOTICE = (
     "No Purview REST API, Microsoft Graph endpoint, or diagnostic log exposes a Data Product "
@@ -941,6 +964,8 @@ try:
             "attestationLimitation": ATTESTATION_LIMITATION_NOTICE,
         }
     )
+    if not DEMO_MODE:
+        print(f"[READY] request={request_id} decision={ATTESTED_DECISION} approver={ATTESTED_APPROVER_UPN}")
 except Exception as ex:
     _log_nb09_diagnostic("cell11_p3_guardrails", ex)
     raise
@@ -1174,7 +1199,13 @@ except Exception as ex:
 
 # CELL ********************
 
-# Cell 14: Completion boundary
+# Cell 14: Completion boundary (P3)
+# Purpose: marks where the P3 scenario ends. Unlike P2 (Cell 1-7) and P4b (Cell 22-28), a data
+# product ACCESS decision has no semantic-model counterpart to reconcile -- there is nothing
+# further for this notebook to do once Cell 12-13 have persisted and verified the decision.
+# This cell only prints that boundary; it does not ask you to attest to anything here -- the
+# actual attestation fields (who approved, what decision) are configured back in Cell 8 and
+# already reflect the real Victoria Tan / Rupal Solanki approval completed live in the portal.
 
 print(
     "P3 Purview access-decision evidence collection finished. This is an audit-only scenario: "
@@ -1233,7 +1264,10 @@ print(
 
 # CELL ********************
 
-# Cell 16: Authentication and connection helpers (mirrors the glossary term publish notebook)
+# Cell 16: Authentication and connection helpers (P4a)
+# Purpose: Purview REST auth (Cell 17 needs a bearer token) plus the SQL connection helper --
+# identical auth cascade to Cell 9, non-interactive only (env override -> shared cache -> Azure
+# CLI credential; never blocks an unattended run on a device-code prompt).
 
 import hashlib
 import json
@@ -1248,7 +1282,7 @@ import requests
 ODBC_SQL_COPT_SS_ACCESS_TOKEN = 1256
 
 # Shared with 05/06/08's Purview sign-in: if another notebook already cached a
-# valid token in this run window, reuse it instead of blocking on interactive sign-in.
+# valid token in this run window, reuse it instead of re-acquiring one.
 PURVIEW_TOKEN_CACHE_PATH = "Files/purview_publish/.purview_token_cache.json"
 
 
@@ -1302,7 +1336,7 @@ def get_purview_token():
         return cached_token
 
     try:
-        from azure.identity import AzureCliCredential, DeviceCodeCredential
+        from azure.identity import AzureCliCredential
     except ImportError:
         import subprocess
         import sys
@@ -1311,29 +1345,19 @@ def get_purview_token():
             [sys.executable, "-m", "pip", "install", "--quiet", "azure-identity"],
             check=True,
         )
-        from azure.identity import AzureCliCredential, DeviceCodeCredential
+        from azure.identity import AzureCliCredential
 
     try:
         token_result = AzureCliCredential().get_token("https://purview.azure.net/.default")
-        print("[AUTH] Using Azure CLI credential (az account get-access-token).")
-        _write_shared_purview_token_cache(token_result.token, token_result.expires_on)
-        return token_result.token
     except Exception as exc:
-        print(f"[AUTH] Azure CLI credential unavailable ({exc}); falling back to device-code sign-in.")
+        raise RuntimeError(
+            "No PURVIEW_ACCESS_TOKEN override, no cached token, and AzureCliCredential failed "
+            f"({exc}). This notebook never prompts interactively when run unattended -- set "
+            "PURVIEW_ACCESS_TOKEN, ensure 'az login' has been run somewhere mssparkutils can "
+            "reach, or run this notebook interactively in the Fabric portal after signing in."
+        ) from exc
 
-    def show_device_code(verification_uri, user_code, expires_on):
-        print(
-            f"[AUTH] Open {verification_uri} in an InPrivate browser and enter "
-            f"code {user_code}. Sign in as the Sean account in tenant {PURVIEW_TENANT_ID}."
-        )
-
-    print("[AUTH] No cached token or override found; starting device-code sign-in.")
-    credential = DeviceCodeCredential(
-        client_id="04b07795-8ddb-461a-bbee-02f9e1bf7b46",
-        tenant_id=PURVIEW_TENANT_ID,
-        prompt_callback=show_device_code,
-    )
-    token_result = credential.get_token("https://purview.azure.net/.default")
+    print("[AUTH] Using Azure CLI credential (az account get-access-token).")
     _write_shared_purview_token_cache(token_result.token, token_result.expires_on)
     return token_result.token
 
@@ -1374,6 +1398,9 @@ def publication_content_hash(product):
 
 def utc_now():
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+print("[READY] Cell 16 auth/connection helpers loaded (non-interactive Purview auth cascade).")
 
 # METADATA ********************
 
@@ -1436,7 +1463,11 @@ except Exception as ex:
 
 # CELL ********************
 
-# Cell 18: Enforce the P4 correlation and Draft-before-Published guardrails
+# Cell 18: Enforce the P4 correlation and Draft-before-Published guardrails (P4a)
+# Purpose: build this run's deterministic request_id/event_id from RUN_CORRELATION_ID and
+# validate the workflow prerequisites. The actual Draft-before-Published enforcement lives in
+# Cell 19, which also treats an already-Completed request as proof Draft was observed before --
+# a full first pass through Draft->Published is not required again on every idempotent rerun.
 
 try:
     if DEMO_MODE:
@@ -1464,6 +1495,8 @@ try:
             },
         }
     )
+    if not DEMO_MODE:
+        print(f"[READY] request={request_id} correlation={RUN_CORRELATION_ID} status={product_snapshot['status']}")
 except Exception as ex:
     _log_nb09_diagnostic("cell18_p4publish_guardrails", ex)
     raise
@@ -1477,7 +1510,10 @@ except Exception as ex:
 
 # CELL ********************
 
-# Cell 19: Persist one idempotent Draft or Published observation
+# Cell 19: Persist one idempotent Draft or Published observation (P4a)
+# Purpose: fail closed unless this correlation was observed as Draft (or is already
+# Approved/Completed from a prior full pass) before ever accepting a Published observation as
+# approval evidence -- this is what actually stops someone from skipping the native workflow.
 
 if not DEMO_MODE:
     connection = get_sql_connection()
@@ -1495,7 +1531,7 @@ if not DEMO_MODE:
         existing_status = existing_row[0] if existing_row else None
         existing_payload = json.loads(existing_row[1]) if existing_row and existing_row[1] else None
 
-        if product_snapshot["status"] == "Published" and existing_status not in ("Draft", "Approved"):
+        if product_snapshot["status"] == "Published" and existing_status not in ("Draft", "Approved", "Completed"):
             raise RuntimeError(
                 "Refusing to record Published as approval evidence because this correlation "
                 "has no prior Draft observation. Unpublish/edit DP-SVCPERF, run this notebook once "
@@ -1742,7 +1778,10 @@ except Exception as ex:
 
 # CELL ********************
 
-# Cell 21: Completion boundary
+# Cell 21: Completion boundary (P4a)
+# Purpose: marks where the publish-observation phase ends. Unlike Cell 14 (P3, which has no
+# further step), P4's semantic reconciliation and its own Completed/receipt state are handled
+# separately by Cell 22-28 -- this cell intentionally does not mark the request Completed.
 
 print(
     "P4 Purview evidence collection finished. This notebook does not mark the request "
@@ -1935,6 +1974,8 @@ def read_annotation(obj, key):
     annotation = find_by_name(obj.Annotations, key)
     return None if annotation is None else str(annotation.Value)
 
+
+print("[READY] Cell 23 helpers loaded (SQL connection, hashing, TOM lookup/annotation helpers).")
 
 if not RUN_REQUEST_ID.strip():
     raise RuntimeError("Set RUN_REQUEST_ID to the approved P4 governance request ID.")
