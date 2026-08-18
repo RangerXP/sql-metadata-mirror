@@ -1,11 +1,11 @@
 # `01_setup_source_data` — Notebook Description & Artifact Catalog
 
-**Purpose:** Full descriptive reference for `01_setup_source_data.Notebook` — what it does, what
-it consumes/produces, how it fits the Maria Castellanos north-star scenario
-(`docs/purview-maria-north-star-scenario.md`), and its live-validation history.
+**Purpose:** Descriptive reference for `01_setup_source_data.Notebook` — what it does, what it
+consumes/produces, and how it fits the Maria Castellanos north-star scenario
+(`docs/purview-maria-north-star-scenario.md`). For build/debug history and live-run evidence,
+see `docs/runbooks/notebook-validation/01_setup_source_data.md`.
 
-**Status:** ✅ Live-validated end-to-end 2026-08-17 (see `docs/runbooks/notebook-validation/01_setup_source_data.md`
-for the full run evidence). One real bug found and fixed during validation (see below).
+**Status:** ✅ Validated.
 
 **DEMO_MODE:** `False` for the Azure SQL publish section (its normal mode actually publishes).
 The lakehouse source-table section and the Phase B Purview-extensions section have no
@@ -48,7 +48,7 @@ Three sections in one notebook:
 
 ### Tables/artifacts this notebook produces
 
-| Target | Where | Rows (live-verified 2026-08-17) |
+| Target | Where | Rows |
 |---|---|---|
 | `customers`, `service_accounts`, `equipment_registry`, `contracts`, `service_requests`, `billing_transactions`, `products` | `lh_enercare_demo` (lakehouse) | 50 / 56 / 39 / 57 / 31 / 587 / — |
 | `cc_agents`, `fct_cc_interactions`, `fct_cc_transcript_turns`, `ref_cc_billing_adj_category` | `lh_enercare_demo` (lakehouse) | 15 / 300 / 3,479 / 12 |
@@ -69,14 +69,6 @@ surfaces in Act 1.
 customer/contract/service/call-center mix, entirely synthetic data — and one correlation baked
 in on purpose: customers who call about billing are meaningfully less likely to renew their
 protection plan."
-
-## Live-validation findings
-
-| Finding | Detail | Status |
-|---|---|---|
-| **Cohort-variance issue in the PP-renewal correlation** | The original random generation only produced a robust "billing callers renew less" gap for the 14 hand-designed `CORR_CUSTOMERS` (target ~57%). Any broader query (any customer who ever called billing, vs. never) showed only a weak, sometimes-inverted gap (~54.5% vs ~60%), because the other 272 randomly-generated interaction rows didn't condition `pp_renewal_outcome` on billing-caller status at all. | ✅ **Fixed 2026-08-17.** The remaining population now computes the full set of billing-callers first, then applies distinctly different acceptance-weight distributions (`PP_RENEWAL_WEIGHTS_BILLING_CALLER` vs `PP_RENEWAL_WEIGHTS_BASELINE`) based on that status. Re-verified live: billing-caller rate **50.8%** (n=65) vs non-billing-caller rate **85.7%** (n=7) — a robust ~35-point gap that holds for any reasonable cohort query, not just the designed 14. The notebook's own "Validate demo correlation" cell now asserts this gap holds on every run (`RuntimeError` if it regresses). |
-| **Maria's customer count (51 vs expected 50)** | Investigated as a possible duplication bug. | Not a bug — confirmed no duplicate `customer_id`s; Maria Castellanos (`customer_id=18374622`) is a deliberate 51st row added by the Phase B seed on top of the 50 generic synthetic customers. |
-| **Governance-metadata duplication (session-wide finding)** | This notebook previously embedded its own stale copy of the governance metadata schema/seed SQL. | ✅ **Fixed 2026-08-16** — see `docs/sql-prep-catalog.md` addendum. |
 
 ## Dependencies / downstream consumers
 

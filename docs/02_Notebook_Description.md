@@ -1,12 +1,11 @@
 # `02_build_metadata_foundation` — Notebook Description & Artifact Catalog
 
-**Purpose:** Full descriptive reference for `02_build_metadata_foundation.Notebook` — what it
-does, what it consumes/produces, how it fits the Maria Castellanos north-star scenario
-(`docs/purview-maria-north-star-scenario.md`), and its live-validation history.
+**Purpose:** Descriptive reference for `02_build_metadata_foundation.Notebook` — what it does,
+what it consumes/produces, and how it fits the Maria Castellanos north-star scenario
+(`docs/purview-maria-north-star-scenario.md`). For build/debug history and live-run evidence,
+see `docs/runbooks/notebook-validation/02_build_metadata_foundation.md`.
 
-**Status:** ✅ Live-validated end-to-end 2026-08-17, after finding and fixing a real bug (see
-`docs/runbooks/notebook-validation/02_build_metadata_foundation.md` for the full run evidence,
-including 4 failed attempts and the investigation trail).
+**Status:** ✅ Validated.
 
 **DEMO_MODE:** No single top-level flag — two merged sections, each unconditional (always run).
 
@@ -29,11 +28,6 @@ Two originally-separate notebooks merged into one file:
   real table/column names, resolves aliases, and writes the reconciled `sm_annotations` working
   table that `04_writeback_governed_metadata` depends on.
 
-A leftover `mssparkutils.notebook.exit()` from before Cells 10–16 were merged in made them
-unreachable dead code until fixed 2026-08-16 — this was **the first-ever live run where Cells
-10–16 could possibly execute**, which is why the subsequent bug-hunt (below) was so involved:
-this reconciliation logic had never actually run as part of the consolidated notebook before.
-
 ## Artifact catalog
 
 ### Inputs consumed
@@ -46,7 +40,7 @@ this reconciliation logic had never actually run as part of the consolidated not
 
 ### Outputs produced
 
-| Target | Rows (live-verified 2026-08-17, post-fix) |
+| Target | Rows |
 |---|---|
 | `lh_metadata.dbo.domains` | 3 |
 | `lh_metadata.dbo.data_products` | 3 |
@@ -57,7 +51,7 @@ this reconciliation logic had never actually run as part of the consolidated not
 | `lh_metadata.dbo.governance_change_requests` | 10 |
 | `lh_metadata.dbo.okrs` / `okr_key_results` / `okr_data_products` | 3 / 5 / 3 |
 | `lh_metadata.dbo.sm_annotations` (rebuilt fresh, `mode("overwrite")`) | 77 (`Glossary_Term_References`=62, `Sensitivity_Label`=7, `Data_Product_Owner`=6, `CDE_Member_Of`=2) |
-| `lh_metadata.dbo.nb02_diagnostics_log` (new, added during this session's debugging) | Diagnostic-only — captures the real Python/JVM exception per named stage on any future failure, since Fabric's REST API never exposes cell-level detail |
+| `lh_metadata.dbo.nb02_diagnostics_log` | Real exception + traceback capture per named stage, since Fabric's job API exposes no cell-level detail |
 
 ## Demo fit
 
@@ -68,26 +62,6 @@ semantic model receives, in sync with the SQL source of truth.
 
 "Every governance object — domain, product, term, CDE — has one SQL source row; this notebook
 is the sync-and-reconcile step into the Fabric/semantic-model layer."
-
-## Live-validation findings
-
-This notebook required 5 live run attempts to reach `Completed`, because Cells 10–16 had never
-executed successfully before (see "What it does" above). Fabric's Job Instance API reports only
-a generic `System_Cancelled_Session_Statements_Failed` message for every failure, with no
-per-cell detail — the real cause had to be found by adding custom diagnostic instrumentation
-(a `_log_nb02_diagnostic(stage, error)` helper, matching the pattern already used in
-`06_publish_glossary_and_lineage`/`07_apply_approved_changes`, writing the real exception +
-traceback to `dbo.nb02_diagnostics_log` before re-raising).
-
-| Finding | Detail | Status |
-|---|---|---|
-| **Dead-code bug: Cells 10–16 unreachable** | An unconditional `mssparkutils.notebook.exit()` at the end of Cell 9 — correct for the original standalone notebook, which ended at that line, but never removed once the reconciliation cells were appended during consolidation. | ✅ **Fixed 2026-08-16.** `exit()` call removed. |
-| **Root cause of the 4 subsequent failures: stale Spark catalog schema** | `Cell 14`'s `glossary_df.collect()` failed with `Py4JJavaError: IllegalStateException: Couldn't find parent_term_code#42033 in [...]` — Spark's cached logical plan expected a `parent_term_code` column that no longer exists in the physical Delta table (replaced by `approved_at` from a later schema migration). Cell 10's `_read_table()` never got the `refreshTable()` fix that `05`/`06` already had. | ✅ **Fixed 2026-08-17.** Added `spark.catalog.refreshTable()` before every `spark.table()` read in Cell 10's `_read_table()`, and pruned `glossary_df`/`cde_df`/`data_products_df`/`labels_df` to only the columns Cell 14 actually reads (same proven pattern as `06_publish_glossary_and_lineage`). Confirmed live: successful run added zero new rows to `nb02_diagnostics_log`. |
-| **Red herring investigated first: expensive Delta-path probing** | `try_load_sql_dataset()` (Cells 1–9) tries a large combinatorial set of physical `abfss://` Delta paths before falling back to catalog-based lookup — worth avoiding on its own merits, but proven **not** the actual cause (still failed after reordering catalog-lookup first, until the real Cell 14 fix landed). | ✅ **Reordered anyway** (catalog lookup now tried first) — cheaper in the common case, and defensible independent of the real bug. |
-| **Glossary term placeholder names (source-data quality gap, not a notebook bug)** | Of the 35 glossary terms, only `GT-001`–`GT-010` have real curated `term_name` values; `GT-011`–`GT-035` (25 terms) carry a generic placeholder — literally `"Governance Term 16"`, etc. — in the underlying `dbo.glossary_terms` source data. | ⚠️ **Not fixed here** — this notebook correctly reads and reconciles whatever the SQL source contains; the placeholder names are upstream seed-content that needs real curated definitions (likely in `sql/02_metadata_foundation/07_seed_purview_metadata.sql`). Flagged for the broader artifact-cataloging pass. |
-| **Proactive fix applied elsewhere the same day** | Given this bug class, audited all 10 notebooks for the same missing-`refreshTable()` pattern. | ✅ `04_writeback_governed_metadata` and `08_validate_governance_evidence` were also vulnerable and fixed proactively (not yet exercised by a live failure in those notebooks — see their own docs). |
-| **AI grounding follow-up: quantified billing-caller/PP-renewal gap** | The `PP_RNW_RATE` / "renewal rate" verified-answer only referenced the notebook-1 correlation qualitatively ("often signals billing confusion"), not with the actual fixed numbers. | ✅ **Fixed 2026-08-17.** Strengthened the seed row with the quantified gap (~51% vs. ~86%, ~35 points); confirmed live in `ai_metadata` and, after rerunning `04`, in the semantic model's `PBI_AI_VerifiedAnswers` annotation. |
-| **Platform gotcha: local/git edits don't auto-sync to Fabric** | A rerun after this edit (job `d817ce60`) reported `Completed` with **no error** but silently executed the old pre-edit code — Fabric's workspace Git connection was 4 commits behind the pushed remote. | ✅ Root-caused and fixed: added `tools/sync_fabric_git.py` (calls `POST /v1/workspaces/{id}/git/updateFromGit`). Now run after every notebook-content.py push, before the next job submission. |
 
 ## Dependencies / downstream consumers
 

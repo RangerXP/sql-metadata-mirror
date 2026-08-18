@@ -1,12 +1,11 @@
 # `04_writeback_governed_metadata` — Notebook Description & Artifact Catalog
 
-**Purpose:** Full descriptive reference for `04_writeback_governed_metadata.Notebook` — what it
-does, what it consumes/produces, how it fits the Maria Castellanos north-star scenario
-(`docs/purview-maria-north-star-scenario.md`), and its live-validation history.
+**Purpose:** Descriptive reference for `04_writeback_governed_metadata.Notebook` — what it
+does, what it consumes/produces, and how it fits the Maria Castellanos north-star scenario
+(`docs/purview-maria-north-star-scenario.md`). For build/debug history and live-run evidence,
+see `docs/runbooks/notebook-validation/04_writeback_governed_metadata.md`.
 
-**Status:** ✅ Live-validated end-to-end 2026-08-17, no runtime issues (see
-`docs/runbooks/notebook-validation/04_writeback_governed_metadata.md` for the full run evidence
-and semantic-model verification).
+**Status:** ✅ Validated.
 
 **DEMO_MODE:** `False` (its normal mode actually writes to the live semantic model).
 
@@ -27,11 +26,10 @@ Two originally-separate notebooks merged into one file:
   `RuntimeError("sm_annotations is empty")` if missing) — populated by
   `02_build_metadata_foundation`.
 - **Cells 11–15 — AI grounding writeback** (formerly `nb_05_push_qa_verified_answers`): reads
-  `ai_metadata`, filters `WHERE IsDraft = 0 AND IsCertified = 1` (fixed 2026-08-13 to match the
-  KPI path's certification gate), builds the annotation payload, and writes
+  `ai_metadata`, filters `WHERE IsDraft = 0 AND IsCertified = 1` (matching the KPI path's
+  certification gate), builds the annotation payload, and writes
   `PBI_AI_Instructions`/`PBI_AI_VerifiedAnswers` annotations the Fabric Data Agent reads for
-  grounding. `MAX_ANNOTATION_CHARS = 32000` (root-caused and fixed after an earlier live run
-  failed at the old 12000-char limit with a real certified payload of 12001 chars).
+  grounding. `MAX_ANNOTATION_CHARS = 32000` (large enough for a full certified payload).
 
 ## Artifact catalog
 
@@ -46,14 +44,14 @@ Two originally-separate notebooks merged into one file:
 | `lh_metadata.{semantic_measure_kpi_map, measure_kpi_map, kpi_measure_map}` (first existing candidate) | Optional measure-name alias resolution |
 | Live `BrookfieldEnercare` semantic model inventory (via Power BI MCP) | Cross-check before building the write plan |
 
-### Outputs produced (live-verified 2026-08-17, via direct semantic-model read-back)
+### Outputs produced (via direct semantic-model read-back)
 
 | Target | Result |
 |---|---|
 | Table descriptions (13 tables) | All carry real, substantive descriptions (e.g. `dim_customer`, `fct_service_request`) |
 | Measure descriptions (18 measures) | All carry real descriptions (`Technician Utilization Rate`, `Total MRR`/`New MRR`/`Churned MRR`, `SLA Breach Count`/`SLA Compliance Rate`, `Warranty Coverage Rate`, etc.) |
 | Model-level `PBI_AI_Instructions` annotation | Present, contains real Enercare business-context grounding (billing systems, call-center queue taxonomy, FCR terminology) |
-| Model-level `PBI_AI_VerifiedAnswers` annotation | Present; confirmed 2026-08-17 to include the quantified billing-caller/PP-renewal correlation (see Live-validation findings) |
+| Model-level `PBI_AI_VerifiedAnswers` annotation | Present, includes the quantified billing-caller/PP-renewal correlation from `01_setup_source_data` |
 
 ## Demo fit
 
@@ -66,15 +64,6 @@ furnace status" and get a grounded answer (Act 1 / Acceptance Criterion 7).
 "Notice the certification filter on both halves of this notebook — an uncertified KPI or AI
 instruction change never reaches the semantic model or the Data Agent through this path.
 That's what makes drift structurally impossible, not just a policy."
-
-## Live-validation findings
-
-| Finding | Detail | Status |
-|---|---|---|
-| **`MAX_ANNOTATION_CHARS` too small** (historical, prior session) | A live run failed at the old 12000-char limit with a real certified payload of 12001 chars. | ✅ Fixed — raised to 32000. |
-| **AI grounding writeback was missing an `IsCertified` filter** (historical, prior session) | Originally filtered only `WHERE IsDraft = 0`, unlike the KPI writeback path. | ✅ Fixed 2026-08-13 — now filters `WHERE IsDraft = 0 AND IsCertified = 1`. |
-| **Proactive stale-schema hardening (2026-08-17)** | Same bug class root-caused live in `02_build_metadata_foundation` (`refreshTable()` missing before a full-row `.collect()`). Two locations in this notebook matched the vulnerable pattern (`measure_kpi_map` candidate-table lookup at the top of Cell 8, and `_read_governance_rows()` for OKR/ontology annotations). | ✅ Fixed proactively — neither had actually failed at runtime here, but both were hardened with `refreshTable()` before this notebook's live validation run (which then completed cleanly). |
-| **AI grounding content for the notebook-1 correlation fix** | Did not independently confirm the AI grounding annotation specifically encodes the fixed billing-caller/PP-renewal correlation as a Tom-facing insight. | ✅ **Resolved 2026-08-17.** Confirmed present but only qualitative ("often signals billing confusion"); strengthened the source `ai_metadata` verified-answer with the quantified gap (~51% vs. ~86%, ~35 points) in `02_build_metadata_foundation`, then reran this notebook and confirmed the quantified text live in the semantic model's `PBI_AI_VerifiedAnswers` annotation via a fresh Power BI Modeling MCP connection. See `docs/runbooks/notebook-validation/02_build_metadata_foundation.md`. |
 
 ## Dependencies / downstream consumers
 

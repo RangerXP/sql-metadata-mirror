@@ -1,11 +1,11 @@
 # `05_publish_governance_domains` — Notebook Description & Artifact Catalog
 
-**Purpose:** Full descriptive reference for `05_publish_governance_domains.Notebook` — what it
-does, what it consumes/produces, how it fits the Maria Castellanos north-star scenario
-(`docs/purview-maria-north-star-scenario.md`), and its live-validation history.
+**Purpose:** Descriptive reference for `05_publish_governance_domains.Notebook` — what it
+does, what it consumes/produces, and how it fits the Maria Castellanos north-star scenario
+(`docs/purview-maria-north-star-scenario.md`). For build/debug history and live-run evidence,
+see `docs/runbooks/notebook-validation/05_publish_governance_domains.md`.
 
-**Status:** ✅ Live-validated end-to-end 2026-08-17, after finding and fixing a real bug (see
-`docs/runbooks/notebook-validation/05_publish_governance_domains.md` for the full run evidence).
+**Status:** ✅ Validated.
 
 **DEMO_MODE:** No top-level gate — the dry-run artifact write (`Files/purview_publish/*.json`)
 always happens; live Purview publish is controlled by `SQL_MIRROR_ONLY_DEPLOYMENT` /
@@ -25,9 +25,9 @@ the Atlas API. Saves the dry-run typedef/entity payloads to
 live-publish setting, for review/replay.
 
 Purview authentication (Cell 4a) reuses a token cached by another notebook
-(`Files/purview_publish/.purview_token_cache.json`) if one is valid, and only falls back to an
-interactive device-code sign-in if no cached token exists — see the git-sync/token-cache
-pitfall documented in the validation doc.
+(`Files/purview_publish/.purview_token_cache.json`) if one is valid, otherwise falls back to a
+non-interactive Azure CLI credential -- it never blocks an unattended run on an interactive
+sign-in prompt, and this same cache/cascade is shared with `06`/`08`/`09`.
 
 ## Artifact catalog
 
@@ -63,13 +63,6 @@ Purview's native Unified Catalog "Related data products" feature works.
 same objects a Purview admin would create by hand in the portal. The OKRs on top of them are
 what let a business stakeholder trace a strategic goal down to the governed data product backing
 it."
-
-## Live-validation findings
-
-| Finding | Detail | Status |
-|---|---|---|
-| **Interactive device-code sign-in blocks unattended runs** | Cell 4a falls back to an interactive `DeviceCodeCredential` browser sign-in if no valid cached Purview token exists. Submitted as an unattended REST job with no cached token present, the notebook silently hung for ~18 minutes waiting for a human to complete a sign-in that never came, then Fabric cancelled the session (`System_Cancelled_Session_Statements_Failed` — indistinguishable from a real code failure over the REST API). | ✅ **Fixed 2026-08-17.** Pre-seeded the shared token cache (`Files/purview_publish/.purview_token_cache.json`) directly via the OneLake DFS REST API using a token captured with `az account get-access-token --resource https://purview.azure.net`, so the notebook's existing cache-first fallback picked it up instead of blocking. Re-run completed in ~4 minutes. Applied the same defensive fix (shared-cache read before any device-code fallback) to `08_validate_governance_evidence` and `09_reconcile_semantic_model`, which had the identical unconditional device-code call with no cache fallback at all — see their docs. |
-| **Data output confirmed correct** | Dry-run `entities_day2.json` inspected directly from OneLake: 3 `EnercareGovernanceDomain`, 3 `EnercareDataProduct`, 3 `EnercareOKR`, 5 `EnercareOKRKeyResult` — 14 entities total, matching the expected demo scale. | ✅ Confirmed. |
 
 ## Dependencies / downstream consumers
 
