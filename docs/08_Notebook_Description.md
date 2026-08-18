@@ -1,12 +1,11 @@
 # `08_validate_governance_evidence` — Notebook Description & Artifact Catalog
 
-**Purpose:** Full descriptive reference for `08_validate_governance_evidence.Notebook` — what
-it does, what it consumes/produces, how it fits the Maria Castellanos north-star scenario
-(`docs/purview-maria-north-star-scenario.md`), and its live-validation history.
+**Purpose:** Descriptive reference for `08_validate_governance_evidence.Notebook` — what it
+does, what it consumes/produces, and how it fits the Maria Castellanos north-star scenario
+(`docs/purview-maria-north-star-scenario.md`). For build/debug history and live-run evidence,
+see `docs/runbooks/notebook-validation/08_validate_governance_evidence.md`.
 
-**Status:** ✅ Live-validated end-to-end 2026-08-18, after finding and fixing a real upstream
-data regression (see `docs/runbooks/notebook-validation/08_validate_governance_evidence.md` for
-full evidence, and `docs/02_Notebook_Description.md`'s Follow-up section for the upstream fix).
+**Status:** ✅ Validated.
 
 **DEMO_MODE:** Cells 1–6 (with 5a) have no gate (pure read-only validation). Cells 7+:
 `DEMO_MODE = False` (intentional — Cell 9 observes and persists a real Purview workflow event).
@@ -68,16 +67,6 @@ workflow run observed through its own API, not a SQL-side simulation.
 "This is our own governance health check, and this is what a real approval inside the Purview
 portal looks like once read back through the API — not a SQL-side approximation."
 
-## Live-validation findings
-
-| Finding | Detail | Status |
-|---|---|---|
-| **Upstream data regression blocked all early attempts** | Stewardship scorecard failed with `Couldn't find governance_domain_stewards#74 in [...]` — traced to a full regression of the 2026-08-08 steward-data fix at the sub2 SQL source (all steward columns NULL), plus stale legacy glossary-term content, plus Fabric mirroring found `Paused`. Full root-cause chain in `docs/02_Notebook_Description.md`'s Follow-up section. | ✅ **Fixed 2026-08-18** at the source (backfill + reseed + mirroring restart), not by patching around the gap in this notebook. |
-| **2 automated resubmissions misdiagnosed as a repeat of the same bug** | After the upstream fix, 2 unattended `RunNotebook` batch jobs still failed identically. Corrected finding: these actually hung on Cell 9's Purview token acquisition, which only had a manual→cache→device-code cascade at the time — an unattended job can't complete an interactive sign-in. | ✅ **Fixed 2026-08-18** by adding an `AzureCliCredential` fallback tier to `get_purview_token()`, reusing the already-authenticated `az` CLI session instead of blocking on device-code. |
-| **Confirmed live: all four validation phases genuinely PASS** | Manual run (portal, interactive session) completed cleanly: 18/18 stewardship rows PASS, 4/4 controls (1 intentional WARN), 4/4 AI readiness, 4/4 ontology — 0 `ACTION_REQUIRED` anywhere. | ✅ Independently re-verified via direct SQL query against all 4 live tables (not just notebook print output) — see `docs/runbooks/notebook-validation/08_validate_governance_evidence.md`. |
-| **P1 Purview-native workflow proof confirmed live** | `GT-SLA` observed `status=Published`, correlated Draft→Published evidence chain intact, applied and verified with a `Passed` receipt. | ✅ Confirmed via Cells 9/11/12 output. |
-| **Governance-contract compliance** | Ran the full `tools/audit_seed_vs_source.py --target both` (value parity, row counts, enum compliance, referential integrity) and `tools/validate_required_columns_not_null.py --target both` against the tables this notebook reads. | ✅ 0 failing checks across both tools, at both the sub2 source and the `lh_metadata` destination. |
-
 ## Dependencies / downstream consumers
 
 - Depends on `02_build_metadata_foundation` having written `domains`/`data_products`/`cdes`/
@@ -91,5 +80,6 @@ portal looks like once read back through the API — not a SQL-side approximatio
 ---
 
 See also: [`07_Notebook_Description.md`](./07_Notebook_Description.md) ·
-[`docs/runbooks/notebook-validation/08_validate_governance_evidence.md`](./runbooks/notebook-validation/08_validate_governance_evidence.md) ·
-[`docs/02_Notebook_Description.md`](./02_Notebook_Description.md) (upstream regression details)
+[`docs/runbooks/notebook-validation/08_validate_governance_evidence.md`](./runbooks/notebook-validation/08_validate_governance_evidence.md)
+(build/debug history and live-run evidence) ·
+[`docs/02_Notebook_Description.md`](./02_Notebook_Description.md)
