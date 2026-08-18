@@ -65,6 +65,31 @@ SEMANTIC_TARGETS = [
 
 print(f"nb_13 | DEMO_MODE={DEMO_MODE} | request={RUN_REQUEST_ID or '<not set>'} | model={MODEL_NAME}")
 
+import traceback
+
+
+def _log_nb09_diagnostic(stage: str, error: Exception) -> None:
+    try:
+        from pyspark.sql import Row, SparkSession
+        from pyspark.sql.types import StructType, StructField, StringType
+        spark = SparkSession.builder.getOrCreate()
+        diag_schema = StructType([
+            StructField("stage", StringType(), True),
+            StructField("error_type", StringType(), True),
+            StructField("error_message", StringType(), True),
+            StructField("traceback", StringType(), True),
+        ])
+        diag_row = Row(
+            stage=stage,
+            error_type=type(error).__name__,
+            error_message=str(error)[:4000],
+            traceback=traceback.format_exc()[:8000],
+        )
+        spark.createDataFrame([diag_row], schema=diag_schema).write.format("delta").mode("append") \
+            .saveAsTable("lh_metadata.nb09_diagnostics_log")
+    except Exception as log_exc:
+        print(f"[diagnostic-logging-failed] {log_exc}")
+
 # METADATA ********************
 
 # META {
@@ -212,113 +237,117 @@ if not RUN_REQUEST_ID.strip():
 
 # Cell 3: Load the approved source definition and enforce the P1 gate
 
-connection = get_sql_connection()
-cursor = connection.cursor()
 try:
-    cursor.execute(
-        """
-        SELECT current_status, proposed_payload
-        FROM dbo.governance_requests
-        WHERE request_id = ? AND request_type = 'GLOSSARY_TERM_PUBLICATION'
-        """,
-        RUN_REQUEST_ID,
+    connection = get_sql_connection()
+    cursor = connection.cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT current_status, proposed_payload
+            FROM dbo.governance_requests
+            WHERE request_id = ? AND request_type = 'GLOSSARY_TERM_PUBLICATION'
+            """,
+            RUN_REQUEST_ID,
+        )
+        request_row = cursor.fetchone()
+        if not request_row:
+            raise RuntimeError("Governance request was not found or has the wrong request type.")
+        if request_row[0] not in ("Approved", "Completed"):
+            raise RuntimeError(f"Request must be Approved before reconciliation; found {request_row[0]!r}.")
+
+        cursor.execute(
+            """
+            SELECT validation_status, expected_hash, observed_hash
+            FROM dbo.governance_target_receipts
+            WHERE request_id = ? AND target_system = 'Purview'
+              AND target_object_type = 'GlossaryTerm' AND target_object_id = ?
+              AND receipt_type = 'PublicationReadback'
+            """,
+            RUN_REQUEST_ID,
+            PURVIEW_TERM_ID,
+        )
+        publication_receipt = cursor.fetchone()
+        if not publication_receipt or publication_receipt[0] != "Passed":
+            raise RuntimeError("PublicationReadback must pass before semantic reconciliation.")
+        if publication_receipt[1] != publication_receipt[2]:
+            raise RuntimeError("PublicationReadback expected and observed hashes differ.")
+
+        cursor.execute(
+            """
+            SELECT TOP (1) object_payload
+            FROM dbo.governed_object_versions
+            WHERE request_id = ? AND source_system = 'Purview'
+              AND object_type = 'GlossaryTerm' AND object_id = ?
+              AND lifecycle_status = 'Published'
+            ORDER BY observed_at DESC, version_id DESC
+            """,
+            RUN_REQUEST_ID,
+            PURVIEW_TERM_ID,
+        )
+        version_row = cursor.fetchone()
+        if not version_row:
+            raise RuntimeError("No Published Purview object version exists for this request.")
+    finally:
+        cursor.close()
+        connection.close()
+
+    request_payload = json.loads(request_row[1]) if request_row[1] else {}
+    published_term = json.loads(version_row[0])
+    if published_term.get("id") != PURVIEW_TERM_ID or published_term.get("status") != "Published":
+        raise RuntimeError("Published source payload does not match the configured GT-SLA term.")
+
+    approved_definition = description_text(published_term.get("description"))
+    if not approved_definition:
+        raise RuntimeError("Published GT-SLA has no usable description to reconcile.")
+
+    receipt_content_hash = publication_receipt[1]
+    payload_content_hash = request_payload.get("publicationContentHash")
+    if receipt_content_hash and payload_content_hash and receipt_content_hash != payload_content_hash:
+        raise RuntimeError("P1 receipt and proposed_payload publication hashes differ.")
+
+    if receipt_content_hash:
+        publication_content_hash = receipt_content_hash
+    elif payload_content_hash:
+        publication_content_hash = payload_content_hash
+    else:
+        publication_content = dict(published_term)
+        publication_content.pop("status", None)
+        publication_content_hash = sha256_text(canonical_json(publication_content))
+
+    if len(publication_content_hash) != 64:
+        raise RuntimeError("Resolved publication content hash is not a SHA-256 value.")
+
+    semantic_annotations = {
+        "Glossary_Term_References": PURVIEW_TERM_CODE,
+        "Purview_Term_Id": PURVIEW_TERM_ID,
+        "Purview_Publication_Content_Hash": publication_content_hash,
+        "Governance_Request_Id": RUN_REQUEST_ID,
+    }
+    expected_metadata = []
+    for target in SEMANTIC_TARGETS:
+        expected_metadata.append(
+            {
+                "table": target["table"],
+                "objectType": target["objectType"],
+                "objectName": target["objectName"],
+                "description": (
+                    f"{target['descriptionPrefix']} "
+                    f"Governed definition ({PURVIEW_TERM_CODE}): {approved_definition}"
+                ),
+                "annotations": semantic_annotations,
+            }
+        )
+
+    expected_hash = sha256_text(canonical_json(expected_metadata))
+    print(
+        f"[READY] request={RUN_REQUEST_ID} status={request_row[0]} "
+        f"targets={len(expected_metadata)} expected_hash={expected_hash}"
     )
-    request_row = cursor.fetchone()
-    if not request_row:
-        raise RuntimeError("Governance request was not found or has the wrong request type.")
-    if request_row[0] not in ("Approved", "Completed"):
-        raise RuntimeError(f"Request must be Approved before reconciliation; found {request_row[0]!r}.")
-
-    cursor.execute(
-        """
-        SELECT validation_status, expected_hash, observed_hash
-        FROM dbo.governance_target_receipts
-        WHERE request_id = ? AND target_system = 'Purview'
-          AND target_object_type = 'GlossaryTerm' AND target_object_id = ?
-          AND receipt_type = 'PublicationReadback'
-        """,
-        RUN_REQUEST_ID,
-        PURVIEW_TERM_ID,
-    )
-    publication_receipt = cursor.fetchone()
-    if not publication_receipt or publication_receipt[0] != "Passed":
-        raise RuntimeError("PublicationReadback must pass before semantic reconciliation.")
-    if publication_receipt[1] != publication_receipt[2]:
-        raise RuntimeError("PublicationReadback expected and observed hashes differ.")
-
-    cursor.execute(
-        """
-        SELECT TOP (1) object_payload
-        FROM dbo.governed_object_versions
-        WHERE request_id = ? AND source_system = 'Purview'
-          AND object_type = 'GlossaryTerm' AND object_id = ?
-          AND lifecycle_status = 'Published'
-        ORDER BY observed_at DESC, version_id DESC
-        """,
-        RUN_REQUEST_ID,
-        PURVIEW_TERM_ID,
-    )
-    version_row = cursor.fetchone()
-    if not version_row:
-        raise RuntimeError("No Published Purview object version exists for this request.")
-finally:
-    cursor.close()
-    connection.close()
-
-request_payload = json.loads(request_row[1]) if request_row[1] else {}
-published_term = json.loads(version_row[0])
-if published_term.get("id") != PURVIEW_TERM_ID or published_term.get("status") != "Published":
-    raise RuntimeError("Published source payload does not match the configured GT-SLA term.")
-
-approved_definition = description_text(published_term.get("description"))
-if not approved_definition:
-    raise RuntimeError("Published GT-SLA has no usable description to reconcile.")
-
-receipt_content_hash = publication_receipt[1]
-payload_content_hash = request_payload.get("publicationContentHash")
-if receipt_content_hash and payload_content_hash and receipt_content_hash != payload_content_hash:
-    raise RuntimeError("P1 receipt and proposed_payload publication hashes differ.")
-
-if receipt_content_hash:
-    publication_content_hash = receipt_content_hash
-elif payload_content_hash:
-    publication_content_hash = payload_content_hash
-else:
-    publication_content = dict(published_term)
-    publication_content.pop("status", None)
-    publication_content_hash = sha256_text(canonical_json(publication_content))
-
-if len(publication_content_hash) != 64:
-    raise RuntimeError("Resolved publication content hash is not a SHA-256 value.")
-
-semantic_annotations = {
-    "Glossary_Term_References": PURVIEW_TERM_CODE,
-    "Purview_Term_Id": PURVIEW_TERM_ID,
-    "Purview_Publication_Content_Hash": publication_content_hash,
-    "Governance_Request_Id": RUN_REQUEST_ID,
-}
-expected_metadata = []
-for target in SEMANTIC_TARGETS:
-    expected_metadata.append(
-        {
-            "table": target["table"],
-            "objectType": target["objectType"],
-            "objectName": target["objectName"],
-            "description": (
-                f"{target['descriptionPrefix']} "
-                f"Governed definition ({PURVIEW_TERM_CODE}): {approved_definition}"
-            ),
-            "annotations": semantic_annotations,
-        }
-    )
-
-expected_hash = sha256_text(canonical_json(expected_metadata))
-print(
-    f"[READY] request={RUN_REQUEST_ID} status={request_row[0]} "
-    f"targets={len(expected_metadata)} expected_hash={expected_hash}"
-)
-for item in expected_metadata:
-    print(f"  {item['objectType']}: {item['table']}.{item['objectName']}")
+    for item in expected_metadata:
+        print(f"  {item['objectType']}: {item['table']}.{item['objectName']}")
+except Exception as ex:
+    _log_nb09_diagnostic("cell3_p2_load_gate", ex)
+    raise
 
 # METADATA ********************
 
@@ -331,16 +360,20 @@ for item in expected_metadata:
 
 # Cell 4: Apply only descriptions and annotations through SemPy Labs TOM
 
-if DEMO_MODE:
-    print("[DEMO_MODE] Semantic metadata write skipped.")
-else:
-    with connect_semantic_model(dataset=MODEL_NAME, readonly=False) as tom:
-        for expected in expected_metadata:
-            obj = semantic_object(tom, expected)
-            obj.Description = expected["description"]
-            for key, value in expected["annotations"].items():
-                upsert_annotation(obj, key, value)
-    print(f"[APPLIED] semantic metadata written to {len(expected_metadata)} object(s).")
+try:
+    if DEMO_MODE:
+        print("[DEMO_MODE] Semantic metadata write skipped.")
+    else:
+        with connect_semantic_model(dataset=MODEL_NAME, readonly=False) as tom:
+            for expected in expected_metadata:
+                obj = semantic_object(tom, expected)
+                obj.Description = expected["description"]
+                for key, value in expected["annotations"].items():
+                    upsert_annotation(obj, key, value)
+        print(f"[APPLIED] semantic metadata written to {len(expected_metadata)} object(s).")
+except Exception as ex:
+    _log_nb09_diagnostic("cell4_p2_apply_metadata", ex)
+    raise
 
 # METADATA ********************
 
@@ -353,32 +386,36 @@ else:
 
 # Cell 5: Reopen the model read-only and compute the observed metadata hash
 
-if DEMO_MODE:
-    observed_metadata = expected_metadata
-    observed_hash = expected_hash
-    validation_status = "Pending"
-    print("[DEMO_MODE] Read-back skipped; expected metadata shown as the plan.")
-else:
-    observed_metadata = []
-    with connect_semantic_model(dataset=MODEL_NAME, readonly=True) as tom:
-        for expected in expected_metadata:
-            obj = semantic_object(tom, expected)
-            observed_metadata.append(
-                {
-                    "table": expected["table"],
-                    "objectType": expected["objectType"],
-                    "objectName": expected["objectName"],
-                    "description": str(obj.Description or ""),
-                    "annotations": {key: read_annotation(obj, key) for key in ANNOTATION_KEYS},
-                }
-            )
+try:
+    if DEMO_MODE:
+        observed_metadata = expected_metadata
+        observed_hash = expected_hash
+        validation_status = "Pending"
+        print("[DEMO_MODE] Read-back skipped; expected metadata shown as the plan.")
+    else:
+        observed_metadata = []
+        with connect_semantic_model(dataset=MODEL_NAME, readonly=True) as tom:
+            for expected in expected_metadata:
+                obj = semantic_object(tom, expected)
+                observed_metadata.append(
+                    {
+                        "table": expected["table"],
+                        "objectType": expected["objectType"],
+                        "objectName": expected["objectName"],
+                        "description": str(obj.Description or ""),
+                        "annotations": {key: read_annotation(obj, key) for key in ANNOTATION_KEYS},
+                    }
+                )
 
-    observed_hash = sha256_text(canonical_json(observed_metadata))
-    validation_status = "Passed" if observed_hash == expected_hash else "Failed"
-    print(
-        f"[READBACK] status={validation_status} expected_hash={expected_hash} "
-        f"observed_hash={observed_hash}"
-    )
+        observed_hash = sha256_text(canonical_json(observed_metadata))
+        validation_status = "Passed" if observed_hash == expected_hash else "Failed"
+        print(
+            f"[READBACK] status={validation_status} expected_hash={expected_hash} "
+            f"observed_hash={observed_hash}"
+        )
+except Exception as ex:
+    _log_nb09_diagnostic("cell5_p2_readback", ex)
+    raise
 
 # METADATA ********************
 
@@ -525,8 +562,9 @@ else:
             )
 
         connection.commit()
-    except Exception:
+    except Exception as ex:
         connection.rollback()
+        _log_nb09_diagnostic("cell6_p2_persist_receipt", ex)
         raise
     finally:
         cursor.close()
@@ -547,41 +585,45 @@ else:
 
 # Cell 7: Final verification
 
-if not DEMO_MODE:
-    connection = get_sql_connection()
-    cursor = connection.cursor()
-    try:
-        cursor.execute(
-            """
-            SELECT current_status, completed_at
-            FROM dbo.governance_requests
-            WHERE request_id = ?
-            """,
-            RUN_REQUEST_ID,
-        )
-        final_request = cursor.fetchone()
-        cursor.execute(
-            """
-            SELECT target_system, receipt_type, validation_status,
-                   CASE WHEN expected_hash = observed_hash THEN 1 ELSE 0 END AS hashes_match
-            FROM dbo.governance_target_receipts
-            WHERE request_id = ?
-              AND receipt_type IN ('PublicationReadback', 'SemanticModelReadback')
-            ORDER BY target_system, receipt_type
-            """,
-            RUN_REQUEST_ID,
-        )
-        final_receipts = cursor.fetchall()
-    finally:
-        cursor.close()
-        connection.close()
+try:
+    if not DEMO_MODE:
+        connection = get_sql_connection()
+        cursor = connection.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT current_status, completed_at
+                FROM dbo.governance_requests
+                WHERE request_id = ?
+                """,
+                RUN_REQUEST_ID,
+            )
+            final_request = cursor.fetchone()
+            cursor.execute(
+                """
+                SELECT target_system, receipt_type, validation_status,
+                       CASE WHEN expected_hash = observed_hash THEN 1 ELSE 0 END AS hashes_match
+                FROM dbo.governance_target_receipts
+                WHERE request_id = ?
+                  AND receipt_type IN ('PublicationReadback', 'SemanticModelReadback')
+                ORDER BY target_system, receipt_type
+                """,
+                RUN_REQUEST_ID,
+            )
+            final_receipts = cursor.fetchall()
+        finally:
+            cursor.close()
+            connection.close()
 
-    if not final_request or final_request[0] != "Completed" or final_request[1] is None:
-        raise RuntimeError("Final verification failed: request is not durably Completed.")
-    if len(final_receipts) != 2 or any(row[2] != "Passed" or row[3] != 1 for row in final_receipts):
-        raise RuntimeError(f"Final verification failed: unexpected receipts {final_receipts!r}.")
+        if not final_request or final_request[0] != "Completed" or final_request[1] is None:
+            raise RuntimeError("Final verification failed: request is not durably Completed.")
+        if len(final_receipts) != 2 or any(row[2] != "Passed" or row[3] != 1 for row in final_receipts):
+            raise RuntimeError(f"Final verification failed: unexpected receipts {final_receipts!r}.")
 
-    print(f"[VERIFIED] request={RUN_REQUEST_ID} status=Completed receipts=2/2 Passed")
+        print(f"[VERIFIED] request={RUN_REQUEST_ID} status=Completed receipts=2/2 Passed")
+except Exception as ex:
+    _log_nb09_diagnostic("cell7_p2_final_verify", ex)
+    raise
 
 # METADATA ********************
 
@@ -802,41 +844,45 @@ ATTESTATION_LIMITATION_NOTICE = (
 
 # Cell 10: Read and normalize the supported Data Product resource (real, API-verified evidence)
 
-response = requests.get(
-    f"{PURVIEW_CATALOG_BASE_URL}/dataproducts/{PURVIEW_DATA_PRODUCT_ID}",
-    headers={"Authorization": f"Bearer {get_purview_token()}"},
-    timeout=60,
-)
-response.raise_for_status()
-raw_product = response.json()
+try:
+    response = requests.get(
+        f"{PURVIEW_CATALOG_BASE_URL}/dataproducts/{PURVIEW_DATA_PRODUCT_ID}",
+        headers={"Authorization": f"Bearer {get_purview_token()}"},
+        timeout=60,
+    )
+    response.raise_for_status()
+    raw_product = response.json()
 
-product_snapshot = {
-    "id": raw_product.get("id"),
-    "name": raw_product.get("name"),
-    "domain": raw_product.get("domain"),
-    "status": raw_product.get("status"),
-    "type": raw_product.get("type"),
-    "description": raw_product.get("description"),
-    "businessUse": raw_product.get("businessUse"),
-    "endorsed": raw_product.get("endorsed"),
-}
+    product_snapshot = {
+        "id": raw_product.get("id"),
+        "name": raw_product.get("name"),
+        "domain": raw_product.get("domain"),
+        "status": raw_product.get("status"),
+        "type": raw_product.get("type"),
+        "description": raw_product.get("description"),
+        "businessUse": raw_product.get("businessUse"),
+        "endorsed": raw_product.get("endorsed"),
+    }
 
-if product_snapshot["id"] != PURVIEW_DATA_PRODUCT_ID:
-    raise RuntimeError("Unified Catalog returned an unexpected data product ID.")
-if product_snapshot["domain"] != PURVIEW_DOMAIN_ID:
-    raise RuntimeError(f"{PURVIEW_DATA_PRODUCT_CODE} is no longer assigned to the expected Customer Operations domain.")
-if product_snapshot["status"] not in ("Draft", "Published"):
-    raise RuntimeError(f"Unsupported data product lifecycle status: {product_snapshot['status']!r}")
+    if product_snapshot["id"] != PURVIEW_DATA_PRODUCT_ID:
+        raise RuntimeError("Unified Catalog returned an unexpected data product ID.")
+    if product_snapshot["domain"] != PURVIEW_DOMAIN_ID:
+        raise RuntimeError(f"{PURVIEW_DATA_PRODUCT_CODE} is no longer assigned to the expected Customer Operations domain.")
+    if product_snapshot["status"] not in ("Draft", "Published"):
+        raise RuntimeError(f"Unsupported data product lifecycle status: {product_snapshot['status']!r}")
 
-snapshot_json = canonical_json(product_snapshot)
-definition_hash = sha256_text(snapshot_json)
-observed_at = utc_now()
+    snapshot_json = canonical_json(product_snapshot)
+    definition_hash = sha256_text(snapshot_json)
+    observed_at = utc_now()
 
-print(
-    f"Observed {PURVIEW_DATA_PRODUCT_CODE}: status={product_snapshot['status']} "
-    f"hash={definition_hash[:12]} observed_at={observed_at.isoformat()}Z"
-)
-print(json.dumps(product_snapshot, indent=2, ensure_ascii=True))
+    print(
+        f"Observed {PURVIEW_DATA_PRODUCT_CODE}: status={product_snapshot['status']} "
+        f"hash={definition_hash[:12]} observed_at={observed_at.isoformat()}Z"
+    )
+    print(json.dumps(product_snapshot, indent=2, ensure_ascii=True))
+except Exception as ex:
+    _log_nb09_diagnostic("cell10_p3_read_product", ex)
+    raise
 
 # METADATA ********************
 
@@ -849,46 +895,50 @@ print(json.dumps(product_snapshot, indent=2, ensure_ascii=True))
 
 # Cell 11: Enforce guardrails and build the attested decision payload
 
-if DEMO_MODE:
-    print("[DEMO_MODE] Baseline observation only; no SQL ledger writes will occur.")
-elif not WORKFLOW_CONFIGURED:
-    raise RuntimeError(
-        "Set WORKFLOW_CONFIGURED=True only after the native Data product access policy is "
-        "configured on DP-CUST360 with Victoria Tan as Approver and Privacy reviewer."
-    )
-elif not RUN_CORRELATION_ID.strip():
-    raise RuntimeError("RUN_CORRELATION_ID is required for a live P3 access observation.")
-elif ATTESTED_DECISION not in ("Approved", "Rejected"):
-    raise RuntimeError("ATTESTED_DECISION must be exactly 'Approved' or 'Rejected'.")
-elif not all(
-    [
-        ATTESTED_REQUESTER_UPN.strip(),
-        ATTESTED_PRIVACY_REVIEWER_UPN.strip(),
-        ATTESTED_APPROVER_UPN.strip(),
-        ATTESTED_PURPOSE.strip(),
-        ATTESTED_BUSINESS_JUSTIFICATION.strip(),
-        ATTESTED_BY.strip(),
-    ]
-):
-    raise RuntimeError("All ATTESTED_* fields are required for a live P3 access observation.")
+try:
+    if DEMO_MODE:
+        print("[DEMO_MODE] Baseline observation only; no SQL ledger writes will occur.")
+    elif not WORKFLOW_CONFIGURED:
+        raise RuntimeError(
+            "Set WORKFLOW_CONFIGURED=True only after the native Data product access policy is "
+            "configured on DP-CUST360 with Victoria Tan as Approver and Privacy reviewer."
+        )
+    elif not RUN_CORRELATION_ID.strip():
+        raise RuntimeError("RUN_CORRELATION_ID is required for a live P3 access observation.")
+    elif ATTESTED_DECISION not in ("Approved", "Rejected"):
+        raise RuntimeError("ATTESTED_DECISION must be exactly 'Approved' or 'Rejected'.")
+    elif not all(
+        [
+            ATTESTED_REQUESTER_UPN.strip(),
+            ATTESTED_PRIVACY_REVIEWER_UPN.strip(),
+            ATTESTED_APPROVER_UPN.strip(),
+            ATTESTED_PURPOSE.strip(),
+            ATTESTED_BUSINESS_JUSTIFICATION.strip(),
+            ATTESTED_BY.strip(),
+        ]
+    ):
+        raise RuntimeError("All ATTESTED_* fields are required for a live P3 access observation.")
 
-request_id = "PV-CUST360-ACCESS-" + sha256_text(RUN_CORRELATION_ID.strip())[:20].upper()
-source_event_id = f"{request_id}:{ATTESTED_DECISION}:{definition_hash}"
-attestation_payload = canonical_json(
-    {
-        "localCorrelationId": RUN_CORRELATION_ID.strip(),
-        "definitionHash": definition_hash,
-        "dataProduct": product_snapshot,
-        "requesterUpn": ATTESTED_REQUESTER_UPN.strip(),
-        "privacyReviewerUpn": ATTESTED_PRIVACY_REVIEWER_UPN.strip(),
-        "approverUpn": ATTESTED_APPROVER_UPN.strip(),
-        "purpose": ATTESTED_PURPOSE.strip(),
-        "businessJustification": ATTESTED_BUSINESS_JUSTIFICATION.strip(),
-        "decision": ATTESTED_DECISION,
-        "attestedBy": ATTESTED_BY.strip(),
-        "attestationLimitation": ATTESTATION_LIMITATION_NOTICE,
-    }
-)
+    request_id = "PV-CUST360-ACCESS-" + sha256_text(RUN_CORRELATION_ID.strip())[:20].upper()
+    source_event_id = f"{request_id}:{ATTESTED_DECISION}:{definition_hash}"
+    attestation_payload = canonical_json(
+        {
+            "localCorrelationId": RUN_CORRELATION_ID.strip(),
+            "definitionHash": definition_hash,
+            "dataProduct": product_snapshot,
+            "requesterUpn": ATTESTED_REQUESTER_UPN.strip(),
+            "privacyReviewerUpn": ATTESTED_PRIVACY_REVIEWER_UPN.strip(),
+            "approverUpn": ATTESTED_APPROVER_UPN.strip(),
+            "purpose": ATTESTED_PURPOSE.strip(),
+            "businessJustification": ATTESTED_BUSINESS_JUSTIFICATION.strip(),
+            "decision": ATTESTED_DECISION,
+            "attestedBy": ATTESTED_BY.strip(),
+            "attestationLimitation": ATTESTATION_LIMITATION_NOTICE,
+        }
+    )
+except Exception as ex:
+    _log_nb09_diagnostic("cell11_p3_guardrails", ex)
+    raise
 
 # METADATA ********************
 
@@ -1030,8 +1080,9 @@ if not DEMO_MODE:
 
         connection.commit()
         print(f"[APPLIED] request={request_id} status={normalized_status} event={source_event_id}")
-    except Exception:
+    except Exception as ex:
         connection.rollback()
+        _log_nb09_diagnostic("cell12_p3_persist_decision", ex)
         raise
     finally:
         cursor.close()
@@ -1048,62 +1099,66 @@ if not DEMO_MODE:
 
 # Cell 13: Verify the durable P3 evidence contract
 
-if not DEMO_MODE:
-    connection = get_sql_connection()
-    cursor = connection.cursor()
-    try:
-        cursor.execute(
-            """
-            SELECT current_status, completed_at
-            FROM dbo.governance_requests
-            WHERE request_id = ?
-            """,
-            request_id,
-        )
-        request_evidence = cursor.fetchone()
-
-        cursor.execute(
-            """
-            SELECT event_type, COUNT(*)
-            FROM dbo.governance_events
-            WHERE request_id = ?
-            GROUP BY event_type
-            """,
-            request_id,
-        )
-        event_counts = dict(cursor.fetchall())
-
-        cursor.execute(
-            """
-            SELECT validation_status, expected_hash, observed_hash
-            FROM dbo.governance_target_receipts
-            WHERE request_id = ? AND target_system = 'Purview'
-              AND target_object_type = 'DataProduct' AND target_object_id = ?
-              AND receipt_type = 'AccessDecisionReadback'
-            """,
-            request_id,
-            PURVIEW_DATA_PRODUCT_ID,
-        )
-        access_receipt = cursor.fetchone()
-
-        if ATTESTED_DECISION == "Approved":
-            if not request_evidence or request_evidence[0] != "Completed":
-                raise RuntimeError("P3 verification failed: request is not Completed.")
-            if not access_receipt or access_receipt[0] != "Passed":
-                raise RuntimeError("P3 verification failed: AccessDecisionReadback did not pass.")
-            if access_receipt[1] != access_receipt[2]:
-                raise RuntimeError("P3 verification failed: access receipt hashes differ.")
-            print(
-                f"[VERIFIED] request={request_id} status=Completed "
-                f"events={event_counts} receipt=Passed (attested decision)"
+try:
+    if not DEMO_MODE:
+        connection = get_sql_connection()
+        cursor = connection.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT current_status, completed_at
+                FROM dbo.governance_requests
+                WHERE request_id = ?
+                """,
+                request_id,
             )
-        else:
-            if not request_evidence or request_evidence[0] != "Rejected":
-                raise RuntimeError("P3 verification failed: request is not Rejected.")
-            print(f"[VERIFIED] request={request_id} status=Rejected events={event_counts}")
-    finally:
-        cursor.close()
-        connection.close()
+            request_evidence = cursor.fetchone()
+
+            cursor.execute(
+                """
+                SELECT event_type, COUNT(*)
+                FROM dbo.governance_events
+                WHERE request_id = ?
+                GROUP BY event_type
+                """,
+                request_id,
+            )
+            event_counts = dict(cursor.fetchall())
+
+            cursor.execute(
+                """
+                SELECT validation_status, expected_hash, observed_hash
+                FROM dbo.governance_target_receipts
+                WHERE request_id = ? AND target_system = 'Purview'
+                  AND target_object_type = 'DataProduct' AND target_object_id = ?
+                  AND receipt_type = 'AccessDecisionReadback'
+                """,
+                request_id,
+                PURVIEW_DATA_PRODUCT_ID,
+            )
+            access_receipt = cursor.fetchone()
+
+            if ATTESTED_DECISION == "Approved":
+                if not request_evidence or request_evidence[0] != "Completed":
+                    raise RuntimeError("P3 verification failed: request is not Completed.")
+                if not access_receipt or access_receipt[0] != "Passed":
+                    raise RuntimeError("P3 verification failed: AccessDecisionReadback did not pass.")
+                if access_receipt[1] != access_receipt[2]:
+                    raise RuntimeError("P3 verification failed: access receipt hashes differ.")
+                print(
+                    f"[VERIFIED] request={request_id} status=Completed "
+                    f"events={event_counts} receipt=Passed (attested decision)"
+                )
+            else:
+                if not request_evidence or request_evidence[0] != "Rejected":
+                    raise RuntimeError("P3 verification failed: request is not Rejected.")
+                print(f"[VERIFIED] request={request_id} status=Rejected events={event_counts}")
+        finally:
+            cursor.close()
+            connection.close()
+except Exception as ex:
+    _log_nb09_diagnostic("cell13_p3_verify", ex)
+    raise
 
 # METADATA ********************
 
@@ -1326,42 +1381,46 @@ def utc_now():
 
 # Cell 17: Read and normalize the supported Data Product resource
 
-response = requests.get(
-    f"{PURVIEW_CATALOG_BASE_URL}/dataproducts/{PURVIEW_DATA_PRODUCT_ID}",
-    headers={"Authorization": f"Bearer {get_purview_token()}"},
-    timeout=60,
-)
-response.raise_for_status()
-raw_product = response.json()
+try:
+    response = requests.get(
+        f"{PURVIEW_CATALOG_BASE_URL}/dataproducts/{PURVIEW_DATA_PRODUCT_ID}",
+        headers={"Authorization": f"Bearer {get_purview_token()}"},
+        timeout=60,
+    )
+    response.raise_for_status()
+    raw_product = response.json()
 
-product_snapshot = {
-    "id": raw_product.get("id"),
-    "name": raw_product.get("name"),
-    "domain": raw_product.get("domain"),
-    "status": raw_product.get("status"),
-    "type": raw_product.get("type"),
-    "description": raw_product.get("description"),
-    "businessUse": raw_product.get("businessUse"),
-    "endorsed": raw_product.get("endorsed"),
-}
+    product_snapshot = {
+        "id": raw_product.get("id"),
+        "name": raw_product.get("name"),
+        "domain": raw_product.get("domain"),
+        "status": raw_product.get("status"),
+        "type": raw_product.get("type"),
+        "description": raw_product.get("description"),
+        "businessUse": raw_product.get("businessUse"),
+        "endorsed": raw_product.get("endorsed"),
+    }
 
-if product_snapshot["id"] != PURVIEW_DATA_PRODUCT_ID:
-    raise RuntimeError("Unified Catalog returned an unexpected data product ID.")
-if product_snapshot["domain"] != PURVIEW_DOMAIN_ID:
-    raise RuntimeError(f"{PURVIEW_DATA_PRODUCT_CODE} is no longer assigned to the expected Service Delivery domain.")
-if product_snapshot["status"] not in ("Draft", "Published"):
-    raise RuntimeError(f"Unsupported data product lifecycle status: {product_snapshot['status']!r}")
+    if product_snapshot["id"] != PURVIEW_DATA_PRODUCT_ID:
+        raise RuntimeError("Unified Catalog returned an unexpected data product ID.")
+    if product_snapshot["domain"] != PURVIEW_DOMAIN_ID:
+        raise RuntimeError(f"{PURVIEW_DATA_PRODUCT_CODE} is no longer assigned to the expected Service Delivery domain.")
+    if product_snapshot["status"] not in ("Draft", "Published"):
+        raise RuntimeError(f"Unsupported data product lifecycle status: {product_snapshot['status']!r}")
 
-snapshot_json = canonical_json(product_snapshot)
-definition_hash = sha256_text(snapshot_json)
-content_hash = publication_content_hash(product_snapshot)
-observed_at = utc_now()
+    snapshot_json = canonical_json(product_snapshot)
+    definition_hash = sha256_text(snapshot_json)
+    content_hash = publication_content_hash(product_snapshot)
+    observed_at = utc_now()
 
-print(
-    f"Observed {PURVIEW_DATA_PRODUCT_CODE}: status={product_snapshot['status']} "
-    f"hash={definition_hash[:12]} observed_at={observed_at.isoformat()}Z"
-)
-print(json.dumps(product_snapshot, indent=2, ensure_ascii=True))
+    print(
+        f"Observed {PURVIEW_DATA_PRODUCT_CODE}: status={product_snapshot['status']} "
+        f"hash={definition_hash[:12]} observed_at={observed_at.isoformat()}Z"
+    )
+    print(json.dumps(product_snapshot, indent=2, ensure_ascii=True))
+except Exception as ex:
+    _log_nb09_diagnostic("cell17_p4publish_read_product", ex)
+    raise
 
 # METADATA ********************
 
@@ -1374,31 +1433,35 @@ print(json.dumps(product_snapshot, indent=2, ensure_ascii=True))
 
 # Cell 18: Enforce the P4 correlation and Draft-before-Published guardrails
 
-if DEMO_MODE:
-    print("[DEMO_MODE] Baseline observation only; no SQL ledger writes will occur.")
-elif not WORKFLOW_CONFIGURED:
-    raise RuntimeError(
-        "Set WORKFLOW_CONFIGURED=True only after a native Data product publish workflow is scoped "
-        "to the Service Delivery governance domain."
-    )
-elif not RUN_CORRELATION_ID.strip():
-    raise RuntimeError("RUN_CORRELATION_ID is required for a live P4 workflow observation.")
+try:
+    if DEMO_MODE:
+        print("[DEMO_MODE] Baseline observation only; no SQL ledger writes will occur.")
+    elif not WORKFLOW_CONFIGURED:
+        raise RuntimeError(
+            "Set WORKFLOW_CONFIGURED=True only after a native Data product publish workflow is scoped "
+            "to the Service Delivery governance domain."
+        )
+    elif not RUN_CORRELATION_ID.strip():
+        raise RuntimeError("RUN_CORRELATION_ID is required for a live P4 workflow observation.")
 
-request_id = "PV-DP-SVCPERF-" + sha256_text(RUN_CORRELATION_ID.strip())[:20].upper()
-source_event_id = f"{request_id}:{product_snapshot['status']}:{definition_hash}"
-request_payload = canonical_json(
-    {
-        "localCorrelationId": RUN_CORRELATION_ID.strip(),
-        "definitionHash": definition_hash,
-        "publicationContentHash": content_hash,
-        "dataProduct": product_snapshot,
-        "workflowEvidenceLimitations": {
-            "authorityRequestId": "not exposed by the supported Unified Catalog API",
-            "decisionActor": "not exposed by the supported Unified Catalog API",
-            "decisionTimestamp": "not exposed by the supported Unified Catalog API",
-        },
-    }
-)
+    request_id = "PV-DP-SVCPERF-" + sha256_text(RUN_CORRELATION_ID.strip())[:20].upper()
+    source_event_id = f"{request_id}:{product_snapshot['status']}:{definition_hash}"
+    request_payload = canonical_json(
+        {
+            "localCorrelationId": RUN_CORRELATION_ID.strip(),
+            "definitionHash": definition_hash,
+            "publicationContentHash": content_hash,
+            "dataProduct": product_snapshot,
+            "workflowEvidenceLimitations": {
+                "authorityRequestId": "not exposed by the supported Unified Catalog API",
+                "decisionActor": "not exposed by the supported Unified Catalog API",
+                "decisionTimestamp": "not exposed by the supported Unified Catalog API",
+            },
+        }
+    )
+except Exception as ex:
+    _log_nb09_diagnostic("cell18_p4publish_guardrails", ex)
+    raise
 
 # METADATA ********************
 
@@ -1572,8 +1635,9 @@ if not DEMO_MODE:
 
         connection.commit()
         print(f"[APPLIED] request={request_id} status={normalized_status} event={source_event_id}")
-    except Exception:
+    except Exception as ex:
         connection.rollback()
+        _log_nb09_diagnostic("cell19_p4publish_persist", ex)
         raise
     finally:
         cursor.close()
@@ -1590,75 +1654,79 @@ if not DEMO_MODE:
 
 # Cell 20: Verify the durable P4 evidence contract
 
-if not DEMO_MODE:
-    connection = get_sql_connection()
-    cursor = connection.cursor()
-    try:
-        cursor.execute(
-            """
-            SELECT current_status, authority_request_id, decided_by, decided_at
-            FROM dbo.governance_requests
-            WHERE request_id = ?
-            """,
-            request_id,
-        )
-        request_evidence = cursor.fetchone()
+try:
+    if not DEMO_MODE:
+        connection = get_sql_connection()
+        cursor = connection.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT current_status, authority_request_id, decided_by, decided_at
+                FROM dbo.governance_requests
+                WHERE request_id = ?
+                """,
+                request_id,
+            )
+            request_evidence = cursor.fetchone()
 
-        cursor.execute(
-            """
-            SELECT event_type, COUNT(*)
-            FROM dbo.governance_events
-            WHERE request_id = ?
-            GROUP BY event_type
-            """,
-            request_id,
-        )
-        event_counts = dict(cursor.fetchall())
+            cursor.execute(
+                """
+                SELECT event_type, COUNT(*)
+                FROM dbo.governance_events
+                WHERE request_id = ?
+                GROUP BY event_type
+                """,
+                request_id,
+            )
+            event_counts = dict(cursor.fetchall())
 
-        cursor.execute(
-            """
-            SELECT lifecycle_status, COUNT(*)
-            FROM dbo.governed_object_versions
-            WHERE request_id = ?
-            GROUP BY lifecycle_status
-            """,
-            request_id,
-        )
-        version_counts = dict(cursor.fetchall())
+            cursor.execute(
+                """
+                SELECT lifecycle_status, COUNT(*)
+                FROM dbo.governed_object_versions
+                WHERE request_id = ?
+                GROUP BY lifecycle_status
+                """,
+                request_id,
+            )
+            version_counts = dict(cursor.fetchall())
 
-        cursor.execute(
-            """
-            SELECT validation_status, expected_hash, observed_hash
-            FROM dbo.governance_target_receipts
-            WHERE request_id = ? AND target_system = 'Purview'
-              AND target_object_type = 'DataProduct' AND target_object_id = ?
-              AND receipt_type = 'PublicationReadback'
-            """,
-            request_id,
-            PURVIEW_DATA_PRODUCT_ID,
-        )
-        publication_receipt = cursor.fetchone()
+            cursor.execute(
+                """
+                SELECT validation_status, expected_hash, observed_hash
+                FROM dbo.governance_target_receipts
+                WHERE request_id = ? AND target_system = 'Purview'
+                  AND target_object_type = 'DataProduct' AND target_object_id = ?
+                  AND receipt_type = 'PublicationReadback'
+                """,
+                request_id,
+                PURVIEW_DATA_PRODUCT_ID,
+            )
+            publication_receipt = cursor.fetchone()
 
-        if not request_evidence or request_evidence[0] != "Approved":
-            raise RuntimeError("P4 verification failed: request is not Approved.")
-        if any(request_evidence[index] is not None for index in range(1, 4)):
-            raise RuntimeError("P4 verification failed: unsupported workflow fields must remain NULL.")
-        if event_counts.get("DataProductDraftObserved") != 1 or event_counts.get("DataProductPublishedObserved") != 1:
-            raise RuntimeError(f"P4 verification failed: unexpected event counts {event_counts!r}.")
-        if version_counts.get("Draft") != 1 or version_counts.get("Published") != 1:
-            raise RuntimeError(f"P4 verification failed: unexpected version counts {version_counts!r}.")
-        if not publication_receipt or publication_receipt[0] != "Passed":
-            raise RuntimeError("P4 verification failed: PublicationReadback did not pass.")
-        if publication_receipt[1] != publication_receipt[2]:
-            raise RuntimeError("P4 verification failed: publication receipt hashes differ.")
+            if not request_evidence or request_evidence[0] != "Approved":
+                raise RuntimeError("P4 verification failed: request is not Approved.")
+            if any(request_evidence[index] is not None for index in range(1, 4)):
+                raise RuntimeError("P4 verification failed: unsupported workflow fields must remain NULL.")
+            if event_counts.get("DataProductDraftObserved") != 1 or event_counts.get("DataProductPublishedObserved") != 1:
+                raise RuntimeError(f"P4 verification failed: unexpected event counts {event_counts!r}.")
+            if version_counts.get("Draft") != 1 or version_counts.get("Published") != 1:
+                raise RuntimeError(f"P4 verification failed: unexpected version counts {version_counts!r}.")
+            if not publication_receipt or publication_receipt[0] != "Passed":
+                raise RuntimeError("P4 verification failed: PublicationReadback did not pass.")
+            if publication_receipt[1] != publication_receipt[2]:
+                raise RuntimeError("P4 verification failed: publication receipt hashes differ.")
 
-        print(
-            f"[VERIFIED] request={request_id} status=Approved "
-            f"events={event_counts} versions={version_counts} receipt=Passed"
-        )
-    finally:
-        cursor.close()
-        connection.close()
+            print(
+                f"[VERIFIED] request={request_id} status=Approved "
+                f"events={event_counts} versions={version_counts} receipt=Passed"
+            )
+        finally:
+            cursor.close()
+            connection.close()
+except Exception as ex:
+    _log_nb09_diagnostic("cell20_p4publish_verify", ex)
+    raise
 
 # METADATA ********************
 
@@ -1877,113 +1945,117 @@ if not RUN_REQUEST_ID.strip():
 
 # Cell 24: Load the approved source definition and enforce the P4 gate
 
-connection = get_sql_connection()
-cursor = connection.cursor()
 try:
-    cursor.execute(
-        """
-        SELECT current_status, proposed_payload
-        FROM dbo.governance_requests
-        WHERE request_id = ? AND request_type = 'DataProductPublish'
-        """,
-        RUN_REQUEST_ID,
+    connection = get_sql_connection()
+    cursor = connection.cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT current_status, proposed_payload
+            FROM dbo.governance_requests
+            WHERE request_id = ? AND request_type = 'DataProductPublish'
+            """,
+            RUN_REQUEST_ID,
+        )
+        request_row = cursor.fetchone()
+        if not request_row:
+            raise RuntimeError("Governance request was not found or has the wrong request type.")
+        if request_row[0] not in ("Approved", "Completed"):
+            raise RuntimeError(f"Request must be Approved before reconciliation; found {request_row[0]!r}.")
+
+        cursor.execute(
+            """
+            SELECT validation_status, expected_hash, observed_hash
+            FROM dbo.governance_target_receipts
+            WHERE request_id = ? AND target_system = 'Purview'
+              AND target_object_type = 'DataProduct' AND target_object_id = ?
+              AND receipt_type = 'PublicationReadback'
+            """,
+            RUN_REQUEST_ID,
+            PURVIEW_DATA_PRODUCT_ID,
+        )
+        publication_receipt = cursor.fetchone()
+        if not publication_receipt or publication_receipt[0] != "Passed":
+            raise RuntimeError("PublicationReadback must pass before semantic reconciliation.")
+        if publication_receipt[1] != publication_receipt[2]:
+            raise RuntimeError("PublicationReadback expected and observed hashes differ.")
+
+        cursor.execute(
+            """
+            SELECT TOP (1) object_payload
+            FROM dbo.governed_object_versions
+            WHERE request_id = ? AND source_system = 'Purview'
+              AND object_type = 'DataProduct' AND object_id = ?
+              AND lifecycle_status = 'Published'
+            ORDER BY observed_at DESC, version_id DESC
+            """,
+            RUN_REQUEST_ID,
+            PURVIEW_DATA_PRODUCT_ID,
+        )
+        version_row = cursor.fetchone()
+        if not version_row:
+            raise RuntimeError("No Published Purview object version exists for this request.")
+    finally:
+        cursor.close()
+        connection.close()
+
+    request_payload = json.loads(request_row[1]) if request_row[1] else {}
+    published_product = json.loads(version_row[0])
+    if published_product.get("id") != PURVIEW_DATA_PRODUCT_ID or published_product.get("status") != "Published":
+        raise RuntimeError("Published source payload does not match the configured DP-SVCPERF data product.")
+
+    approved_definition = description_text(published_product.get("description"))
+    if not approved_definition:
+        raise RuntimeError("Published DP-SVCPERF has no usable description to reconcile.")
+
+    receipt_content_hash = publication_receipt[1]
+    payload_content_hash = request_payload.get("publicationContentHash")
+    if receipt_content_hash and payload_content_hash and receipt_content_hash != payload_content_hash:
+        raise RuntimeError("P4 receipt and proposed_payload publication hashes differ.")
+
+    if receipt_content_hash:
+        publication_content_hash = receipt_content_hash
+    elif payload_content_hash:
+        publication_content_hash = payload_content_hash
+    else:
+        publication_content = dict(published_product)
+        publication_content.pop("status", None)
+        publication_content_hash = sha256_text(canonical_json(publication_content))
+
+    if len(publication_content_hash) != 64:
+        raise RuntimeError("Resolved publication content hash is not a SHA-256 value.")
+
+    semantic_annotations = {
+        "DataProduct_References": PURVIEW_DATA_PRODUCT_CODE,
+        "Purview_DataProduct_Id": PURVIEW_DATA_PRODUCT_ID,
+        "Purview_Publication_Content_Hash": publication_content_hash,
+        "Governance_Request_Id": RUN_REQUEST_ID,
+    }
+    expected_metadata = []
+    for target in SEMANTIC_TARGETS:
+        expected_metadata.append(
+            {
+                "table": target["table"],
+                "objectType": target["objectType"],
+                "objectName": target["objectName"],
+                "description": (
+                    f"{target['descriptionPrefix']} "
+                    f"Governed definition ({PURVIEW_DATA_PRODUCT_CODE}): {approved_definition}"
+                ),
+                "annotations": semantic_annotations,
+            }
+        )
+
+    expected_hash = sha256_text(canonical_json(expected_metadata))
+    print(
+        f"[READY] request={RUN_REQUEST_ID} status={request_row[0]} "
+        f"targets={len(expected_metadata)} expected_hash={expected_hash}"
     )
-    request_row = cursor.fetchone()
-    if not request_row:
-        raise RuntimeError("Governance request was not found or has the wrong request type.")
-    if request_row[0] not in ("Approved", "Completed"):
-        raise RuntimeError(f"Request must be Approved before reconciliation; found {request_row[0]!r}.")
-
-    cursor.execute(
-        """
-        SELECT validation_status, expected_hash, observed_hash
-        FROM dbo.governance_target_receipts
-        WHERE request_id = ? AND target_system = 'Purview'
-          AND target_object_type = 'DataProduct' AND target_object_id = ?
-          AND receipt_type = 'PublicationReadback'
-        """,
-        RUN_REQUEST_ID,
-        PURVIEW_DATA_PRODUCT_ID,
-    )
-    publication_receipt = cursor.fetchone()
-    if not publication_receipt or publication_receipt[0] != "Passed":
-        raise RuntimeError("PublicationReadback must pass before semantic reconciliation.")
-    if publication_receipt[1] != publication_receipt[2]:
-        raise RuntimeError("PublicationReadback expected and observed hashes differ.")
-
-    cursor.execute(
-        """
-        SELECT TOP (1) object_payload
-        FROM dbo.governed_object_versions
-        WHERE request_id = ? AND source_system = 'Purview'
-          AND object_type = 'DataProduct' AND object_id = ?
-          AND lifecycle_status = 'Published'
-        ORDER BY observed_at DESC, version_id DESC
-        """,
-        RUN_REQUEST_ID,
-        PURVIEW_DATA_PRODUCT_ID,
-    )
-    version_row = cursor.fetchone()
-    if not version_row:
-        raise RuntimeError("No Published Purview object version exists for this request.")
-finally:
-    cursor.close()
-    connection.close()
-
-request_payload = json.loads(request_row[1]) if request_row[1] else {}
-published_product = json.loads(version_row[0])
-if published_product.get("id") != PURVIEW_DATA_PRODUCT_ID or published_product.get("status") != "Published":
-    raise RuntimeError("Published source payload does not match the configured DP-SVCPERF data product.")
-
-approved_definition = description_text(published_product.get("description"))
-if not approved_definition:
-    raise RuntimeError("Published DP-SVCPERF has no usable description to reconcile.")
-
-receipt_content_hash = publication_receipt[1]
-payload_content_hash = request_payload.get("publicationContentHash")
-if receipt_content_hash and payload_content_hash and receipt_content_hash != payload_content_hash:
-    raise RuntimeError("P4 receipt and proposed_payload publication hashes differ.")
-
-if receipt_content_hash:
-    publication_content_hash = receipt_content_hash
-elif payload_content_hash:
-    publication_content_hash = payload_content_hash
-else:
-    publication_content = dict(published_product)
-    publication_content.pop("status", None)
-    publication_content_hash = sha256_text(canonical_json(publication_content))
-
-if len(publication_content_hash) != 64:
-    raise RuntimeError("Resolved publication content hash is not a SHA-256 value.")
-
-semantic_annotations = {
-    "DataProduct_References": PURVIEW_DATA_PRODUCT_CODE,
-    "Purview_DataProduct_Id": PURVIEW_DATA_PRODUCT_ID,
-    "Purview_Publication_Content_Hash": publication_content_hash,
-    "Governance_Request_Id": RUN_REQUEST_ID,
-}
-expected_metadata = []
-for target in SEMANTIC_TARGETS:
-    expected_metadata.append(
-        {
-            "table": target["table"],
-            "objectType": target["objectType"],
-            "objectName": target["objectName"],
-            "description": (
-                f"{target['descriptionPrefix']} "
-                f"Governed definition ({PURVIEW_DATA_PRODUCT_CODE}): {approved_definition}"
-            ),
-            "annotations": semantic_annotations,
-        }
-    )
-
-expected_hash = sha256_text(canonical_json(expected_metadata))
-print(
-    f"[READY] request={RUN_REQUEST_ID} status={request_row[0]} "
-    f"targets={len(expected_metadata)} expected_hash={expected_hash}"
-)
-for item in expected_metadata:
-    print(f"  {item['objectType']}: {item['table']}.{item['objectName']}")
+    for item in expected_metadata:
+        print(f"  {item['objectType']}: {item['table']}.{item['objectName']}")
+except Exception as ex:
+    _log_nb09_diagnostic("cell24_p4reconcile_load_gate", ex)
+    raise
 
 # METADATA ********************
 
@@ -1996,16 +2068,20 @@ for item in expected_metadata:
 
 # Cell 25: Apply only descriptions and annotations through SemPy Labs TOM
 
-if DEMO_MODE:
-    print("[DEMO_MODE] Semantic metadata write skipped.")
-else:
-    with connect_semantic_model(dataset=MODEL_NAME, readonly=False) as tom:
-        for expected in expected_metadata:
-            obj = semantic_object(tom, expected)
-            obj.Description = expected["description"]
-            for key, value in expected["annotations"].items():
-                upsert_annotation(obj, key, value)
-    print(f"[APPLIED] semantic metadata written to {len(expected_metadata)} object(s).")
+try:
+    if DEMO_MODE:
+        print("[DEMO_MODE] Semantic metadata write skipped.")
+    else:
+        with connect_semantic_model(dataset=MODEL_NAME, readonly=False) as tom:
+            for expected in expected_metadata:
+                obj = semantic_object(tom, expected)
+                obj.Description = expected["description"]
+                for key, value in expected["annotations"].items():
+                    upsert_annotation(obj, key, value)
+        print(f"[APPLIED] semantic metadata written to {len(expected_metadata)} object(s).")
+except Exception as ex:
+    _log_nb09_diagnostic("cell25_p4reconcile_apply", ex)
+    raise
 
 # METADATA ********************
 
@@ -2018,32 +2094,36 @@ else:
 
 # Cell 26: Reopen the model read-only and compute the observed metadata hash
 
-if DEMO_MODE:
-    observed_metadata = expected_metadata
-    observed_hash = expected_hash
-    validation_status = "Pending"
-    print("[DEMO_MODE] Read-back skipped; expected metadata shown as the plan.")
-else:
-    observed_metadata = []
-    with connect_semantic_model(dataset=MODEL_NAME, readonly=True) as tom:
-        for expected in expected_metadata:
-            obj = semantic_object(tom, expected)
-            observed_metadata.append(
-                {
-                    "table": expected["table"],
-                    "objectType": expected["objectType"],
-                    "objectName": expected["objectName"],
-                    "description": str(obj.Description or ""),
-                    "annotations": {key: read_annotation(obj, key) for key in ANNOTATION_KEYS},
-                }
-            )
+try:
+    if DEMO_MODE:
+        observed_metadata = expected_metadata
+        observed_hash = expected_hash
+        validation_status = "Pending"
+        print("[DEMO_MODE] Read-back skipped; expected metadata shown as the plan.")
+    else:
+        observed_metadata = []
+        with connect_semantic_model(dataset=MODEL_NAME, readonly=True) as tom:
+            for expected in expected_metadata:
+                obj = semantic_object(tom, expected)
+                observed_metadata.append(
+                    {
+                        "table": expected["table"],
+                        "objectType": expected["objectType"],
+                        "objectName": expected["objectName"],
+                        "description": str(obj.Description or ""),
+                        "annotations": {key: read_annotation(obj, key) for key in ANNOTATION_KEYS},
+                    }
+                )
 
-    observed_hash = sha256_text(canonical_json(observed_metadata))
-    validation_status = "Passed" if observed_hash == expected_hash else "Failed"
-    print(
-        f"[READBACK] status={validation_status} expected_hash={expected_hash} "
-        f"observed_hash={observed_hash}"
-    )
+        observed_hash = sha256_text(canonical_json(observed_metadata))
+        validation_status = "Passed" if observed_hash == expected_hash else "Failed"
+        print(
+            f"[READBACK] status={validation_status} expected_hash={expected_hash} "
+            f"observed_hash={observed_hash}"
+        )
+except Exception as ex:
+    _log_nb09_diagnostic("cell26_p4reconcile_readback", ex)
+    raise
 
 # METADATA ********************
 
@@ -2129,8 +2209,9 @@ else:
         print(f"[READBACK] status={validation_status} request={RUN_REQUEST_ID}")
         if validation_status != "Passed":
             raise RuntimeError("Semantic read-back did not match the expected metadata hash.")
-    except Exception:
+    except Exception as ex:
         connection.rollback()
+        _log_nb09_diagnostic("cell27_p4reconcile_persist", ex)
         raise
     finally:
         cursor.close()
@@ -2147,42 +2228,46 @@ else:
 
 # Cell 28: Verify the closed-loop completion
 
-if not DEMO_MODE:
-    connection = get_sql_connection()
-    cursor = connection.cursor()
-    try:
-        cursor.execute(
-            """
-            SELECT current_status, completed_at
-            FROM dbo.governance_requests
-            WHERE request_id = ?
-            """,
-            RUN_REQUEST_ID,
-        )
-        request_evidence = cursor.fetchone()
+try:
+    if not DEMO_MODE:
+        connection = get_sql_connection()
+        cursor = connection.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT current_status, completed_at
+                FROM dbo.governance_requests
+                WHERE request_id = ?
+                """,
+                RUN_REQUEST_ID,
+            )
+            request_evidence = cursor.fetchone()
 
-        cursor.execute(
-            """
-            SELECT receipt_type, validation_status
-            FROM dbo.governance_target_receipts
-            WHERE request_id = ?
-            """,
-            RUN_REQUEST_ID,
-        )
-        receipts = dict(cursor.fetchall())
+            cursor.execute(
+                """
+                SELECT receipt_type, validation_status
+                FROM dbo.governance_target_receipts
+                WHERE request_id = ?
+                """,
+                RUN_REQUEST_ID,
+            )
+            receipts = dict(cursor.fetchall())
 
-        if not request_evidence or request_evidence[0] != "Completed":
-            raise RuntimeError("P4 closeout verification failed: request is not Completed.")
-        if receipts.get("PublicationReadback") != "Passed" or receipts.get("SemanticModelReadback") != "Passed":
-            raise RuntimeError(f"P4 closeout verification failed: unexpected receipts {receipts!r}.")
+            if not request_evidence or request_evidence[0] != "Completed":
+                raise RuntimeError("P4 closeout verification failed: request is not Completed.")
+            if receipts.get("PublicationReadback") != "Passed" or receipts.get("SemanticModelReadback") != "Passed":
+                raise RuntimeError(f"P4 closeout verification failed: unexpected receipts {receipts!r}.")
 
-        print(
-            f"[VERIFIED] request={RUN_REQUEST_ID} status=Completed "
-            f"receipts={receipts} completed_at={request_evidence[1]}"
-        )
-    finally:
-        cursor.close()
-        connection.close()
+            print(
+                f"[VERIFIED] request={RUN_REQUEST_ID} status=Completed "
+                f"receipts={receipts} completed_at={request_evidence[1]}"
+            )
+        finally:
+            cursor.close()
+            connection.close()
+except Exception as ex:
+    _log_nb09_diagnostic("cell28_p4reconcile_verify", ex)
+    raise
 
 # METADATA ********************
 
@@ -2347,6 +2432,9 @@ try:
     ontology_receipt = cursor.fetchone()
     if not ontology_receipt or ontology_receipt[0] != "Passed":
         raise RuntimeError("Prerequisite OntologyMappingReadback must pass before semantic promotion.")
+except Exception as ex:
+    _log_nb09_diagnostic("cell29_g18_load_gate", ex)
+    raise
 finally:
     cursor.close()
     connection.close()
@@ -2370,57 +2458,61 @@ print(f"[READY] request={RUN_REQUEST_ID} status={request_row[0]} target={TARGET_
 # bootstrapped the CLR bridge in this session -- importing it before any connect_semantic_model
 # call raises ModuleNotFoundError: No module named 'Microsoft'. Always import it INSIDE the
 # active `with` block (matches Cell 22-28's upsert_annotation, which only ever runs inside one).
-if DEMO_MODE:
-    print("[DEMO_MODE] Semantic measure creation skipped.")
-else:
-    with connect_semantic_model(dataset=MODEL_NAME, readonly=False) as tom:
-        from Microsoft.AnalysisServices.Tabular import Measure as TomMeasure
+try:
+    if DEMO_MODE:
+        print("[DEMO_MODE] Semantic measure creation skipped.")
+    else:
+        with connect_semantic_model(dataset=MODEL_NAME, readonly=False) as tom:
+            from Microsoft.AnalysisServices.Tabular import Measure as TomMeasure
 
-        table = find_by_name(tom.model.Tables, TARGET_TABLE)
-        if table is None:
-            raise RuntimeError(f"Semantic table not found: {TARGET_TABLE}")
+            table = find_by_name(tom.model.Tables, TARGET_TABLE)
+            if table is None:
+                raise RuntimeError(f"Semantic table not found: {TARGET_TABLE}")
 
-        existing_measure = find_by_name(table.Measures, NEW_MEASURE_NAME)
-        if existing_measure is None:
-            new_measure = TomMeasure()
-            new_measure.Name = NEW_MEASURE_NAME
-            new_measure.Expression = NEW_MEASURE_EXPRESSION
-            new_measure.FormatString = NEW_MEASURE_FORMAT_STRING
-            table.Measures.Add(new_measure)
-            target_measure = new_measure
-            print(f"[APPLIED] Created new measure {TARGET_TABLE}.{NEW_MEASURE_NAME}")
-        else:
-            existing_measure.Expression = NEW_MEASURE_EXPRESSION
-            existing_measure.FormatString = NEW_MEASURE_FORMAT_STRING
-            target_measure = existing_measure
-            print(f"[APPLIED] Updated existing measure {TARGET_TABLE}.{NEW_MEASURE_NAME}")
+            existing_measure = find_by_name(table.Measures, NEW_MEASURE_NAME)
+            if existing_measure is None:
+                new_measure = TomMeasure()
+                new_measure.Name = NEW_MEASURE_NAME
+                new_measure.Expression = NEW_MEASURE_EXPRESSION
+                new_measure.FormatString = NEW_MEASURE_FORMAT_STRING
+                table.Measures.Add(new_measure)
+                target_measure = new_measure
+                print(f"[APPLIED] Created new measure {TARGET_TABLE}.{NEW_MEASURE_NAME}")
+            else:
+                existing_measure.Expression = NEW_MEASURE_EXPRESSION
+                existing_measure.FormatString = NEW_MEASURE_FORMAT_STRING
+                target_measure = existing_measure
+                print(f"[APPLIED] Updated existing measure {TARGET_TABLE}.{NEW_MEASURE_NAME}")
 
-        for key, value in expected_measure["annotations"].items():
-            upsert_annotation(target_measure, key, value)
+            for key, value in expected_measure["annotations"].items():
+                upsert_annotation(target_measure, key, value)
 
-# Reopen the model read-only and compute the observed hash (real read-back).
-if DEMO_MODE:
-    observed_measure = expected_measure
-    observed_hash = expected_hash
-    validation_status = "Pending"
-    print("[DEMO_MODE] Read-back skipped; expected measure shown as the plan.")
-else:
-    with connect_semantic_model(dataset=MODEL_NAME, readonly=True) as tom:
-        table = find_by_name(tom.model.Tables, TARGET_TABLE)
-        measure = find_by_name(table.Measures, NEW_MEASURE_NAME)
-        if measure is None:
-            raise RuntimeError(f"Read-back failed: measure {TARGET_TABLE}.{NEW_MEASURE_NAME} does not exist.")
-        observed_measure = {
-            "table": TARGET_TABLE,
-            "name": NEW_MEASURE_NAME,
-            "expression": str(measure.Expression),
-            "formatString": str(measure.FormatString or ""),
-            "annotations": {key: read_annotation(measure, key) for key in ANNOTATION_KEYS},
-        }
+    # Reopen the model read-only and compute the observed hash (real read-back).
+    if DEMO_MODE:
+        observed_measure = expected_measure
+        observed_hash = expected_hash
+        validation_status = "Pending"
+        print("[DEMO_MODE] Read-back skipped; expected measure shown as the plan.")
+    else:
+        with connect_semantic_model(dataset=MODEL_NAME, readonly=True) as tom:
+            table = find_by_name(tom.model.Tables, TARGET_TABLE)
+            measure = find_by_name(table.Measures, NEW_MEASURE_NAME)
+            if measure is None:
+                raise RuntimeError(f"Read-back failed: measure {TARGET_TABLE}.{NEW_MEASURE_NAME} does not exist.")
+            observed_measure = {
+                "table": TARGET_TABLE,
+                "name": NEW_MEASURE_NAME,
+                "expression": str(measure.Expression),
+                "formatString": str(measure.FormatString or ""),
+                "annotations": {key: read_annotation(measure, key) for key in ANNOTATION_KEYS},
+            }
 
-    observed_hash = sha256_text(canonical_json(observed_measure))
-    validation_status = "Passed" if observed_hash == expected_hash else "Failed"
-    print(f"[READBACK] status={validation_status} expected_hash={expected_hash} observed_hash={observed_hash}")
+        observed_hash = sha256_text(canonical_json(observed_measure))
+        validation_status = "Passed" if observed_hash == expected_hash else "Failed"
+        print(f"[READBACK] status={validation_status} expected_hash={expected_hash} observed_hash={observed_hash}")
+except Exception as ex:
+    _log_nb09_diagnostic("cell29_g18_apply_readback", ex)
+    raise
 
 # Persist the read-back receipt and complete only after it passes.
 if DEMO_MODE:
@@ -2489,8 +2581,9 @@ else:
 
         connection.commit()
         print(f"[READBACK] status={validation_status} request={RUN_REQUEST_ID}")
-    except Exception:
+    except Exception as ex:
         connection.rollback()
+        _log_nb09_diagnostic("cell29_g18_persist_receipt", ex)
         raise
     finally:
         cursor.close()
