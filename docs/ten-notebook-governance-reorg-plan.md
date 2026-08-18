@@ -6,7 +6,7 @@
 > pass, and the companion `sql/` folder was repacked to mirror the same 10-notebook alignment.
 > See `docs/01_Notebook_Description.md` and `docs/02_Notebook_Description.md` for the current
 > per-notebook reference (notebooks 03-10 are being split into their own files the same way as
-> each is validated; until then see `docs/09-10_Notebook_Description_pending.md`, which also
+> each is validated; until then see `docs/10_Notebook_Description_pending.md`, which also
 > carries the full `nb_XX` mapping table).
 > `nb_XX` → current-name mapping table) and `docs/sql-prep-catalog.md` for the SQL-side catalog.
 > A dead-code bug found during the consolidation (`02_build_metadata_foundation`'s merged

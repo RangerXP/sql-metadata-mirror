@@ -1,16 +1,16 @@
-# Notebooks 09–10 — Pending Individual-File Split
+# Notebook 10 — Pending Individual-File Split
 
 **Status:** Temporary holding document. `docs/01_Notebook_Description.md` through
-`docs/08_Notebook_Description.md` have been split into individual per-notebook files (one
+`docs/09_Notebook_Description.md` have been split into individual per-notebook files (one
 file per notebook, matching the naming convention `NN_Notebook_Description.md`), each enriched
 with artifact cataloging and live-validation findings as that notebook is worked through the
 validation sequence (`docs/runbooks/notebook-validation/`).
 
-The content below for notebooks 09–10 has not yet been split out or enriched with live-run
+The content below for notebook 10 has not yet been split out or enriched with live-run
 evidence — it's preserved verbatim from the prior consolidated `01_Notebook_Description.md` so
-nothing is lost. As each notebook is reached in the validation sequence, its section here will
-be extracted into its own `0N_Notebook_Description.md` (matching the pattern of 01–08) and
-removed from this file.
+nothing is lost. Once it's reached in the validation sequence, its section here will be
+extracted into its own `10_Notebook_Description.md` (matching the pattern of 01–09) and removed
+from this file.
 
 ---
 
@@ -38,35 +38,7 @@ For cross-referencing older dated docs that still cite the pre-consolidation nam
 
 See [`08_Notebook_Description.md`](./08_Notebook_Description.md) for `08_validate_governance_evidence` — split out and live-validated 2026-08-18.
 
-### `09_reconcile_semantic_model.Notebook` — every phase gated `DEMO_MODE = False` independently
-**What it does:** Four Purview-native phases (P2/P3/P4) plus the G18/G19 semantic-promotion
-step, merged into one very large notebook:
-- **Cells 1–7 (P2)** — reconciles the approved GT-SLA definition into the semantic model
-  (`IsSlaBreachFlag` column + 2 SLA measures); fails closed unless the P1
-  `PublicationReadback` receipt from `08_validate_governance_evidence` already passed.
-- **Cells 8–14 (P3)** — records Rupal Solanki's real Data Product access request to Customer
-  360 and Victoria Tan's two-tier approval. Purview exposes no API/log for access decisions, so
-  the decision itself is operator-attested (clearly labeled), while the Data Product's own
-  state is real, API-verified evidence.
-- **Cells 15–21 (P4 publish)** — records Ranbir Singh's real Data Product Publish workflow run
-  for Service Performance (`DP-SVCPERF`), observed via the product's own `status` field.
-- **Cells 22–28 (P4 reconcile)** — writes `TechnicianId`/`EquipmentType` metadata annotations
-  once `DP-SVCPERF`'s Publish is confirmed; this is the phase proven live for the
-  drift-and-restore self-healing test (corrupt a value manually, re-run, confirm it restores
-  with the *same* receipt, no new approval fabricated).
-- **Cell 29 (G18/G19 semantic promotion)** — a single, deliberately flattened cell (worked
-  around a documented Fabric/TOM import-ordering bug: `Microsoft.AnalysisServices.Tabular`
-  types must be imported from inside an active `connect_semantic_model` session, never before
-  it) that adds a REAL new measure (`Technician Utilization Rate`) to the `BrookfieldEnercare`
-  model, gated on the `vw_technician_utilization_summary` → `KR-TECH-UTIL` ontology mapping
-  already having passed.
-**Demo fit:** Completes the GT-SLA, DP-CUST360, and DP-SVCPERF chains, and is the "new SQL
-source becomes a real semantic-model KPI" full-circle moment for the G18/G19 onboarding
-narrative.
-**Talking points:** "Same apply-then-verify pattern throughout this notebook, whether the
-source of truth is a SQL-controlled request or a real Purview approval — run any of these
-phases twice against the same request and you get the same receipt ID, re-validated, not a new
-one. That's idempotent self-correction."
+See [`09_Notebook_Description.md`](./09_Notebook_Description.md) for `09_reconcile_semantic_model` — split out and live-validated 2026-08-18.
 
 ---
 
