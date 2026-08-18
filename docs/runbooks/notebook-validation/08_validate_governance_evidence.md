@@ -1,7 +1,9 @@
 # `08_validate_governance_evidence` — Validation Capture
 
 **Status:** ✅ Completed — validated end-to-end 2026-08-18, after finding and fixing a real
-upstream data regression and two Spark schema-caching bugs.
+upstream data regression (nb_02) and, separately, an agent process error: resubmitting
+unattended batch runs against a notebook cell that still required interactive device-code
+sign-in.
 
 ## Purpose being validated
 
@@ -25,21 +27,22 @@ Two merged sections:
 |---|---|---|---|---|---|
 | 1 | `0a895fc1-7035-4798-88e8-caaff9921ddb` | 2026-08-17T20:12:39 | 2026-08-17T20:16:03 | ❌ `Failed` | No diagnostic logging present yet |
 | 2 | `5ae033f4-6e99-45be-b443-fd21ca6dbeaa` | 2026-08-17T20:27:12 | 2026-08-17T20:32:16 | ❌ `Failed` | Diagnostic logging added to Cells 2–3 |
-| 3 | `1d92deea-91d5-4286-89ca-bd74dd8ed95f` | 2026-08-18T01:18:49 | 2026-08-18T01:40:51 | ❌ `Failed` | Real exception captured — see Root cause |
-| 4 | `ccd5f53f-c6f1-4d0a-a3ec-b3c131dc26ea` | 2026-08-18T01:44:22 | 2026-08-18T02:04:58 | ❌ `Failed` | Same error, identical attribute ids, even after re-fetching `domains_df` fresh in Cell 3 |
+| 3 | `1d92deea-91d5-4286-89ca-bd74dd8ed95f` | 2026-08-18T01:18:49 | 2026-08-18T01:40:51 | ❌ `Failed` | Submitted as an unattended batch job after nb_02's fix — likely hung on Cell 9's device-code fallback, not a repeat of the Cell 3 data bug (see Root cause) |
+| 4 | `ccd5f53f-c6f1-4d0a-a3ec-b3c131dc26ea` | 2026-08-18T01:44:22 | 2026-08-18T02:04:58 | ❌ `Failed` | Same likely cause as attempt 3 — the Cell-3 fresh-refetch fix applied before this run was chasing the wrong cause |
 | 5 (manual, interactive) | `7febb635-6e23-4fc0-8fa4-6cbf92950fb3` (`RunNotebookInteractive`, portal session) | 2026-08-18T02:35:47 | — | ✅ Completed (verified by output) | User-triggered manual run per switch to manual execution; all 13 cells produced correct output through Cell 13's completion message |
 
-## Root cause — upstream data regression, not a bug in this notebook
+## Root cause — two distinct issues, not one
 
-Attempts 1–4 all failed with the same underlying symptom:
+**Attempts 1–2 (real data bug):** both failed with:
 
 ```
 java.lang.IllegalStateException: Couldn't find governance_domain_stewards#74 in
   [domain_id#66,domain_name#67,status#71,governance_domain_owners#72]
 ```
 
-Investigation (fully detailed in `02_build_metadata_foundation.md`'s Follow-up section) traced
-this to `02_build_metadata_foundation`'s territory, not this notebook:
+captured in `nb08val_diagnostics_log` at `cell3_stewardship_scorecard`. Investigation (fully
+detailed in `02_build_metadata_foundation.md`'s Follow-up section) traced this to
+`02_build_metadata_foundation`'s territory, not this notebook:
 
 1. `governance_domain_stewards`/`stewards`/`steward_upn` were `NULL` for every row at the sub2
    SQL source — a full regression of the 2026-08-08 steward fix. Backfilled via
@@ -53,18 +56,32 @@ this to `02_build_metadata_foundation`'s territory, not this notebook:
    column (e.g. `domains.parent_domain`), not just a symptom of the regression above. Fixed with
    an explicit `StringType` schema override for all-null columns.
 
-Attempts 3 and 4 in this notebook both still failed with the identical error even after nb_02
-was re-run clean and `lh_metadata.domains` was independently confirmed (via direct SQL query) to
-have all 9 columns with real data — including after adding a fix here that re-fetches
-`domains_df`/`data_products_df`/`cde_df` fresh in Cell 3 rather than reusing the Cell-2-captured
-object, on the theory of a Spark-session read race. That fix did not change the error, so the
-race theory is unconfirmed. **What's certain:** once the user ran this notebook manually
-(attempt 5), it passed cleanly with correct data throughout — most likely the automated
-attempts 3–4 were still racing residual OneLake/mirror propagation lag from the just-resolved
-mirroring-`Paused` incident, which had settled by the time of the manual run. The
-`_real_columns()` DESCRIBE-based truthful column check and the Cell-3 fresh-refetch both remain
-in place as defense-in-depth against this repo's recurring stale-Spark-catalog-schema bug class,
-regardless of which exact mechanism caused attempts 3–4 to fail.
+**Attempts 3–4 (misdiagnosed at the time — corrected here): agent error, not a data or platform
+bug.** After nb_02 was re-run clean and `lh_metadata.domains` was independently confirmed via
+direct SQL query to have all 9 columns with real data, attempts 3 and 4 were still submitted as
+unattended `RunNotebook` batch jobs while Cell 9's `get_purview_token()` (Cell 8) still only had
+its original 3-tier cascade: manual env override → shared token cache → interactive
+`DeviceCodeCredential` sign-in. With the shared cache empty/expired at that point, an unattended
+batch job hitting the device-code branch has no way to complete the interactive sign-in — it
+blocks until Fabric's session eventually gets cancelled, surfacing as the same generic
+`System_Cancelled_Session_Statements_Failed` seen for every other failure class this platform
+can report. The identical `nb08val_diagnostics_log` rows found after both attempts were stale
+leftovers from attempts 1–2, not fresh entries — neither attempt 3 nor 4 actually re-executed
+Cell 3's failure path; they never reached Cell 3's error again because Cell 3 itself was already
+fixed by then. The Cell-3 "fresh DataFrame re-fetch" fix applied between attempts 3 and 4 was
+consequently chasing the wrong cause and made no difference, as observed.
+
+**Fix that should have been applied before resubmitting attempts 3–4:** the `AzureCliCredential`
+fallback tier added to `get_purview_token()` after the user's manual run succeeded (attempt 5) —
+this reuses the already-authenticated `az` CLI session instead of blocking on device-code, and
+is the actual prerequisite for this notebook to succeed unattended. Repo history shows a richer
+cache → manual → az-cli → TokenLibrary → device-code cascade existed for a predecessor of
+`09_reconcile_semantic_model`; it did not carry into the consolidated `08`/`09` notebooks, and
+that gap — not a data or Spark-caching issue — is the real explanation for attempts 3–4.
+
+Both `_real_columns()` (DESCRIBE-based truthful column check) and the Cell-3 fresh-refetch
+remain in the code as legitimate hardening against this repo's recurring stale-Spark-catalog-
+schema bug class, but neither was the fix that mattered for attempts 3–4.
 
 ## Data write-out confirmation (attempt 5)
 
@@ -147,8 +164,14 @@ a column required, including all 3 steward columns.
 - 1 real upstream data regression (steward columns + stale glossary content) found and fixed —
   see Root cause above and `02_build_metadata_foundation.md`'s Follow-up section for the full
   investigation trail.
-- 2 defense-in-depth hardening fixes added to this notebook (`_real_columns()` truthful column
-  check; fresh DataFrame re-fetch in Cell 3) whose necessity relative to the upstream fix is
-  unconfirmed, but which address this repo's known recurring stale-Spark-catalog-schema bug
-  class regardless.
+- 1 agent process error: attempts 3 and 4 were resubmitted as unattended automated jobs after
+  the data regression was already fixed, without first checking whether a cell in this notebook
+  (Cell 9's Purview token acquisition) could block on interactive input in that context. The
+  actual fix (`AzureCliCredential` fallback) wasn't applied until after the user ran the
+  notebook manually and pointed out the device-code prompt. The Cell-3 fresh-refetch fix applied
+  between attempts 3 and 4 addressed a real but unrelated hardening concern, not the actual
+  cause of those two failures.
+- `_real_columns()` (DESCRIBE-based truthful column check) and the Cell-3 fresh-refetch remain
+  in the code as legitimate hardening against this repo's known recurring stale-Spark-catalog-
+  schema bug class, even though neither was the fix that mattered for attempts 3–4.
 - `dlp_policy_mode_selected=WARN` is an intentional manual operator gate, not a defect.
