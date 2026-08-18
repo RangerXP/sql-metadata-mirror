@@ -111,6 +111,7 @@ import pyodbc
 try:
     from sempy_labs.tom import connect_semantic_model
 except ImportError as exc:
+    _log_nb09_diagnostic("cell2_p2_imports", exc)
     raise RuntimeError(
         "semantic-link-labs is required. Attach the SempyLabsV2 environment and restart the session."
     ) from exc
