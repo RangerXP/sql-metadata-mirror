@@ -71,6 +71,7 @@ SemPy and SemPy Labs are the primary write-back model for semantic metadata.
 
 ## Key Documents
 
+- docs/governance-ontology-and-data-contract-model.md
 - docs/Enercare-Demo-SemPy-Design-Guide.md
 - docs/demo-explanation-guide.md
 - docs/design-gap-analysis.md
