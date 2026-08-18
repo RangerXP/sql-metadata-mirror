@@ -1475,7 +1475,7 @@ def build_summary_query() -> str:
         ("cdes", 12),
         ("role_assignments", 48),
         ("label_assignments", 9),
-        ("governance_change_requests", 8),
+        ("governance_change_requests", 10),
         ("okrs", 3),
         ("okr_key_results", 5),
         ("okr_data_products", 3),

@@ -54,7 +54,7 @@ this reconciliation logic had never actually run as part of the consolidated not
 | `lh_metadata.dbo.cdes` | 12 |
 | `lh_metadata.dbo.role_assignments` | 48 |
 | `lh_metadata.dbo.label_assignments` | 9 |
-| `lh_metadata.dbo.governance_change_requests` | 8 |
+| `lh_metadata.dbo.governance_change_requests` | 10 |
 | `lh_metadata.dbo.okrs` / `okr_key_results` / `okr_data_products` | 3 / 5 / 3 |
 | `lh_metadata.dbo.sm_annotations` (rebuilt fresh, `mode("overwrite")`) | 77 (`Glossary_Term_References`=62, `Sensitivity_Label`=7, `Data_Product_Owner`=6, `CDE_Member_Of`=2) |
 | `lh_metadata.dbo.nb02_diagnostics_log` (new, added during this session's debugging) | Diagnostic-only — captures the real Python/JVM exception per named stage on any future failure, since Fabric's REST API never exposes cell-level detail |
