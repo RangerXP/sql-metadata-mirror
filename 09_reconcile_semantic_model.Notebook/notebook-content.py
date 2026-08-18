@@ -714,7 +714,7 @@ def get_purview_token():
         return cached_token
 
     try:
-        from azure.identity import DeviceCodeCredential
+        from azure.identity import AzureCliCredential, DeviceCodeCredential
     except ImportError:
         import subprocess
         import sys
@@ -723,7 +723,15 @@ def get_purview_token():
             [sys.executable, "-m", "pip", "install", "--quiet", "azure-identity"],
             check=True,
         )
-        from azure.identity import DeviceCodeCredential
+        from azure.identity import AzureCliCredential, DeviceCodeCredential
+
+    try:
+        token_result = AzureCliCredential().get_token("https://purview.azure.net/.default")
+        print("[AUTH] Using Azure CLI credential (az account get-access-token).")
+        _write_shared_purview_token_cache(token_result.token, token_result.expires_on)
+        return token_result.token
+    except Exception as exc:
+        print(f"[AUTH] Azure CLI credential unavailable ({exc}); falling back to device-code sign-in.")
 
     def show_device_code(verification_uri, user_code, expires_on):
         print(
@@ -1234,7 +1242,7 @@ def get_purview_token():
         return cached_token
 
     try:
-        from azure.identity import DeviceCodeCredential
+        from azure.identity import AzureCliCredential, DeviceCodeCredential
     except ImportError:
         import subprocess
         import sys
@@ -1243,7 +1251,15 @@ def get_purview_token():
             [sys.executable, "-m", "pip", "install", "--quiet", "azure-identity"],
             check=True,
         )
-        from azure.identity import DeviceCodeCredential
+        from azure.identity import AzureCliCredential, DeviceCodeCredential
+
+    try:
+        token_result = AzureCliCredential().get_token("https://purview.azure.net/.default")
+        print("[AUTH] Using Azure CLI credential (az account get-access-token).")
+        _write_shared_purview_token_cache(token_result.token, token_result.expires_on)
+        return token_result.token
+    except Exception as exc:
+        print(f"[AUTH] Azure CLI credential unavailable ({exc}); falling back to device-code sign-in.")
 
     def show_device_code(verification_uri, user_code, expires_on):
         print(
