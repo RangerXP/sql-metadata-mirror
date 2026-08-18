@@ -218,6 +218,15 @@ def _id_column(df, candidates, real_cols):
 
 
 try:
+    # Re-resolve each DataFrame fresh right before use (not the object captured back in
+    # Cell 2) -- confirmed live 2026-08-17: a domains_df captured earlier in the same
+    # session can bind to a schema snapshot that predates a very recent upstream
+    # rewrite (nb_02), even after refreshTable(), while a fresh DESCRIBE moments later
+    # correctly sees the new column. Re-reading here closes that race.
+    domains_df, _ = _read_table("domains")
+    data_products_df, _ = _read_table("data_products")
+    cde_df, _ = _read_table("cdes")
+
     domains_real_cols = _real_columns(domains_source)
     data_products_real_cols = _real_columns(data_products_source)
     cde_real_cols = _real_columns(cde_source)
