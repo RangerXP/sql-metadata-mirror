@@ -1,15 +1,15 @@
-# Notebooks 08–10 — Pending Individual-File Split
+# Notebooks 09–10 — Pending Individual-File Split
 
 **Status:** Temporary holding document. `docs/01_Notebook_Description.md` through
-`docs/07_Notebook_Description.md` have been split into individual per-notebook files (one
+`docs/08_Notebook_Description.md` have been split into individual per-notebook files (one
 file per notebook, matching the naming convention `NN_Notebook_Description.md`), each enriched
 with artifact cataloging and live-validation findings as that notebook is worked through the
 validation sequence (`docs/runbooks/notebook-validation/`).
 
-The content below for notebooks 08–10 has not yet been split out or enriched with live-run
+The content below for notebooks 09–10 has not yet been split out or enriched with live-run
 evidence — it's preserved verbatim from the prior consolidated `01_Notebook_Description.md` so
 nothing is lost. As each notebook is reached in the validation sequence, its section here will
-be extracted into its own `0N_Notebook_Description.md` (matching the pattern of 01–07) and
+be extracted into its own `0N_Notebook_Description.md` (matching the pattern of 01–08) and
 removed from this file.
 
 ---
@@ -36,24 +36,7 @@ For cross-referencing older dated docs that still cite the pre-consolidation nam
 
 ## Phase 4 — Governance Evidence & Purview-Native Workflow Proofs
 
-### `08_validate_governance_evidence.Notebook` — Cells 1–6 no gate; Cell 7+ `DEMO_MODE = False`
-**What it does:** Two originally-separate notebooks merged into one file:
-- **Cells 1–6 — scorecard** (formerly `nb_10_purview_stewardship_ai`): read-only stewardship
-  coverage, control completeness, AI readiness, and OKR/ontology graph-integrity checks. No
-  writes; pure validation; writes a closeout manifest.
-- **Cells 7–13 — P1 Purview-native workflow proof** (formerly `nb_12_purview_workflow_sync`):
-  observes a real Purview-native Glossary Term publish workflow (GT-SLA) via the term's own
-  `status` field — the only real API-observable proxy for approval, since Purview exposes no
-  workflow-request API. Persists an idempotent Draft/Published observation and a durable P1
-  evidence receipt.
-**Demo fit:** The "proof it all worked" scorecard, plus Ci Zhu's audit answer for GT-SLA — a
-REAL Purview workflow run, not a SQL simulation.
-**Talking points:** "This is our own governance health check, and this is what a real approval
-inside the Purview portal looks like once read back through the API — not a SQL-side
-approximation."
-**Note (2026-08-17):** its `_read_table()` was missing the `refreshTable()` guard against the
-stale-Spark-catalog-schema bug found live in `02_build_metadata_foundation` — fixed proactively
-during that same-day audit, not yet exercised by a live run of this notebook.
+See [`08_Notebook_Description.md`](./08_Notebook_Description.md) for `08_validate_governance_evidence` — split out and live-validated 2026-08-18.
 
 ### `09_reconcile_semantic_model.Notebook` — every phase gated `DEMO_MODE = False` independently
 **What it does:** Four Purview-native phases (P2/P3/P4) plus the G18/G19 semantic-promotion
