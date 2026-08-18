@@ -1,16 +1,11 @@
-# Notebook 10 — Pending Individual-File Split
+# Notebook Legacy Name Mapping & Governance Review Findings
 
-**Status:** Temporary holding document. `docs/01_Notebook_Description.md` through
-`docs/09_Notebook_Description.md` have been split into individual per-notebook files (one
-file per notebook, matching the naming convention `NN_Notebook_Description.md`), each enriched
-with artifact cataloging and live-validation findings as that notebook is worked through the
-validation sequence (`docs/runbooks/notebook-validation/`).
-
-The content below for notebook 10 has not yet been split out or enriched with live-run
-evidence — it's preserved verbatim from the prior consolidated `01_Notebook_Description.md` so
-nothing is lost. Once it's reached in the validation sequence, its section here will be
-extracted into its own `10_Notebook_Description.md` (matching the pattern of 01–09) and removed
-from this file.
+**Status:** All 10 notebooks have been split into individual per-notebook files
+(`docs/01_Notebook_Description.md` through `docs/10_Notebook_Description.md`), each enriched
+with artifact cataloging and live-validation findings via the validation sequence
+(`docs/runbooks/notebook-validation/`). This file now retains only the two pieces of reference
+material below that don't belong to any single notebook: the legacy `nb_XX` name mapping table,
+and governance review findings not tied to a specific notebook.
 
 ---
 
@@ -40,24 +35,7 @@ See [`08_Notebook_Description.md`](./08_Notebook_Description.md) for `08_validat
 
 See [`09_Notebook_Description.md`](./09_Notebook_Description.md) for `09_reconcile_semantic_model` — split out and live-validated 2026-08-18.
 
----
-
-## Phase 5 — Demo Operations
-
-### `10_reset_demo.Notebook` — `DEMO_MODE = False` (its normal mode is to actually reset state)
-**What it does:** Resets every demo request (Objective edits/certification/recertification, AI
-Instruction effective-date/rollback, Data Product certification/expiration/decertification,
-CDE/ontology mapping, semantic-model promotion) back to its pre-decision status across both SQL
-(Cells 3–6) and the Lakehouse/semantic model (Cells 7–8), so the whole approval narrative can
-be re-demoed live, indefinitely. Never deletes a governed object row.
-**Demo fit:** Not part of the demo narrative itself — the "reset the stage" utility run between
-rehearsals or between live audiences.
-**Talking points:** (internal use only — not shown to an audience) "Run this after a live pass
-to put every gated request back to 'awaiting approval' so tomorrow's demo starts fresh."
-**Note:** re-approving after a reset needs a small manual status flip (`Submitted`→`Approved`)
-plus re-running the matching apply notebook (`07_apply_approved_changes` or the relevant phase
-of `09_reconcile_semantic_model`) — the original build scripts won't reapply a reset request
-since they're guarded by existence, not status.
+See [`10_Notebook_Description.md`](./10_Notebook_Description.md) for `10_reset_demo` — split out and live-validated 2026-08-18.
 
 ---
 

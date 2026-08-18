@@ -47,6 +47,32 @@ Four independent Purview-native governance scenarios, in five phases, merged int
   passed. Unlike Cells 1–28, this phase creates a brand-new model object rather than annotating
   an existing one.
 
+## How these governance requests originate and connect to Purview
+
+Three of this notebook's four request types are genuinely Purview-native — each corresponds to a
+real workflow type inside Unified Catalog, and this notebook (or its P1 sibling,
+`08_validate_governance_evidence`) only ever *observes* the resulting object state through the
+Purview REST API; it never approves anything itself. The fourth (`SemanticModelPromotion`, G18)
+is purely SQL-controlled and has no Purview workflow behind it at all.
+
+| Request type | `authority` | Real origin in Purview | How it's observed here |
+|---|---|---|---|
+| `GLOSSARY_TERM_PUBLICATION` (P1/P2) | `Purview` | A **Term publish** workflow (Unified Catalog > Process automation > Workflows, category "Catalog curation"), authored by a Governance Domain Creator and assigned to a named approver (Ci Zhu). The requester edits/submits the `GT-SLA` term; the approver approves it in the Purview portal. | Tier 1 — real, API-verified. `08_validate_governance_evidence` reads the term's own `status` field (Draft→Published) directly from the Unified Catalog API. Purview exposes no workflow-*request* API at all, so the governed object's own state is the best available evidence — and it's a genuine one, not a workaround. |
+| `DataProductAccess` (P3) | `Purview` | A **Data product access** policy on `DP-CUST360` (the per-product "Manage access policies" flyout — populating the Approvers field auto-generates the backing workflow object on Save). Rupal Solanki requests access; Victoria Tan completes both required approval tiers (Privacy Compliance Approval, then the main Approval) in the "Requests and approvals" flyout. | Tier 3 — no evidence path exists for this at all. Purview exposes no REST API, Microsoft Graph endpoint, or diagnostic log for access-request decisions (exhaustively confirmed by probing every plausible endpoint/log category). This notebook records the decision as clearly-labeled **operator-attested** evidence (Cell 8's `ATTESTED_*` fields), while still independently API-verifying the data product's own live status/domain/definition hash (Cell 10) — the parts that genuinely can be verified are, and the part that can't is honestly labeled, not silently assumed. |
+| `DataProductPublish` (P4a/P4b) | `Purview` | A **Data product publish** workflow (same Process automation surface as Term publish — category "Catalog curation", type "Data product publish"), scoped to the Service Delivery domain and assigned to Ranbir Singh. Shruthi Srinivas/Ranbir Singh publish `DP-SVCPERF`; the workflow routes to Ranbir for approval. | Tier 1 — real, API-verified, same pattern as `GT-SLA`: the product's own `status` field (Draft→Published) is the observable proxy (Cell 17). |
+| `SemanticModelPromotion` (G18) | `SQL` | **Not a Purview workflow at all.** Originates entirely inside this repo's own SQL-controlled G18/G19 pipeline: a source SQL view gets an `@tag` annotation, a steward classifies/approves it as a CDE and maps it to an ontology Key Result, and only then does a SQL script insert this request directly with `current_status='Approved'` — no browser-based decision, no Purview object involved anywhere in the chain. | Not observed via Purview at all — Cell 29 only checks this repo's own SQL ledger (the request's own status, plus the prerequisite `OntologyMappingReadback` receipt) before promoting a new semantic-model measure. |
+
+**Why this distinction matters for the demo:** the 3 `Purview`-authority requests are the actual
+proof that this pipeline reconciles with real actions taken inside the Purview portal by real
+named stakeholders — not simulated. `SemanticModelPromotion` is deliberately different: it shows
+the *other* half of the story (SQL-side-only governance, same ledger, same receipt/read-back
+discipline, zero Purview dependency) — useful for contrasting that not every governed decision
+needs a Purview workflow behind it, only the ones where Purview itself genuinely owns the object
+being changed (a Term or a Data Product). A data product/domain's *other* request types seen
+elsewhere in the ledger (`DomainPublication`, `DataProductCertification`, `ObjectiveApproval`,
+`RoleAssignment`, `ScanCompletion`) follow the same `Purview`/`SQL` split — real API-observed
+proxies where Purview owns the object, attested or SQL-controlled evidence where it doesn't.
+
 ## Artifact catalog
 
 ### Inputs consumed
@@ -101,4 +127,4 @@ not just a one-time write."
 See also: [`08_Notebook_Description.md`](./08_Notebook_Description.md) ·
 [`docs/runbooks/notebook-validation/09_reconcile_semantic_model.md`](./runbooks/notebook-validation/09_reconcile_semantic_model.md)
 (build/debug history and live-run evidence) ·
-[`docs/10_Notebook_Description_pending.md`](./10_Notebook_Description_pending.md)
+[`docs/notebook-legacy-reference.md`](./notebook-legacy-reference.md)

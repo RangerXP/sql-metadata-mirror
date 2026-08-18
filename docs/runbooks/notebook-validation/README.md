@@ -4,11 +4,10 @@
 notebooks, built by actually running each notebook end-to-end (not by reading the code).
 Distinct from the two documents it complements:
 
-- [`docs/01_Notebook_Description.md`](../../01_Notebook_Description.md), [`docs/02_Notebook_Description.md`](../../02_Notebook_Description.md), [`docs/03_Notebook_Description.md`](../../03_Notebook_Description.md), [`docs/04_Notebook_Description.md`](../../04_Notebook_Description.md), [`docs/05_Notebook_Description.md`](../../05_Notebook_Description.md), [`docs/06_Notebook_Description.md`](../../06_Notebook_Description.md), [`docs/07_Notebook_Description.md`](../../07_Notebook_Description.md), [`docs/08_Notebook_Description.md`](../../08_Notebook_Description.md), [`docs/09_Notebook_Description.md`](../../09_Notebook_Description.md) — static, code-grounded
-  reference, one file per notebook (split out as each is validated; see
-  [`docs/10_Notebook_Description_pending.md`](../../10_Notebook_Description_pending.md)
-  for notebook 10 not yet split out). Not updated by a live run on its own, but each notebook's file
-  now also carries a "Live-validation findings" section maintained alongside this folder.
+- [`docs/01_Notebook_Description.md`](../../01_Notebook_Description.md), [`docs/02_Notebook_Description.md`](../../02_Notebook_Description.md), [`docs/03_Notebook_Description.md`](../../03_Notebook_Description.md), [`docs/04_Notebook_Description.md`](../../04_Notebook_Description.md), [`docs/05_Notebook_Description.md`](../../05_Notebook_Description.md), [`docs/06_Notebook_Description.md`](../../06_Notebook_Description.md), [`docs/07_Notebook_Description.md`](../../07_Notebook_Description.md), [`docs/08_Notebook_Description.md`](../../08_Notebook_Description.md), [`docs/09_Notebook_Description.md`](../../09_Notebook_Description.md), [`docs/10_Notebook_Description.md`](../../10_Notebook_Description.md) — static, code-grounded
+  reference, one file per notebook (all 10 now split out). Not updated by a live run on its
+  own, but each notebook's file now also carries a "Live-validation findings" section
+  maintained alongside this folder.
 - [`docs/runbooks/ten-notebook-consolidated-validation.md`](../ten-notebook-consolidated-validation.md) —
   the execution *procedure* (REST harness, ordered sequence, validation checklist per stage).
 
@@ -59,7 +58,8 @@ with `--job-id <jobId>` printed at submission time.
 | 7 | `07_apply_approved_changes` | ✅ Completed (real gap found + fixed via live test) | [07_apply_approved_changes.md](./07_apply_approved_changes.md) |
 | 8 | `08_validate_governance_evidence` | ✅ Completed (real upstream regression found + fixed) | [08_validate_governance_evidence.md](./08_validate_governance_evidence.md) |
 | 9 | `09_reconcile_semantic_model` | ✅ Completed (two real bugs found + fixed) | [09_reconcile_semantic_model.md](./09_reconcile_semantic_model.md) |
-| 10 | `10_reset_demo` | ⬜ Not started | — |
+| 10 | `10_reset_demo` | ✅ Completed | [10_reset_demo.md](./10_reset_demo.md) |
 
-After all 10: semantic-model attribute/gating confirmation (certified vs. pending-approval
-state) via the Power BI Modeling MCP, recorded in `docs/semantic-model-annotations.md`.
+All 10 notebooks now validated. After all 10: semantic-model attribute/gating confirmation
+(certified vs. pending-approval state) via the Power BI Modeling MCP, recorded in
+`docs/semantic-model-annotations.md`.
