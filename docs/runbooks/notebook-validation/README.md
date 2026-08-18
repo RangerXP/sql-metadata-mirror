@@ -57,7 +57,7 @@ with `--job-id <jobId>` printed at submission time.
 | 5 | `05_publish_governance_domains` | ✅ Completed (real bug found + fixed) | [05_publish_governance_domains.md](./05_publish_governance_domains.md) |
 | 6 | `06_publish_glossary_and_lineage` | ✅ Completed (four real bugs found + fixed) | [06_publish_glossary_and_lineage.md](./06_publish_glossary_and_lineage.md) |
 | 7 | `07_apply_approved_changes` | ✅ Completed (real gap found + fixed via live test) | [07_apply_approved_changes.md](./07_apply_approved_changes.md) |
-| 8 | `08_validate_governance_evidence` | ⬜ Not started | — |
+| 8 | `08_validate_governance_evidence` | ✅ Completed (real upstream regression found + fixed) | [08_validate_governance_evidence.md](./08_validate_governance_evidence.md) |
 | 9 | `09_reconcile_semantic_model` | ⬜ Not started | — |
 | 10 | `10_reset_demo` | ⬜ Not started | — |
 
