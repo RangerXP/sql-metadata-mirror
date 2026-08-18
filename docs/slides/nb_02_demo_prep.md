@@ -1,77 +1,70 @@
-# Notebook 02: `02_build_metadata_foundation` — Demo Prep & Artifact Catalog
+# Notebook 02: `02_build_metadata_foundation` — Demo Prep Digest
 
-**Purpose of this document:** Unlike `docs/02_Notebook_Description.md` (the validation-history
-record — the stale-schema bug hunt, fixes, run evidence), this document catalogs the
-**governance metadata artifacts** this notebook produces, evaluates them against the build's
-demo requirements, and explains how they support the Maria Castellanos north-star scenario.
-This is the source document for demo slide development.
+**Purpose of this document:** A notebook-driven digest for demo delivery — what this notebook
+does, where it sits in the governance contract, and the high-level points to explain while
+presenting it. Not the validation history (`docs/02_Notebook_Description.md`) and not the
+end-to-end demo script (a separate demo-design-walkthrough document covers that).
 
 ---
 
-## Notebook purpose & role
+## Role in the demo
 
-**What it is:** The governance metadata foundation. It ingests the customer-authored governance
-CSVs (`purview/*.csv` — domains, data products, glossary terms, CDEs, role assignments, labels,
-OKRs) into `lh_metadata`, then reconciles that curated metadata against the live semantic model
-to build the annotation payloads that later notebooks write back.
+The governance metadata foundation. Ingests the customer-authored governance CSVs
+(`purview/*.csv` — domains, data products, glossary terms, CDEs, roles, labels, OKRs, mirrored
+from their SQL-seeded source) into `lh_metadata`, then reconciles that curated metadata against
+the live semantic model to build the annotation payloads later notebooks write back. Runs
+second, always live.
 
-**How it's applied:** Runs second, always live. Two merged sections: Cells 1–9 seed/refresh the
-governance tables from the SQL/CSV source; Cells 10–16 cross-reference those tables against the
-live `BrookfieldEnercare` semantic model (via SemPy) to build `sm_annotations` — the staged
-payload of glossary-term references, sensitivity labels, data-product ownership, and CDE
-membership that `04_writeback_governed_metadata` later applies to the model.
+**Why it matters for the demo:** this is where "one governed definition" becomes real,
+queryable data instead of a design document. Every `GT-*`/`CDE-*`/`DP-*` code referenced
+anywhere in Tom's call, Victoria's review, or Ci Zhu's audit answer has exactly one row here.
 
-**Use-case delivery objective:** This is where "one governed definition" becomes real data,
-not just a design document. Every `GT-*`/`CDE-*`/`DP-*` code referenced anywhere in Tom's call,
-Victoria's review, or Ci Zhu's audit answer has exactly one row here — this notebook is what
-makes "there's only one definition" a structurally enforced fact rather than a talking point.
+## Where this fits: the 3-tier contract & ontology
 
-## Artifact catalog
+This notebook is the **Tier 3 ingestion point** — the first place the Tier 1 SQL contract's
+governance content lands for consumption. (See
+`docs/governance-ontology-and-data-contract-model.md` §2–3 for the full 3-tier model and
+ontology graph.)
 
-| Artifact | Type | What it is | What it does |
-|---|---|---|---|
-| `lh_metadata.domains` | Table (3 rows) | Governance domains: Customer Operations, Service Delivery, Revenue and Contracts | Maps 1:1 to the three domains Ci Zhu references in Act 3 and that appear as Purview Governance Domains |
-| `lh_metadata.data_products` | Table (3 rows) | Data products: Customer 360, Service Performance, Billing and Contract Health | The exact three data products Tom's/Victoria's CRM and dashboard surfaces query against |
-| `lh_metadata.glossary_terms` | Table (35 rows) | Business glossary term catalog (GT-CUST, GT-SLA, GT-CONSENT, etc.) | The single certified definition source for every business term the demo cites |
-| `lh_metadata.cdes` | Table (12 rows) | Critical Data Elements (CDE-CONTRACTAMT, CDE-CONSENTSTATE, etc.) | Marks specific columns as governance-critical, linked to their parent glossary term |
-| `lh_metadata.role_assignments` | Table (48 rows) | Domain/product/term ownership and stewardship roles | Backs "who owns this definition" answers (Victoria, Ci Zhu, Rupal, Shruthi, Ranbir) |
-| `lh_metadata.label_assignments` | Table (9 rows) | Sensitivity label assignments (Confidential, Highly Confidential) | The label-policy gate that governs Tom's credit authority and PII visibility during the call |
-| `lh_metadata.governance_change_requests` | Table (10 rows) | Gated-approval request records (KPI, verified-answer, CDE, glossary-term, AI-instruction scenarios) | Feeds `07_apply_approved_changes`'s "click Approve → watch the data change" demo moment |
-| `lh_metadata.okrs` / `okr_key_results` / `okr_data_products` | Tables (3 / 5 / 3 rows) | Business Objectives & Key Results, linked to data products | Lets a business stakeholder trace a strategic goal down to the governed data product backing it (G11-1 ontology layer) |
-| `lh_metadata.ai_metadata` | Table (certified KPI instructions + verified Q&A) | Certified AI grounding content, gated by `IsDraft`/`IsCertified` | The exact content the Fabric Data Agent reads to answer Tom's/the auditor's natural-language questions — including the quantified billing-caller/PP-renewal churn insight |
-| `lh_metadata.sm_annotations` | Table (77 rows: 62 Glossary_Term_References, 7 Sensitivity_Label, 6 Data_Product_Owner, 2 CDE_Member_Of) | Staged reconciliation payload between curated metadata and the live semantic model | The exact set of annotations `04_writeback_governed_metadata` applies to the model — this is the "compile step" between governance intent and semantic-model reality |
-| `lh_metadata.nb02_diagnostics_log` | Table | Captured exception + traceback for any Cell 1–16 failure | Defense-in-depth: Fabric's job API exposes no cell-level detail, so this is the only way to diagnose a future failure without re-instrumenting from scratch |
-
-## Build requirement evaluation
-
-| Requirement | How this notebook satisfies it |
+| Aspect | This notebook's role |
 |---|---|
-| T2 tier: customer-owned external files (`purview/*.csv`) as governance source | Cells 1–9 ingest directly from these CSVs (or their SQL-mirror equivalent), never inventing definitions in code |
-| T3 tier: Fabric-native staging (`lh_metadata` + semantic model) | This notebook *is* the T3 staging layer — the working store for authoring and propagation before Purview (T4) publish |
-| "Only certified content reaches AI grounding" | `ai_metadata` seeding gates on `IsDraft=0 AND IsCertified=1`, matching the same certification pattern used for KPIs |
-| Closed-loop governance: every governed asset produces durable evidence | `sm_annotations` and `nb02_diagnostics_log` are both durable, independently queryable evidence tables, not just print-statement output |
+| Tier | **Tier 3 (consumption)** — reads the Tier 1 SQL contract via its Tier 2 Fabric-mirrored copy, never invents governance content itself |
+| Ontology footprint | Populates the **entire ontology dimension layer**: `domains`, `data_products`, `glossary_terms`, `cdes`, `okrs`/`okr_key_results`/`okr_data_products` — every entity and typed relationship in the ontology graph originates here |
+| Governance workflow | None directly — this is metadata *ingestion*, not an approval workflow. It also stages `sm_annotations`, the reconciliation payload `04_writeback_governed_metadata` later applies under its own certification gate |
 
-## Demo narrative support
+## Key artifacts
 
-- **Act 1/3 (glossary + CDE definitions):** every `GT-*` and `CDE-*` code spoken in the script
-  has a real row here with a real owner and definition — a slide can show the `glossary_terms`
-  row for `GT-SLA` side-by-side with Tom citing the SLA policy on the call.
-- **Act 2 (the churn insight):** the `ai_metadata` verified-answer row quantifying the
-  billing-caller/PP-renewal gap (~51% vs. ~86%, a ~35-point gap) is a genuinely reusable slide
-  artifact — it shows governed AI content isn't generic boilerplate, it's a specific, certified,
-  quantified business fact.
-- **Talking point:** "This is the reconciliation step — it's not enough to have a glossary CSV
-  and a semantic model that don't know about each other. This notebook is what proves they
-  agree, row for row, before anything gets written back."
+| Artifact | What it is | Why it matters in the demo |
+|---|---|---|
+| `domains` / `data_products` (3 / 3 rows) | Customer Operations, Service Delivery, Revenue and Contracts domains; Customer 360, Service Performance, Billing and Contract Health products | The exact three-and-three Ci Zhu references in Act 3 and Tom's/Victoria's tools query against |
+| `glossary_terms` / `cdes` (35 / 12 rows) | The certified business-term and critical-data-element catalog | The single definition source for every business term the demo cites (`GT-SLA`, `GT-CONSENT`, etc.) |
+| `role_assignments` (48 rows) | Domain/product/term ownership and stewardship | Backs every "who owns this" answer (Victoria, Ci Zhu, Rupal, Shruthi, Ranbir) |
+| `label_assignments` (9 rows) | Sensitivity label assignments | The label-policy gate behind Tom's credit authority and PII visibility during the call |
+| `okrs` / `okr_key_results` / `okr_data_products` (3 / 5 / 3 rows) | Business Objectives linked to data products | Lets a stakeholder trace a strategic goal down to the governed data product measuring it |
+| `ai_metadata` (certified KPI instructions + verified Q&A) | Certified AI grounding content, gated by `IsDraft`/`IsCertified` | What the Fabric Data Agent reads to answer natural-language questions — including the quantified billing-caller/PP-renewal insight |
+| `sm_annotations` (77 rows) | Staged reconciliation payload between curated metadata and the live semantic model | The exact "compile step" between governance intent and semantic-model reality — what notebook 04 applies |
 
-## High-level outcome
+## High-level takeaways (what to say)
 
-By the end of this notebook, the full governance metadata foundation exists in `lh_metadata` —
-domains, data products, glossary, CDEs, roles, labels, OKRs, and certified AI grounding content
-— reconciled against the live semantic model and staged for writeback. This is the bridge
-between "governance as a design document" and "governance as queryable, enforceable data."
+- "Every governance object here has exactly one row — one domain, one glossary term, one CDE —
+  and that single row is what every other notebook and every Purview publication traces back
+  to. That's what makes 'one governed definition' a structural fact, not a policy statement."
+- "This notebook doesn't invent metadata — it ingests from the SQL contract and reconciles
+  against the live semantic model, proving the two agree before anything gets written back."
+- "The AI grounding content here is gated on certification, exactly like the KPI path — nothing
+  reaches the Data Agent that hasn't been approved."
+
+## Demo requirements this notebook satisfies
+
+- Establishes every governed entity (domain, data product, glossary term, CDE, objective, key
+  result) the rest of the demo references by name.
+- Stages the certified, quantified churn-insight verified-answer the Data Agent later cites.
+- Proves the semantic model and governance metadata are reconciled before writeback — the
+  technical basis for "one measure, one meaning" in Act 3.
 
 ---
 
-See also: [`docs/02_Notebook_Description.md`](../02_Notebook_Description.md) (validation history) ·
+See also: [`docs/02_Notebook_Description.md`](../02_Notebook_Description.md) (artifact catalog + validation pointer) ·
+[`docs/governance-ontology-and-data-contract-model.md`](../governance-ontology-and-data-contract-model.md) ·
 [`docs/purview-maria-north-star-scenario.md`](../purview-maria-north-star-scenario.md)
+

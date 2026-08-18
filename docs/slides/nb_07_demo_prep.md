@@ -1,67 +1,61 @@
-# Notebook 07: `07_apply_approved_changes` — Demo Prep & Artifact Catalog
+# Notebook 07: `07_apply_approved_changes` — Demo Prep Digest
 
-**Purpose of this document:** Unlike `docs/07_Notebook_Description.md` (validation history),
-this document catalogs the **governance artifacts this notebook mutates**, evaluates them
-against build requirements, and explains how they support the demo narrative. Source document
-for demo slide development.
+**Purpose of this document:** A notebook-driven digest for demo delivery — what this notebook
+does, where it sits in the governance contract, and the high-level points to explain while
+presenting it. Not the validation history (`docs/07_Notebook_Description.md`) and not the
+end-to-end demo script (a separate demo-design-walkthrough document covers that).
 
 ---
 
-## Notebook purpose & role
+## Role in the demo
 
-**What it is:** The apply-on-approve dispatcher — the notebook that turns an *Approved*
-governance decision into an actual, live change in `lh_metadata`. It's the mechanism behind
-every "someone approved this, now watch the data change" moment in the demo.
+The apply-on-approve dispatcher — turns an *Approved* governance decision into an actual, live
+change in `lh_metadata`. Runs seventh, always live. Reads directly from the `sub2` SQL source
+(never the lakehouse mirror, to avoid acting on stale status), validates each pending request
+carries proper governance tagging, dispatches by request type, and stamps each processed row
+`Applied`.
 
-**How it's applied:** Runs seventh, always live (`DEMO_MODE = False`). Reads directly from the
-`sub2` SQL source (never the lakehouse mirror, to avoid acting on stale status), validates each
-pending request carries proper governance tagging, dispatches by request type, and stamps each
-processed row `Applied`.
-
-**Use-case delivery objective:** This is the technical proof behind Ci Zhu's Act 3 claim that
+**Why it matters for the demo:** this is the technical proof behind Ci Zhu's Act 3 claim that
 every governed change goes through the same approval contract — not a one-off manual edit, but
-a repeatable, auditable, SQL-driven workflow that a real governance team would actually use.
+a repeatable, auditable, SQL-driven workflow a real governance team would actually use.
 
-## Artifact catalog
+## Where this fits: the 3-tier contract & ontology
 
-| Artifact | Type | What it is | What it does |
-|---|---|---|---|
-| KPI re-certifications | `lh_metadata.kpi_metadata` mutation | Version bump, formula/threshold/description updates for an approved KPI change (e.g. SLA Breach Rate's auto-suppression fix closing the Maria repeat-complaint pattern from Act 2) | Demonstrates a KPI definition correction traced directly to a real operational finding |
-| Verified-answer certifications | `lh_metadata.ai_metadata` insert (`RecordType='verified_answer'`) | New certified Q&A content (e.g. the no-heat SLA credit-policy answer drafted from Tom's actual call script) | Shows a real agent interaction becoming governed, reusable AI-answer content |
-| CDE classifications | New CDE registration (e.g. `CDE-COMPLAINTREF`) | Registers a new Critical Data Element with its sensitivity classification | Demonstrates the approval gate for a brand-new governance object, not just an edit |
-| Glossary term publications | New glossary term registration (e.g. `GT-SLA`) | Formally publishes a term that had been used narratively but never registered | Closes the gap between "the term everyone says" and "the term that's actually governed" |
-| AI instruction certifications/rollbacks | `lh_metadata.ai_metadata` insert/version management | Certifies a new AI instruction (with optional future-effective date) or rolls back a flawed edit to a prior certified version | The escalation-guidance rollback scenario is a genuine "governance catches a mistake" story — a real safety clause that was accidentally dropped, caught, and reverted |
-| `sqldemo.dbo.governance_change_requests` (audit trail) | Durable status/timestamp record | `status`/`applied_at` stamped on every processed request | The complete, queryable proof of who requested what, who approved it, and when it took effect — this table alone can answer an auditor's "show me every governance change and who approved it" question |
-
-## Build requirement evaluation
-
-| Requirement | How this notebook satisfies it |
+| Aspect | This notebook's role |
 |---|---|
-| "Closed-loop governance: every approval produces durable evidence" | `governance_change_requests`' `status`/`applied_at` columns are exactly that evidence, independently queryable without trusting notebook print output |
-| SQL-controlled approval, not UI-only | Approval happens by updating a SQL row's status — matching the design decision that SQL, not a bespoke UI, drives the demo's approval mechanics |
-| Governance tagging must be present on every request (found during validation) | Confirmed via live testing 2026-08-17 that `domain`/`owner`/`sensitivity`/`semantic_role`/`business_use` are mandatory on every request regardless of type; fixed all 8 seed scenarios to include them so future reseeds remain dispatchable |
-| Rollback must be a first-class, auditable operation, not a manual fix | `AI_INSTRUCTION_ROLLBACK` dynamically resolves the prior certified version with no hardcoded IDs — proven live via the GCR-AII-003/004 pair and the author's own GCR-VALTEST-001/-REVERT test cycle |
+| Tier | **Tier 1 → Tier 3 bridge** — reads the Approved decision directly from the Tier 1 SQL contract (`sub2`) and applies it into `lh_metadata` (Tier 3) |
+| Ontology footprint | Does not create new ontology entities — it applies **content changes** governed objects already reference (KPI definitions, verified answers, CDE/glossary registrations, AI instructions) |
+| Governance workflow | The **SQL-controlled workflow**, exactly: `Draft → PendingApproval → Approved → Applied`, dispatched by `request_type`. This is the non-Purview-native half of this repo's two governance-workflow patterns (contrast with `08`/`09`'s Purview-native Term/Data-Product workflows) |
 
-## Demo narrative support
+## Key artifacts
 
-- **Act 2/3 crossover:** the SLA Breach Rate KPI re-certification is a strong slide artifact —
-  it's the technical closure of the exact operational bug (auto-suppressed dispatch) Ranbir
-  found in Act 2, now formally certified as a KPI definition change with Ci Zhu's approval.
-- **The rollback story:** GCR-AII-003 (a well-intentioned but flawed edit that drops a safety
-  clause) → GCR-AII-004 (the catch and revert) is a compelling, self-contained narrative beat for
-  a slide about governance *catching mistakes*, not just approving good changes.
-- **Talking point:** "One dispatcher, several request types, all sharing the same
-  Draft→Approved→Applied contract — this is what makes the closed loop closed."
+| Artifact | What it is | Why it matters in the demo |
+|---|---|---|
+| KPI re-certifications | Version bump / formula / threshold updates in `kpi_metadata` | e.g. the SLA Breach Rate auto-suppression fix — a KPI correction traced directly to a real operational finding from Act 2 |
+| Verified-answer / AI-instruction certifications, rollbacks | New certified `ai_metadata` content or a reverted flawed edit | The escalation-guidance rollback is a genuine "governance catches a mistake" story — a real safety clause dropped, caught, and reverted |
+| New CDE / glossary term registrations | New governed objects, not just edits | Demonstrates the approval gate for brand-new governance objects |
+| `governance_change_requests` audit trail | `status`/`applied_at` stamped on every processed request | Answers "show me every governance change and who approved it" directly, without trusting notebook print output |
 
-## High-level outcome
+## High-level takeaways (what to say)
 
-By the end of this notebook, every currently-approved governance change request has been
-applied to `lh_metadata` and stamped with a durable, auditable record of when and by whom. Live
-validation on 2026-08-17 went further than a routine run: a real apply-then-revert test cycle
-confirmed the mechanism works today (not just historically), and surfaced a genuine build gap
-— undocumented mandatory governance tags — that's now fixed across all seed scenarios.
+- "One dispatcher, several request types, all sharing the same Draft→Approved→Applied contract
+  — this is what makes the closed loop closed."
+- "Approval happens by updating one SQL row's status — this is SQL-controlled governance, the
+  other half of this demo's two workflow patterns alongside the Purview-native ones."
+- "The rollback path resolves the prior certified version dynamically, with no hardcoded ID —
+  proven live with a real flawed-edit-then-catch-then-revert cycle."
+
+## Demo requirements this notebook satisfies
+
+- Act 2/3: the SLA Breach Rate KPI re-certification closes the exact operational bug found in
+  Act 2, now formally approved and applied.
+- Act 3: the durable, queryable audit trail Ci Zhu points to for "who approved what, and when."
+- Demonstrates governance catching and reverting its own mistake (the escalation-guidance
+  rollback), not just approving good changes.
 
 ---
 
-See also: [`docs/07_Notebook_Description.md`](../07_Notebook_Description.md) (validation history) ·
+See also: [`docs/07_Notebook_Description.md`](../07_Notebook_Description.md) (artifact catalog + validation pointer) ·
+[`docs/governance-ontology-and-data-contract-model.md`](../governance-ontology-and-data-contract-model.md) ·
 [`docs/purview-maria-north-star-scenario.md`](../purview-maria-north-star-scenario.md)
+

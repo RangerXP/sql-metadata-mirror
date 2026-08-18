@@ -1,76 +1,75 @@
-# Notebook 09: `09_reconcile_semantic_model` — Demo Prep & Artifact Catalog
+# Notebook 09: `09_reconcile_semantic_model` — Demo Prep Digest
 
-**Purpose of this document:** Unlike `docs/09_Notebook_Description.md` (validation history),
-this document catalogs the **governance artifacts this notebook produces**, evaluates them
-against build requirements, and explains how they support the demo narrative. Source document
-for demo slide development.
+**Purpose of this document:** A notebook-driven digest for demo delivery — what this notebook
+does, where it sits in the governance contract, and the high-level points to explain while
+presenting it. Not the validation history (`docs/09_Notebook_Description.md`) and not the
+end-to-end demo script (a separate demo-design-walkthrough document covers that).
 
 ---
 
-## Notebook purpose & role
+## Role in the demo
 
-**What it is:** The closed-loop payoff notebook — it's where three separately-approved Purview
-governance decisions (a glossary term, a data product access request, a data product publish)
-actually land as real metadata inside the live semantic model, plus one brand-new KPI measure
-born from a governed source object.
+The closed-loop payoff notebook — where three separately-approved Purview governance decisions
+(a glossary term, a data product access request, a data product publish) actually land as real
+metadata inside the live semantic model, plus one brand-new KPI measure born from a governed
+source object. Runs ninth. Five phases, each independently gated on its own upstream
+approval/receipt, each re-verifying a fresh read-back before marking its request `Completed`.
 
-**How it's applied:** Runs ninth. Five phases, each independently gated on its own upstream
-approval/receipt, each writing only the metadata it owns, each re-verifying a fresh read-back
-before marking its own request `Completed`.
-
-**Use-case delivery objective:** This is the "does the approval actually change anything a
+**Why it matters for the demo:** this is the "does the approval actually change anything a
 report consumer sees" proof point — a glossary term's governed definition shows up as a real
 measure description, a data product's approved publish shows up as real column annotations, and
 a new Key Result gets a real KPI measure, not a slide claiming one exists.
 
-## Artifact catalog
+## Where this fits: the 3-tier contract & ontology
 
-| Artifact | Type | What it is | What it does |
-|---|---|---|---|
-| GT-SLA semantic annotations | `_Measures[SLA Breach Count]`/`[SLA Compliance Rate]`, `fct_service_request.IsSlaBreachFlag` | Governed definition text + 4 traceability annotations | The measure a report author sees now carries Ci Zhu's approved SLA definition, not a generic description |
-| DP-CUST360 access evidence | `sqldemo.dbo.governance_requests`/`events`/`target_receipts` | Victoria Tan's two-tier approval of Rupal Solanki's access request, clearly labeled attested | The demo's honest answer to "can you always machine-verify an approval" — no, and here's exactly where and why |
-| DP-SVCPERF publish evidence | `sqldemo.dbo.governed_object_versions`/`governance_target_receipts` | Ranbir Singh's real Draft→Published workflow transition, observed via the product's own live status | A real workflow event, not a SQL-side simulation of one |
-| DP-SVCPERF semantic annotations | `fct_service_request.TechnicianId`, `dim_equipment.EquipmentType` | Governed DP-SVCPERF definition text + 4 traceability annotations | Same "approval actually changes the model" proof as GT-SLA, on a different object type |
-| `Technician Utilization Rate` measure | `fct_service_request[Technician Utilization Rate]` (new) | `DIVIDE(DISTINCTCOUNT(TechnicianId), COUNTROWS(...))`, tied to `KR-TECH-UTIL` | The full-circle "governed source table becomes a real report KPI" moment |
-
-## Build requirement evaluation
-
-| Requirement | How this notebook satisfies it |
+| Aspect | This notebook's role |
 |---|---|
-| "Approvals must change the model, not just a SQL row" | Every phase writes real `Description`/annotation changes via SemPy Labs TOM, then re-reads the model read-only to verify the write actually landed, before marking anything `Completed` |
-| Fail closed on missing upstream evidence | Every phase's first real cell checks its specific upstream receipt/gate and raises immediately if it's missing or hasn't passed |
-| Honest about platform limitations | P3's access decision is clearly labeled operator-attested in both the code (`ATTESTATION_LIMITATION_NOTICE`) and this notebook's own printed output — never presented as machine-verified when it isn't |
-| Idempotent re-runnability | Rerunning any phase against the same request produces the *same* receipt ID, re-validated — confirmed live for GT-SLA (P2) and proven necessary for DP-SVCPERF (P4a) when an idempotent rerun surfaced and fixed a real guard-tolerance bug |
-| Governance contract adherence | `tools/audit_seed_vs_source.py --target both` and `tools/validate_required_columns_not_null.py --target both` both ran clean immediately after this notebook's live run |
+| Tier | **Tier 3 (consumption)** — reads Purview-observed decisions and the SQL ledger, writes only to the live semantic model |
+| Ontology footprint | Reconciles decisions already made about the **Glossary Term**, **Data Product**, and (via G18) **Key Result** ontology entities into the semantic model that report consumers actually see |
+| Governance workflow | Runs **4 workflows side by side**, deliberately mixing the two patterns this demo uses — see the table below |
 
-## Demo narrative support
+**How these decisions originate — Purview-native vs. SQL-controlled:**
 
-- **The "did it actually change anything" moment:** open the `SLA Breach Count` or
-  `TechnicianId` object in the model and show its `Description` and annotations — this is the
-  literal, physical result of an approval that happened minutes or days earlier in Purview, not
-  a screenshot.
-- **The honesty moment (P3):** "Purview doesn't expose an API or log for data-product access
-  decisions — so instead of pretending we machine-verified it, we record it as attested, clearly
-  labeled, right next to the parts we genuinely did verify (the product's own live status)."
-  This is a stronger trust story than quietly papering over the gap.
-- **The full-circle moment (G18):** `Technician Utilization Rate` started as a plain SQL view
-  someone tagged with `@tag`; by the end of this notebook it's a real, governed measure a report
-  author can drag onto a canvas — the entire discovery-to-KPI pipeline made visible in one demo.
-- **A real bug made the idempotency story concrete, not theoretical:** this notebook's first
-  live run surfaced a genuine guard bug — an already-`Completed` request from a prior session
-  was incorrectly rejected on rerun as "no prior Draft observation." Fixing it (tolerate
-  `Completed` as proof Draft was already seen) is itself a good talking point about what
-  "idempotent" has to mean in practice, not just in theory.
+| Scenario | Origin | Verification |
+|---|---|---|
+| GT-SLA (P2) | Real Purview **Term publish** workflow, approved by Ci Zhu | Tier 1 — API-observed `status` field |
+| DP-CUST360 access (P3) | Real Purview **Data product access** policy, approved by Victoria Tan | No API exists for this decision — honestly recorded as operator-attested |
+| DP-SVCPERF publish (P4) | Real Purview **Data product publish** workflow, approved by Ranbir Singh | Tier 1 — same API-observed pattern as GT-SLA |
+| Technician Utilization Rate (G18) | **Not Purview at all** — a pure SQL-controlled pipeline (`@tag` → CDE classify → ontology map → SQL-approved promotion) | Only this repo's own SQL ledger is checked |
 
-## High-level outcome
+## Key artifacts
 
-By the end of this notebook, 4 governance requests spanning 3 independent Purview scenarios are
-`Completed` with 6 `Passed` receipts, the live semantic model carries real governed metadata on
-5 existing objects, and a brand-new measure exists for a governed Key Result — all confirmed via
-direct SQL query and a fresh Power BI Modeling MCP reconnect, not just notebook print output.
+| Artifact | What it is | Why it matters in the demo |
+|---|---|---|
+| GT-SLA semantic annotations | Governed definition text on `SLA Breach Count`/`SLA Compliance Rate`/`IsSlaBreachFlag` | The measure a report author sees now carries Ci Zhu's approved SLA definition |
+| DP-CUST360 access evidence | Victoria Tan's attested approval of Rupal Solanki's access request | The demo's honest answer to "can you always machine-verify an approval" |
+| DP-SVCPERF semantic annotations | Governed definition text on `TechnicianId`/`EquipmentType` | Same "approval actually changes the model" proof as GT-SLA, on a different object type |
+| `Technician Utilization Rate` measure (new) | A brand-new KPI, tied to `KR-TECH-UTIL` | The full-circle "governed source table becomes a real report KPI" moment |
+
+## High-level takeaways (what to say)
+
+- "Open the `SLA Breach Count` measure in the model and read its description — that's the
+  literal, physical result of an approval that happened in Purview, not a screenshot."
+- "Purview doesn't expose an API for data-product access decisions, so instead of pretending we
+  machine-verified it, we record it as attested, clearly labeled, right next to the parts we
+  genuinely did verify. That's a stronger trust story than quietly papering over the gap."
+- "`Technician Utilization Rate` started as a plain SQL view someone tagged — by the end of this
+  notebook it's a real, governed measure a report author can drag onto a canvas. That's the
+  entire discovery-to-KPI pipeline made visible in one demo."
+- "Rerun any of these phases against the same request and you get the same receipt,
+  re-validated, not a new one fabricated — that's idempotent self-correction, not just a
+  one-time write."
+
+## Demo requirements this notebook satisfies
+
+- Act 3: proves each of Ci Zhu's/Victoria's/Ranbir's approvals actually changed the semantic
+  model, not just a SQL status flag.
+- Demonstrates the honest handling of a real platform limitation (no API for access decisions)
+  rather than fabricating false verification.
+- The G18 "new SQL source becomes a real semantic-model KPI" full-circle onboarding story.
 
 ---
 
-See also: [`docs/09_Notebook_Description.md`](../09_Notebook_Description.md) (validation history) ·
-[`docs/runbooks/notebook-validation/09_reconcile_semantic_model.md`](../runbooks/notebook-validation/09_reconcile_semantic_model.md) ·
+See also: [`docs/09_Notebook_Description.md`](../09_Notebook_Description.md) (artifact catalog + validation pointer, incl. full governance-origin table) ·
+[`docs/governance-ontology-and-data-contract-model.md`](../governance-ontology-and-data-contract-model.md) ·
 [`docs/purview-maria-north-star-scenario.md`](../purview-maria-north-star-scenario.md)
