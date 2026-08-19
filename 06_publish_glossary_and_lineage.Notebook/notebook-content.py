@@ -522,17 +522,27 @@ def _get_purview_token_via_azure_cli(tenant_id: str) -> str:
         subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "azure-identity"], check=True)
         from azure.identity import AzureCliCredential
 
-    try:
-        result = AzureCliCredential().get_token("https://purview.azure.net/.default")
-    except Exception as exc:
-        raise RuntimeError(
-            "No PURVIEW_ACCESS_TOKEN supplied, no cached token, and AzureCliCredential failed "
-            f"({exc}). This notebook never prompts interactively when run unattended -- set "
-            "PURVIEW_ACCESS_TOKEN, ensure 'az login' has been run somewhere mssparkutils can "
-            "reach, or run this notebook interactively in the Fabric portal after signing in."
-        ) from exc
+    result = AzureCliCredential().get_token("https://purview.azure.net/.default")
     _write_shared_purview_token_cache(result.token, result.expires_on)
     return result.token
+
+
+def _get_purview_token_via_tokenlibrary_early() -> str:
+    # Fabric's managed Spark runtime does not have the 'az' CLI on PATH, so
+    # AzureCliCredential can never succeed unattended -- this is the fallback
+    # that actually works in that runtime (same mechanism Cells 6-11 already
+    # rely on via mssparkutils.credentials.getToken).
+    last_error = None
+    for resource in ("https://purview.azure.net", "https://purview.azure.net/.default"):
+        try:
+            token = mssparkutils.credentials.getToken(resource)
+            if token and token.strip():
+                print(f"[AUTH] Acquired Purview token via TokenLibrary (resource={resource}).")
+                _write_shared_purview_token_cache(token, __import__("time").time() + 3300)
+                return token
+        except Exception as exc:
+            last_error = exc
+    raise RuntimeError(f"TokenLibrary acquisition failed for all candidate resources. Last error: {last_error}")
 
 
 def _resolve_purview_token() -> str:
@@ -545,8 +555,21 @@ def _resolve_purview_token() -> str:
         print("[AUTH] Reusing cached Purview token acquired from another notebook/session.")
         return cached_token
 
-    print("[AUTH] No token supplied and no valid cached token found; using Azure CLI credential.")
-    return _get_purview_token_via_azure_cli(PURVIEW_TENANT_ID)
+    print("[AUTH] No token supplied and no valid cached token found; trying Azure CLI credential.")
+    try:
+        return _get_purview_token_via_azure_cli(PURVIEW_TENANT_ID)
+    except Exception as az_exc:
+        print(f"[AUTH][WARN] Azure CLI credential path failed (expected in Fabric's managed runtime); trying TokenLibrary. Error: {az_exc}")
+
+    try:
+        return _get_purview_token_via_tokenlibrary_early()
+    except Exception as tl_exc:
+        raise RuntimeError(
+            "No PURVIEW_ACCESS_TOKEN supplied, no cached token, AzureCliCredential failed, and "
+            f"TokenLibrary acquisition also failed. Last error: {tl_exc}. Set PURVIEW_ACCESS_TOKEN, "
+            "or run this notebook interactively in the Fabric portal after signing in to refresh "
+            "the shared token cache."
+        ) from tl_exc
 
 
 def _extract_glossary_guid(glossary_obj) -> str:
