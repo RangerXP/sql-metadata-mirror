@@ -54,6 +54,7 @@ Not arbitrary — reuses ownership already baked into the seed data:
 |---|---|---|
 | Requester | **Ranbir Singh** | Already `GT-GEOPII`'s real `owner_upn` in `07_seed_purview_metadata.sql` |
 | Approver | **Victoria Tan** | Already `GT-GEOPII`'s `additional_owners_upn`, and the repo's designated `Privacy Officer (Functional)` role in `purview/role-directory.csv` |
+| Authorized business consumer | **Victoria Tan** | Customer Operations domain owner, Customer 360 data-product owner, and approval-workflow manager; retains least-privilege Workspace Viewer access and must be included in the label's Fabric protection-policy allowlist |
 | Denied user (real test identity) | **Rupal Solanki** (`7d0013fe-3538-419b-ac8a-aef6bf13192e`) | Customer 360/consent steward — zero legitimate business tie to service-account geolocation data; live Workspace Viewer (not Admin/owner), the least-privilege baseline for a DLP "restrict to owner" test |
 | Admin API executor and delegated user | **Sean Kelley** | Fabric Workspace Admin, semantic-model owner, and included in the label's published policy; Victoria remains the SQL governance approver but cannot be the API `delegatedUser` until that label is assigned to her account |
 
@@ -89,19 +90,26 @@ Two label-carrying mechanisms exist and only one of them is what DLP actually re
    a semantic model only on **Publish, Republish, on-demand refresh, or scheduled refresh**. The
    dispatcher must trigger an **on-demand refresh** immediately after `setLabels` succeeds, or the
    demo's deny moment won't reliably fire on a predictable schedule.
-5. **DLP match → enforcement** — the DLP policy (content labeled "Enercare Highly Confidential"
-   → Restrict Access) matches and Fabric overrides the item's effective access at the
-   platform/item level — separate from the model's own RLS or workspace roles.
-6. **Rupal's experience** — the report shell remains discoverable, but semantic-model queries are
+5. **DLP match → detection and response** — the DLP policy detects the label, raises the policy
+  tip and alert, and records the incident. Its owner-only Restrict Access action must not remain
+  enabled because it cannot express the workflow's Sean-and-Victoria allowlist.
+6. **Protection policy → enforcement** — the label's Fabric protection policy retains existing
+  item permissions for its explicit allowlist. Sean and Victoria are included; Rupal is not.
+  This is separate from model RLS and workspace roles, so Victoria remains a Viewer rather than
+  receiving an administrative role solely to bypass the control.
+7. **Rupal's experience** — the report shell remains discoverable, but semantic-model queries are
   denied. Visuals fail with `Missing_References` even though the referenced measures exist and
   execute successfully for the owner.
 
-### The one DLP config detail that must be right
+### Access-control configuration that must be right
 
-The "Restrict access" action has two variants: *restrict to data owners* (blocks everyone else)
-vs. *restrict to members of the organization* (only blocks external/guest users). Since Rupal is
-an internal identity, the policy **must** use the data-owners-only variant — the org-members
-variant would not catch her.
+Fabric DLP's Restrict Access action offers only *data owners* or *members of the organization*;
+it cannot authorize Victoria while denying another internal Viewer. DLP therefore remains the
+detection, notification, and alerting layer without Restrict Access. The label's Fabric protection
+policy is the enforcement layer because it supports an explicit user/group allowlist. That
+allowlist must include Sean and Victoria plus any required automation security group, and must not
+include Rupal. Existing item permissions are still required: protection-policy membership retains
+permissions; it does not grant them.
 
 ## Confirmed live so far
 
@@ -121,6 +129,9 @@ variant would not catch her.
   `Enabled: True`, Priority 3; rule `BlockAccessScope: All` (confirms "Block everyone" was
   correctly selected, not the "outside organization" variant — required to catch Rupal, an
   internal identity), `Disabled: False`.
+  **Correction required:** this owner-only action also blocks Victoria, the authorized workflow
+  approver. Retain the rule's detection, notification, and alert behavior, but remove its Restrict
+  Access action when the Fabric protection policy allowlist is activated.
 - **`BrookfieldEnercare`'s current owner**: `seankelley@MngEnvMCAP660444.onmicrosoft.com` —
   confirmed via `Get-PowerBIDataset -WorkspaceId b976cac2-7754-4061-88c2-61c0ac016a99 -Scope
   Organization` (`ConfiguredBy` field), dataset ID `8cb6f6a6-6a9c-4560-9f28-17a1dc4a921c`. A real
@@ -145,18 +156,25 @@ variant would not catch her.
   Workspace `Viewer` and dataset `Read`, while an owner `executeQueries` call against the same
   `_Measures[Total MRR]` reference succeeded and returned `9956.89`. This isolates the failure to
   effective query-time restriction rather than a missing measure or absent baseline permission.
-- **Independent Victoria reproduction**: Victoria was granted Workspace `Viewer`; API read-back
+- **Victoria authorization defect reproduced**: Victoria was granted Workspace `Viewer`; API read-back
   confirmed dataset `Read`. A subsequent `ViaApi` reevaluation refresh
   (`f03a9968-aaf5-460c-9e3f-8e63e1df04ee`) completed at `2026-08-19T17:51:56.053Z`. Signed in as
   Victoria, the report reproduced `Underlying Error: Missing_References` at
-  `2026-08-19 10:53:39 PDT` (Activity ID `a6d7536c-9be7-47ee-a53b-1b5842acfe6c`). Two distinct
-  non-owner Viewer identities therefore reproduce the same query-layer restriction while the
-  owner query succeeds.
+  `2026-08-19 10:53:39 PDT` (Activity ID `a6d7536c-9be7-47ee-a53b-1b5842acfe6c`). This is evidence
+  that the owner-only DLP action is too broad for the workflow, not a successful denied-persona
+  test. Victoria must be allowed by the Fabric protection policy and retested successfully.
 
 ## Open items / not yet confirmed
 
-*(none -- SQL apply, MIP label assignment, DLP reevaluation refresh, and denied-user query-time
-enforcement are all confirmed live as of 2026-08-19.)*
+- In Purview, add Sean and Victoria to the `Enercare Highly Confidential` Fabric protection-policy
+  allowlist, include any required automation security group, activate the policy, and verify its
+  effective permissions in OneLake catalog.
+- Remove the DLP rule's owner-only Restrict Access action while preserving detection, policy tips,
+  and alerts. Perform this together with protection-policy activation so no unprotected interval
+  is introduced.
+- Trigger a semantic-model refresh, then prove Victoria can query the report while Rupal cannot.
+  Treat `Missing_References` as observed behavior, not definitive enforcement proof, until the
+  effective-permissions view or Purview policy evidence confirms the restriction.
 
 ## Built
 
