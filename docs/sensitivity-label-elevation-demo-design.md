@@ -145,6 +145,13 @@ variant would not catch her.
   Workspace `Viewer` and dataset `Read`, while an owner `executeQueries` call against the same
   `_Measures[Total MRR]` reference succeeded and returned `9956.89`. This isolates the failure to
   effective query-time restriction rather than a missing measure or absent baseline permission.
+- **Independent Victoria reproduction**: Victoria was granted Workspace `Viewer`; API read-back
+  confirmed dataset `Read`. A subsequent `ViaApi` reevaluation refresh
+  (`f03a9968-aaf5-460c-9e3f-8e63e1df04ee`) completed at `2026-08-19T17:51:56.053Z`. Signed in as
+  Victoria, the report reproduced `Underlying Error: Missing_References` at
+  `2026-08-19 10:53:39 PDT` (Activity ID `a6d7536c-9be7-47ee-a53b-1b5842acfe6c`). Two distinct
+  non-owner Viewer identities therefore reproduce the same query-layer restriction while the
+  owner query succeeds.
 
 ## Open items / not yet confirmed
 
