@@ -30,7 +30,7 @@ This summary reflects the current repo and notebook state after the safety prefl
 | Milestone M2 — governance foundation and data products | DRY_RUN_VALIDATED | Native Unified Catalog domain/product payloads are prepared from repo sources; supplemental custom Atlas evidence remains separate and is not counted as native deployment |
 | Milestone M3 — glossary and CDEs | DRY_RUN_VALIDATED | `nb_08_purview_glossary_cde` writes dry-run artifacts and validation outputs; live glossary/CDE read-back is still pending |
 | Milestone M4 — classifications/lineage | DRY_RUN_VALIDATED | `nb_09_purview_labels_lineage` emits classification and lineage manifests; native lineage and MIP label read-back remain pending |
-| Milestone M4 — MIP sensitivity labels | IN_PROGRESS | Live `setLabels` succeeded on `BrookfieldEnercare`; SQL, Purview Data Map, and Fabric Information Protection receipts all passed; two post-label `ViaApi` refreshes completed. Rupal now has Viewer baseline access; her interactive Restrict Access denial remains the final enforcement proof |
+| Milestone M4 — MIP sensitivity labels | DEMO_VALIDATED | Live `setLabels` succeeded on `BrookfieldEnercare`; SQL, Purview Data Map, and Fabric Information Protection receipts passed; two post-label `ViaApi` refreshes completed. Rupal retained Workspace Viewer and dataset Read metadata, but report queries were blocked with `Missing_References`; the owner successfully queried the same `Total MRR` measure, proving query-time enforcement |
 | Milestone M5 — stewardship, certification, controls, AI readiness | DRY_RUN_VALIDATED | Notebook outputs and scorecards are generated, but the live approval workflow and certification loop are not yet evidenced from the tenant |
 | Phase 3 milestone P3-3 | DEMO_VALIDATED | `docs/runbooks/phase3-step3-runtime-smoke-log.md` shows 5/5 prompt executions and PASS for the expected response classes |
 | Phase 3 milestone P3-5 | GAP | `P3I-003`, `P3I-005`, and `P3I-006` remain pending live runtime proof and/or governed data binding |
@@ -43,7 +43,7 @@ This summary reflects the current repo and notebook state after the safety prefl
 
 ### Remaining gaps
 - Native Purview domain/product/read-back evidence remains pending for the approved demo scope.
-- The live lineage chain and interactive MIP/DLP denial proof remain pending; MIP label application and receipt read-back are complete.
+- The live lineage chain remains pending; MIP label application, receipt read-back, and denied-user query-time enforcement are complete.
 - The live stewardship approval loop has not yet been exercised and read back from the tenant.
 - `P3I-003`, `P3I-005`, and `P3I-006` still require live runtime proof or a documented risk acceptance and owner sign-off.
 
@@ -335,7 +335,7 @@ The open **Enercare Purview Governance Implementation Guide** is treated as the 
 
 **Validation gate:** `metadata.purview_phase_06_07_validation` shows PASS for classification definitions and assignment manifests. Lineage rows may be WARN until asset GUID resolution or native Purview lineage is available.
 
-**Build & Deploy Status:** DRY_RUN_VALIDATED — `metadata.purview_phase_06_07_validation` is the validation-gate proof, and the lineage work is recorded as a custom Atlas path in `docs/design-gap-analysis.md` G9 closure evidence. Native Purview lineage and the interactive MIP/DLP denial proof remain pending; MIP label application and receipt read-back completed live on 2026-08-19.
+**Build & Deploy Status:** DRY_RUN_VALIDATED — `metadata.purview_phase_06_07_validation` is the validation-gate proof, and the lineage work is recorded as a custom Atlas path in `docs/design-gap-analysis.md` G9 closure evidence. Native Purview lineage remains pending; MIP label application, receipt read-back, and denied-user query-time enforcement completed live on 2026-08-19.
 
 ### Milestone 5 — Stewardship, certification, controls, and AI readiness
 
@@ -799,7 +799,7 @@ The active repo validates the following items as resolved or still open:
 
 Open follow-up items still tracked in the repo:
 - Native Purview governance-object read-back remains pending for the approved demo scope.
-- The live lineage chain and interactive MIP/DLP denial proof remain pending; MIP label application and receipt read-back are complete.
+- The live lineage chain remains pending; MIP label application, receipt read-back, and denied-user query-time enforcement are complete.
 - `P3I-003`, `P3I-005`, and `P3I-006` remain pending live runtime proof or a documented risk acceptance and owner sign-off.
 
 ---

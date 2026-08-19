@@ -1,6 +1,6 @@
 # Sensitivity Label Elevation — Demo Design Notes
 
-**Status:** Live apply validated on 2026-08-19; interactive denied-user enforcement proof pending.
+**Status:** Live apply and denied-user enforcement validated on 2026-08-19.
 This document records the design, implementation, and validation evidence.
 
 ## Goal
@@ -92,8 +92,9 @@ Two label-carrying mechanisms exist and only one of them is what DLP actually re
 5. **DLP match → enforcement** — the DLP policy (content labeled "Enercare Highly Confidential"
    → Restrict Access) matches and Fabric overrides the item's effective access at the
    platform/item level — separate from the model's own RLS or workspace roles.
-6. **Rupal's experience** — next attempt to open `BrookfieldEnercare` (or a report over it) is
-   denied, since she isn't the registered owner.
+6. **Rupal's experience** — the report shell remains discoverable, but semantic-model queries are
+  denied. Visuals fail with `Missing_References` even though the referenced measures exist and
+  execute successfully for the owner.
 
 ### The one DLP config detail that must be right
 
@@ -137,12 +138,18 @@ variant would not catch her.
 - **Denied-user baseline**: Power BI workspace-user read-back confirms Rupal's real Entra UPN,
   `rupal.solanki@MngEnvMCAP660444.onmicrosoft.com`, has `Viewer` access. Her denial can therefore
   prove DLP enforcement rather than merely missing workspace permission.
+- **Denied-user enforcement**: signed in interactively as Rupal on 2026-08-19, the
+  `BrookfieldEnercare` report shell opened but every semantic-model visual was blocked. Technical
+  details reported `Underlying Error: Missing_References` at `2026-08-19 10:47:41 PDT` (Activity
+  ID `d37856ab-f8cd-4f35-adef-600aa09c3856`). Power BI API read-back still reported Rupal as
+  Workspace `Viewer` and dataset `Read`, while an owner `executeQueries` call against the same
+  `_Measures[Total MRR]` reference succeeded and returned `9956.89`. This isolates the failure to
+  effective query-time restriction rather than a missing measure or absent baseline permission.
 
 ## Open items / not yet confirmed
 
-- Sign in interactively as Rupal and open `BrookfieldEnercare` (or its report). Capture the
-  Restrict Access denial. This is the final enforcement proof; admin/API tokens cannot impersonate
-  Rupal, so it cannot be validated from the current Sean Kelley session.
+*(none -- SQL apply, MIP label assignment, DLP reevaluation refresh, and denied-user query-time
+enforcement are all confirmed live as of 2026-08-19.)*
 
 ## Built
 
@@ -163,7 +170,7 @@ variant would not catch her.
 
 ## Not yet done
 
-- Complete and capture the interactive Rupal denial test described above.
+*(none for the G21 MIP workflow.)*
 
 ## See also
 
