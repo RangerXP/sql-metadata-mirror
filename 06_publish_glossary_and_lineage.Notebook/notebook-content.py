@@ -4485,7 +4485,10 @@ SLE_REQUEST_ID = "SLELEV-CDE-GEO-001"
 SLE_CDE_ID = "CDE-GEO"
 SLE_MIP_LABEL_GUID = "0dd498ed-386a-4f71-aa94-2dda1b6e34e5"
 SLE_LABEL_NAME = "Enercare Highly Confidential"
-SLE_DELEGATED_USER = "Victoria.Tan@enercare.ca"
+# NOT Victoria.Tan@enercare.ca -- that's a seed-data-only value with no
+# matching Entra attribute (her mail attribute is blank). setLabels resolves
+# delegatedUser against a real Entra identity, so her actual UPN is required.
+SLE_DELEGATED_USER = "victoria.tan@MngEnvMCAP660444.onmicrosoft.com"
 SLE_SOURCE_TABLE_QUALIFIED_NAME = f"mssql://{SQL_SERVER_FQDN}/sqldemo/dbo/service_accounts"
 SLE_SEMANTIC_DATASET_ID = "8cb6f6a6-6a9c-4560-9f28-17a1dc4a921c"  # BrookfieldEnercare (Power BI dataset ID)
 POWERBI_API_BASE = "https://api.powerbi.com/v1.0/myorg"

@@ -78,9 +78,13 @@ Two label-carrying mechanisms exist and only one of them is what DLP actually re
      "artifacts": { "datasets": [ { "id": "<BrookfieldEnercare semantic model GUID>" } ] },
      "labelId": "0dd498ed-386a-4f71-aa94-2dda1b6e34e5",
      "assignmentMethod": "Standard",
-     "delegatedUser": { "emailAddress": "Victoria.Tan@enercare.ca" }
+     "delegatedUser": { "emailAddress": "victoria.tan@MngEnvMCAP660444.onmicrosoft.com" }
    }
    ```
+   Note: `Victoria.Tan@enercare.ca` (her seed-data UPN) has no matching Entra `mail` attribute and
+   fails `setLabels` with `InformationProtectionUserNotFound` -- her real Entra UPN
+   (`victoria.tan@MngEnvMCAP660444.onmicrosoft.com`, object ID
+   `e410e0d0-fa7e-4d38-be6d-bf9d59e65afc`) must be used instead, confirmed via `Get-MgUser`.
    Requires: caller must be a Fabric administrator (`Tenant.ReadWrite.All`); the admin/delegated
    user must have the label in their own label policy; max 25 requests/hour, up to 2000 items
    per call.
@@ -139,7 +143,8 @@ variant would not catch her.
   read/write); Cell 13 reads `SLELEV-CDE-GEO-001`, refreshes the Purview Data Map Atlas tag
   (reusing the existing `_apply_sensitivity_label`/`_resolve_entity` helpers), calls the Power BI
   Admin `setLabels` API on `BrookfieldEnercare` (dataset ID `8cb6f6a6-6a9c-4560-9f28-17a1dc4a921c`)
-  with `delegatedUser = Victoria.Tan@enercare.ca`, triggers an on-demand refresh, then writes the
+  with `delegatedUser = victoria.tan@MngEnvMCAP660444.onmicrosoft.com` (her real Entra UPN, not
+  the seed-data-only `Victoria.Tan@enercare.ca`), triggers an on-demand refresh, then writes the
   `PURVIEW_DATA_MAP`/`FABRIC_INFORMATION_PROTECTION` receipts and marks the request `Completed` --
   **only if `setLabels` reports `Succeeded`**; otherwise it raises, logs to `nb09_diagnostics_log`,
   and leaves the request at `Approved`. **Not yet run live** — needs a Fabric-admin-capable
