@@ -129,18 +129,32 @@ variant would not catch her.
 
 *(none remaining — both prerequisites and the owner check are confirmed live as of 2026-08-19)*
 
-## Not yet built
+## Built
 
-- The new `SensitivityLabelElevation` governance request type (SQL schema/seed additions,
-  request-ID convention e.g. `SLELEV-CDE-GEO-001` matching `DPAPPR-`/`OBJAPPR-` conventions).
-- The `07_apply_approved_changes` dispatcher branch: SQL update → Atlas tag refresh → `setLabels`
-  → on-demand refresh trigger → receipt/read-back.
-- A new named target-system category for `docs/closed-loop-governance-reference-model.md`'s
-  "Recommended target systems" list — the real Fabric-item MIP label is distinct from the
-  existing `PURVIEW_DATA_MAP` Atlas-tag receipt and doesn't have a name in that list yet
-  (something like `FABRIC_INFORMATION_PROTECTION`).
-- Build note: whoever/whatever calls `setLabels` needs Fabric-admin rights (`Tenant.ReadWrite.All`);
-  whoever is set as `delegatedUser` needs the label in their own published label policy.
+- **`sql/07_governance_gates/29_g21_sensitivity_label_elevation.sql`** — the SQL-controlled
+  request lifecycle (Draft→Submitted→Approved) and the SQL-side apply (`LBL-007` → `LBL-010`).
+  Committed `d4ce67d`, run live against `sqldemo`, verified idempotent.
+- **`06_publish_glossary_and_lineage.Notebook`, new Cells 12–13** — Cell 12 adds governance-ledger
+  SQL connectivity (this notebook previously only had Purview/Fabric API connectivity, not SQL
+  read/write); Cell 13 reads `SLELEV-CDE-GEO-001`, refreshes the Purview Data Map Atlas tag
+  (reusing the existing `_apply_sensitivity_label`/`_resolve_entity` helpers), calls the Power BI
+  Admin `setLabels` API on `BrookfieldEnercare` (dataset ID `8cb6f6a6-6a9c-4560-9f28-17a1dc4a921c`)
+  with `delegatedUser = Victoria.Tan@enercare.ca`, triggers an on-demand refresh, then writes the
+  `PURVIEW_DATA_MAP`/`FABRIC_INFORMATION_PROTECTION` receipts and marks the request `Completed` --
+  **only if `setLabels` reports `Succeeded`**; otherwise it raises, logs to `nb09_diagnostics_log`,
+  and leaves the request at `Approved`. **Not yet run live** — needs a Fabric-admin-capable
+  identity to actually succeed at the `setLabels` step; not yet pushed to Fabric/git-synced.
+
+## Not yet done
+
+- Push the notebook change to git, run `tools/sync_fabric_git.py`, then submit a live job via
+  `tools/run_fabric_notebook_job.py --notebook 06_publish_glossary_and_lineage` to actually test
+  Cells 12–13 end to end. This is the first live test of the `setLabels` call — genuinely unknown
+  until run whether this Fabric workspace's notebook-execution identity has the required
+  Fabric-admin rights.
+- Add `FABRIC_INFORMATION_PROTECTION` as a named target-system category to
+  `docs/closed-loop-governance-reference-model.md`'s "Recommended target systems" list (it's used
+  in code now, but not yet documented there).
 
 ## See also
 

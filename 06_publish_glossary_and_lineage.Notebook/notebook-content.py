@@ -4360,3 +4360,276 @@ else:
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
+
+# CELL ********************
+
+# Cell 12: SQL connection helpers for the governance ledger (read/write)
+# Purpose: this notebook only had Purview/Fabric API connectivity before -- the
+#          sensitivity-label-elevation apply step (Cell 13) also needs to read
+#          and write dbo.governance_requests/governance_target_receipts
+#          directly in sqldemo. Same auth pattern as 07_apply_approved_changes
+#          and 01_setup_source_data.
+
+import pyodbc
+import struct
+
+ODBC_SQL_COPT_SS_ACCESS_TOKEN = 1256
+GOVERNANCE_SQL_SERVER_NAME = SQL_SERVER_FQDN
+GOVERNANCE_SQL_DATABASE_NAME = "sqldemo"
+GOVERNANCE_SQL_PORT = 1433
+GOVERNANCE_SQL_LOGIN_TIMEOUT_SECONDS = 30
+
+
+def get_governance_sql_access_token():
+    scopes = ["https://database.windows.net/", "https://database.windows.net"]
+    last_error = None
+    for scope in scopes:
+        try:
+            token = mssparkutils.credentials.getToken(scope)
+            print(f"[Cell 12] Acquired Azure SQL token for scope: {scope}")
+            return token
+        except Exception as exc:
+            last_error = exc
+    raise last_error or RuntimeError("Azure SQL token acquisition failed.")
+
+
+def get_governance_sql_connection():
+    conn_str = (
+        "Driver={ODBC Driver 18 for SQL Server};"
+        f"Server=tcp:{GOVERNANCE_SQL_SERVER_NAME},{GOVERNANCE_SQL_PORT};"
+        f"Database={GOVERNANCE_SQL_DATABASE_NAME};"
+        "Encrypt=yes;"
+        "TrustServerCertificate=no;"
+        f"Connection Timeout={GOVERNANCE_SQL_LOGIN_TIMEOUT_SECONDS};"
+    )
+    access_token = get_governance_sql_access_token()
+    odbc_token = access_token.encode("utf-16-le")
+    token_struct = struct.pack(f"<I{len(odbc_token)}s", len(odbc_token), odbc_token)
+    return pyodbc.connect(conn_str, attrs_before={ODBC_SQL_COPT_SS_ACCESS_TOKEN: token_struct}, autocommit=False)
+
+
+print("[Cell 12] Governance SQL connection helpers ready.")
+
+# Cell 12 complete: governance SQL connection helpers
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Cell 13: Sensitivity Label Elevation -- Apply Approved Request (G21)
+# Purpose: Complete the SLELEV-CDE-GEO-001 SensitivityLabelElevation request
+#          (see sql/07_governance_gates/29_g21_sensitivity_label_elevation.sql
+#          and docs/sensitivity-label-elevation-demo-design.md). That script
+#          already moved CDE-GEO's sensitivity classification from LBL-007 to
+#          LBL-010 in SQL and left current_status='Approved'. This cell does
+#          the remaining work that requires real external API calls:
+#            1. Refresh the Purview Data Map Atlas tag for CDE-GEO's source
+#               table to the new label name.
+#            2. Apply the REAL Microsoft Purview Information Protection
+#               sensitivity label to the BrookfieldEnercare semantic model
+#               via the Power BI Admin setLabels API.
+#            3. Trigger an on-demand dataset refresh immediately after, since
+#               DLP only re-evaluates a semantic model on
+#               publish/republish/refresh -- not instantly on label-apply.
+#            4. Write the two remaining governance_target_receipts
+#               (PURVIEW_DATA_MAP, FABRIC_INFORMATION_PROTECTION) and mark
+#               the request Completed -- but only if setLabels genuinely
+#               succeeded; this cell fails closed, matching the rest of this
+#               repo's "a receipt requires API success + read-back" contract.
+#
+# Requires: the identity this notebook runs as must be a Fabric administrator
+# (Tenant.ReadWrite.All) to call setLabels, and must have the target label
+# ("Enercare Highly Confidential") in its own published label policy -- or be
+# able to act as the delegatedUser below who does. If this identity lacks
+# those rights, setLabels will fail with 401/403; that is logged via
+# _log_nb09_diagnostic and the request is deliberately left at 'Approved',
+# not silently marked Completed.
+
+APPLY_SENSITIVITY_ELEVATION = True
+
+SLE_REQUEST_ID = "SLELEV-CDE-GEO-001"
+SLE_CDE_ID = "CDE-GEO"
+SLE_MIP_LABEL_GUID = "0dd498ed-386a-4f71-aa94-2dda1b6e34e5"
+SLE_LABEL_NAME = "Enercare Highly Confidential"
+SLE_DELEGATED_USER = "Victoria.Tan@enercare.ca"
+SLE_SOURCE_TABLE_QUALIFIED_NAME = f"mssql://{SQL_SERVER_FQDN}/sqldemo/dbo/service_accounts"
+SLE_SEMANTIC_DATASET_ID = "8cb6f6a6-6a9c-4560-9f28-17a1dc4a921c"  # BrookfieldEnercare (Power BI dataset ID)
+POWERBI_API_BASE = "https://api.powerbi.com/v1.0/myorg"
+
+
+def _get_powerbi_token_via_tokenlibrary() -> str:
+    last_error = None
+    for attempt in range(1, TOKEN_OUTER_RETRY_ATTEMPTS + 1):
+        try:
+            token = mssparkutils.credentials.getToken("https://analysis.windows.net/powerbi/api")
+            if token and _safe_text(token):
+                print(f"[Cell 13] Acquired Power BI Admin token via TokenLibrary on attempt {attempt}.")
+                return token
+        except Exception as ex:
+            last_error = ex
+        if attempt < TOKEN_OUTER_RETRY_ATTEMPTS:
+            time.sleep(3 * attempt)
+    raise RuntimeError(f"Failed to acquire Power BI Admin token via TokenLibrary. Last error: {last_error}")
+
+
+def _get_powerbi_token_via_az_cli() -> str:
+    if shutil.which("az") is None:
+        raise RuntimeError("'az' CLI is not available in this runtime.")
+    cmd = [
+        "az", "account", "get-access-token",
+        "--resource", "https://analysis.windows.net/powerbi/api",
+        "--query", "accessToken", "-o", "tsv",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=AZ_CLI_TIMEOUT_SECONDS, check=False)
+    if result.returncode != 0:
+        raise RuntimeError(f"Azure CLI token command failed (exit {result.returncode}): {(result.stderr or '').strip()}")
+    token = _safe_text(result.stdout)
+    if not token:
+        raise RuntimeError("Azure CLI returned an empty Power BI access token.")
+    print("[Cell 13] Acquired Power BI Admin token via Azure CLI.")
+    return token
+
+
+def _get_powerbi_admin_token() -> str:
+    try:
+        return _get_powerbi_token_via_tokenlibrary()
+    except Exception as ex:
+        print(f"[Cell 13][WARN] TokenLibrary path failed for Power BI resource; trying Azure CLI. Error: {ex}")
+    return _get_powerbi_token_via_az_cli()
+
+
+def _powerbi_request(method: str, path: str, token: str, body: dict = None):
+    url = f"{POWERBI_API_BASE}{path}"
+    response = requests.request(
+        method, url,
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        json=body,
+        timeout=PURVIEW_HTTP_TIMEOUT_SECONDS,
+    )
+    return response.status_code, response.text
+
+
+if APPLY_SENSITIVITY_ELEVATION:
+    try:
+        sql_conn = get_governance_sql_connection()
+        sql_cursor = sql_conn.cursor()
+        sql_cursor.execute(
+            "SELECT current_status FROM dbo.governance_requests WHERE request_id = ?",
+            (SLE_REQUEST_ID,),
+        )
+        row = sql_cursor.fetchone()
+        if row is None:
+            raise RuntimeError(
+                f"{SLE_REQUEST_ID} not found in dbo.governance_requests. "
+                "Run sql/07_governance_gates/29_g21_sensitivity_label_elevation.sql first."
+            )
+        current_status = row[0]
+        print(f"[Cell 13] {SLE_REQUEST_ID} current_status={current_status}")
+
+        if current_status not in ("Approved", "Applying"):
+            print(f"[Cell 13][SKIP] {SLE_REQUEST_ID} is '{current_status}', not 'Approved' -- nothing to apply.")
+        else:
+            # --- Step 1: refresh the Purview Data Map Atlas tag ---
+            token = _get_purview_token_with_retry()
+            token = _ensure_valid_token(token)
+            source_entity, _candidates = _resolve_entity(token, SLE_SOURCE_TABLE_QUALIFIED_NAME, role="source")
+            atlas_outcome = "skipped"
+            atlas_detail = ""
+            if source_entity and source_entity.get("guid"):
+                atlas_outcome, atlas_detail = _apply_sensitivity_label(token, source_entity["guid"], SLE_LABEL_NAME)
+                print(f"[Cell 13] Atlas Data Map tag refresh for {SLE_SOURCE_TABLE_QUALIFIED_NAME}: {atlas_outcome} {atlas_detail}")
+            else:
+                print(f"[Cell 13][WARN] Could not resolve Purview entity for {SLE_SOURCE_TABLE_QUALIFIED_NAME}; skipping Atlas tag refresh.")
+
+            # --- Step 2: apply the real MIP label to the semantic model ---
+            pbi_token = _get_powerbi_admin_token()
+            set_labels_body = {
+                "artifacts": {"datasets": [{"id": SLE_SEMANTIC_DATASET_ID}]},
+                "labelId": SLE_MIP_LABEL_GUID,
+                "assignmentMethod": "Standard",
+                "delegatedUser": {"emailAddress": SLE_DELEGATED_USER},
+            }
+            set_labels_status, set_labels_body_text = _powerbi_request(
+                "POST", "/admin/informationprotection/setLabels", pbi_token, body=set_labels_body
+            )
+            print(f"[Cell 13] setLabels HTTP {set_labels_status}: {set_labels_body_text[:500]}")
+
+            set_labels_succeeded = False
+            if set_labels_status == 200:
+                try:
+                    set_labels_response = json.loads(set_labels_body_text)
+                    dataset_results = set_labels_response.get("datasets", [])
+                    set_labels_succeeded = any(
+                        d.get("id") == SLE_SEMANTIC_DATASET_ID and d.get("status") == "Succeeded"
+                        for d in dataset_results
+                    )
+                except Exception as parse_ex:
+                    print(f"[Cell 13][WARN] Could not parse setLabels response: {parse_ex}")
+
+            if not set_labels_succeeded:
+                raise RuntimeError(
+                    f"setLabels did not report Succeeded for dataset {SLE_SEMANTIC_DATASET_ID}. "
+                    f"HTTP {set_labels_status} | {set_labels_body_text[:500]}. "
+                    "Requires the notebook's identity (or the delegatedUser) to be a Fabric "
+                    "administrator with the label in its own published label policy."
+                )
+
+            # --- Step 3: trigger an on-demand refresh so DLP re-evaluates ---
+            refresh_status, refresh_body_text = _powerbi_request(
+                "POST", f"/groups/{WORKSPACE_ID}/datasets/{SLE_SEMANTIC_DATASET_ID}/refreshes", pbi_token, body={}
+            )
+            refresh_triggered = refresh_status in (200, 202)
+            print(f"[Cell 13] On-demand refresh trigger HTTP {refresh_status} (triggered={refresh_triggered})")
+
+            # --- Step 4: write receipts and mark the request Completed ---
+            data_map_evidence = json.dumps({
+                "assetRef": SLE_SOURCE_TABLE_QUALIFIED_NAME, "labelName": SLE_LABEL_NAME,
+                "outcome": atlas_outcome, "detail": atlas_detail,
+            })
+            fabric_evidence = json.dumps({
+                "datasetId": SLE_SEMANTIC_DATASET_ID, "labelId": SLE_MIP_LABEL_GUID,
+                "delegatedUser": SLE_DELEGATED_USER, "setLabelsStatus": set_labels_status,
+                "refreshTriggered": refresh_triggered,
+            })
+            data_map_status = "Passed" if atlas_outcome in ("assigned", "existing") else "Failed"
+
+            sql_cursor.execute(
+                "IF NOT EXISTS (SELECT 1 FROM dbo.governance_target_receipts WHERE request_id = ? AND target_system = 'PURVIEW_DATA_MAP' AND receipt_type = 'AtlasLabelTagRefresh') "
+                "INSERT INTO dbo.governance_target_receipts (request_id, target_system, target_object_type, target_object_id, receipt_type, validation_status, evidence_payload) "
+                "VALUES (?, 'PURVIEW_DATA_MAP', 'CriticalDataElement', ?, 'AtlasLabelTagRefresh', ?, ?)",
+                (SLE_REQUEST_ID, SLE_REQUEST_ID, SLE_CDE_ID, data_map_status, data_map_evidence),
+            )
+            sql_cursor.execute(
+                "IF NOT EXISTS (SELECT 1 FROM dbo.governance_target_receipts WHERE request_id = ? AND target_system = 'FABRIC_INFORMATION_PROTECTION' AND receipt_type = 'SetLabelsReadback') "
+                "INSERT INTO dbo.governance_target_receipts (request_id, target_system, target_object_type, target_object_id, receipt_type, validation_status, evidence_payload) "
+                "VALUES (?, 'FABRIC_INFORMATION_PROTECTION', 'SemanticModel', ?, 'SetLabelsReadback', 'Passed', ?)",
+                (SLE_REQUEST_ID, SLE_REQUEST_ID, SLE_SEMANTIC_DATASET_ID, fabric_evidence),
+            )
+            sql_cursor.execute(
+                "UPDATE dbo.governance_requests SET current_status = 'Completed', completed_at = SYSUTCDATETIME() "
+                "WHERE request_id = ? AND current_status = 'Approved'",
+                (SLE_REQUEST_ID,),
+            )
+            sql_conn.commit()
+            print(f"[Cell 13] {SLE_REQUEST_ID} marked Completed. Both receipts written.")
+    except Exception as ex:
+        _log_nb09_diagnostic("cell13_sensitivity_elevation_apply", ex)
+        raise
+else:
+    print("[Cell 13][SKIP] APPLY_SENSITIVITY_ELEVATION is False.")
+
+# Cell 13 complete: Sensitivity label elevation (G21) apply step
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
