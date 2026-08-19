@@ -4472,10 +4472,9 @@ print("[Cell 12] Governance SQL connection helpers ready.")
 #               repo's "a receipt requires API success + read-back" contract.
 #
 # Requires: the identity this notebook runs as must be a Fabric administrator
-# (Tenant.ReadWrite.All) to call setLabels, and must have the target label
-# ("Enercare Highly Confidential") in its own published label policy -- or be
-# able to act as the delegatedUser below who does. If this identity lacks
-# those rights, setLabels will fail with 401/403; that is logged via
+# (Tenant.ReadWrite.All) to call setLabels, and the delegatedUser must have the
+# target label ("Enercare Highly Confidential") in a published label policy.
+# If either identity lacks those rights, setLabels fails; that is logged via
 # _log_nb09_diagnostic and the request is deliberately left at 'Approved',
 # not silently marked Completed.
 
@@ -4485,10 +4484,13 @@ SLE_REQUEST_ID = "SLELEV-CDE-GEO-001"
 SLE_CDE_ID = "CDE-GEO"
 SLE_MIP_LABEL_GUID = "0dd498ed-386a-4f71-aa94-2dda1b6e34e5"
 SLE_LABEL_NAME = "Enercare Highly Confidential"
-# NOT Victoria.Tan@enercare.ca -- that's a seed-data-only value with no
-# matching Entra attribute (her mail attribute is blank). setLabels resolves
-# delegatedUser against a real Entra identity, so her actual UPN is required.
-SLE_DELEGATED_USER = "victoria.tan@MngEnvMCAP660444.onmicrosoft.com"
+# The delegated user must be included in the label's published policy. Victoria
+# remains the governance approver in SQL, but cannot delegate this API operation
+# until the label is assigned to her account.
+SLE_DELEGATED_USER = os.getenv(
+    "SLE_DELEGATED_USER_UPN",
+    "seankelley@MngEnvMCAP660444.onmicrosoft.com",
+).strip()
 SLE_SOURCE_TABLE_QUALIFIED_NAME = f"mssql://{SQL_SERVER_FQDN}/sqldemo/dbo/service_accounts"
 SLE_SEMANTIC_DATASET_ID = "8cb6f6a6-6a9c-4560-9f28-17a1dc4a921c"  # BrookfieldEnercare (Power BI dataset ID)
 POWERBI_API_BASE = "https://api.powerbi.com/v1.0/myorg"
@@ -4591,6 +4593,16 @@ if APPLY_SENSITIVITY_ELEVATION:
             )
             print(f"[Cell 13] setLabels HTTP {set_labels_status}: {set_labels_body_text[:500]}")
 
+            if (
+                set_labels_status == 400
+                and "InformationProtectionLabelNotAssigned" in set_labels_body_text
+            ):
+                raise RuntimeError(
+                    f"The sensitivity label '{SLE_LABEL_NAME}' is not assigned to delegated user "
+                    f"{SLE_DELEGATED_USER}. Add that user to the label's published Purview policy "
+                    "or set SLE_DELEGATED_USER_UPN to an eligible Fabric administrator."
+                )
+
             set_labels_succeeded = False
             if set_labels_status == 200:
                 try:
@@ -4607,8 +4619,8 @@ if APPLY_SENSITIVITY_ELEVATION:
                 raise RuntimeError(
                     f"setLabels did not report Succeeded for dataset {SLE_SEMANTIC_DATASET_ID}. "
                     f"HTTP {set_labels_status} | {set_labels_body_text[:500]}. "
-                    "Requires the notebook's identity (or the delegatedUser) to be a Fabric "
-                    "administrator with the label in its own published label policy."
+                    "The caller must be a Fabric administrator and the delegatedUser must have "
+                    "the label in a published Purview label policy."
                 )
 
             # --- Step 3: trigger an on-demand refresh so DLP re-evaluates ---
