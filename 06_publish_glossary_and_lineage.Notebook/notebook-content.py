@@ -531,18 +531,25 @@ def _get_purview_token_via_tokenlibrary_early() -> str:
     # Fabric's managed Spark runtime does not have the 'az' CLI on PATH, so
     # AzureCliCredential can never succeed unattended -- this is the fallback
     # that actually works in that runtime (same mechanism Cells 6-11 already
-    # rely on via mssparkutils.credentials.getToken).
+    # rely on via mssparkutils.credentials.getToken). Retries with backoff:
+    # the underlying Token Management service can return a transient
+    # Spark_System_TM_INTERNAL_ERROR (HTTP 500) that Microsoft's own error
+    # metadata marks Retriable:true.
     last_error = None
     for resource in ("https://purview.azure.net", "https://purview.azure.net/.default"):
-        try:
-            token = mssparkutils.credentials.getToken(resource)
-            if token and token.strip():
-                print(f"[AUTH] Acquired Purview token via TokenLibrary (resource={resource}).")
-                _write_shared_purview_token_cache(token, __import__("time").time() + 3300)
-                return token
-        except Exception as exc:
-            last_error = exc
-    raise RuntimeError(f"TokenLibrary acquisition failed for all candidate resources. Last error: {last_error}")
+        for attempt in range(1, 4):
+            try:
+                token = mssparkutils.credentials.getToken(resource)
+                if token and token.strip():
+                    print(f"[AUTH] Acquired Purview token via TokenLibrary (resource={resource}, attempt={attempt}).")
+                    _write_shared_purview_token_cache(token, __import__("time").time() + 3300)
+                    return token
+            except Exception as exc:
+                last_error = exc
+                print(f"[AUTH][WARN] TokenLibrary attempt {attempt} failed for resource={resource}. Error: {exc}")
+            if attempt < 3:
+                __import__("time").sleep(5 * attempt)
+    raise RuntimeError(f"TokenLibrary acquisition failed for all candidate resources after retries. Last error: {last_error}")
 
 
 def _resolve_purview_token() -> str:
