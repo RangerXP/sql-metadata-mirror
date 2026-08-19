@@ -1,6 +1,6 @@
 # Sensitivity Label Elevation — Demo Design Notes
 
-**Status:** Live apply and denied-user enforcement validated on 2026-08-19.
+**Status:** Label elevation validated; column-level enforcement implementation in progress on 2026-08-19.
 This document records the design, implementation, and validation evidence.
 
 ## Goal
@@ -8,7 +8,8 @@ This document records the design, implementation, and validation evidence.
 Extend the closed-loop governance demo with a use case that proves a governance decision has
 a real, live, *enforced* consequence — not just a database row changing. Specifically: elevate
 a data element's sensitivity classification through a real governed approval, and show that this
-results in a real user being denied access to the semantic model as a result.
+results in an unauthorized user being denied only the protected columns while retaining access to
+the semantic model and all nonprotected data.
 
 ## Why this aligns with the existing SQL contract (not a new architecture)
 
@@ -54,9 +55,10 @@ Not arbitrary — reuses ownership already baked into the seed data:
 |---|---|---|
 | Requester | **Ranbir Singh** | Already `GT-GEOPII`'s real `owner_upn` in `07_seed_purview_metadata.sql` |
 | Approver | **Victoria Tan** | Already `GT-GEOPII`'s `additional_owners_upn`, and the repo's designated `Privacy Officer (Functional)` role in `purview/role-directory.csv` |
-| Authorized business consumer | **Victoria Tan** | Customer Operations domain owner, Customer 360 data-product owner, and approval-workflow manager; retains least-privilege Workspace Viewer access and must be included in the label's Fabric protection-policy allowlist |
-| Denied user (real test identity) | **Rupal Solanki** (`7d0013fe-3538-419b-ac8a-aef6bf13192e`) | Customer 360/consent steward — zero legitimate business tie to service-account geolocation data; live Workspace Viewer (not Admin/owner), the least-privilege baseline for a DLP "restrict to owner" test |
-| Admin API executor and delegated user | **Sean Kelley** | Fabric Workspace Admin, semantic-model owner, and included in the label's published policy; Victoria remains the SQL governance approver but cannot be the API `delegatedUser` until that label is assigned to her account |
+| Authorized business consumers | **Victoria Tan**, **Ranbir Singh** | Victoria is the approval-workflow manager; Ranbir owns the Service Delivery domain and `GT-GEOPII`. Both retain Viewer access and must not be assigned to the restricted OLS role. |
+| Authorized steward | **Shruthi Srinivas** | Steward for `CDE-GEO`; Workspace Member has full model access and bypasses OLS. |
+| Restricted data consumer | **Rupal Solanki** (`7d0013fe-3538-419b-ac8a-aef6bf13192e`) | Retains Workspace Viewer and report access but is assigned to `RestrictedGeolocation`, which hides only latitude and longitude. |
+| Governance administrators | **Sean Kelley**, **Ci Zhu** | Workspace Admins with full model access; Admin roles bypass OLS. Sean remains the API executor and delegated label user. |
 
 Ci Zhu was originally considered for the denied-user role but is the wrong choice structurally:
 she's Workspace Admin on `Enercare-West3` plus Information Protection Admin / Label Policy Owner
@@ -91,25 +93,24 @@ Two label-carrying mechanisms exist and only one of them is what DLP actually re
    dispatcher must trigger an **on-demand refresh** immediately after `setLabels` succeeds, or the
    demo's deny moment won't reliably fire on a predictable schedule.
 5. **DLP match → detection and response** — the DLP policy detects the label, raises the policy
-  tip and alert, and records the incident. Its owner-only Restrict Access action must not remain
-  enabled because it cannot express the workflow's Sean-and-Victoria allowlist.
-6. **Protection policy → enforcement** — the label's Fabric protection policy retains existing
-  item permissions for its explicit allowlist. Sean and Victoria are included; Rupal is not.
-  This is separate from model RLS and workspace roles, so Victoria remains a Viewer rather than
-  receiving an administrative role solely to bypass the control.
-7. **Rupal's experience** — the report shell remains discoverable, but semantic-model queries are
-  denied. Visuals fail with `Missing_References` even though the referenced measures exist and
-  execute successfully for the owner.
+  tip and alert, and records the incident. Remove its owner-only Restrict Access action only after
+  OLS is deployed and Rupal's role membership is confirmed.
+6. **Object-level security → protected-column enforcement** — the source-controlled
+  `RestrictedGeolocation` role sets `metadataPermission: none` on
+  `dim_service_account[Latitude]` and `[Longitude]`. Assign only Rupal to this role. Do not create
+  a Fabric protection policy for this use case because protection policies control whole items.
+7. **Rupal's experience** — the report and all nonprotected model data remain available. The two
+  coordinate columns and their metadata behave as if they do not exist. Victoria, Ranbir,
+  Shruthi, Sean, and Ci retain authorized access to the coordinates.
 
 ### Access-control configuration that must be right
 
-Fabric DLP's Restrict Access action offers only *data owners* or *members of the organization*;
-it cannot authorize Victoria while denying another internal Viewer. DLP therefore remains the
-detection, notification, and alerting layer without Restrict Access. The label's Fabric protection
-policy is the enforcement layer because it supports an explicit user/group allowlist. That
-allowlist must include Sean and Victoria plus any required automation security group, and must not
-include Rupal. Existing item permissions are still required: protection-policy membership retains
-permissions; it does not grant them.
+Fabric DLP and Fabric protection policies operate at item scope; neither can express "allow the
+semantic model but hide two columns." DLP therefore remains the detection, notification, and
+alerting layer without Restrict Access. OLS is the enforcement layer. OLS applies only to Workspace
+Viewers, so Rupal remains a Viewer. Sean and Ci are Admins and Shruthi is a Member, all authorized
+to see the protected data and structurally exempt from OLS. Victoria and Ranbir are authorized
+Viewers and are not members of `RestrictedGeolocation`.
 
 ## Confirmed live so far
 
@@ -129,9 +130,9 @@ permissions; it does not grant them.
   `Enabled: True`, Priority 3; rule `BlockAccessScope: All` (confirms "Block everyone" was
   correctly selected, not the "outside organization" variant — required to catch Rupal, an
   internal identity), `Disabled: False`.
-  **Correction required:** this owner-only action also blocks Victoria, the authorized workflow
-  approver. Retain the rule's detection, notification, and alert behavior, but remove its Restrict
-  Access action when the Fabric protection policy allowlist is activated.
+  **Correction required:** this owner-only action blocks every authorized nonowner. Retain the
+  rule's detection, notification, and alert behavior, but remove its Restrict Access action after
+  `RestrictedGeolocation` is deployed and assigned to Rupal.
 - **`BrookfieldEnercare`'s current owner**: `seankelley@MngEnvMCAP660444.onmicrosoft.com` —
   confirmed via `Get-PowerBIDataset -WorkspaceId b976cac2-7754-4061-88c2-61c0ac016a99 -Scope
   Organization` (`ConfiguredBy` field), dataset ID `8cb6f6a6-6a9c-4560-9f28-17a1dc4a921c`. A real
@@ -166,15 +167,16 @@ permissions; it does not grant them.
 
 ## Open items / not yet confirmed
 
-- In Purview, add Sean and Victoria to the `Enercare Highly Confidential` Fabric protection-policy
-  allowlist, include any required automation security group, activate the policy, and verify its
-  effective permissions in OneLake catalog.
-- Remove the DLP rule's owner-only Restrict Access action while preserving detection, policy tips,
-  and alerts. Perform this together with protection-policy activation so no unprotected interval
-  is introduced.
-- Trigger a semantic-model refresh, then prove Victoria can query the report while Rupal cannot.
-  Treat `Missing_References` as observed behavior, not definitive enforcement proof, until the
-  effective-permissions view or Purview policy evidence confirms the restriction.
+1. Sync the committed notebook and semantic-model definition to Fabric.
+2. Run `03_build_semantic_model` so the Direct Lake dimension contains `Latitude` and `Longitude`.
+3. Confirm the deployed semantic model contains the `RestrictedGeolocation` OLS role.
+4. In the semantic model **Security** page, assign only
+   `rupal.solanki@MngEnvMCAP660444.onmicrosoft.com` to `RestrictedGeolocation`.
+5. Remove only the DLP rule's Restrict Access action; retain detection, policy tips, notifications,
+   and alerts. Do not create an item-wide Fabric protection policy for this scenario.
+6. Test all six personas: Sean and Ci have full Admin access; Shruthi has full Member access;
+   Victoria and Ranbir have authorized Viewer access; Rupal can query general model data but cannot
+   discover or query `Latitude` or `Longitude`.
 
 ## Built
 
@@ -192,10 +194,15 @@ permissions; it does not grant them.
   **only if `setLabels` reports `Succeeded`**; otherwise it raises, logs to `nb09_diagnostics_log`,
   and leaves the request at `Approved`. Live apply, receipt write-back, and refresh all succeeded
   on 2026-08-19.
+- **`03_build_semantic_model.Notebook`** — publishes governed `Latitude` and `Longitude` columns
+  into `dim_service_account` for authorized semantic-model consumers.
+- **`BrookfieldEnercare.SemanticModel/definition/roles/RestrictedGeolocation.tmdl`** — hides only
+  the protected coordinate columns while preserving model access.
 
 ## Not yet done
 
-*(none for the G21 MIP workflow.)*
+Deploy the OLS assets, assign Rupal, remove the conflicting DLP Restrict Access action, and run the
+six-persona validation matrix.
 
 ## See also
 

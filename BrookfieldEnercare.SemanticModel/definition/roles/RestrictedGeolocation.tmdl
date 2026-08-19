@@ -1,0 +1,10 @@
+/// Retains semantic-model access while hiding protected service-account coordinates.
+role RestrictedGeolocation
+	modelPermission: read
+
+	tablePermission dim_service_account
+		columnPermission Latitude
+			metadataPermission: none
+
+		columnPermission Longitude
+			metadataPermission: none

@@ -216,6 +216,8 @@ SELECT
     sa.city                 AS City,
     sa.postal_code          AS PostalCode,
     LEFT(sa.postal_code, 3) AS FSA,
+    sa.latitude             AS Latitude,
+    sa.longitude            AS Longitude,
     sa.opened_date          AS OpenedDate
 FROM {mirror_table_sql('service_accounts')} sa
 """)
