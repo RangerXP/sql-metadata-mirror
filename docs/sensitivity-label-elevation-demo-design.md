@@ -1,7 +1,7 @@
 # Sensitivity Label Elevation — Demo Design Notes
 
-**Status:** Design in progress, not yet built. This document captures the decisions made
-while designing the feature so far; it is not a runbook and not a completed build record.
+**Status:** Live apply validated on 2026-08-19; interactive denied-user enforcement proof pending.
+This document records the design, implementation, and validation evidence.
 
 ## Goal
 
@@ -54,8 +54,8 @@ Not arbitrary — reuses ownership already baked into the seed data:
 |---|---|---|
 | Requester | **Ranbir Singh** | Already `GT-GEOPII`'s real `owner_upn` in `07_seed_purview_metadata.sql` |
 | Approver | **Victoria Tan** | Already `GT-GEOPII`'s `additional_owners_upn`, and the repo's designated `Privacy Officer (Functional)` role in `purview/role-directory.csv` |
-| Denied user (real test identity) | **Rupal Solanki** (`7d0013fe-3538-419b-ac8a-aef6bf13192e`) | Customer 360/consent steward — zero legitimate business tie to service-account geolocation data; plain Workspace Member (not Admin/owner), the correct permission tier for a DLP "restrict to owner" action to actually catch |
-| Admin API executor (calls `setLabels`, needs Fabric-admin token) | Sean Kelley / Ci Zhu | Neither Ranbir nor Victoria plausibly holds Fabric-admin/`Tenant.ReadWrite.All` rights; `delegatedUser` field attributes the label to Victoria regardless of which admin technically calls the API |
+| Denied user (real test identity) | **Rupal Solanki** (`7d0013fe-3538-419b-ac8a-aef6bf13192e`) | Customer 360/consent steward — zero legitimate business tie to service-account geolocation data; live Workspace Viewer (not Admin/owner), the least-privilege baseline for a DLP "restrict to owner" test |
+| Admin API executor and delegated user | **Sean Kelley** | Fabric Workspace Admin, semantic-model owner, and included in the label's published policy; Victoria remains the SQL governance approver but cannot be the API `delegatedUser` until that label is assigned to her account |
 
 Ci Zhu was originally considered for the denied-user role but is the wrong choice structurally:
 she's Workspace Admin on `Enercare-West3` plus Information Protection Admin / Label Policy Owner
@@ -65,8 +65,8 @@ she's Workspace Admin on `Enercare-West3` plus Information Protection Admin / La
 
 Two label-carrying mechanisms exist and only one of them is what DLP actually reads:
 
-1. **SQL contract update** (Tier 1) — `07_apply_approved_changes` updates
-   `dbo.governance_cdes.sensitivity_label` for `CDE-GEO`.
+1. **SQL contract update** (Tier 1) — the G21 SQL apply moves CDE-GEO's bound columns from
+  `LBL-007` to `LBL-010` in `dbo.governance_label_assignments` and records a version and receipt.
 2. **Purview Data Map tag refresh** (descriptive only, does NOT feed DLP) — the existing Atlas
    `_apply_sensitivity_label()` call from `06_publish_glossary_and_lineage`
    (`/catalog/api/atlas/v2/entity/guid/{guid}/labels`) updates the Data Map entity's tag.
@@ -78,16 +78,13 @@ Two label-carrying mechanisms exist and only one of them is what DLP actually re
      "artifacts": { "datasets": [ { "id": "<BrookfieldEnercare semantic model GUID>" } ] },
      "labelId": "0dd498ed-386a-4f71-aa94-2dda1b6e34e5",
      "assignmentMethod": "Standard",
-     "delegatedUser": { "emailAddress": "victoria.tan@MngEnvMCAP660444.onmicrosoft.com" }
+     "delegatedUser": { "emailAddress": "seankelley@MngEnvMCAP660444.onmicrosoft.com" }
    }
    ```
-   Note: `Victoria.Tan@enercare.ca` (her seed-data UPN) has no matching Entra `mail` attribute and
-   fails `setLabels` with `InformationProtectionUserNotFound` -- her real Entra UPN
-   (`victoria.tan@MngEnvMCAP660444.onmicrosoft.com`, object ID
-   `e410e0d0-fa7e-4d38-be6d-bf9d59e65afc`) must be used instead, confirmed via `Get-MgUser`.
-   Requires: caller must be a Fabric administrator (`Tenant.ReadWrite.All`); the admin/delegated
-   user must have the label in their own label policy; max 25 requests/hour, up to 2000 items
-   per call.
+   The notebook reads `SLE_DELEGATED_USER_UPN` when an override is needed. The delegated user must
+   be included in the label's published policy; using Victoria's real Entra UPN without that policy
+   assignment fails with `InformationProtectionLabelNotAssigned`. The caller must also be a Fabric
+   administrator (`Tenant.ReadWrite.All`); max 25 requests/hour, up to 2000 items per call.
 4. **⚠️ DLP does not evaluate instantly on label-apply.** Per Microsoft's docs, DLP re-evaluates
    a semantic model only on **Publish, Republish, on-demand refresh, or scheduled refresh**. The
    dispatcher must trigger an **on-demand refresh** immediately after `setLabels` succeeds, or the
@@ -128,10 +125,24 @@ variant would not catch her.
   Organization` (`ConfiguredBy` field), dataset ID `8cb6f6a6-6a9c-4560-9f28-17a1dc4a921c`. A real
   user, not a service principal (so DLP will actually evaluate this model) and not Rupal Solanki
   (so she's a genuine non-owner the "Block everyone" restriction will catch).
+- **G21 apply and receipts**: Cell 13 completed live on 2026-08-19. `setLabels` returned HTTP 200
+  with dataset status `Succeeded`; `SLELEV-CDE-GEO-001` is `Completed`; all three receipts
+  (`SQL`, `PURVIEW_DATA_MAP`, and `FABRIC_INFORMATION_PROTECTION`) are `Passed`. The Fabric receipt
+  records label GUID `0dd498ed-386a-4f71-aa94-2dda1b6e34e5`, delegated user Sean Kelley, HTTP 200,
+  and `refreshTriggered=true`.
+- **DLP reevaluation refresh**: the apply-triggered `ViaApi` refresh completed from
+  `2026-08-19T17:31:37.997Z` to `17:31:48.013Z`. After Rupal was added as a Workspace Viewer, a
+  second `ViaApi` refresh (`678a662d-43c4-4b35-a239-e9a93a12cdcf`) completed at
+  `2026-08-19T17:37:27.950Z`, ensuring policy evaluation used the current access state.
+- **Denied-user baseline**: Power BI workspace-user read-back confirms Rupal's real Entra UPN,
+  `rupal.solanki@MngEnvMCAP660444.onmicrosoft.com`, has `Viewer` access. Her denial can therefore
+  prove DLP enforcement rather than merely missing workspace permission.
 
 ## Open items / not yet confirmed
 
-*(none remaining — both prerequisites and the owner check are confirmed live as of 2026-08-19)*
+- Sign in interactively as Rupal and open `BrookfieldEnercare` (or its report). Capture the
+  Restrict Access denial. This is the final enforcement proof; admin/API tokens cannot impersonate
+  Rupal, so it cannot be validated from the current Sean Kelley session.
 
 ## Built
 
@@ -143,23 +154,16 @@ variant would not catch her.
   read/write); Cell 13 reads `SLELEV-CDE-GEO-001`, refreshes the Purview Data Map Atlas tag
   (reusing the existing `_apply_sensitivity_label`/`_resolve_entity` helpers), calls the Power BI
   Admin `setLabels` API on `BrookfieldEnercare` (dataset ID `8cb6f6a6-6a9c-4560-9f28-17a1dc4a921c`)
-  with `delegatedUser = victoria.tan@MngEnvMCAP660444.onmicrosoft.com` (her real Entra UPN, not
-  the seed-data-only `Victoria.Tan@enercare.ca`), triggers an on-demand refresh, then writes the
+  with `delegatedUser = seankelley@MngEnvMCAP660444.onmicrosoft.com` by default (configurable via
+  `SLE_DELEGATED_USER_UPN`), triggers an on-demand refresh, then writes the
   `PURVIEW_DATA_MAP`/`FABRIC_INFORMATION_PROTECTION` receipts and marks the request `Completed` --
   **only if `setLabels` reports `Succeeded`**; otherwise it raises, logs to `nb09_diagnostics_log`,
-  and leaves the request at `Approved`. **Not yet run live** — needs a Fabric-admin-capable
-  identity to actually succeed at the `setLabels` step; not yet pushed to Fabric/git-synced.
+  and leaves the request at `Approved`. Live apply, receipt write-back, and refresh all succeeded
+  on 2026-08-19.
 
 ## Not yet done
 
-- Push the notebook change to git, run `tools/sync_fabric_git.py`, then submit a live job via
-  `tools/run_fabric_notebook_job.py --notebook 06_publish_glossary_and_lineage` to actually test
-  Cells 12–13 end to end. This is the first live test of the `setLabels` call — genuinely unknown
-  until run whether this Fabric workspace's notebook-execution identity has the required
-  Fabric-admin rights.
-- Add `FABRIC_INFORMATION_PROTECTION` as a named target-system category to
-  `docs/closed-loop-governance-reference-model.md`'s "Recommended target systems" list (it's used
-  in code now, but not yet documented there).
+- Complete and capture the interactive Rupal denial test described above.
 
 ## See also
 

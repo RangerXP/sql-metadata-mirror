@@ -200,6 +200,7 @@ Recommended target systems include:
 - `DATA_AGENT_DRAFT`
 - `DATA_AGENT_PUBLISHED`
 - `PURVIEW_DATA_MAP`
+- `FABRIC_INFORMATION_PROTECTION`
 - `VALIDATION`
 
 A generated Atlas payload is not publication evidence. A successful receipt requires API success followed by read-back of the expected process/object identity and, where applicable, the expected version or hash.
